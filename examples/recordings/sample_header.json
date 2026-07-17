@@ -1,0 +1,24 @@
+{
+  "recording_version": "0.1",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "protocol_version": "0.1",
+  "contract_version": "0.1",
+  "contract_hash": "sha256:example",
+  "level_id": "tutorial_01",
+  "seed": 42,
+  "frame": "mineworld_zup_m",
+  "dt": 0.02,
+  "sim_hz": 50,
+  "state_hz": 20,
+  "record_every_n_ticks": 1,
+  "mech_model_refs": ["mechs/box_mech.xml"],
+  "player_id": null,
+  "started_at": "2026-07-17T08:00:00Z",
+  "ended_at": null,
+  "outcome": "running",
+  "software": {
+    "mujoco_version": "3.6.0"
+  },
+  "features": [],
+  "extensions": {}
+}

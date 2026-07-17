@@ -2,8 +2,9 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Proposed |
+| **状态** | Accepted |
 | **日期** | 2026-07-17 |
+| **确认** | 与 [11-poc-mvp-architecture.md](../11-poc-mvp-architecture.md) §9.1 同日评审通过 |
 | **决策编号** | ADR-MW-001 |
 
 ---

@@ -10,6 +10,8 @@
 4. [03-websocket-protocol.md](03-websocket-protocol.md) — 怎么连
 5. [04-data-collection.md](04-data-collection.md) — 采什么
 6. [08-modes-roadmap.md](08-modes-roadmap.md) — MVP 与路线
+7. [09-todo.md](09-todo.md) — **可执行待办（当前执行入口）**
+8. [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) — **POC 规格 + MVP 薄架构（讨论入口）**
 
 ## 实施参考
 

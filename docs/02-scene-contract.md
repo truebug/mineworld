@@ -2,9 +2,9 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Draft v0 |
+| **状态** | Draft v0（Schema SSOT 已落盘） |
 | **日期** | 2026-07-17 |
-| **SSOT 方向** | `schemas/scene-contract.v0.json`（待建） |
+| **SSOT** | [`schemas/scene-contract.v0.json`](../schemas/scene-contract.v0.json) |
 
 ---
 
@@ -94,7 +94,7 @@ mech_spawns:
 
 static_obstacles:
   - id: wall_01
-    type: box
+    shape: box
     size: [2, 0.2, 1]
     pose: { x: 5, y: 0, z: 0.5, yaw: 0 }
     physics_role: mujoco_authoritative
@@ -112,7 +112,7 @@ triggers:
     max: [11, 1, 2]
 ```
 
-正式 SSOT 以 JSON Schema 为准，见 `schemas/`（待建）。
+正式 SSOT：[`schemas/scene-contract.v0.json`](../schemas/scene-contract.v0.json)。障碍用 `shape`（非 `type`），以免与 objective/trigger 的 `type` 混淆；未知 `shape`/`objective.type` 用开放字符串 + `extensions`。
 
 ---
 

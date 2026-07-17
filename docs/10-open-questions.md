@@ -12,8 +12,8 @@
 | ID | 问题 | 选项 / 备注 | 负责人 | 状态 |
 |----|------|-------------|--------|------|
 | P1 | 对外产品名是否使用「头号玩家」类比 | 建议内部愿景，对外用「MineWorld」或独立品牌 | — | Open |
-| P2 | MVP 机甲形态 | 双足简化 / 轮式 / 参考 g1 | — | Open |
-| P3 | 默认控制模式 | `velocity` vs `joint_targets` | 倾向 velocity | Open |
+| P2 | MVP 机甲形态 | **Closed**：POC/MVP 自建盒子机甲；真人形/g1 后置 | — | Closed |
+| P3 | 默认控制模式 | **Closed**：`velocity`（见 `11` §3/§9.1） | — | Closed |
 | P4 | 是否需要账号与进度存档 | MVP 可匿名会话 | — | Open |
 
 ---
@@ -23,8 +23,8 @@
 | ID | 问题 | 备注 | 状态 |
 |----|------|------|------|
 | C1 | 契约文件由谁生成 | MVP 手写 JSON；P1 GDevelop 扩展 | Open |
-| C2 | 坐标系与单位 | 建议米、右手系、Y-up 或 Z-up 与 MuJoCo 对齐 | **需评审** |
-| C3 | 静态障碍精度 | 盒体近似 vs mesh 碰撞 | 倾向 MVP 盒体 |
+| C2 | 坐标系与单位 | **Closed**：米 · 右手系 · **Z-up**；GDevelop 侧映射（`11` D1） | Closed |
+| C3 | 静态障碍精度 | **Closed（POC）**：盒体近似 | Closed |
 | C4 | `game_logic_only` 物体是否进入录制 | 影响训练分布声明 | Open |
 
 ---
@@ -55,7 +55,7 @@
 | ID | 问题 | 备注 | 状态 |
 |----|------|------|------|
 | E1 | mineworld 是否并入数聚球 monorepo | 当前独立目录 `projects/mineworld` | Open |
-| E2 | Gateway 语言 | Python 优先（与 MuJoCo 生态一致） | 倾向 Python |
+| E2 | Gateway 语言 | **Closed**：Python 3.11+（`11` D3） | Closed |
 | E3 | CI 导出 GDevelop | gdexporter 版本锁定 | Open |
 
 ---

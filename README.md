@@ -29,9 +29,12 @@
 | [docs/06-mujoco.md](docs/06-mujoco.md) | MuJoCo 无头仿真、网关职责、与现网资产对齐 |
 | [docs/07-tooling.md](docs/07-tooling.md) | Blender / GDevelop / MCP / CLI 工具链 |
 | [docs/08-modes-roadmap.md](docs/08-modes-roadmap.md) | 学习/娱乐/商业模式与 MVP 路线图 |
+| [docs/09-todo.md](docs/09-todo.md) | **可执行待办清单（当前执行入口）** |
+| [docs/10-open-questions.md](docs/10-open-questions.md) | 待决事项与评审清单 |
+| [docs/11-poc-mvp-architecture.md](docs/11-poc-mvp-architecture.md) | **POC 规格 + MVP 目标架构（讨论入口）** |
+| [schemas/README.md](schemas/README.md) | **JSON Schema SSOT 与扩展规则** |
 | [docs/adr/001-dual-engine-split.md](docs/adr/001-dual-engine-split.md) | ADR：双引擎职责分离 |
 | [docs/adr/002-authority-and-sync.md](docs/adr/002-authority-and-sync.md) | ADR：物理权威与时序同步 |
-| [docs/10-open-questions.md](docs/10-open-questions.md) | 待决事项与评审清单 |
 
 ---
 

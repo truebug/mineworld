@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mineworld.local/schemas/recording-session.v0.json",
+  "title": "MineWorld Recording Session v0",
+  "description": "On-disk session: header.json + frames.jsonl (one JSON object per line). Designed for POC local FS and later Parquet export without renaming semantics.",
+  "$defs": {
+    "header": {
+      "type": "object",
+      "required": [
+        "recording_version",
+        "session_id",
+        "level_id",
+        "started_at",
+        "dt",
+        "sim_hz",
+        "frame"
+      ],
+      "properties": {
+        "recording_version": {
+          "$ref": "common.v0.json#/$defs/semver0",
+          "description": "Format version of this recording package."
+        },
+        "session_id": { "$ref": "common.v0.json#/$defs/session_id" },
+        "protocol_version": { "$ref": "common.v0.json#/$defs/semver0" },
+        "contract_version": { "$ref": "common.v0.json#/$defs/semver0" },
+        "contract_hash": {
+          "type": "string",
+          "description": "Hash of canonical scene contract JSON used for the session."
+        },
+        "level_id": { "type": "string" },
+        "seed": { "type": "integer" },
+        "frame": { "$ref": "common.v0.json#/$defs/frame" },
+        "dt": { "type": "number", "exclusiveMinimum": 0 },
+        "sim_hz": { "type": "integer", "minimum": 1 },
+        "state_hz": { "type": "integer", "minimum": 1 },
+        "record_every_n_ticks": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "1 = every sim tick; 2+ = downsample for storage."
+        },
+        "mech_model_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "MJCF refs present in the session."
+        },
+        "player_id": {
+          "type": ["string", "null"],
+          "description": "Optional; may be anonymized."
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC ISO-8601."
+        },
+        "ended_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "outcome": {
+          "type": "string",
+          "description": "Known: success | fail | abort | disconnect | running. Open string.",
+          "examples": ["success", "fail", "abort", "disconnect", "running"]
+        },
+        "scene_contract": {
+          "type": "object",
+          "description": "Embedded contract snapshot (or omit and store beside as contract.json).",
+          "additionalProperties": true
+        },
+        "software": {
+          "type": "object",
+          "properties": {
+            "gateway_version": { "type": "string" },
+            "mujoco_version": { "type": "string" },
+            "model_hash": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "features": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "e.g. has_joints, has_contacts — helps loaders skip missing columns."
+        },
+        "stats": {
+          "type": "object",
+          "description": "Filled at end or by post-process.",
+          "properties": {
+            "num_frames": { "type": "integer" },
+            "duration_sim_s": { "type": "number" },
+            "path_length_m": { "type": "number" }
+          },
+          "additionalProperties": true
+        },
+        "meta": { "$ref": "common.v0.json#/$defs/meta" },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "frame": {
+      "type": "object",
+      "required": ["tick", "t_sim"],
+      "properties": {
+        "tick": { "$ref": "common.v0.json#/$defs/tick" },
+        "t_sim": { "$ref": "common.v0.json#/$defs/t_sim" },
+        "cmd": {
+          "description": "Control applied this tick; null/omit if none.",
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Same shape as ws cmd.payload (may include action)."
+            }
+          ]
+        },
+        "state": {
+          "type": "object",
+          "description": "Same shape as ws state.payload (entities...). Omit if this line is event-only.",
+          "additionalProperties": true
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["event_type"],
+            "properties": {
+              "event_type": { "$ref": "common.v0.json#/$defs/open_event_type" },
+              "entity_id": { "type": "string" },
+              "objective_id": { "type": "string" },
+              "detail": { "type": "object", "additionalProperties": true }
+            },
+            "additionalProperties": true
+          },
+          "default": []
+        },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "session_dir": {
+      "type": "object",
+      "description": "Logical layout (not a single JSON file).",
+      "properties": {
+        "header": { "const": "header.json" },
+        "frames": { "const": "frames.jsonl" },
+        "contract": {
+          "const": "contract.json",
+          "description": "Optional sidecar if not embedded in header."
+        },
+        "notes": { "const": "notes.md" }
+      }
+    }
+  }
+}

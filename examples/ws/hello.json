@@ -1,0 +1,13 @@
+{
+  "type": "hello",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "protocol_version": "0.1",
+  "payload": {
+    "protocol_version": "0.1",
+    "dt": 0.02,
+    "sim_hz": 50,
+    "state_hz": 20,
+    "frame": "mineworld_zup_m",
+    "features": ["recording"]
+  }
+}

@@ -2,9 +2,10 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Draft v0 |
+| **状态** | Draft v0（Schema SSOT 已落盘） |
 | **日期** | 2026-07-17 |
 | **定位** | 产品核心资产管道，与娱乐壳同等优先级 |
+| **SSOT** | [`schemas/recording-session.v0.json`](../schemas/recording-session.v0.json) |
 
 ---
 
@@ -78,10 +79,10 @@
 
 | 阶段 | 格式 | 说明 |
 |------|------|------|
-| MVP | `sessions/<session_id>/header.json` + `frames.jsonl` | 易调试 |
-| 规模 | Parquet / Zarr + 对象存储 | 训练管道友好 |
+| MVP | `sessions/<session_id>/header.json` + `frames.jsonl` | 易调试；字段见 schema `$defs/header` / `$defs/frame` |
+| 规模 | Parquet / Zarr + 对象存储 | **语义不变**：列从 frame/header 映射，不必改 WS |
 
-Schema 文件：`schemas/recording-session.v0.json`（待建）。
+Schema：[`schemas/recording-session.v0.json`](../schemas/recording-session.v0.json)。扩展用 `features[]`、`extensions`、`stats`（后处理可写）。
 
 ---
 

@@ -2,19 +2,24 @@
   "contract_version": "0.1",
   "level_id": "tutorial_01",
   "seed": 42,
+  "frame": "mineworld_zup_m",
+  "sim": {
+    "dt": 0.02
+  },
   "mech_spawns": [
     {
       "id": "mech_player",
-      "model_ref": "mechs/g1_minimal.xml",
+      "model_ref": "mechs/box_mech.xml",
       "pose": { "x": 0, "y": 0, "z": 0.5, "yaw": 0 },
       "player_slot": 0,
-      "control_mode": "velocity"
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
     }
   ],
   "static_obstacles": [
     {
       "id": "wall_01",
-      "type": "box",
+      "shape": "box",
       "size": [2, 0.2, 1],
       "pose": { "x": 5, "y": 0, "z": 0.5, "yaw": 0 },
       "physics_role": "mujoco_authoritative"
@@ -35,5 +40,7 @@
       "min": [9, -1, 0],
       "max": [11, 1, 2]
     }
-  ]
+  ],
+  "tags": ["poc", "tutorial"],
+  "extensions": {}
 }

@@ -73,8 +73,10 @@
 ### Phase 0 — 文档与契约（当前）
 
 - [x] 文档结构落盘
-- [ ] JSON Schema v0：`scene-contract`、`ws-messages`、`recording-session`
-- [ ] 评审 [10-open-questions.md](10-open-questions.md)
+- [x] POC 规格 + MVP 薄架构：[11-poc-mvp-architecture.md](11-poc-mvp-architecture.md)
+- [x] JSON Schema v0：`scene-contract`、`ws-messages`、`recording-session`、`common`（见 `schemas/`）
+- [x] 评审冻结 D1–D7 + 5 日 POC + 盒子机甲（`11` §9.1）
+- [ ] （可选）`ajv` / 脚本校验 examples
 
 ### Phase 1 — 连通（预计 1–2 周量级，视人力）
 

@@ -2,60 +2,208 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mineworld.local/schemas/scene-contract.v0.json",
   "title": "MineWorld Scene Contract v0",
-  "description": "GDevelop 关卡到 MuJoCo 世界的映射契约（草案，待评审）",
+  "description": "Maps a GDevelop level to MuJoCo-authoritative entities. Open for optional fields and extensions; required core stays small.",
   "type": "object",
   "required": ["contract_version", "level_id", "mech_spawns"],
   "properties": {
-    "contract_version": { "type": "string", "const": "0.1" },
-    "level_id": { "type": "string" },
+    "contract_version": {
+      "$ref": "common.v0.json#/$defs/semver0",
+      "description": "Instance version. POC uses 0.1; additive fields may bump 0.2+."
+    },
+    "level_id": { "type": "string", "minLength": 1 },
     "seed": { "type": "integer" },
+    "frame": {
+      "$ref": "common.v0.json#/$defs/frame",
+      "description": "Default frame for poses in this contract."
+    },
+    "sim": {
+      "type": "object",
+      "description": "Optional sim overrides. Gateway defaults: dt=0.02 if omitted.",
+      "properties": {
+        "dt": { "type": "number", "exclusiveMinimum": 0, "default": 0.02 },
+        "gravity": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "Optional gravity vector in world frame."
+        },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
     "mech_spawns": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "model_ref", "pose"],
-        "properties": {
-          "id": { "type": "string" },
-          "model_ref": { "type": "string" },
-          "pose": { "$ref": "#/$defs/pose" },
-          "player_slot": { "type": "integer", "minimum": 0 },
-          "control_mode": {
-            "type": "string",
-            "enum": ["velocity", "target_pose", "joint_targets"]
-          }
-        }
-      }
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/mech_spawn" }
     },
     "static_obstacles": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "type", "physics_role"],
-        "properties": {
-          "id": { "type": "string" },
-          "type": { "type": "string", "enum": ["box", "mesh_ref"] },
-          "size": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
-          "mesh_ref": { "type": "string" },
-          "pose": { "$ref": "#/$defs/pose" },
-          "physics_role": {
-            "type": "string",
-            "enum": ["mujoco_authoritative", "game_logic_only", "hybrid"]
-          }
-        }
-      }
+      "items": { "$ref": "#/$defs/static_obstacle" },
+      "default": []
     },
-    "objectives": { "type": "array" },
-    "triggers": { "type": "array" }
+    "interactives": {
+      "type": "array",
+      "description": "Future: doors, pushables, etc. POC may leave empty.",
+      "items": { "$ref": "#/$defs/open_entity" },
+      "default": []
+    },
+    "objectives": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/objective" },
+      "default": []
+    },
+    "triggers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/trigger" },
+      "default": []
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Free-form labels for dataset slicing."
+    },
+    "meta": { "$ref": "common.v0.json#/$defs/meta" },
+    "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
   },
+  "additionalProperties": true,
   "$defs": {
-    "pose": {
+    "mech_spawn": {
       "type": "object",
+      "required": ["id", "model_ref", "pose"],
       "properties": {
-        "x": { "type": "number" },
-        "y": { "type": "number" },
-        "z": { "type": "number" },
-        "yaw": { "type": "number" }
-      }
+        "id": { "$ref": "common.v0.json#/$defs/entity_id" },
+        "kind": {
+          "type": "string",
+          "const": "mech",
+          "description": "Optional discriminator for mixed entity lists later."
+        },
+        "model_ref": {
+          "type": "string",
+          "description": "Path or logical name of MJCF, e.g. mechs/box_mech.xml"
+        },
+        "pose": { "$ref": "common.v0.json#/$defs/pose_yaw" },
+        "player_slot": { "type": "integer", "minimum": 0 },
+        "control_mode": {
+          "$ref": "common.v0.json#/$defs/control_mode",
+          "default": "velocity"
+        },
+        "physics_role": {
+          "$ref": "common.v0.json#/$defs/physics_role",
+          "default": "mujoco_authoritative"
+        },
+        "initial_joints": { "$ref": "common.v0.json#/$defs/string_map_number" },
+        "meta": { "$ref": "common.v0.json#/$defs/meta" },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "static_obstacle": {
+      "type": "object",
+      "required": ["id", "shape", "physics_role"],
+      "properties": {
+        "id": { "$ref": "common.v0.json#/$defs/entity_id" },
+        "kind": { "type": "string", "const": "static_obstacle" },
+        "shape": {
+          "type": "string",
+          "description": "Known: box | mesh_ref | cylinder | ... Custom snake_case allowed.",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "examples": ["box", "mesh_ref"]
+        },
+        "size": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "For box: half-sizes or full sizes — Gateway documents convention (full XYZ extents)."
+        },
+        "radius": { "type": "number" },
+        "height": { "type": "number" },
+        "mesh_ref": { "type": "string" },
+        "pose": { "$ref": "common.v0.json#/$defs/pose_yaw" },
+        "physics_role": { "$ref": "common.v0.json#/$defs/physics_role" },
+        "friction": { "type": "number" },
+        "meta": { "$ref": "common.v0.json#/$defs/meta" },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "open_entity": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "$ref": "common.v0.json#/$defs/entity_id" },
+        "kind": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "pose": { "$ref": "common.v0.json#/$defs/pose_yaw" },
+        "physics_role": { "$ref": "common.v0.json#/$defs/physics_role" },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "objective": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "$ref": "common.v0.json#/$defs/entity_id" },
+        "type": {
+          "type": "string",
+          "description": "Known: reach_region | survive_time | custom. Open string.",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "examples": ["reach_region"]
+        },
+        "target": {
+          "type": "string",
+          "description": "Usually a trigger id."
+        },
+        "description": { "type": "string" },
+        "params": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "trigger": {
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "$ref": "common.v0.json#/$defs/entity_id" },
+        "type": {
+          "type": "string",
+          "description": "Known: aabb | sphere | ... Open string.",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "examples": ["aabb"]
+        },
+        "min": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "max": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "center": { "$ref": "common.v0.json#/$defs/vec3" },
+        "radius": { "type": "number" },
+        "on_enter": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional action ids / event names."
+        },
+        "on_exit": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
     }
   }
 }

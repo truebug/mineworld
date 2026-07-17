@@ -2,19 +2,21 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Draft v0 |
+| **状态** | Draft v0（Schema SSOT 已落盘） |
 | **日期** | 2026-07-17 |
 | **传输** | WebSocket 文本帧，JSON 载荷 |
-| **SSOT 方向** | `schemas/ws-messages.v0.json`（待建） |
+| **SSOT** | [`schemas/ws-messages.v0.json`](../schemas/ws-messages.v0.json) · 扩展规则见 [`schemas/README.md`](../schemas/README.md) |
 
 ---
 
 ## 1. 设计原则
 
-1. **字符串 JSON**：对齐 GDevelop [WebSocket Client](https://wiki.gdevelop.io/gdevelop5/extensions/web-socket-client/) 扩展能力（不支持二进制）。
-2. **消息类型三分**：`cmd`（控制）、`state`（状态）、`event`（离散事件）。
-3. **仿真 tick 为时间轴**：所有消息带 `tick` 或 `t_sim`。
-4. **会话绑定**：`session_id` 在握手后由 Gateway 分配。
+1. **字符串 JSON**：对齐 GDevelop WebSocket Client（不支持二进制）。
+2. **信封稳定、载荷可长**：顶层 `type` / `session_id` / `tick` / `t_sim` / `payload` / `extensions`；新能力进 payload 或 `extensions`。
+3. **开放枚举**：`event_type`、`control_mode`、`action` 允许自定义 snake_case；未知键消费者忽略。
+4. **仿真 tick 为时间轴**：`t_sim ≈ tick * dt`。
+5. **POC 频率**：`dt=0.02`（50Hz sim）、`state_hz=20`（见 `hello.payload`）。
+6. **逃逸舱**：未来顶层类型可用 `ext.*`（见 schema `msg_extension`），避免立刻 fork 文件。
 
 ---
 
@@ -176,14 +178,20 @@ Client/Gateway --{ type: "bye" }--> 关闭
 
 ---
 
-## 9. 带宽与频率（粗算）
+## 9. 带宽与频率
 
-- 全关节名+浮点 JSON 在 50Hz 下可能偏大 → MVP 可用 `velocity` + 精简 `state`（基座位姿 + 少量关节）。
-- 录制侧保留完整 `state`；客户端展示可降频。
+| 参数 | POC 默认 | 说明 |
+|------|----------|------|
+| `dt` / `sim_hz` | 0.02 / 50 | 仿真步进 |
+| `state_hz` | 20 | 广播给客户端；录制可用 `record_every_n_ticks` 单独控制 |
+
+- 全关节名+浮点 JSON 在高频率下可能偏大 → POC 盒子机甲几乎无关节。
+- P1：`payload.kind = "delta"` 增量 state。
 
 ---
 
 ## 10. 版本与兼容
 
-- `hello.protocol_version`: `"0.1"`
-- 破坏性变更升 minor，Gateway 拒绝不兼容客户端。
+- `hello.payload.protocol_version`: `"0.1"`（`0.x` 内可加可选字段）
+- 破坏性变更：升 `1.0` 或新 schema 文件；Gateway 拒绝不兼容客户端
+- 扩展规则：[schemas/README.md](../schemas/README.md)

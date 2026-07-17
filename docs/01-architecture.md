@@ -5,6 +5,7 @@
 | **状态** | Draft |
 | **日期** | 2026-07-17 |
 | **关联 ADR** | [adr/001-dual-engine-split.md](adr/001-dual-engine-split.md) · [adr/002-authority-and-sync.md](adr/002-authority-and-sync.md) |
+| **POC / MVP 落地** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md)（范围、冻结默认、验收；本文保留完整职责说明） |
 
 ---
 

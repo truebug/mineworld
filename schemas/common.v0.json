@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mineworld.local/schemas/common.v0.json",
+  "title": "MineWorld Common Types v0",
+  "description": "Shared definitions for scene contract, WS messages, and recordings. Keep payloads open for forward-compatible extensions.",
+  "$defs": {
+    "semver0": {
+      "type": "string",
+      "description": "0.x lineage version string (compatible extensions bump minor within 0.x).",
+      "pattern": "^0\\.[0-9]+(\\.[0-9]+)?$"
+    },
+    "entity_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_\\-]*$"
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Opaque session id (UUID recommended)."
+    },
+    "tick": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "t_sim": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Simulation time in seconds; ideally tick * dt."
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Forward-compat bag. Unknown keys MUST be ignored by consumers. Prefer namespaced keys: mw.*, vendor.*",
+      "additionalProperties": true
+    },
+    "meta": {
+      "type": "object",
+      "description": "Human/debug annotations; not required for simulation correctness.",
+      "additionalProperties": true
+    },
+    "frame": {
+      "type": "string",
+      "description": "Coordinate frame id. Default world is mineworld_zup_m.",
+      "default": "mineworld_zup_m",
+      "examples": ["mineworld_zup_m", "gdevelop_display"]
+    },
+    "vec2": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      },
+      "required": ["x", "y"],
+      "additionalProperties": true
+    },
+    "vec3": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": true
+    },
+    "quat": {
+      "type": "object",
+      "description": "Unit quaternion, scalar-last or wxyz — MineWorld uses w,x,y,z.",
+      "properties": {
+        "qw": { "type": "number" },
+        "qx": { "type": "number" },
+        "qy": { "type": "number" },
+        "qz": { "type": "number" }
+      },
+      "required": ["qw", "qx", "qy", "qz"],
+      "additionalProperties": true
+    },
+    "pose_yaw": {
+      "type": "object",
+      "description": "Planar-friendly pose (Z-up). yaw in radians about +Z.",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" },
+        "yaw": { "type": "number" },
+        "frame": { "$ref": "#/$defs/frame" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": true
+    },
+    "pose_quat": {
+      "type": "object",
+      "description": "Full SE(3) pose. Prefer for state broadcast.",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" },
+        "qw": { "type": "number" },
+        "qx": { "type": "number" },
+        "qy": { "type": "number" },
+        "qz": { "type": "number" },
+        "yaw": {
+          "type": "number",
+          "description": "Optional redundant yaw for simple clients."
+        },
+        "frame": { "$ref": "#/$defs/frame" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": true
+    },
+    "aabb": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "max": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "required": ["min", "max"],
+      "additionalProperties": true
+    },
+    "string_map_number": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "string_map_bool": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" }
+    },
+    "control_mode": {
+      "type": "string",
+      "description": "Known: velocity | target_pose | joint_targets. Custom modes allowed as snake_case.",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "examples": ["velocity", "target_pose", "joint_targets"]
+    },
+    "physics_role": {
+      "type": "string",
+      "enum": ["mujoco_authoritative", "game_logic_only", "hybrid"]
+    },
+    "open_event_type": {
+      "type": "string",
+      "description": "Known POC types + custom. Prefer snake_case; vendor prefix for custom: vendor.foo",
+      "minLength": 1,
+      "examples": [
+        "player_take_control",
+        "player_release_control",
+        "contact",
+        "objective_complete",
+        "objective_failed",
+        "sim_error"
+      ]
+    }
+  }
+}

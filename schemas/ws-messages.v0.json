@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mineworld.local/schemas/ws-messages.v0.json",
+  "title": "MineWorld WebSocket Messages v0",
+  "description": "Text-frame JSON messages. Envelope is stable; payloads stay open. Discriminate on type.",
+  "oneOf": [
+    { "$ref": "#/$defs/msg_hello" },
+    { "$ref": "#/$defs/msg_join" },
+    { "$ref": "#/$defs/msg_scene" },
+    { "$ref": "#/$defs/msg_cmd" },
+    { "$ref": "#/$defs/msg_state" },
+    { "$ref": "#/$defs/msg_event" },
+    { "$ref": "#/$defs/msg_error" },
+    { "$ref": "#/$defs/msg_bye" },
+    { "$ref": "#/$defs/msg_extension" }
+  ],
+  "$defs": {
+    "envelope_base": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string" },
+        "protocol_version": {
+          "$ref": "common.v0.json#/$defs/semver0",
+          "description": "Usually set on hello; optional on later messages."
+        },
+        "session_id": { "$ref": "common.v0.json#/$defs/session_id" },
+        "tick": { "$ref": "common.v0.json#/$defs/tick" },
+        "t_sim": { "$ref": "common.v0.json#/$defs/t_sim" },
+        "seq": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional per-connection sequence for debugging/loss detection."
+        },
+        "payload": { "type": "object", "additionalProperties": true },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "msg_hello": {
+      "allOf": [
+        { "$ref": "#/$defs/envelope_base" },
+        {
+          "type": "object",
+          "required": ["type", "session_id", "payload"],
+          "properties": {
+            "type": { "const": "hello" },
+            "payload": { "$ref": "#/$defs/payload_hello" }
+          }
+        }
+      ]
+    },
+    "payload_hello": {
+      "type": "object",
+      "required": ["protocol_version", "dt", "sim_hz", "state_hz"],
+      "properties": {
+        "protocol_version": { "$ref": "common.v0.json#/$defs/semver0" },
+        "dt": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.02,
+          "description": "POC default 0.02. Not const so environments may negotiate."
+        },
+        "sim_hz": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 50
+        },
+        "state_hz": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 20
+        },
+        "frame": { "$ref": "common.v0.json#/$defs/frame" },
+        "features": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Capability flags, e.g. recording, state_delta, multi_mech.",
+          "examples": [["recording"]]
+        },
+        "server_time_unix_ms": { "type": "integer" },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "msg_join": {
+      "allOf": [
+        { "$ref": "#/$defs/envelope_base" },
+        {
+          "type": "object",
+          "required": ["type", "payload"],
+          "properties": {
+            "type": { "const": "join" },
+            "payload": { "$ref": "#/$defs/payload_join" }
+          }
+        }
+      ]
+    },
+    "payload_join": {
+      "type": "object",
+      "required": ["level_id"],
+      "properties": {
+        "level_id": { "type": "string" },
+        "player_name": { "type": "string" },
+        "client_info": {
+          "type": "object",
+          "properties": {
+            "app": { "type": "string" },
+            "version": { "type": "string" },
+            "platform": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "msg_scene": {
+      "allOf": [
+        { "$ref": "#/$defs/envelope_base" },
+        {
+          "type": "object",
+          "required": ["type", "session_id", "payload"],
+          "properties": {
+            "type": { "const": "scene" },
+            "payload": { "$ref": "#/$defs/payload_scene" }
+          }
+        }
+      ]
+    },
+    "payload_scene": {
+      "type": "object",
+      "required": ["level_id", "entities"],
+      "properties": {
+        "level_id": { "type": "string" },
+        "contract_version": { "$ref": "common.v0.json#/$defs/semver0" },
+        "contract_hash": { "type": "string" },
+        "seed": { "type": "integer" },
+        "entities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/scene_entity_summary" }
+        },
+        "objectives": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "scene_entity_summary": {
+      "type": "object",
+      "required": ["entity_id", "kind"],
+      "properties": {
+        "entity_id": { "$ref": "common.v0.json#/$defs/entity_id" },
+        "kind": { "type": "string" },
+        "model_ref": { "type": "string" },
+        "controllable": { "type": "boolean" },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "msg_cmd": {
+      "allOf": [
+        { "$ref": "#/$defs/envelope_base" },
+        {
+          "type": "object",
+          "required": ["type", "payload"],
+          "properties": {
+            "type": { "const": "cmd" },
+            "payload": { "$ref": "#/$defs/payload_cmd" }
+          }
+        }
+      ]
+    },
+    "payload_cmd": {
+      "type": "object",
+      "description": "Either a discrete action OR continuous control. Both fields may coexist; action takes precedence for session semantics.",
+      "properties": {
+        "entity_id": { "$ref": "common.v0.json#/$defs/entity_id" },
+        "action": {
+          "type": "string",
+          "description": "Known: take_control | release_control. Custom snake_case allowed.",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "examples": ["take_control", "release_control"]
+        },
+        "control_mode": { "$ref": "common.v0.json#/$defs/control_mode" },
+        "vx": { "type": "number" },
+        "vy": { "type": "number" },
+        "yaw_rate": { "type": "number" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" },
+        "yaw": { "type": "number" },
+        "joints": { "$ref": "common.v0.json#/$defs/string_map_number" },
+        "buttons": { "$ref": "common.v0.json#/$defs/string_map_bool" },
+        "axes": { "$ref": "common.v0.json#/$defs/string_map_number" },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "msg_state": {
+      "allOf": [
+        { "$ref": "#/$defs/envelope_base" },
+        {
+          "type": "object",
+          "required": ["type", "session_id", "tick", "payload"],
+          "properties": {
+            "type": { "const": "state" },
+            "payload": { "$ref": "#/$defs/payload_state" }
+          }
+        }
+      ]
+    },
+    "payload_state": {
+      "type": "object",
+      "required": ["entities"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "full (default) | delta (P1). Unknown kinds: ignore or disconnect per policy.",
+          "examples": ["full", "delta"]
+        },
+        "entities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/entity_state" }
+        },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "entity_state": {
+      "type": "object",
+      "required": ["entity_id", "base_pose"],
+      "properties": {
+        "entity_id": { "$ref": "common.v0.json#/$defs/entity_id" },
+        "base_pose": { "$ref": "common.v0.json#/$defs/pose_quat" },
+        "joints": { "$ref": "common.v0.json#/$defs/string_map_number" },
+        "joint_vels": { "$ref": "common.v0.json#/$defs/string_map_number" },
+        "velocities": {
+          "type": "object",
+          "properties": {
+            "vx": { "type": "number" },
+            "vy": { "type": "number" },
+            "vz": { "type": "number" },
+            "wx": { "type": "number" },
+            "wy": { "type": "number" },
+            "wz": { "type": "number" }
+          },
+          "additionalProperties": true
+        },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "msg_event": {
+      "allOf": [
+        { "$ref": "#/$defs/envelope_base" },
+        {
+          "type": "object",
+          "required": ["type", "payload"],
+          "properties": {
+            "type": { "const": "event" },
+            "payload": { "$ref": "#/$defs/payload_event" }
+          }
+        }
+      ]
+    },
+    "payload_event": {
+      "type": "object",
+      "required": ["event_type"],
+      "properties": {
+        "event_type": { "$ref": "common.v0.json#/$defs/open_event_type" },
+        "entity_id": { "$ref": "common.v0.json#/$defs/entity_id" },
+        "objective_id": { "type": "string" },
+        "detail": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "msg_error": {
+      "allOf": [
+        { "$ref": "#/$defs/envelope_base" },
+        {
+          "type": "object",
+          "required": ["type", "payload"],
+          "properties": {
+            "type": { "const": "error" },
+            "payload": { "$ref": "#/$defs/payload_error" }
+          }
+        }
+      ]
+    },
+    "payload_error": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Machine code. Known: INVALID_CMD, UNSUPPORTED_PROTOCOL, ... Open string.",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "message": { "type": "string" },
+        "retryable": { "type": "boolean" },
+        "detail": { "type": "object", "additionalProperties": true },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "msg_bye": {
+      "allOf": [
+        { "$ref": "#/$defs/envelope_base" },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": { "const": "bye" },
+            "payload": {
+              "type": "object",
+              "properties": {
+                "reason": { "type": "string" },
+                "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+              },
+              "additionalProperties": true
+            }
+          }
+        }
+      ]
+    },
+    "msg_extension": {
+      "description": "Escape hatch for future top-level types without forking schema file immediately. Prefer namespaced type: ext.*",
+      "allOf": [
+        { "$ref": "#/$defs/envelope_base" },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "pattern": "^ext\\.[a-z][a-z0-9_\\.]*$"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
