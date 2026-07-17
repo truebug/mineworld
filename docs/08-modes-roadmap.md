@@ -78,13 +78,13 @@
 - [x] 评审冻结 D1–D7 + 5 日 POC + 盒子机甲（`11` §9.1）
 - [ ] （可选）`ajv` / 脚本校验 examples
 
-### Phase 1 — 连通（预计 1–2 周量级，视人力）
+### Phase 1 — 连通（POC-A / M1 ✅）
 
-- [ ] Gateway echo / 固定 state 假数据
-- [ ] GDevelop 连接并发 `cmd`、显示假机甲移动
-- [ ] 手写 `tutorial_01` 场景契约
+- [x] Gateway echo / 假 state（`gateway/echo_server.py`）
+- [x] `scripts/ws_smoke_test.py` 冒烟
+- [x] GDevelop `gdevelop/demo0` + WebSocket：hello/join/WASD 驱动 MechPlayer
 
-### Phase 2 — 真仿真（预计 2–4 周）
+### Phase 2 — 真仿真（POC-B，下一步）
 
 - [ ] MuJoCo 单机甲 + 契约障碍
 - [ ] state 广播 + 客户端驱动 3D 对象

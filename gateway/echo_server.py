@@ -349,8 +349,21 @@ async def run(host: str, port: int, contract_path: Path) -> None:
         contract_path,
         contract.get("level_id"),
     )
-    async with serve(gateway.handler, host, port):
-        await asyncio.Future()
+    try:
+        async with serve(gateway.handler, host, port):
+            await asyncio.Future()
+    except OSError as exc:
+        if getattr(exc, "errno", None) == 48 or "address already in use" in str(exc).lower():
+            LOG.error(
+                "port %s already in use. Free it with:\n"
+                "  lsof -nP -iTCP:%s -sTCP:LISTEN\n"
+                "  kill <PID>\n"
+                "Or start on another port:\n"
+                "  python gateway/echo_server.py --port 8766",
+                port,
+                port,
+            )
+        raise
 
 
 def main() -> None:
