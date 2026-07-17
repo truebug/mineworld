@@ -1,0 +1,39 @@
+{
+  "contract_version": "0.1",
+  "level_id": "tutorial_01",
+  "seed": 42,
+  "mech_spawns": [
+    {
+      "id": "mech_player",
+      "model_ref": "mechs/g1_minimal.xml",
+      "pose": { "x": 0, "y": 0, "z": 0.5, "yaw": 0 },
+      "player_slot": 0,
+      "control_mode": "velocity"
+    }
+  ],
+  "static_obstacles": [
+    {
+      "id": "wall_01",
+      "type": "box",
+      "size": [2, 0.2, 1],
+      "pose": { "x": 5, "y": 0, "z": 0.5, "yaw": 0 },
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
+  "objectives": [
+    {
+      "id": "obj_reach_zone",
+      "type": "reach_region",
+      "target": "trigger_finish",
+      "description": "到达终点区"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "trigger_finish",
+      "type": "aabb",
+      "min": [9, -1, 0],
+      "max": [11, 1, 2]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mineworld.local/schemas/scene-contract.v0.json",
+  "title": "MineWorld Scene Contract v0",
+  "description": "GDevelop 关卡到 MuJoCo 世界的映射契约（草案，待评审）",
+  "type": "object",
+  "required": ["contract_version", "level_id", "mech_spawns"],
+  "properties": {
+    "contract_version": { "type": "string", "const": "0.1" },
+    "level_id": { "type": "string" },
+    "seed": { "type": "integer" },
+    "mech_spawns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "model_ref", "pose"],
+        "properties": {
+          "id": { "type": "string" },
+          "model_ref": { "type": "string" },
+          "pose": { "$ref": "#/$defs/pose" },
+          "player_slot": { "type": "integer", "minimum": 0 },
+          "control_mode": {
+            "type": "string",
+            "enum": ["velocity", "target_pose", "joint_targets"]
+          }
+        }
+      }
+    },
+    "static_obstacles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "physics_role"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "enum": ["box", "mesh_ref"] },
+          "size": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+          "mesh_ref": { "type": "string" },
+          "pose": { "$ref": "#/$defs/pose" },
+          "physics_role": {
+            "type": "string",
+            "enum": ["mujoco_authoritative", "game_logic_only", "hybrid"]
+          }
+        }
+      }
+    },
+    "objectives": { "type": "array" },
+    "triggers": { "type": "array" }
+  },
+  "$defs": {
+    "pose": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" },
+        "yaw": { "type": "number" }
+      }
+    }
+  }
+}
