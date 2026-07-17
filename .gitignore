@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.Python
+
+# Recordings (local POC output)
+recordings/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# GDevelop local exports / caches (if any)
+gdevelop/**/Exported/
+*.tmp

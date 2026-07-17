@@ -40,8 +40,8 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| T1.1 | `gateway/`：最小 WS 服务（hello / join / 收 cmd / 发假 state） | `websockets` 或 `fastapi`+WS，本地 `ws://127.0.0.1:8765` | [ ] |
-| T1.2 | `examples/`：用 `wscat` / 小脚本验证协议 | 能收假机甲位姿 | [ ] |
+| T1.1 | `gateway/`：最小 WS 服务（hello / join / 收 cmd / 发假 state） | `websockets`，本地 `ws://127.0.0.1:8765` | [x] |
+| T1.2 | `examples/`：用 `wscat` / 小脚本验证协议 | `scripts/ws_smoke_test.py` → `smoke OK` | [x] |
 | T1.3 | GDevelop：本地工程 + WebSocket Client | 连接成功、解析 `hello`、存 `session_id` | [ ] |
 | T1.4 | GDevelop：发 `cmd` + 用假 `state` 移动 3D 对象 | 键盘操控「假机甲」可见移动 | [ ] |
 | T1.5 | 固化 `examples/contracts/tutorial_01.json` | 与 GDevelop 场景物体 ID 一致 | [ ] |

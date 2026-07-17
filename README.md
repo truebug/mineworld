@@ -16,6 +16,21 @@
 
 ---
 
+## 快速开始（POC-A Gateway）
+
+```bash
+cd mineworld
+python -m venv .venv && source .venv/bin/activate
+pip install -r gateway/requirements.txt
+python gateway/echo_server.py          # ws://127.0.0.1:8765
+# 另开终端：
+python scripts/ws_smoke_test.py        # 期望 smoke OK
+```
+
+详见 [gateway/README.md](gateway/README.md)。下一步：GDevelop 连同一地址（T1.3–T1.4）。
+
+---
+
 ## 文档导航
 
 | 文档 | 说明 |
