@@ -12,7 +12,10 @@
 
 ---
 
-## Now（本周 / Phase 0→1 启动）
+## Now（Phase 2 · 真仿真）
+
+> Phase 0（决策/Schema）与 Phase 1（POC-A 连通，M1）已于 2026-07-17 完成；
+> 客户端引擎定案 Godot（[adr/003](adr/003-client-engine-godot.md)）。当前执行入口为 T2.x。
 
 ### A. 钉死 3 个决策（阻塞后续实现）
 
@@ -97,9 +100,9 @@ T0.1–T0.3 决策
 
 ## 本周建议（若只做 3 件事）
 
-1. **拍板** T0.1–T0.3（坐标系 / velocity / Python）
-2. **写** T1.1 Gateway echo（半天级）
-3. **联调** T1.3–T1.4 客户端 WebSocket（已完成：Godot spike）
+1. **建模** T2.1：最小 MJCF（平地 + 自建盒子机甲），无头 `mj_step` 10s 稳定
+2. **接入** T2.2：Gateway 接 MuJoCo，`cmd`→ctrl、`state`←qpos（关掉假积分）
+3. **落盘** T2.5：录制 `sessions/<id>/header.json` + `frames.jsonl` ≥10s
 
 ---
 

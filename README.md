@@ -1,10 +1,12 @@
 # MineWorld
 
 > Godot 世界编辑 + MuJoCo 机甲物理权威 + WebSocket 桥接的仿真娱乐与遥操数据采集底座
+>
+> 做的不是游戏，也不是仿真器，而是「用游戏壳规模化采集真物理人类遥操数据」的管道。
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | 规划 / 文档先行 |
+| **状态** | POC-A（M1 连通）已通过 / POC-B（真仿真）进行中 |
 | **创建日期** | 2026-07-17 |
 | **定位** | 「头号玩家」式初始底座：可编辑共享世界 + 真物理机体 + 可回放的人类行为档案 |
 
@@ -16,7 +18,7 @@
 
 ---
 
-## 快速开始（POC-A Gateway）
+## 快速开始（POC-A）
 
 ```bash
 cd mineworld
@@ -27,7 +29,14 @@ python gateway/echo_server.py          # ws://127.0.0.1:8765
 python scripts/ws_smoke_test.py        # 期望 smoke OK
 ```
 
-详见 [gateway/README.md](gateway/README.md)。客户端连同一地址（T1.3–T1.4，已完成：现行基线 Godot，见 [docs/adr/003-client-engine-godot.md](docs/adr/003-client-engine-godot.md)）。
+客户端（Godot 4，连同一地址 `ws://127.0.0.1:8765`）：
+
+```bash
+godot --path godot/spike              # 或编辑器 Import godot/spike/project.godot 后 F5
+godot --headless --path godot/spike --script res://headless/smoke_client.gd   # 无头验收 smoke OK
+```
+
+详见 [gateway/README.md](gateway/README.md) 与 [godot/spike/README.md](godot/spike/README.md)。客户端引擎选型见 [docs/adr/003-client-engine-godot.md](docs/adr/003-client-engine-godot.md)。
 
 ---
 
