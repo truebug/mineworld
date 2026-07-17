@@ -22,8 +22,8 @@
 
 | ID | 问题 | 备注 | 状态 |
 |----|------|------|------|
-| C1 | 契约文件由谁生成 | MVP 手写 JSON；P1 GDevelop 扩展 | Open |
-| C2 | 坐标系与单位 | **Closed**：米 · 右手系 · **Z-up**；GDevelop 侧映射（`11` D1） | Closed |
+| C1 | 契约文件由谁生成 | MVP 手写 JSON；P1 Godot 编辑器插件读 `.tscn` | Open |
+| C2 | 坐标系与单位 | **Closed**：米 · 右手系 · **Z-up**；客户端（Godot）侧映射（`11` D1；实现于 `godot/spike/scripts/mech_puppet.gd`） | Closed |
 | C3 | 静态障碍精度 | **Closed（POC）**：盒体近似 | Closed |
 | C4 | `game_logic_only` 物体是否进入录制 | 影响训练分布声明 | Open |
 
@@ -56,7 +56,8 @@
 |----|------|------|------|
 | E1 | mineworld 是否并入数聚球 monorepo | 当前独立目录 `projects/mineworld` | Open |
 | E2 | Gateway 语言 | **Closed**：Python 3.11+（`11` D3） | Closed |
-| E3 | CI 导出 GDevelop | gdexporter 版本锁定 | Open |
+| E2b | 客户端引擎 | **Closed**：Godot 4（[adr/003](adr/003-client-engine-godot.md)；GDevelop 已评估并归档） | Closed |
+| E3 | CI 导出客户端 | Godot `--export-release` + 导出模板版本锁定；无头 smoke 已可跑 | Open |
 
 ---
 

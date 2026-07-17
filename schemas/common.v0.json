@@ -43,7 +43,7 @@
       "type": "string",
       "description": "Coordinate frame id. Default world is mineworld_zup_m.",
       "default": "mineworld_zup_m",
-      "examples": ["mineworld_zup_m", "gdevelop_display"]
+      "examples": ["mineworld_zup_m", "client_display"]
     },
     "vec2": {
       "type": "object",

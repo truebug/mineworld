@@ -14,7 +14,7 @@ MuJoCo 在本项目中是 **机甲与契约内物理实体的唯一权威**：
 
 - 关节位置/速度、基座位姿、接触
 - 固定 `dt` 步进
-- 无头运行，不依赖 GDevelop 渲染
+- 无头运行，不依赖客户端渲染
 
 ---
 
@@ -112,7 +112,7 @@ Gateway 读取 [02-scene-contract.md](02-scene-contract.md)：
 | `pms-system/platform/viser-gateway/examples/mujoco_g1/` | MuJoCo + 网关/可视化模式 |
 | `demos/*/unitree_rl_mjlab/` | 仿真目录结构与第三方 MJCF |
 
-MineWorld 网关可复用「Python + MuJoCo step + WS」模式；**Viewer 由 GDevelop 承担**，不必强绑 viser。
+MineWorld 网关可复用「Python + MuJoCo step + WS」模式；**Viewer 由 Godot 承担**，不必强绑 viser。
 
 ---
 

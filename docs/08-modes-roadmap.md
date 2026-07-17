@@ -14,7 +14,7 @@
 | 模式 | 数据/能力 |
 |------|-----------|
 | 行为克隆 / IL | 通关成功轨迹作正样本 |
-| 层次策略 | GDevelop 任务子目标 + MuJoCo 低层控制 |
+| 层次策略 | Godot 任务子目标 + MuJoCo 低层控制 |
 | 固定评测场 | 同契约 + 同 seed 横向比人机/模型 |
 | 人在环纠偏 | 失败关卡人工接管补数据 |
 
@@ -23,7 +23,7 @@
 | 模式 | 说明 |
 |------|------|
 | 机甲对战 / 协作任务 | 爽感来自关卡与反馈，底层真动力学 |
-| 解谜闯关 | 任务系统由 GDevelop 编排 |
+| 解谜闯关 | 任务系统由 Godot 编排 |
 | 大师回放 / 幽灵 | 录制轨迹作对手或教学 |
 | 观众模式 | 只看 state 驱动 Viewer，不采输入 |
 
@@ -49,7 +49,7 @@
 | 控制 | 一种 `control_mode`（建议 `velocity`） |
 | 网络 | 单客户端 ↔ 单 Gateway ↔ 单 MuJoCo |
 | 录制 | header.json + frames.jsonl |
-| 客户端 | GDevelop HTML5 预览或导出 |
+| 客户端 | Godot 桌面预览或导出（Web 后置，见 [adr/003](adr/003-client-engine-godot.md)） |
 
 ### 2.1 用户旅程
 
@@ -82,7 +82,7 @@
 
 - [x] Gateway echo / 假 state（`gateway/echo_server.py`）
 - [x] `scripts/ws_smoke_test.py` 冒烟
-- [x] GDevelop `gdevelop/demo0` + WebSocket：hello/join/WASD 驱动 MechPlayer
+- [x] 客户端 + WebSocket：hello/join/WASD 驱动 MechPlayer（GDevelop demo0 与 Godot spike 各跑通一次；现行基线 `godot/spike`，选型见 [adr/003](adr/003-client-engine-godot.md)）
 
 ### Phase 2 — 真仿真（POC-B，下一步）
 
@@ -100,7 +100,7 @@
 
 - [ ] 多副本 Gateway
 - [ ] 学习/评测 API
-- [ ] 资产管线（Blender → GDevelop + 契约）
+- [ ] 资产管线（Blender → Godot + 契约）
 
 ---
 
@@ -108,7 +108,7 @@
 
 | 里程碑 | 验收 |
 |--------|------|
-| M1 连通 | GDevelop 与 Gateway WS 互通 JSON |
+| M1 连通 | 客户端（Godot）与 Gateway WS 互通 JSON |
 | M2 真物理 | 机甲位姿由 MuJoCo 驱动，非本地假移动 |
 | M3 可录可放 | 一次完整会话可落盘并用脚本回放 |
 | M4 可玩 | 一关完整任务流程（进关→操控→结算） |
@@ -120,6 +120,6 @@
 | 风险 | 缓解 |
 |------|------|
 | JSON 状态带宽过大 | 增量 state、降频、关节子集 |
-| GDevelop/MuJoCo 坐标系不一致 | 契约中统一右手系与单位（米） |
+| 客户端/MuJoCo 坐标系不一致 | 契约中统一右手系与单位（米）；映射集中在傀儡层 |
 | 双世界漂移 | 严格 physics_role 分类 |
 | 确定性回放失败 | 录 `mujoco_version` + seed + 模型哈希 |

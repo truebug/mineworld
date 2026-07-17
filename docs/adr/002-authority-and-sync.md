@@ -17,7 +17,7 @@
 
 1. **机甲及标注为 `mujoco_authoritative` 的实体**：位姿与关节状态以 MuJoCo 为准。
 2. **仿真 `tick`** 为全系统时间 SSOT；`t_sim = tick * dt`。
-3. **GDevelop** 对权威实体仅做插值/外推展示，不在本地积分物理。
+3. **客户端（Godot）** 对权威实体仅做插值/外推展示，不在本地积分物理。
 4. **cmd** 带客户端 `tick` 或时间戳，Gateway 按到达顺序并入当前或下一仿真步（具体队列策略在 Gateway 实现中文档化）。
 5. **录制** 以 Gateway 侧合并后的 cmd + state 为准，不采信客户端自报状态。
 

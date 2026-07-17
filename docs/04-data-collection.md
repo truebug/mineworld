@@ -97,14 +97,14 @@ Schema：[`schemas/recording-session.v0.json`](../schemas/recording-session.v0.j
 ## 6. 回放
 
 1. 读 `header.json` 重建契约与初始状态。
-2. 按 `frames.jsonl` 的 `tick` 驱动 MuJoCo 重放或 GDevelop 幽灵显示。
+2. 按 `frames.jsonl` 的 `tick` 驱动 MuJoCo 重放或 Godot 幽灵显示。
 3. 可选：仅回放 `cmd` + 契约，在 MuJoCo 中**开环重算**以验证确定性。
 
 ---
 
-## 7. 与 GDevelop 的关系
+## 7. 与客户端（Godot）的关系
 
-- GDevelop **不**负责持久化录制；仅发送 `cmd`、展示 `state`。
+- Godot **不**负责持久化录制；仅发送 `cmd`、展示 `state`。
 - 任务完成/失败由 Gateway 判定并写入 `event`，避免客户端作弊。
 
 ---

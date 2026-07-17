@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mineworld.local/schemas/scene-contract.v0.json",
   "title": "MineWorld Scene Contract v0",
-  "description": "Maps a GDevelop level to MuJoCo-authoritative entities. Open for optional fields and extensions; required core stays small.",
+  "description": "Maps a Godot level to MuJoCo-authoritative entities. Open for optional fields and extensions; required core stays small.",
   "type": "object",
   "required": ["contract_version", "level_id", "mech_spawns"],
   "properties": {

@@ -1,4 +1,9 @@
-# demo0 · GDevelop POC-A 联调说明
+# demo0 · GDevelop POC-A 联调说明（Legacy）
+
+> **存档说明（2026-07-17）**：客户端引擎已切换为 Godot 4，见
+> [`docs/adr/003-client-engine-godot.md`](../../docs/adr/003-client-engine-godot.md)。
+> 本工程保留为 GDevelop 时代 POC-A 的历史证据，**不再演进**；
+> 现行客户端基线为 [`godot/spike/`](../../godot/spike/README.md)。
 
 工程：`gdevelop/demo0/GlossyDemo0.json`（场景名 **Game Scene**）
 

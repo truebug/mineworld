@@ -5,7 +5,10 @@
 | **状态** | Accepted（2026-07-17 评审通过） |
 | **日期** | 2026-07-17 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **关联** | [01-architecture.md](01-architecture.md) · [09-todo.md](09-todo.md) · [adr/001](adr/001-dual-engine-split.md) · [adr/002](adr/002-authority-and-sync.md) |
+| **关联** | [01-architecture.md](01-architecture.md) · [09-todo.md](09-todo.md) · [adr/001](adr/001-dual-engine-split.md) · [adr/002](adr/002-authority-and-sync.md) · [adr/003](adr/003-client-engine-godot.md) |
+
+> **2026-07-17 后续**：客户端引擎已由 GDevelop 切换为 **Godot 4**（[adr/003](adr/003-client-engine-godot.md)）。
+> 本文中所有 `GDevelop` 现应读作「Godot 客户端」；M1 已在 Godot spike 上复验通过（见 §7.1 与 `godot/spike/`）。
 
 ---
 
@@ -23,7 +26,7 @@
 
 ## 1. POC 一句话
 
-> 在 **本地单机** 上跑通：GDevelop 客户端 ↔ Python Gateway ↔（先假后真）MuJoCo，玩家 `velocity` 遥操可见，并落一段可回放的 `frames.jsonl`。
+> 在 **本地单机** 上跑通：Godot 客户端 ↔ Python Gateway ↔（先假后真）MuJoCo，玩家 `velocity` 遥操可见，并落一段可回放的 `frames.jsonl`。
 
 不证明「头号玩家世界」；只证明 **集成风险可接受**。
 
@@ -36,7 +39,7 @@
 | # | 风险点 | 验证方式 |
 |---|--------|----------|
 | V1 | **连通** | hello / join / cmd / state 双向 JSON 跑通 |
-| V2 | **权威** | 机甲位姿来自 MuJoCo（或 POC 中期假积分→末期真仿真），非仅 GDevelop 本地物理 |
+| V2 | **权威** | 机甲位姿来自 MuJoCo（或 POC 中期假积分→末期真仿真），非仅客户端本地物理 |
 | V3 | **时序** | 固定 `dt`；客户端对 `state` 做简单插值，肉眼可接受 |
 | V4 | **落盘** | `header.json` + `frames.jsonl` ≥10s，脚本能读出基座轨迹 |
 
@@ -44,12 +47,12 @@
 
 | 不做 | 理由 |
 |------|------|
-| 多人联机 / GDevelop Multiplayer 桥 | 与仿真通道无关 |
+| 多人联机 / 引擎自带 Multiplayer 桥 | 与仿真通道无关 |
 | 场景契约从编辑器自动导出 | 手写 `tutorial_01.json` 足够 |
 | 任务系统完备、第二关、UI 打磨 | MVP 再做 |
 | TLS / 账号 / 计费 / 脱敏合规 | 生产前 |
 | 关节级 50Hz 全量优化、state_delta | 先通再压 |
-| 自托管 GDevelop SaaS 编辑器 | 用桌面版本地工程 |
+| 自托管编辑器 SaaS | 用桌面版本地工程 |
 | 多 Worker / 水平扩展 | Phase 4 |
 
 ---
@@ -58,7 +61,7 @@
 
 | ID | 项 | POC 默认 | 可复议时机 |
 |----|-----|----------|------------|
-| D1 | 坐标系 | **米 · 右手系 · Z-up**（对齐 MuJoCo）；GDevelop 侧做一次轴映射 | MVP 前若映射成本过高 |
+| D1 | 坐标系 | **米 · 右手系 · Z-up**（对齐 MuJoCo）；客户端侧做一次轴映射 | MVP 前若映射成本过高 |
 | D2 | 控制模式 | **`velocity`**：`vx`, `vy`, `yaw_rate` | 需要关节 IL 数据时加 `joint_targets` |
 | D3 | Gateway | **Python 3.11+**，单进程；本地 `ws://127.0.0.1:8765` | 上生产再拆 |
 | D4 | 仿真步长 | **`dt = 0.02`（50Hz）**；`state` 广播 **20Hz**（每 2–3 tick） | 压测后微调 |
@@ -74,7 +77,7 @@
 POC-A（连通，~2 天）            POC-B（真仿真+落盘，~3 天）
 ─────────────────────          ─────────────────────────────
 Gateway echo + 假 state        MuJoCo 盒子机甲 mj_step
-GDevelop WS 收发               cmd → ctrl，state ← qpos
+Godot WS 收发                  cmd → ctrl，state ← qpos
 假机甲可见移动                  take_control + JSONL 录制
 验收：M1                       验收：M2 + M3（最小）
 ```
@@ -85,7 +88,7 @@ GDevelop WS 收发               cmd → ctrl，state ← qpos
 
 ```text
 ┌──────────────────┐     WS JSON      ┌──────────────────────┐
-│ GDevelop Desktop │◄────────────────►│ gateway/echo_server  │
+│ Godot Desktop    │◄────────────────►│ gateway/echo_server  │
 │ + WebSocket      │   cmd / state    │ (Python, in-process  │
 │   Client         │                  │  kinematic integrator│
 └──────────────────┘                  │  — NO MuJoCo yet)    │
@@ -98,7 +101,7 @@ GDevelop WS 收发               cmd → ctrl，state ← qpos
 
 ```text
 ┌──────────────────┐     WS JSON      ┌──────────────────────┐
-│ GDevelop Viewer  │◄────────────────►│ gateway/app.py       │
+│ Godot Viewer     │◄────────────────►│ gateway/app.py       │
 │ 3D puppet only   │                  │ session · protocol   │
 └──────────────────┘                  │ recorder · contract  │
                                       └──────────┬───────────┘
@@ -113,7 +116,7 @@ GDevelop WS 收发               cmd → ctrl，state ← qpos
                                       └──────────────────────┘
 ```
 
-**禁止叉路**：不要在 GDevelop 内嵌 MuJoCo；不要用 Multiplayer 同步位姿；不要把录制写在客户端。
+**禁止叉路**：不要在 Godot 内嵌 MuJoCo；不要用引擎自带 Multiplayer 同步位姿；不要把录制写在客户端。
 
 ---
 
@@ -125,7 +128,7 @@ POC 通过后，**不改拓扑**，只把假积分换成真仿真并补任务闭
 
 ```text
                     ┌─────────────────────────────────────┐
-                    │         GDevelop Client             │
+                    │           Godot Client              │
                     │  Level shell · Input · HUD · Puppet │
                     └─────────────────┬───────────────────┘
                                       │ WSS/WS  protocol v0.1
@@ -146,10 +149,10 @@ POC 通过后，**不改拓扑**，只把假积分换成真仿真并补任务闭
 
 | 组件 | 做 | 不做 |
 |------|----|------|
-| GDevelop | 关卡呈现、输入→cmd、state→傀儡、任务 UI 展示 | 机甲权威物理、持久化录制 |
+| Godot | 关卡呈现、输入→cmd、state→傀儡、任务 UI 展示 | 机甲权威物理、持久化录制 |
 | Gateway | 会话、契约加载、控制映射、广播、录制、目标判定 | 关卡美术、账号 |
 | MuJoCo | `mj_step`、机甲+盒体障碍 | 渲染、任务叙事 |
-| Contract | spawn、障碍盒、终点 trigger | 完整 `game.json` |
+| Contract | spawn、障碍盒、终点 trigger | 完整客户端场景（`.tscn`） |
 
 ### 5.3 目录约定（实现必须落这里）
 
@@ -163,7 +166,8 @@ mineworld/
 ├── mujoco/
 │   ├── models/           # MJCF
 │   └── scripts/          # 无头/本地调试
-├── gdevelop/             # 本地工程（可 git-lfs 大资源另议）
+├── godot/                # 客户端工程（spike 已有；大资源另议 git-lfs）
+├── gdevelop/             # Legacy：GDevelop 时代 POC-A 存档（不再演进，ADR-003）
 ├── recordings/           # gitignore；本地会话产出
 └── scripts/              # replay / validate-contract
 ```
@@ -173,7 +177,7 @@ mineworld/
 ```text
 Input → cmd ──► Gateway ──► MuJoCo.ctrl
                      │
-                     ├──► state (20Hz) ──► GDevelop puppet
+                     ├──► state (20Hz) ──► Godot puppet
                      ├──► event (async) ──► HUD / 任务
                      └──► recorder (cmd+state+event @ tick)
 ```
@@ -225,10 +229,10 @@ Client                    Gateway                     MuJoCo
 
 ### 7.1 POC-A 通过（M1）
 
-- [ ] `gateway` 可启动，日志打印 `listening ws://127.0.0.1:8765`
-- [ ] 独立脚本或 wscat 能完成 hello→join→收 state
-- [ ] GDevelop 预览：连接成功、键盘发 cmd、3D 对象随 state 移动
-- [ ] 协议字段与 `03` 草案一致（无临时私货字段，或已回写文档）
+- [x] `gateway` 可启动，日志打印 `listening ws://127.0.0.1:8765`
+- [x] 独立脚本或 wscat 能完成 hello→join→收 state（`scripts/ws_smoke_test.py`；另有 Godot 无头脚本 `godot/spike/headless/smoke_client.gd`，均 `smoke OK`）
+- [x] 客户端预览：连接成功、键盘发 cmd、3D 对象随 state 移动（GDevelop demo0 与 Godot spike 各验证一次；现行基线 Godot，ADR-003）
+- [x] 协议字段与 `03` 草案一致（无临时私货字段，或已回写文档）
 
 ### 7.2 POC-B 通过（M2 + 最小 M3）
 
@@ -262,7 +266,7 @@ Client                    Gateway                     MuJoCo
 
 1. 同意 §2 Out of Scope 吗？有无必须提前塞进 POC 的项？
 2. 接受 §3 D1–D7 默认吗？（尤其 **Z-up**、**velocity**）
-3. POC 时长：5 天还是 10 天？谁负责 GDevelop / Gateway？
+3. POC 时长：5 天还是 10 天？谁负责客户端 / Gateway？
 4. 机甲模型：自建盒子机甲 vs 直接挂现有 MJCF？
 5. 通过后：ADR-001/002 → Accepted；`10-open-questions` 关闭对应项。
 
@@ -271,7 +275,7 @@ Client                    Gateway                     MuJoCo
 | 项 | 决议 | 日期 |
 |----|------|------|
 | Out of Scope | **不再追加**；POC 保持简洁 | 2026-07-17 |
-| D1 坐标系 | **接受**：米 · 右手系 · Z-up；GDevelop 侧映射 | 2026-07-17 |
+| D1 坐标系 | **接受**：米 · 右手系 · Z-up；客户端侧映射 | 2026-07-17 |
 | D2 控制模式 | **接受**：`velocity`（vx, vy, yaw_rate） | 2026-07-17 |
 | D3 Gateway | **接受**：Python 3.11+ 单进程 | 2026-07-17 |
 | D4–D5 / D7 | **接受**：dt=0.02、state 20Hz、本地录制、手写契约 | 2026-07-17 |

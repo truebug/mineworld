@@ -1,6 +1,6 @@
 # MineWorld 文档索引
 
-本目录收录 GDevelop + MuJoCo 融合底座的设计文档，按阅读顺序排列。
+本目录收录 Godot + MuJoCo 融合底座的设计文档，按阅读顺序排列。
 
 ## 阅读顺序（首次）
 
@@ -15,7 +15,7 @@
 
 ## 实施参考
 
-- [05-gdevelop.md](05-gdevelop.md)
+- [05-godot.md](05-godot.md)
 - [06-mujoco.md](06-mujoco.md)
 - [07-tooling.md](07-tooling.md)
 
@@ -23,6 +23,7 @@
 
 - [adr/001-dual-engine-split.md](adr/001-dual-engine-split.md)
 - [adr/002-authority-and-sync.md](adr/002-authority-and-sync.md)
+- [adr/003-client-engine-godot.md](adr/003-client-engine-godot.md)
 
 ## 治理
 

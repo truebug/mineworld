@@ -11,7 +11,7 @@
 
 ## 1. 设计原则
 
-1. **字符串 JSON**：对齐 GDevelop WebSocket Client（不支持二进制）。
+1. **字符串 JSON**：客户端引擎无关的最小公约数（Godot `WebSocketPeer` 文本帧；二进制留作未来优化）。
 2. **信封稳定、载荷可长**：顶层 `type` / `session_id` / `tick` / `t_sim` / `payload` / `extensions`；新能力进 payload 或 `extensions`。
 3. **开放枚举**：`event_type`、`control_mode`、`action` 允许自定义 snake_case；未知键消费者忽略。
 4. **仿真 tick 为时间轴**：`t_sim ≈ tick * dt`。
@@ -168,13 +168,13 @@ Client/Gateway --{ type: "bye" }--> 关闭
 
 ---
 
-## 8. GDevelop 侧实现要点
+## 8. 客户端（Godot）侧实现要点
 
-1. 安装 **WebSocket Client** 扩展。
-2. 连接成功后解析 `hello`，存 `session_id` 到场景变量。
-3. 每帧或定时器：读输入 → 组 `cmd` JSON → `Send data to the server`。
-4. `An event was received`：解析 `type`，`state` 更新 3D 对象位置/旋转；`event` 驱动任务 UI。
-5. 复杂 JSON 解析可用 **JavaScript Code 事件** 或封成自定义扩展（推荐）。
+1. 用内置 **`WebSocketPeer`** 连接（参考实现：`godot/spike/scripts/ws_client.gd`）。
+2. 连接成功后解析 `hello`，存 `session_id`。
+3. 定时（POC 为 20Hz）：读输入 → 组 `cmd` JSON → `send_text`。
+4. 收包按 `type` 分发：`state` 驱动傀儡插值（`mech_puppet.gd`），`event` 驱动任务 UI。
+5. 坐标映射集中在傀儡层：`godot = (x, z, -y)`，`rotation.y = yaw`（D1 Z-up → Y-up）。
 
 ---
 

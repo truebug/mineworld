@@ -4,7 +4,7 @@
 |------|-----|
 | **状态** | Draft |
 | **日期** | 2026-07-17 |
-| **关联 ADR** | [adr/001-dual-engine-split.md](adr/001-dual-engine-split.md) · [adr/002-authority-and-sync.md](adr/002-authority-and-sync.md) |
+| **关联 ADR** | [adr/001-dual-engine-split.md](adr/001-dual-engine-split.md) · [adr/002-authority-and-sync.md](adr/002-authority-and-sync.md) · [adr/003-client-engine-godot.md](adr/003-client-engine-godot.md) |
 | **POC / MVP 落地** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md)（范围、冻结默认、验收；本文保留完整职责说明） |
 
 ---
@@ -13,7 +13,7 @@
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                    GDevelop 客户端（Viewer + 游戏壳）          │
+│                    Godot 客户端（Viewer + 游戏壳）             │
 │  关卡/任务/UI/输入/相机/3D 表现傀儡                             │
 └───────────────────────────┬─────────────────────────────────┘
                             │ WebSocket (JSON 文本)
@@ -34,7 +34,7 @@
 
 ## 2. 组件职责
 
-### 2.1 GDevelop 客户端
+### 2.1 Godot 客户端
 
 | 负责 | 不负责 |
 |------|--------|
@@ -45,9 +45,9 @@
 
 **技术要点**：
 
-- 导出 **HTML5** 作为轻客户端；桌面导出可选。
-- 使用 **WebSocket Client** 扩展（或自定义 JS 扩展）与网关通信。
-- 内置 **Multiplayer** 扩展用于玩家联机，**不**作为 MuJoCo 桥接通道。
+- MVP 以**桌面原生预览/导出**为主；Web 导出后置评估（包体与 COOP/COEP 要求，见 [adr/003](adr/003-client-engine-godot.md)）。
+- 使用内置 **`WebSocketPeer`** 与网关通信（封装见 `godot/spike/scripts/ws_client.gd`）。
+- 引擎自带 Multiplayer 能力用于玩家联机，**不**作为 MuJoCo 桥接通道。
 
 ### 2.2 仿真网关（Gateway）
 
@@ -76,13 +76,13 @@
 ### 3.1 控制流（玩家 → 仿真）
 
 ```text
-输入设备 → GDevelop 事件/变量 → WS cmd → Gateway → MuJoCo ctrl
+输入设备 → Godot 输入动作 → WS cmd → Gateway → MuJoCo ctrl
 ```
 
 ### 3.2 状态流（仿真 → 呈现）
 
 ```text
-MuJoCo qpos/qvel/contact → Gateway 打包 state → WS → GDevelop 更新 3D 对象
+MuJoCo qpos/qvel/contact → Gateway 打包 state → WS → Godot 更新 3D 对象
 ```
 
 ### 3.3 录制流（旁路）
@@ -95,8 +95,8 @@ cmd + state + event + 任务进度 → Gateway Recorder → 存储（带 session
 
 ## 4. 权威与一致性原则
 
-1. **机甲动力学状态以 MuJoCo 为准**；GDevelop 仅做插值与外推展示。
-2. **装饰性物体**（纯视觉、无训练价值）可仅存在于 GDevelop，不进入 MuJoCo。
+1. **机甲动力学状态以 MuJoCo 为准**；Godot 仅做插值与外推展示。
+2. **装饰性物体**（纯视觉、无训练价值）可仅存在于 Godot，不进入 MuJoCo。
 3. **影响物理或训练分布的障碍/可交互物**必须通过场景契约进入 MuJoCo，或明确标注为「仅游戏逻辑」。
 4. **时间基准**：仿真 `tick` 为 SSOT；客户端用 `tick` + 插值，不用各自 `Date.now()` 对齐物理。
 
@@ -107,7 +107,7 @@ cmd + state + event + 任务进度 → Gateway Recorder → 存储（带 session
 ## 5. 部署视图（目标态）
 
 ```text
-[CDN / 静态托管]  GDevelop HTML5 导出包
+[CDN / 托管]      Godot 客户端导出包
         │
         ▼
 [WS Gateway 服务]  ←→  [MuJoCo Worker Pool]
@@ -116,12 +116,12 @@ cmd + state + event + 任务进度 → Gateway Recorder → 存储（带 session
 [录制存储]              [场景契约 / MJCF 仓库]
 ```
 
-本地开发：GDevelop 预览 + 本机 Gateway + 本机 MuJoCo 进程。
+本地开发：Godot 预览 + 本机 Gateway + 本机 MuJoCo 进程。
 
 ---
 
 ## 6. 非目标（架构层）
 
-- 不把 GDevelop 编辑器本身部署为 SaaS（除非单独评估内网编辑器需求）。
-- 不用 GDevelop Multiplayer 同步机甲物理状态。
-- 不在 GDevelop 内嵌 MuJoCo 原生库（职责分离，WS 桥接）。
+- 不把 Godot 编辑器本身部署为 SaaS（除非单独评估内网编辑器需求）。
+- 不用引擎自带 Multiplayer 同步机甲物理状态。
+- 不在 Godot 内嵌 MuJoCo 原生库（职责分离，WS 桥接）。

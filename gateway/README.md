@@ -45,7 +45,13 @@ python scripts/ws_smoke_test.py
 
 详见 `docs/03-websocket-protocol.md`、`schemas/ws-messages.v0.json`。
 
-## GDevelop
+## 客户端
 
-预览里 WebSocket Client 连接到：`ws://127.0.0.1:8765`  
-（预览与本机 Gateway 同机时用 `127.0.0.1`；勿用 `localhost` 若扩展解析异常。）
+现行客户端为 Godot（`godot/spike/`），连接 `ws://127.0.0.1:8765`；无头验收：
+
+```bash
+godot --headless --path godot/spike --script res://headless/smoke_client.gd   # 期望 smoke OK
+```
+
+Legacy：GDevelop `gdevelop/demo0`（存档，见 `docs/adr/003-client-engine-godot.md`）。  
+（客户端与本机 Gateway 同机时用 `127.0.0.1`；勿用 `localhost` 若解析异常。）

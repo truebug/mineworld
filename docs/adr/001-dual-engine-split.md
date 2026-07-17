@@ -1,8 +1,8 @@
-# ADR-001：双引擎职责分离（GDevelop + MuJoCo）
+# ADR-001：双引擎职责分离（游戏引擎 + MuJoCo）
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Accepted |
+| **状态** | Accepted（客户端引擎选型已由 [ADR-003](003-client-engine-godot.md) 替换为 Godot 4） |
 | **日期** | 2026-07-17 |
 | **确认** | 与 [11-poc-mvp-architecture.md](../11-poc-mvp-architecture.md) §9.1 同日评审通过 |
 | **决策编号** | ADR-MW-001 |
@@ -13,7 +13,11 @@
 
 单一引擎难以同时满足：面向玩家的关卡编辑体验，与面向机器人的关节级物理仿真与数据采集。
 
-## 决策
+## 决策（2026-07-17 修订）
+
+> **修订说明**：「双引擎职责分离」的架构决策**维持不变**——仍是「游戏引擎负责世界编辑/Viewer + MuJoCo 负责权威物理 + Gateway/WS 为唯一边界」。
+> 但游戏引擎的具体选型已由 **GDevelop 替换为 Godot 4**，缘由与 POC 验证过程见 [ADR-003](003-client-engine-godot.md)。
+> 下文保留原始记录，`GDevelop` 一词现应读作「Godot 4」。
 
 采用 **双引擎架构**：
 
