@@ -1,0 +1,106 @@
+[gd_scene load_steps=14 format=3 uid="uid://b0mineworldspike1"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/ws_client.gd" id="2_ws"]
+[ext_resource type="Script" path="res://scripts/mech_puppet.gd" id="3_puppet"]
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
+sky_top_color = Color(0.18, 0.22, 0.3, 1)
+sky_horizon_color = Color(0.35, 0.38, 0.45, 1)
+ground_bottom_color = Color(0.1, 0.1, 0.12, 1)
+ground_horizon_color = Color(0.3, 0.3, 0.33, 1)
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.7, 0.75, 0.8, 1)
+ambient_light_energy = 0.4
+
+[sub_resource type="StandardMaterial3D" id="mat_ground"]
+albedo_color = Color(0.35, 0.38, 0.36, 1)
+roughness = 0.9
+
+[sub_resource type="PlaneMesh" id="mesh_ground"]
+material = SubResource("mat_ground")
+size = Vector2(16, 8)
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.72, 0.45, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="mesh_wall"]
+material = SubResource("mat_wall")
+size = Vector3(0.2, 1, 2)
+
+[sub_resource type="StandardMaterial3D" id="mat_zone"]
+albedo_color = Color(0.2, 0.8, 0.4, 0.35)
+transparency = 1
+
+[sub_resource type="BoxMesh" id="mesh_zone"]
+material = SubResource("mat_zone")
+size = Vector3(2, 2, 2)
+
+[sub_resource type="CapsuleMesh" id="mesh_mech"]
+radius = 0.3
+height = 1.0
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.353553, 0.612372, 0, 0.866025, 0.5, -0.707107, -0.353553, 0.612372, 0, 8, 0)
+shadow_enabled = true
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 0)
+mesh = SubResource("mesh_ground")
+
+[node name="Wall01" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, 0)
+mesh = SubResource("mesh_wall")
+
+[node name="FinishZone" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1, 0)
+mesh = SubResource("mesh_zone")
+
+[node name="MechPlayer" type="Node3D" parent="."]
+script = ExtResource("3_puppet")
+entity_id = "mech_player"
+interp_delay = 0.05
+
+[node name="Body" type="MeshInstance3D" parent="MechPlayer"]
+mesh = SubResource("mesh_mech")
+
+[node name="FrontMarker" type="MeshInstance3D" parent="MechPlayer"]
+transform = Transform3D(0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.05, 0.4, 0.2, 0)
+mesh = SubResource("mesh_zone")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 5, 10, 10)
+
+[node name="WsClient" type="Node" parent="."]
+script = ExtResource("2_ws")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="PanelContainer" type="PanelContainer" parent="Hud"]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 460.0
+offset_bottom = 180.0
+
+[node name="MarginContainer" type="MarginContainer" parent="Hud/PanelContainer"]
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Label" type="Label" parent="Hud/PanelContainer/MarginContainer"]
+text = "MineWorld Spike
+connecting..."

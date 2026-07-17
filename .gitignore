@@ -15,3 +15,7 @@ recordings/
 # GDevelop local exports / caches (if any)
 gdevelop/**/Exported/
 *.tmp
+
+# Godot editor / import caches
+godot/**/.godot/
+.godot/
