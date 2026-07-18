@@ -60,13 +60,17 @@ godot --path godot/spike          # 或直接运行主场景
 
 ## 4. 输入映射
 
-| 键 | 动作 | 映射到 cmd |
+| 键 | 动作 | 映射到 cmd（机体系，Z-up，前向 +X） |
 |----|------|-----------|
 | W / S | move_forward / move_back | `vx = ±1.0` |
-| A / D | move_left / move_right | `vy = ∓1.0`（机体坐标） |
-| Q / E | turn_left / turn_right | `yaw_rate = ±1.0` |
+| Q / E | strafe_left / strafe_right | `vy = ±1.0`（+vy = 左平移） |
+| A / D | turn_ccw / turn_cw | `yaw_rate = ±1.0`（+ = 逆时针） |
 
 cmd 上行频率 20Hz（与 state 下行对齐）；松手发零速。
+绑定用 `physical_keycode`，macOS 中文输入法切换布局不影响 WASD/QE。
+
+**焦点提示**：从编辑器 F6/▶ 启动后，需先**点击一次游戏画面**让窗口获得键盘焦点，
+按键才会进入 Input 系统（编辑器内联运行的正常行为，导出独立包无此问题）。
 
 ## 5. M1 验收对照
 

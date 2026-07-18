@@ -7,6 +7,8 @@ const MOVE_SPEED := 1.0
 const TURN_SPEED := 1.0
 const CMD_HZ := 20.0
 
+@export var level_id := "tutorial_01"
+
 # Untyped on purpose: global class_name registration needs an editor scan
 # (.godot/global_script_class_cache.cfg), which a fresh headless run lacks.
 @onready var ws = $WsClient
@@ -34,7 +36,7 @@ func _on_hello(payload: Dictionary) -> void:
 	_hello = payload
 	_session_id = ws.session_id
 	print("[MW] hello session=%s payload=%s" % [_session_id, payload])
-	ws.join("tutorial_01", "godot_spike")
+	ws.join(level_id, "godot_spike")
 
 
 func _on_scene(payload: Dictionary) -> void:
@@ -75,8 +77,9 @@ func _process(delta: float) -> void:
 
 func _send_velocity_cmd() -> void:
 	var vx := Input.get_axis("move_back", "move_forward") * MOVE_SPEED
-	var vy := Input.get_axis("move_left", "move_right") * MOVE_SPEED
-	var yaw_rate := Input.get_axis("turn_right", "turn_left") * TURN_SPEED
+	# Body frame (Z-up, forward +X): +vy = strafe left, +yaw_rate = CCW.
+	var vy := Input.get_axis("strafe_left", "strafe_right") * -MOVE_SPEED
+	var yaw_rate := Input.get_axis("turn_cw", "turn_ccw") * TURN_SPEED
 	ws.send_cmd({
 		"entity_id": "mech_player",
 		"control_mode": "velocity",
@@ -108,5 +111,5 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	if tick >= 0:
 		text += "tick=%d t_sim=%.2f\n" % [tick, t_sim]
 		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [mech.position.x, mech.position.z, mech.rotation.y]
-	text += "\nWASD move | QE turn | authority: gateway"
+	text += "\nWS move | QE strafe | AD turn | authority: gateway"
 	hud_label.text = text

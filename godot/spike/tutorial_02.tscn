@@ -1,0 +1,177 @@
+[gd_scene load_steps=22 format=3 uid="uid://b0mineworldtuto02"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/ws_client.gd" id="2_ws"]
+[ext_resource type="Script" path="res://scripts/mech_puppet.gd" id="3_puppet"]
+[ext_resource type="PackedScene" path="res://assets/city/building-a.glb" id="4_citya"]
+[ext_resource type="PackedScene" path="res://assets/city/building-b.glb" id="5_cityb"]
+[ext_resource type="PackedScene" path="res://assets/city/building-c.glb" id="6_cityc"]
+[ext_resource type="PackedScene" path="res://assets/city/building-d.glb" id="7_cityd"]
+[ext_resource type="PackedScene" path="res://assets/city/building-skyscraper-a.glb" id="8_skya"]
+[ext_resource type="PackedScene" path="res://assets/city/building-skyscraper-b.glb" id="9_skyb"]
+[ext_resource type="PackedScene" path="res://assets/platformer/block-grass-long.glb" id="10_plong"]
+[ext_resource type="PackedScene" path="res://assets/platformer/block-grass-large.glb" id="11_plarge"]
+[ext_resource type="PackedScene" path="res://assets/platformer/block-grass-large-slope.glb" id="12_pslope"]
+[ext_resource type="PackedScene" path="res://assets/platformer/crate.glb" id="13_crate"]
+[ext_resource type="PackedScene" path="res://assets/platformer/flag.glb" id="14_flag"]
+[ext_resource type="PackedScene" path="res://assets/platformer/coin-gold.glb" id="15_coin"]
+[ext_resource type="PackedScene" path="res://assets/platformer/tree-pine.glb" id="16_tree"]
+[ext_resource type="PackedScene" path="res://assets/platformer/arrow.glb" id="17_arrow"]
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
+sky_top_color = Color(0.35, 0.55, 0.85, 1)
+sky_horizon_color = Color(0.75, 0.8, 0.88, 1)
+ground_bottom_color = Color(0.25, 0.24, 0.23, 1)
+ground_horizon_color = Color(0.55, 0.54, 0.5, 1)
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.85, 0.88, 0.92, 1)
+ambient_light_energy = 0.5
+
+[sub_resource type="StandardMaterial3D" id="mat_zone"]
+albedo_color = Color(0.2, 0.8, 0.4, 0.35)
+transparency = 1
+
+[sub_resource type="BoxMesh" id="mesh_zone"]
+material = SubResource("mat_zone")
+size = Vector3(1, 1, 1)
+
+[node name="Tutorial02" type="Node3D"]
+script = ExtResource("1_main")
+level_id = "tutorial_02"
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.353553, 0.612372, 0, 0.866025, 0.5, -0.707107, -0.353553, 0.612372, 0, 10, 0)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.642788, 0.766044, 0, -0.766044, 0.642788, 5, 8, 9)
+
+[node name="Course" type="Node3D" parent="."]
+
+[node name="Crate01" type="Node3D" parent="Course"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 0)
+metadata/mujoco_entity_id = "crate_01"
+
+[node name="Mesh" parent="Course/Crate01" instance=ExtResource("13_crate")]
+
+[node name="Block01" type="Node3D" parent="Course"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+metadata/mujoco_entity_id = "block_01"
+
+[node name="Mesh" parent="Course/Block01" instance=ExtResource("10_plong")]
+
+[node name="Block02" type="Node3D" parent="Course"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 4.6, 0, 0)
+metadata/mujoco_entity_id = "block_02"
+
+[node name="Mesh" parent="Course/Block02" instance=ExtResource("10_plong")]
+
+[node name="Slope01" type="Node3D" parent="Course"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 6.2, 0, 0)
+metadata/mujoco_entity_id = "slope_01"
+
+[node name="Mesh" parent="Course/Slope01" instance=ExtResource("12_pslope")]
+
+[node name="Crate02" type="Node3D" parent="Course"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.4, 0, -0.8)
+metadata/mujoco_entity_id = "crate_02"
+
+[node name="Mesh" parent="Course/Crate02" instance=ExtResource("13_crate")]
+
+[node name="Plaza01" type="Node3D" parent="Course"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 0)
+
+[node name="Mesh" parent="Course/Plaza01" instance=ExtResource("11_plarge")]
+
+[node name="FinishFlag" type="Node3D" parent="Course"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.5, 0.5)
+
+[node name="Mesh" parent="Course/FinishFlag" instance=ExtResource("14_flag")]
+
+[node name="FinishZone" type="MeshInstance3D" parent="Course"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 1, 0)
+mesh = SubResource("mesh_zone")
+
+[node name="Coin01" type="Node3D" parent="Course"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.8, 0)
+
+[node name="Mesh" parent="Course/Coin01" instance=ExtResource("15_coin")]
+
+[node name="City" type="Node3D" parent="."]
+
+[node name="BuildingA" parent="City" instance=ExtResource("4_citya")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+
+[node name="BuildingB" parent="City" instance=ExtResource("5_cityb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 5.5)
+
+[node name="BuildingC" parent="City" instance=ExtResource("6_cityc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 5)
+
+[node name="BuildingD" parent="City" instance=ExtResource("7_cityd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 5.5)
+
+[node name="SkyA" parent="City" instance=ExtResource("8_skya")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 7)
+
+[node name="BuildingA2" parent="City" instance=ExtResource("4_citya")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1.5, 0, -5)
+
+[node name="BuildingB2" parent="City" instance=ExtResource("5_cityb")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 4.5, 0, -5.5)
+
+[node name="BuildingD2" parent="City" instance=ExtResource("7_cityd")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 7.5, 0, -5)
+
+[node name="SkyB" parent="City" instance=ExtResource("9_skyb")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 11, 0, -7)
+
+[node name="Tree01" parent="City" instance=ExtResource("16_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, 3)
+
+[node name="Tree02" parent="City" instance=ExtResource("16_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0, 3.2)
+
+[node name="Tree03" parent="City" instance=ExtResource("16_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, -3)
+
+[node name="MechPlayer" type="Node3D" parent="."]
+script = ExtResource("3_puppet")
+entity_id = "mech_player"
+interp_delay = 0.05
+
+[node name="Body" parent="MechPlayer" instance=ExtResource("13_crate")]
+
+[node name="FrontArrow" parent="MechPlayer" instance=ExtResource("17_arrow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.55, 0)
+
+[node name="WsClient" type="Node" parent="."]
+script = ExtResource("2_ws")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="PanelContainer" type="PanelContainer" parent="Hud"]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 460.0
+offset_bottom = 180.0
+
+[node name="MarginContainer" type="MarginContainer" parent="Hud/PanelContainer"]
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Label" type="Label" parent="Hud/PanelContainer/MarginContainer"]
+text = "MineWorld Spike - tutorial_02
+connecting..."

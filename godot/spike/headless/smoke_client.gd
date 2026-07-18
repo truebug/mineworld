@@ -1,5 +1,6 @@
 ## Headless M1 acceptance for the Godot spike.
 ## Run: godot --headless --path godot/spike --script res://headless/smoke_client.gd
+## Optional level override: ... --script res://headless/smoke_client.gd -- tutorial_02
 ## Exits 0 on "smoke OK", 1 on failure. Mirrors scripts/ws_smoke_test.py.
 extends SceneTree
 
@@ -8,6 +9,7 @@ const GLOBAL_TIMEOUT_MS := 10000
 
 var _ws := WebSocketPeer.new()
 var _session_id := ""
+var _level_id := "tutorial_01"
 var _phase := "connect"
 var _saw_event := false
 var _last_x := 0.0
@@ -16,6 +18,9 @@ var _start_msec := 0
 
 
 func _init() -> void:
+	var user_args := OS.get_cmdline_user_args()
+	if user_args.size() > 0:
+		_level_id = user_args[0]
 	print("[smoke] connecting ws://127.0.0.1:8765")
 	_start_msec = Time.get_ticks_msec()
 	var err := _ws.connect_to_url("ws://127.0.0.1:8765")
@@ -55,7 +60,7 @@ func _handle(text: String) -> void:
 		"hello":
 			_session_id = str(msg.get("session_id", ""))
 			print("hello ok ", _session_id, " ", msg.get("payload", {}))
-			_send_raw({"type": "join", "session_id": _session_id, "payload": {"level_id": "tutorial_01", "player_name": "godot_headless"}})
+			_send_raw({"type": "join", "session_id": _session_id, "payload": {"level_id": _level_id, "player_name": "godot_headless"}})
 		"scene":
 			var entities: Array = msg.get("payload", {}).get("entities", [])
 			print("scene ok ", msg.get("payload", {}).get("level_id", ""), " ", entities.size())
