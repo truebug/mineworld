@@ -101,7 +101,7 @@ Godot WS 收发                  cmd → ctrl，state ← qpos
 
 ```text
 ┌──────────────────┐     WS JSON      ┌──────────────────────┐
-│ Godot Viewer     │◄────────────────►│ gateway/app.py       │
+│ gateway/echo_server.py
 │ 3D puppet only   │                  │ session · protocol   │
 └──────────────────┘                  │ recorder · contract  │
                                       └──────────┬───────────┘

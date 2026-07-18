@@ -5,10 +5,10 @@ MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authorit
 ## Project Structure & Module Organization
 
 - `docs/` — design docs (`00-vision.md` … `11-poc-mvp-architecture.md`); decisions in `docs/adr/`; `docs/09-todo.md` is the execution entry point.
-- `gateway/` — POC-A WebSocket gateway (`echo_server.py`), Python 3.11+, fake kinematic state (no MuJoCo yet).
-- `godot/` — Godot client projects; `spike/` is the verified M1 baseline (`project.godot` + `*.tscn` + `*.gd`).
+- `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, dual physics backends (`--physics fake|mujoco`). MuJoCo mode (T2.2) loads MJCF and appends contract `static_obstacles` as static geoms (T2.3).
+- `godot/` — Godot client projects; `spike/` is the verified baseline (`project.godot` + `*.tscn` + `*.gd`). Includes `main.tscn` (tutorial_01) and `tutorial_02.tscn` (city-level, Kenney CC0 assets). CameraRig provides follow-orbit with RMB/MMB drag and wheel zoom.
 - `gdevelop/` — archived GDevelop POC-A project (`demo0/`); do not extend.
-- `mujoco/` — MJCF models and headless sim scripts (placeholder).
+- `mujoco/` — MJCF models (`models/mechs/box_mech.xml`, `models/world_flat.xml`) and headless scripts (`scripts/headless_run.py`). Mech is slide x/y + hinge z + velocity servos.
 - `schemas/` — JSON Schema SSOT (draft 2020-12), files named `*.v0.json`.
 - `examples/` — sample contracts, WS messages, and recordings used for validation.
 - `scripts/` — helper scripts (`ws_smoke_test.py`).
@@ -21,6 +21,14 @@ pip install -r gateway/requirements.txt    # install deps (websockets)
 python gateway/echo_server.py              # serve ws://127.0.0.1:8765
 python scripts/ws_smoke_test.py            # end-to-end check, expect "smoke OK"
 ajv validate -s schemas/ws-messages.v0.json -d examples/ws/hello.json
+```
+### MuJoCo acceptance (T2.1–T2.3, run from repo root)
+
+```bash
+.venv/bin/python mujoco/scripts/headless_run.py              # T2.1 PASS
+.venv/bin/python gateway/echo_server.py --physics mujoco     # serve with real physics
+.venv/bin/python scripts/ws_smoke_test.py                    # regression → smoke OK
+.venv/bin/python scripts/replay_xy.py recordings/sessions/<id>/frames.jsonl  # replay tool
 ```
 
 `ajv` requires `npm i -g ajv-cli ajv-formats`; add `-c ajv-formats` for schemas using formats.
@@ -44,5 +52,7 @@ No unit-test framework is configured yet. Every gateway change must pass `python
 
 - `schemas/` is the SSOT: consumers must ignore unknown keys, put extensions in the `extensions` bag (`vendor.*` / `mw.*`), and never set `additionalProperties: false` on v0 payloads.
 - Coordinates are meters, right-handed, Z-up; frozen rates: `dt=0.02`, sim 50 Hz, state broadcast 20 Hz.
+- Godot→MuJoCo coordinate mapping (see `godot/spike/scripts/mech_puppet.gd`):
+  `godot_pos = Vector3(mw.x, mw.z, -mw.y)` and `rotation.y = mw.yaw`.
 - Never commit `.venv/`, `recordings/`, or `gdevelop/**/Exported/`; bind the gateway to `127.0.0.1` for local dev.
 - Third-party assets: only CC0/MIT (CC-BY requires attribution); every asset commit must include an `ASSETS.md` ledger entry — never commit NC/SA-licensed content.

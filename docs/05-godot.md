@@ -50,6 +50,7 @@
 ## 4. 坐标系映射（D1 已冻结）
 
 契约/协议为 **米 · 右手系 · Z-up**；Godot 为 **右手系 · Y-up**。映射集中在傀儡脚本一处（`godot/spike/scripts/mech_puppet.gd`）：
+相机由 `scripts/camera_rig.gd` 提供：每帧跟随机甲位置、世界系 yaw/pitch（机甲自转不甩镜头）、右键/中键拖动环绕、滚轮 3–30m 缩放。纯表现层，不上行任何协议数据。
 
 ```gdscript
 godot_pos = Vector3(mw.x, mw.z, -mw.y)
@@ -83,9 +84,10 @@ godot --headless --path godot/spike --script res://headless/smoke_client.gd
 godot/
 └── spike/               # POC-A M1 镜像（见 godot/spike/README.md）
     ├── project.godot
+    ├── tutorial_02.tscn          # city-level (Kenney assets)
     ├── main.tscn
-    ├── scripts/         # ws_client / mech_puppet / main
-    └── headless/        # 无头验收脚本
+    ├── scripts/         # ws_client / mech_puppet / main / camera_rig
+    └── headless/        # 无头验收脚本（smoke_client.gd）
 ```
 
 后续正式工程建议独立子目录（如 `godot/client/`），spike 保留作回归基线。
@@ -106,5 +108,7 @@ godot/
 - [x] `WebSocketPeer` 连接 Gateway 成功（`hello` 解析、`session_id` 存储）
 - [x] 无头 smoke 通过（M1）
 - [x] 键盘 cmd 驱动 state 回显（WASD/QE）
+- [x] 跟随环绕相机（CameraRig：RMB/MMB 环绕、滚轮缩放）
+- [x] tutorial_02 城市关人工验收（6 实体、Kenney 资产）
 - [ ] 原生导出包验证（P1）
 - [ ] 契约导出编辑器插件（P1）
