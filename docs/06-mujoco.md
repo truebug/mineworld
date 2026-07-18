@@ -99,9 +99,18 @@ MVP 建议从 `velocity` 或少量关节 `joint_targets` 开始。
 Gateway 读取 [02-scene-contract.md](02-scene-contract.md)：
 
 1. 加载基础 MJCF（地面 + 机甲）
-2. 按 `static_obstacles` 追加 geom 或 merge 子 XML
+2. 按 `static_obstacles` 追加 geom 或 merge 子 XML（T2.3 已实现：MjSpec 追加 box geom）
 3. 注册 `entity_id` → body/qpos 地址映射
 4. `reset(seed)` 保证可复现
+
+T2.3 落地要点（`gateway/echo_server.py::_build_mujoco_world`）：
+
+- 用 `MjSpec.from_file` 加载基础 MJCF，按契约向 `worldbody` 追加静态 geom
+- 契约 `size` 是 Z-up **[x, y, z] 全边长**；MJCF geom `size` 是半长，入库时除 2
+- 只处理 `physics_role=mujoco_authoritative` 且 `shape=box` 的障碍；其余跳过并告警
+- 经 MjSpec 追加的 geom **不继承** box_mech.xml 的 `<default>`，
+  须显式设置 `contype=1 conaffinity=1 friction=[0.8 0.02 0.01]`
+- 验收：机甲以 vx=1.5 冲向 wall_01（x=5），停于 x≈4.65（0.25 机体半长 + 0.1 墙半深）
 
 ---
 

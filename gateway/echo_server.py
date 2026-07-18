@@ -2,7 +2,8 @@
 
 Physics backends (--physics):
   fake   - in-process kinematic integrator (POC-A; regression fallback)
-  mujoco - real MuJoCo sim (POC-B / T2.2): cmd -> ctrl, state <- qpos
+  mujoco - real MuJoCo sim (POC-B / T2.2): cmd -> ctrl, state <- qpos.
+           Contract static_obstacles are appended as static geoms (T2.3).
 """
 
 from __future__ import annotations
@@ -37,6 +38,7 @@ DEFAULT_PORT = 8765
 DEFAULT_CONTRACT = (
     Path(__file__).resolve().parents[1] / "examples" / "contracts" / "tutorial_01.json"
 )
+OBSTACLE_FRICTION = (0.8, 0.02, 0.01)  # aligned with ground/chassis defaults
 
 
 def _yaw_to_quat(yaw: float) -> dict[str, float]:
@@ -167,6 +169,9 @@ class MujocoMech(MechState):
         d = self._data
         self.x = float(d.qpos[self._qx])
         self.y = float(d.qpos[self._qy])
+        # qpos is the kinematic truth (slide x/y + hinge z); xpos needs a
+        # forward pass to re-sync after mj_step for the same tick.
+        mujoco.mj_forward(self._model, d)
         self.z = float(d.xpos[mujoco.mj_name2id(self._model, mujoco.mjtObj.mjOBJ_BODY, "chassis")][2])
         self.yaw = float(d.qpos[self._qyaw])
 
@@ -258,10 +263,49 @@ class EchoGateway:
                 raise SystemExit("mujoco not installed: pip install mujoco==3.6.0")
             if model_path is None:
                 raise SystemExit("--physics mujoco requires --model")
-            self.mj_model = mujoco.MjModel.from_xml_path(str(model_path))
+            self.mj_model = self._build_mujoco_world(model_path)
             # Single shared MjData: fine for POC single-client; multi-session
             # needs one MjData per session (or a worker pool).
             self.mj_data = mujoco.MjData(self.mj_model)
+
+    def _build_mujoco_world(self, model_path: Path) -> "mujoco.MjModel":
+        """Load base MJCF and append contract static_obstacles as static geoms.
+
+        Only shape=box is supported at POC stage. Contract size is the full
+        edge length; MJCF geom size is the half-extent. Obstacles with a
+        physics_role other than mujoco_authoritative are viewer-only and
+        skipped here.
+        """
+        spec = mujoco.MjSpec.from_file(str(model_path))
+        obstacles = self.contract.get("static_obstacles") or []
+        appended = 0
+        for ob in obstacles:
+            if ob.get("physics_role", "mujoco_authoritative") != "mujoco_authoritative":
+                continue
+            if ob.get("shape") != "box":
+                LOG.warning("obstacle %s: shape %r not supported, skipped", ob.get("id"), ob.get("shape"))
+                continue
+            pose = ob.get("pose") or {}
+            quat = _yaw_to_quat(float(pose.get("yaw", 0.0)))
+            geom = spec.worldbody.add_geom(
+                name=str(ob.get("id", f"obstacle_{appended}")),
+                type=mujoco.mjtGeom.mjGEOM_BOX,
+                size=[float(s) / 2.0 for s in ob["size"]],
+                pos=[float(pose.get("x", 0.0)), float(pose.get("y", 0.0)), float(pose.get("z", 0.0))],
+                quat=[quat["qw"], quat["qx"], quat["qy"], quat["qz"]],
+            )
+            # <default> in box_mech.xml does not reach geoms added via MjSpec.
+            geom.contype = 1
+            geom.conaffinity = 1
+            geom.friction = list(OBSTACLE_FRICTION)
+            appended += 1
+        LOG.info(
+            "mujoco world: %d/%d static_obstacles appended from contract level=%s",
+            appended,
+            len(obstacles),
+            self.contract.get("level_id"),
+        )
+        return spec.compile()
 
     async def handler(self, ws: ServerConnection) -> None:
         session_id = str(uuid.uuid4())

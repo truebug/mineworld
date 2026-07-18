@@ -20,6 +20,14 @@ python gateway/echo_server.py
 # 契约: examples/contracts/tutorial_01.json
 ```
 
+真物理模式（MuJoCo，含契约静态障碍碰撞）：
+
+```bash
+python gateway/echo_server.py --physics mujoco \
+    --contract examples/contracts/tutorial_01.json
+# hello.features 将包含 "mujoco"；契约 static_obstacles(box) 会作为静态 geom 加入仿真
+```
+
 可选参数：
 
 ```bash

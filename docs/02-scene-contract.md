@@ -107,7 +107,7 @@ mech_spawns:
 static_obstacles:
   - id: wall_01
     shape: box
-    size: [2, 0.2, 1]
+    size: [0.2, 2, 1]  # Z-up: [x, y, z] 全边长；挡路栅栏应长边沿 Y
     pose: { x: 5, y: 0, z: 0.5, yaw: 0 }
     physics_role: mujoco_authoritative
 
