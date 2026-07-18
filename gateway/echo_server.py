@@ -307,34 +307,42 @@ class EchoGateway:
                     continue
                 session.mech.step(DT)
                 session.tick += 1
+                try:
+                    for ev in session.pending_events:
+                        await send_json(
+                            session.ws,
+                            envelope(
+                                "event",
+                                session_id=session.session_id,
+                                tick=session.tick,
+                                payload=ev,
+                            ),
+                        )
+                    session.pending_events.clear()
 
-                for ev in session.pending_events:
-                    await send_json(
-                        session.ws,
-                        envelope(
-                            "event",
-                            session_id=session.session_id,
-                            tick=session.tick,
-                            payload=ev,
-                        ),
+                    if session.tick % STATE_EVERY_N_TICKS == 0:
+                        await send_json(
+                            session.ws,
+                            envelope(
+                                "state",
+                                session_id=session.session_id,
+                                tick=session.tick,
+                                payload={
+                                    "kind": "full",
+                                    "entities": [session.mech.to_entity_state()],
+                                },
+                            ),
+                        )
+                except websockets.ConnectionClosed:
+                    # Client vanished between the liveness check above and the
+                    # send; the handler's finally block removes the session.
+                    # Never let a dead session kill the loop for the others.
+                    session.closed = True
+                except Exception:
+                    LOG.exception(
+                        "sim_loop send failed session=%s", session.session_id
                     )
-                session.pending_events.clear()
-
-                if session.tick % STATE_EVERY_N_TICKS != 0:
-                    continue
-
-                await send_json(
-                    session.ws,
-                    envelope(
-                        "state",
-                        session_id=session.session_id,
-                        tick=session.tick,
-                        payload={
-                            "kind": "full",
-                            "entities": [session.mech.to_entity_state()],
-                        },
-                    ),
-                )
+                    session.closed = True
 
 
 async def run(host: str, port: int, contract_path: Path) -> None:
