@@ -17,6 +17,7 @@ const CMD_HZ := 20.0
 
 var _session_id := ""
 var _hello: Dictionary = {}
+var _last_error := ""
 var _cmd_timer := 0.0
 var _last_log_tick := -1
 
@@ -37,6 +38,7 @@ func _on_hello(payload: Dictionary) -> void:
 	_session_id = ws.session_id
 	print("[MW] hello session=%s payload=%s" % [_session_id, payload])
 	ws.join(level_id, "godot_spike")
+	_update_hud()
 
 
 func _on_scene(payload: Dictionary) -> void:
@@ -49,7 +51,9 @@ func _on_event(payload: Dictionary) -> void:
 
 
 func _on_gateway_error(payload: Dictionary) -> void:
+	_last_error = "%s: %s" % [payload.get("code", "?"), payload.get("message", "")]
 	push_warning("[MW] gateway error: %s" % payload)
+	_update_hud()
 
 
 func _on_link_state(_connected: bool) -> void:
@@ -111,5 +115,7 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	if tick >= 0:
 		text += "tick=%d t_sim=%.2f\n" % [tick, t_sim]
 		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [mech.position.x, mech.position.z, mech.rotation.y]
+	if _last_error != "":
+		text += "\n! gateway error: %s" % _last_error
 	text += "\nWS move | QE strafe | AD turn | authority: gateway"
 	hud_label.text = text
