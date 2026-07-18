@@ -77,7 +77,7 @@
 |----|------|------|------|
 | T3.1 | 终点触发器 → `objective_complete` | 网关判定，防客户端作弊 | [ ] |
 | T3.2 | `scripts/replay-session.py` | 读 JSONL 画轨迹 / 可选开环重算 | [ ] |
-| T3.3a | 素材准备：Kenney `platformer-kit` + `city-kit-commercial`（CC0，slug 已验证）；登记 `ASSETS.md`；参照工程 Truck Town（`07` §8） | 资产入库 + 台账条目 | [ ] |
+| T3.3a | 素材准备：Kenney `platformer-kit` + `city-kit-commercial` 已入库（`assets/kenney/`，26MB，GLB/OBJ/FBX，含 License.txt）；`ASSETS.md` 已登记；Truck Town 按需 `gh-proxy` 克隆参照（不入库） | 资产入库 + 台账条目 | [x] |
 | T3.3b | Godot 拼 `tutorial_02` 场景（`05` §6.1 标准工作流） | 场景可 F5 漫游 | [ ] |
 | T3.3c | 手写契约 `examples/contracts/tutorial_02.json` + 节点 `mujoco_entity_id` 对齐 | ajv 校验通过 | [ ] |
 | T3.3d | 联调：`--contract tutorial_02` + 客户端进新关 | 接管 → 到达终点 → `objective_complete` | [ ] |

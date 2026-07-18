@@ -19,4 +19,5 @@
 
 | 资产 | 来源 | 许可 | 用途 / 存放位置 | 署名要求 | 入库日期 |
 |------|------|------|----------------|----------|----------|
-| —（尚无条目） | | | | | |
+| Platformer Kit 4.1 | [kenney.nl/assets/platformer-kit](https://kenney.nl/assets/platformer-kit) | CC0 | `tutorial_02` 平台跳跃素材；`assets/kenney/platformer-kit/`（含 License.txt） | 无 | 2026-07-18 |
+| City Kit (Commercial) 2.1 | [kenney.nl/assets/city-kit-commercial](https://kenney.nl/assets/city-kit-commercial) | CC0 | 城市/建筑环境素材；`assets/kenney/city-kit-commercial/`（含 License.txt） | 无 | 2026-07-18 |
