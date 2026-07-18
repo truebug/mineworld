@@ -1,0 +1,81 @@
+{
+  "contract_version": "0.1",
+  "level_id": "tutorial_02",
+  "seed": 7,
+  "frame": "mineworld_zup_m",
+  "sim": {
+    "dt": 0.02
+  },
+  "mech_spawns": [
+    {
+      "id": "mech_player",
+      "model_ref": "mechs/box_mech.xml",
+      "pose": { "x": 0, "y": 0, "z": 0.5, "yaw": 0 },
+      "player_slot": 0,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
+  "static_obstacles": [
+    {
+      "id": "crate_01",
+      "shape": "box",
+      "size": [0.5, 0.5, 0.5],
+      "pose": { "x": 1.5, "y": 0.0, "z": 0.25, "yaw": 0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "block_01",
+      "shape": "box",
+      "size": [1.0, 1.0, 2.0],
+      "pose": { "x": 3.0, "y": 0.0, "z": 1.0, "yaw": 0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "block_02",
+      "shape": "box",
+      "size": [2.0, 1.0, 1.5],
+      "pose": { "x": 4.6, "y": 0.0, "z": 0.75, "yaw": 0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "slope_01",
+      "shape": "box",
+      "size": [1.6, 2.0, 1.0],
+      "pose": { "x": 6.2, "y": 0.0, "z": 0.5, "yaw": 0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "crate_02",
+      "shape": "box",
+      "size": [0.5, 0.5, 0.5],
+      "pose": { "x": 7.4, "y": 0.8, "z": 0.25, "yaw": 0 },
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
+  "objectives": [
+    {
+      "id": "obj_reach_zone",
+      "type": "reach_region",
+      "target": "trigger_finish",
+      "description": "穿过旗门到达终点区"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "trigger_finish",
+      "type": "aabb",
+      "min": [8.5, -1.0, 0.0],
+      "max": [9.5, 1.0, 2.0]
+    }
+  ],
+  "tags": ["poc", "tutorial", "city"],
+  "extensions": {
+    "mw.client_scene": "res://tutorial_02.tscn",
+    "mw.assets": {
+      "city": "Kenney City Kit (Commercial) 2.1, CC0",
+      "platformer": "Kenney Platformer Kit 4.1, CC0"
+    },
+    "mw.note": "Obstacle box sizes are visual-fit estimates for POC-B; refine when MuJoCo geoms land (T2.3)."
+  }
+}
