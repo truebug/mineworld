@@ -60,7 +60,7 @@
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | T2.1 | `mujoco/`：最小 MJCF（平地 + 盒子机甲，slide+hinge + 速度舵机） | 无头 10s 稳定；三组 cmd 配置轨迹与理论一致（`mujoco/scripts/headless_run.py` → T2.1 PASS） | [x] |
-| T2.2 | Gateway 接入 MuJoCo：`cmd`→ctrl，`state`←qpos | 位姿由仿真驱动，非假数据 | [ ] |
+| T2.2 | Gateway 接入 MuJoCo：`cmd`→ctrl，`state`←qpos（`--physics mujoco`，`MujocoMech`） | 位姿由仿真驱动；Python + Godot 双冒烟在真物理下原样通过（`features: ["mujoco"]`）；`--physics fake` 保留回归回退 | [x] |
 | T2.3 | 按契约加载 `static_obstacles`（盒体） | 碰到墙有物理反应 | [ ] |
 | T2.4 | `take_control` / `release_control` | 事件入库与客户端 UI | [ ] |
 | T2.5 | 录制：`sessions/<id>/header.json` + `frames.jsonl` | 单会话 ≥10s 可落盘 | [ ] |

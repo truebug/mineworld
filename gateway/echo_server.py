@@ -1,4 +1,9 @@
-"""MineWorld POC-A WebSocket gateway (fake kinematic state, no MuJoCo)."""
+"""MineWorld POC WebSocket gateway.
+
+Physics backends (--physics):
+  fake   - in-process kinematic integrator (POC-A; regression fallback)
+  mujoco - real MuJoCo sim (POC-B / T2.2): cmd -> ctrl, state <- qpos
+"""
 
 from __future__ import annotations
 
@@ -14,6 +19,11 @@ from typing import Any
 
 import websockets
 from websockets.asyncio.server import ServerConnection, serve
+
+try:  # optional: only --physics mujoco needs it
+    import mujoco
+except ImportError:  # pragma: no cover
+    mujoco = None
 
 LOG = logging.getLogger("mineworld.gateway")
 
@@ -46,6 +56,12 @@ class MechState:
     vy: float = 0.0
     yaw_rate: float = 0.0
     controlled: bool = False
+
+    def reset_pose(self, pose: dict[str, Any]) -> None:
+        self.x = float(pose.get("x", 0.0))
+        self.y = float(pose.get("y", 0.0))
+        self.z = float(pose.get("z", 0.5))
+        self.yaw = float(pose.get("yaw", 0.0))
 
     def apply_cmd(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
         """Apply cmd payload; return events to emit."""
@@ -104,6 +120,70 @@ class MechState:
         }
 
 
+class MujocoMech(MechState):
+    """MuJoCo-backed mech. cmd writes ctrl, state reads MjData.
+
+    The chassis slide joints translate in the parent (world) frame (they
+    compose before the hinge), so the body-frame velocity command must be
+    rotated by the current yaw — same math as the fake integrator.
+    """
+
+    def __init__(self, entity_id: str, model: "mujoco.MjModel", data: "mujoco.MjData") -> None:
+        super().__init__(entity_id)
+        self._model = model
+        self._data = data
+        jnt = lambda n: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, n)
+        self._qx = model.jnt_qposadr[jnt("slide_x")]
+        self._qy = model.jnt_qposadr[jnt("slide_y")]
+        self._qyaw = model.jnt_qposadr[jnt("yaw_z")]
+        self._dx = model.jnt_dofadr[jnt("slide_x")]
+        self._dy = model.jnt_dofadr[jnt("slide_y")]
+        self._dyaw = model.jnt_dofadr[jnt("yaw_z")]
+        self._substeps = max(1, int(round(DT / model.opt.timestep)))
+        self.reset_pose({})
+
+    def reset_pose(self, pose: dict[str, Any]) -> None:
+        super().reset_pose(pose)
+        if not hasattr(self, "_data"):
+            return
+        self._data.qpos[self._qx] = self.x
+        self._data.qpos[self._qy] = self.y
+        self._data.qpos[self._qyaw] = self.yaw
+        self._data.qvel[:] = 0.0
+        self._data.ctrl[:] = 0.0
+        mujoco.mj_forward(self._model, self._data)
+
+    def step(self, dt: float) -> None:
+        if not self.controlled:
+            self._data.ctrl[:] = 0.0
+        else:
+            yaw = float(self._data.qpos[self._qyaw])
+            c, s = math.cos(yaw), math.sin(yaw)
+            self._data.ctrl[0] = c * self.vx - s * self.vy
+            self._data.ctrl[1] = s * self.vx + c * self.vy
+            self._data.ctrl[2] = self.yaw_rate
+        for _ in range(self._substeps):
+            mujoco.mj_step(self._model, self._data)
+        d = self._data
+        self.x = float(d.qpos[self._qx])
+        self.y = float(d.qpos[self._qy])
+        self.z = float(d.xpos[mujoco.mj_name2id(self._model, mujoco.mjtObj.mjOBJ_BODY, "chassis")][2])
+        self.yaw = float(d.qpos[self._qyaw])
+
+    def to_entity_state(self) -> dict[str, Any]:
+        q = _yaw_to_quat(self.yaw)
+        d = self._data
+        return {
+            "entity_id": self.entity_id,
+            "base_pose": {"x": self.x, "y": self.y, "z": self.z, "yaw": self.yaw, **q},
+            "velocities": {
+                "vx": float(d.qvel[self._dx]),
+                "vy": float(d.qvel[self._dy]),
+                "vz": 0.0,
+            },
+        }
+
+
 @dataclass
 class Session:
     session_id: str
@@ -122,13 +202,12 @@ class Session:
             return
         spawn = spawns[0]
         pose = spawn.get("pose") or {}
-        self.mech = MechState(
-            entity_id=spawn.get("id", "mech_player"),
-            x=float(pose.get("x", 0.0)),
-            y=float(pose.get("y", 0.0)),
-            z=float(pose.get("z", 0.5)),
-            yaw=float(pose.get("yaw", 0.0)),
-        )
+        entity_id = spawn.get("id", "mech_player")
+        if self.mech is None or self.mech.entity_id != entity_id:
+            self.mech = MechState(entity_id=entity_id)
+        self.mech.reset_pose(pose)
+        self.mech.controlled = False
+        self.mech.vx = self.mech.vy = self.mech.yaw_rate = 0.0
 
 
 def load_contract(path: Path) -> dict[str, Any]:
@@ -163,13 +242,35 @@ async def send_json(ws: ServerConnection, msg: dict[str, Any]) -> None:
 class EchoGateway:
     """Single-process POC gateway: kinematic integrator + WS fan-out."""
 
-    def __init__(self, contract: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        contract: dict[str, Any],
+        physics: str = "fake",
+        model_path: Path | None = None,
+    ) -> None:
         self.contract = contract
         self.sessions: dict[str, Session] = {}
+        self.physics = physics
+        self.mj_model = None
+        self.mj_data = None
+        if physics == "mujoco":
+            if mujoco is None:
+                raise SystemExit("mujoco not installed: pip install mujoco==3.6.0")
+            if model_path is None:
+                raise SystemExit("--physics mujoco requires --model")
+            self.mj_model = mujoco.MjModel.from_xml_path(str(model_path))
+            # Single shared MjData: fine for POC single-client; multi-session
+            # needs one MjData per session (or a worker pool).
+            self.mj_data = mujoco.MjData(self.mj_model)
 
     async def handler(self, ws: ServerConnection) -> None:
         session_id = str(uuid.uuid4())
         session = Session(session_id=session_id, ws=ws, contract=self.contract)
+        if self.mj_data is not None:
+            spawns = self.contract.get("mech_spawns") or [{}]
+            session.mech = MujocoMech(
+                spawns[0].get("id", "mech_player"), self.mj_model, self.mj_data
+            )
         session.reset_from_contract()
         self.sessions[session_id] = session
         LOG.info("client connected session=%s", session_id)
@@ -186,7 +287,7 @@ class EchoGateway:
                     "sim_hz": SIM_HZ,
                     "state_hz": STATE_HZ,
                     "frame": self.contract.get("frame", "mineworld_zup_m"),
-                    "features": ["fake_kinematics"],
+                    "features": ["fake_kinematics" if self.physics == "fake" else "mujoco"],
                 },
             ),
         )
@@ -345,17 +446,18 @@ class EchoGateway:
                     session.closed = True
 
 
-async def run(host: str, port: int, contract_path: Path) -> None:
+async def run(host: str, port: int, contract_path: Path, physics: str, model_path: Path | None) -> None:
     contract = load_contract(contract_path)
-    gateway = EchoGateway(contract)
+    gateway = EchoGateway(contract, physics=physics, model_path=model_path)
     asyncio.create_task(gateway.sim_loop())
 
     LOG.info(
-        "listening ws://%s:%s contract=%s level=%s",
+        "listening ws://%s:%s contract=%s level=%s physics=%s",
         host,
         port,
         contract_path,
         contract.get("level_id"),
+        physics,
     )
     try:
         async with serve(gateway.handler, host, port):
@@ -384,6 +486,18 @@ def main() -> None:
         default=DEFAULT_CONTRACT,
         help="Path to scene contract JSON",
     )
+    parser.add_argument(
+        "--physics",
+        choices=["fake", "mujoco"],
+        default="fake",
+        help="Physics backend: fake (POC-A fallback) or mujoco (real sim)",
+    )
+    parser.add_argument(
+        "--model",
+        type=Path,
+        default=Path(__file__).resolve().parents[1] / "mujoco" / "models" / "world_flat.xml",
+        help="MJCF model path (required for --physics mujoco)",
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -392,7 +506,7 @@ def main() -> None:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     try:
-        asyncio.run(run(args.host, args.port, args.contract))
+        asyncio.run(run(args.host, args.port, args.contract, args.physics, args.model))
     except KeyboardInterrupt:
         LOG.info("shutdown")
 
