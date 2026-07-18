@@ -86,7 +86,7 @@ mujoco/
 
 | control_mode | MuJoCo 实现思路 |
 |--------------|-----------------|
-| `velocity` | 基座速度跟踪 PD / 轮式约束 |
+| `velocity` | 基座速度跟踪 PD / 轮式约束；POC 实现：slide x/y + hinge z + 速度舵机（`models/mechs/box_mech.xml`）。**注意**：slide 关节平移轴在父系（世界系），Gateway 须按当前 yaw 把机体系 cmd 旋转后再写 `ctrl`（见 `mujoco/scripts/headless_run.py`） |
 | `target_pose` | 操作空间目标 + IK |
 | `joint_targets` | 直接写 actuator / position control |
 
@@ -125,7 +125,7 @@ MineWorld 网关可复用「Python + MuJoCo step + WS」模式；**Viewer 由 Go
 
 ## 9. 检查清单
 
-- [ ] 本机或容器可 `mj_step` 无头运行
-- [ ] 单机甲 + 平地 10s 仿真稳定
-- [ ] 外部 `ctrl` 向量可改变关节/基座行为
+- [x] 本机或容器可 `mj_step` 无头运行（`mujoco==3.6.0`，venv）
+- [x] 单机甲 + 平地 10s 仿真稳定（`headless_run.py` → T2.1 PASS）
+- [x] 外部 `ctrl` 向量可改变关节/基座行为（速度舵机跟踪，三组配置）
 - [ ] 状态可序列化为 JSON 供 WS 发送

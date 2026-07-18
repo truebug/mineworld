@@ -59,7 +59,7 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| T2.1 | `mujoco/`：最小 MJCF（平地 + 简化机甲） | 无头 `mj_step` 10s 稳定 | [ ] |
+| T2.1 | `mujoco/`：最小 MJCF（平地 + 盒子机甲，slide+hinge + 速度舵机） | 无头 10s 稳定；三组 cmd 配置轨迹与理论一致（`mujoco/scripts/headless_run.py` → T2.1 PASS） | [x] |
 | T2.2 | Gateway 接入 MuJoCo：`cmd`→ctrl，`state`←qpos | 位姿由仿真驱动，非假数据 | [ ] |
 | T2.3 | 按契约加载 `static_obstacles`（盒体） | 碰到墙有物理反应 | [ ] |
 | T2.4 | `take_control` / `release_control` | 事件入库与客户端 UI | [ ] |
