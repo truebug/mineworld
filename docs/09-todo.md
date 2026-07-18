@@ -64,6 +64,8 @@
 | T2.3 | 按契约加载 `static_obstacles`（盒体） | 碰到墙有物理反应 | [ ] |
 | T2.4 | `take_control` / `release_control` | 事件入库与客户端 UI | [ ] |
 | T2.5 | 录制：`sessions/<id>/header.json` + `frames.jsonl` | 单会话 ≥10s 可落盘 | [ ] |
+| T2.6 | 传感器最小出口：`state` 带 `joints`/`joint_vels`/`velocities`（来自 `MjData`） | 为 AI 同视图打底（见 `04` §5.1）；非 M2 阻塞项 | [ ] |
+| T2.7 | 输入延迟补偿 v0：cmd 缓冲 1–2 tick（ADR-002 待细化 #1） | 局域网下主观手感可接受即可 | [ ] |
 
 **Phase 2 里程碑（M2+M3）**：真物理驱动 + 可录制。
 
@@ -81,6 +83,7 @@
 | T4.2 | 场景契约从 Godot 编辑器插件导出 | 替代手写 JSON；插件直读 `.tscn` | [ ] |
 | T4.3 | Blender → 资产管线（可选 MCP） | 非 MVP 阻塞项 | [ ] |
 | T4.4 | 学习/评测 API 草案 | 数据对外接口 | [ ] |
+| T4.5 | AI Agent 遥操替换：复用 `cmd` 通道 + `ext.sensor` 视图 | 同一契约下人/机可互换（04 §5.1） | [ ] |
 
 ---
 

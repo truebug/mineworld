@@ -195,3 +195,30 @@ Client/Gateway --{ type: "bye" }--> 关闭
 - `hello.payload.protocol_version`: `"0.1"`（`0.x` 内可加可选字段）
 - 破坏性变更：升 `1.0` 或新 schema 文件；Gateway 拒绝不兼容客户端
 - 扩展规则：[schemas/README.md](../schemas/README.md)
+
+---
+
+## 11. 客户端实现契约（引擎无关）
+
+任何引擎/技术栈只要满足以下 4 条，即可作为客户端接入本协议——客户端可替换性由此保证（实证：[adr/003](adr/003-client-engine-godot.md)，GDevelop→Godot 协议零改动）：
+
+1. **传输**：WebSocket **文本帧**（不要求二进制）。
+2. **流程**：实现生命周期 `hello → join → scene → 稳态（cmd 上行 / state 下行 / event 异步）→ bye`。
+3. **纪律**：权威实体傀儡**只插值不积分**；控制量只走 `cmd` 上行；时间轴服从 `tick`（[adr/002](adr/002-authority-and-sync.md)）。
+4. **映射**：完成一次坐标系换算（`mineworld_zup_m` → 本引擎轴向），集中在傀儡层一处实现。
+
+## 12. 契约的三层体系与修改流程
+
+| 层 | 文件 | 作用 |
+|----|------|------|
+| 语义层 | 本文档 | 给人读：原则、生命周期、示例、版本政策 |
+| **SSOT 层** | [`schemas/ws-messages.v0.json`](../schemas/ws-messages.v0.json) | 机器校验：所有消息的合法形状（JSON Schema 2020-12） |
+| 实例层 | [`examples/ws/*.json`](../examples/ws/) | 具体消息样例，`ajv validate` 对着 SSOT 层跑 |
+
+**修改契约 = 三层一起改**：改 Schema → 补/改示例 → `ajv validate` 通过 → 双端冒烟（`scripts/ws_smoke_test.py` + `godot --headless --path godot/spike --script res://headless/smoke_client.gd`）→ 回写本文档。
+
+**两层契约勿混淆**：
+
+- **WS 消息契约**（本文）：管「怎么说话」，引擎无关——换引擎时不动。
+- **场景契约**（[02](02-scene-contract.md) / `schemas/scene-contract.v0.json`）：管「世界是什么」——换关卡时动它；经 `join(level_id)` 加载、`scene` 消息下发摘要。
+- 加消息能力：只动本契约的 `payload`（或 `ext.*` 先进场实验）。

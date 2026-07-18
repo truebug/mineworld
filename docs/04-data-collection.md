@@ -94,6 +94,20 @@ Schema：[`schemas/recording-session.v0.json`](../schemas/recording-session.v0.j
 
 ---
 
+## 5.1 仿真传感器出口（与真人/AI 同视图）
+
+传感器读数**单向闭环在 MuJoCo**：编码器/IMU/接触等来自 `MjData`，未来视觉类由 MuJoCo 对仿真场景离屏渲染（相机为 MJCF sensor）。出口通道按消费方区分（P1+）：
+
+| 通道 | 消费方 | 说明 |
+|------|--------|------|
+| `state.entities[].joints / joint_vels / velocities` | 客户端呈现 + 录制 | 关节/基座运动学（现有） |
+| `event`（`contact`、`objective_*`） | 任务与统计 | 离散事件（现有） |
+| `ext.sensor` 顶层消息（逃逸舱，P1） | AI Agent / 数据侧 | 连续传感器读数；与真人遥操共享同一 `cmd` 通道构成闭环 |
+
+原则：**真人与 AI Agent 看到的状态视图一致**——AI 复用同一 `cmd` 通道注入控制量，演示数据与策略数据同构可比。
+
+---
+
 ## 6. 回放
 
 1. 读 `header.json` 重建契约与初始状态。
