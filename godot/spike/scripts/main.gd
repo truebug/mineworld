@@ -117,5 +117,5 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [mech.position.x, mech.position.z, mech.rotation.y]
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
-	text += "\nWS move | QE strafe | AD turn | authority: gateway"
+	text += "\nWS move | QE strafe | AD turn | RMB/MMB drag orbit | wheel zoom"
 	hud_label.text = text

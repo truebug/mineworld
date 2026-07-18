@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://b0mineworldtuto02"]
+[gd_scene load_steps=23 format=3 uid="uid://b0mineworldtuto02"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/ws_client.gd" id="2_ws"]
@@ -17,6 +17,7 @@
 [ext_resource type="PackedScene" path="res://assets/platformer/coin-gold.glb" id="15_coin"]
 [ext_resource type="PackedScene" path="res://assets/platformer/tree-pine.glb" id="16_tree"]
 [ext_resource type="PackedScene" path="res://assets/platformer/arrow.glb" id="17_arrow"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="18_camrig"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -53,8 +54,11 @@ environment = SubResource("env")
 transform = Transform3D(0.707107, -0.353553, 0.612372, 0, 0.866025, 0.5, -0.707107, -0.353553, 0.612372, 0, 10, 0)
 shadow_enabled = true
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.642788, 0.766044, 0, -0.766044, 0.642788, 5, 8, 9)
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("18_camrig")
+target_path = NodePath("../MechPlayer")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
 
 [node name="Course" type="Node3D" parent="."]
 

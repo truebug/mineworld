@@ -1,9 +1,10 @@
-[gd_scene load_steps=15 format=3 uid="uid://b0mineworldspike1"]
+[gd_scene load_steps=16 format=3 uid="uid://b0mineworldspike1"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/ws_client.gd" id="2_ws"]
 [ext_resource type="Script" path="res://scripts/mech_puppet.gd" id="3_puppet"]
 [ext_resource type="PackedScene" path="res://assets/platformer/arrow.glb" id="4_arrow"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="5_camrig"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.18, 0.22, 0.3, 1)
@@ -81,8 +82,11 @@ mesh = SubResource("mesh_mech")
 [node name="FrontArrow" parent="MechPlayer" instance=ExtResource("4_arrow")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.55, 0)
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 5, 10, 10)
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("5_camrig")
+target_path = NodePath("../MechPlayer")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
 
 [node name="WsClient" type="Node" parent="."]
 script = ExtResource("2_ws")
