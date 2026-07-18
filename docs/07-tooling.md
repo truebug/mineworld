@@ -113,3 +113,26 @@ Git                 → 工程与契约版本管理
 - [ ] `scripts/export-godot.sh`：`--export-release` 一键导出桌面包
 - [ ] `scripts/validate-contract.sh`：JSON Schema 校验场景契约
 - [ ] `scripts/replay-session.py`：读取 JSONL 回放
+
+---
+
+## 8. 资产来源与许可（2026-07-18 联网验证）
+
+### 8.1 可用来源（实测存活）
+
+| 来源 | 内容 | 许可 | 用途 |
+|------|------|------|------|
+| [godot-demo-projects](https://github.com/godotengine/godot-demo-projects)（官方） | `3d/` 30 个工程：`platformer`、`truck_town`、`squash_the_creeps`；技术演示 `kinematic_character`、`rigidbody_character`、`navigation`、`physics_interpolation`、`ik` | MIT | 关卡组织参照（Truck Town）；**`physics_interpolation`/`kinematic_character` 是 T2.7 延迟补偿与傀儡插值的官方参考** |
+| [Kenney.nl](https://kenney.nl/assets) | 套件（已验证 slug）：`platformer-kit`、`city-kit-commercial`、`racing-kit`、`prototype-textures`、`blocky-characters` | **CC0** | 拼测试关首选；方块模块天然契盒体近似（C3） |
+| [Quaternius.com](https://quaternius.com) | 100+ 低模 packs（robot/mech、带动画角色） | **CC0** | 机甲皮肤、装饰物 |
+| Godot Asset Library（编辑器内 AssetLib） | 模板/插件/演示，API 实时可查 | 混合，逐项看 | 编辑器内直接安装 |
+
+> 提示：GitHub 直连不可用时用镜像 `git clone https://gh-proxy.com/https://github.com/<org>/<repo>`；
+> Kenney 套件 slug 会变动（如 `mini-mechs` 已 404），引用前先探活。
+
+### 8.2 许可护栏（商业数据产品必须遵守）
+
+1. **CC0 / MIT**：直接用（Kenney、Quaternius、Poly Haven、官方 demos、GDQuest）。
+2. **CC-BY**：可用，但必须登记署名 → 仓库根目录 [`ASSETS.md`](../ASSETS.md) 台账。
+3. **禁止**：CC-BY-NC / CC-BY-SA /「仅供个人学习」类许可；Sketchfab 逐项核查。
+4. 每批资产入库 = 资产文件 + `ASSETS.md` 台账条目同提交。
