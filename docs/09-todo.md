@@ -5,25 +5,29 @@
 | **状态** | Living |
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | 本地 Web 私房隔离 + `demo` 同关两人已通；公网 W2 仍暂缓 |
+| **目标** | 多人本机 Demo 已通；**主线转向 Godot↔MuJoCo 场景/模型融合（F0–F2）** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
+| **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
 | **阶段评审** | [12-status-review.md](12-status-review.md) |
 
 勾选约定：`[ ]` 未做 · `[x]` 完成 · `[-]` 取消 · `[~]` 暂缓
 
 ---
 
-## Now（可选短增量）
+## Now（F · Godot ↔ MuJoCo 融合）
 
-> W2.3 / W3 / T2.6 **已完成并本机双浏览器验收**。T2.7、公网 W2.1/2/4 **暂缓**。  
-> 下一项按产品需要三选一，无强制顺序。
+> 公网 W2.1/2/4、T2.7 **暂缓**。  
+> 详设见 [14](14-godot-mujoco-fusion.md)。铁律不变：Godot 不权威、MuJoCo 不叙事。
 
-| ID | 任务 | 备注 | 状态 |
+| ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| — | 机甲外观区分（颜色/标签） | 双端易辨认 | [ ] |
-| — | `demo` 房录制双实体抽检 | frames 含两 mech | [ ] |
-| — | 机甲互撞（共享 MjData） | 改 MJCF；非阻塞 | [ ] |
+| F0 | 机甲 A/B 外观区分（染色 + 头顶标签） | `?room=demo` 一眼可辨 | [x] |
+| F1 | tutorial_01 加 CC0 装饰 / 地面（viewer_only） | 物理冒烟不变；观感提升 | [ ] |
+| F2 | 试点真实 URDF/MJCF → 转 MJCF + `model_ref` | headless + smoke 可控 | [ ] |
+| F3 | Godot 加载同款视觉 mesh（换胶囊） | 位姿仍跟 state | [ ] |
+
+`main` 已含 W2.3 / W3 / T2.6（`4b12b49`）。
 
 ---
 
@@ -37,14 +41,12 @@
 | W3.3 | `join.room_id`（默认私房；`demo` 共享） | 满员 `ROOM_FULL`；各控一台 | [x] |
 | T2.6 | state/录制输出 `joints`(+`joint_vels`) | 样例 + smoke | [x] |
 
-本机双端 e2e（**用 URL，勿依赖 `window.*=...; reload`**）：
+本机双端 e2e：
 
 ```bash
 .venv/bin/python gateway/echo_server.py --no-record
 .venv/bin/python scripts/serve_web_demo.py
-# Chrome / Safari 均打开（先到得 mech_player，后到得 mech_player_b）：
-#   http://127.0.0.1:8080/?room=demo
-# 私房隔离：打开 http://127.0.0.1:8080/ （无 ?room=）
+# http://127.0.0.1:8080/?room=demo
 .venv/bin/python scripts/ws_smoke_test.py
 ```
 
@@ -54,16 +56,7 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| W1.1 | 安装与编辑器同版本的 **Web** 导出模板 | 管理器已安装 Web | [x] |
-| W1.2 | `bash scripts/export_godot.sh web` | `dist/web/index.html` | [x] |
-| W1.3 | `python scripts/serve_web_demo.py` | http://127.0.0.1:8080/ 可开 | [x] |
-| W1.4 | Gateway + 浏览器遥操到终点 | HUD SUCCESS / objective 事件 | [x]（键盘桥 + entity_id；Web 单线程） |
-
-```bash
-bash scripts/export_godot.sh web
-.venv/bin/python gateway/echo_server.py
-.venv/bin/python scripts/serve_web_demo.py
-```
+| W1.1–W1.4 | Web 模板 / 导出 / 托管 / 浏览器遥操 | 见历史 | [x] |
 
 ---
 
@@ -71,10 +64,11 @@ bash scripts/export_godot.sh web
 
 | ID | 任务 | 状态 |
 |----|------|------|
-| W2.1 | HTTPS 静态托管 Web 包 | [~] 公网暂缓 |
-| W2.2 | `wss://` 反代 Gateway | [~] 公网暂缓 |
-| W2.4 | 一页运维/安全说明 | [~] 公网暂缓 |
-| T2.7 | 输入延迟补偿 v0 | [~] 手感暂缓 |
+| W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] |
+| T2.7 | 输入延迟补偿 v0 | [~] |
+| — | 机甲互撞（共享 MjData） | [ ] 可选 |
+| — | `demo` 房录制双实体抽检 | [ ] 可选 |
+| F4 / T4.2 | `.tscn` → 契约导出 | [ ] |
 
 ---
 
@@ -82,13 +76,8 @@ bash scripts/export_godot.sh web
 
 | 里程碑 | 状态 |
 |--------|------|
-| M1 连通 · M2 真物理 · M3 录制 · M4 可玩闭环 | [x] |
-| T3.4 macOS 导出管线 | [x] |
-| Web preset + 本地托管 + 浏览器键盘桥 / entity_id（W1） | [x] |
-| T2.3 契约障碍物进 MuJoCo | [x] |
-| W2.3 会话隔离 · W3 同关两人 · T2.6 joints | [x] |
-
-详细历史勾选见 git 历史与 [12](12-status-review.md)；完整旧表已收敛，避免双源。
+| M1–M4 · T3.4 macOS · W1 Web · T2.3 障碍 | [x] |
+| W2.3 隔离 · W3 同关两人 · T2.6 joints | [x] |
 
 ---
 
@@ -97,9 +86,7 @@ bash scripts/export_godot.sh web
 | ID | 任务 | 备注 | 状态 |
 |----|------|------|------|
 | T3.2 | 开环重放增强 | `replay_xy` 已覆盖轨迹 | [ ] |
-| T3.3\* | tutorial_02 资产/场景 | 已完成大半；终点随 T3.1 | 见历史 |
 | T4.1 | Worker 池 | 与 W2.3 对齐 | [ ] |
-| T4.2 | 契约从 `.tscn` 导出插件 | [ ] |
 | T4.4 / T4.5 | 评测 API / AI 同通道 | [ ] |
 | T4.6 | 动态可交互物 L1 | [ ] |
 
@@ -107,7 +94,7 @@ bash scripts/export_godot.sh web
 
 ## 明确不做（近期）
 
-- 账号 / 计费 / 编辑器 SaaS
-- 用引擎 Multiplayer 同步 MuJoCo 位姿
-- 未做互撞前宣称「物理乱斗」
-- 恢复优先排期 T2.7 / 公网 W2.1–2.4（除非 Demo 要对外）
+- 账号 / 计费 / 编辑器 SaaS  
+- Godot 内嵌 MuJoCo / 引擎 Multiplayer 同步位姿  
+- 未选许可证清晰模型前批量接入「任意 URDF」  
+- 公网 Demo 优先于 F0–F2（除非明确要对外）

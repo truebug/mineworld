@@ -13,7 +13,8 @@
 7. [09-todo.md](09-todo.md) — **可执行待办（当前执行入口）**
 8. [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) — **POC 规格 + MVP 薄架构（讨论入口）**
 9. [12-status-review.md](12-status-review.md) — 阶段回顾与方案评审（2026-07-19）
-10. [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) — **Web / 线上多人 Demo 路线与审核（当前主线）**
+10. [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) — Web / 多人 Demo 路线（W1–W3 本机已通）
+11. [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) — **Godot 场景 ↔ MuJoCo 融合 + URDF/视觉（当前主线）**
 
 ## 实施参考
 
@@ -32,3 +33,4 @@
 - [10-open-questions.md](10-open-questions.md)
 - [12-status-review.md](12-status-review.md)
 - [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md)
+- [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md)

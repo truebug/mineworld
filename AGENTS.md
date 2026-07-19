@@ -1,10 +1,10 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. The project is at POC stage: `schemas/` and `docs/` are the source of truth, and design docs are written in Chinese — keep new docs consistent. The client engine was switched from GDevelop to Godot (see `docs/adr/003-client-engine-godot.md`); `gdevelop/` is archived legacy. Current delivery focus is **Web export → hosted demo → multi-session / multiplayer** (see `docs/13-web-multiplayer-demo.md`); feel/latency polish (T2.7) is deferred.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. The project is at POC stage: `schemas/` and `docs/` are the source of truth, and design docs are written in Chinese — keep new docs consistent. The client engine was switched from GDevelop to Godot (see `docs/adr/003-client-engine-godot.md`); `gdevelop/` is archived legacy. Local Web single-player and `demo` room multiplayer are done (`docs/13-web-multiplayer-demo.md`); current focus is **Godot scene ↔ MuJoCo fusion** (visual parity, URDF/MJCF mech swap — `docs/14-godot-mujoco-fusion.md`). Public HTTPS/wss and feel/latency (T2.7) remain deferred.
 
 ## Project Structure & Module Organization
 
-- `docs/` — design docs (`00-vision.md` … `11-poc-mvp-architecture.md`); decisions in `docs/adr/`; `docs/09-todo.md` is the execution entry point.
+- `docs/` — design docs (`00-vision.md` … `14-godot-mujoco-fusion.md`); decisions in `docs/adr/`; `docs/09-todo.md` is the execution entry point.
 - `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, dual physics backends (`--physics fake|mujoco`). MuJoCo mode (T2.2) loads MJCF and appends contract `static_obstacles` as static geoms (T2.3).
 - `godot/` — Godot client projects; `spike/` is the verified baseline (`project.godot` + `*.tscn` + `*.gd`). Includes `main.tscn` (tutorial_01) and `tutorial_02.tscn` (city-level, Kenney CC0 assets). CameraRig provides follow-orbit with RMB/MMB drag and wheel zoom.
 - `gdevelop/` — archived GDevelop POC-A project (`demo0/`); do not extend.

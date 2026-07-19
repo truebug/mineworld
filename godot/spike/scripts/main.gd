@@ -191,20 +191,25 @@ func _ensure_puppets(entities: Array) -> void:
 		if str(entity.get("kind", "mech")) != "mech":
 			continue
 		var eid := str(entity.get("entity_id", ""))
-		if eid == "" or _puppets.has(eid):
+		if eid == "":
 			continue
-		var copy: Node3D = mech.duplicate()
-		copy.name = "Mech_%s" % eid
-		if copy.has_method("apply_state") or "entity_id" in copy:
+		if not _puppets.has(eid):
+			var copy: Node3D = mech.duplicate()
+			copy.name = "Mech_%s" % eid
 			copy.set("entity_id", eid)
-		add_child(copy)
-		_puppets[eid] = copy
-		print("[MW] spawned puppet entity_id=%s" % eid)
+			add_child(copy)
+			_puppets[eid] = copy
+			print("[MW] spawned puppet entity_id=%s" % eid)
+		var puppet = _puppets[eid]
+		puppet.set("entity_id", eid)
+		if puppet.has_method("apply_team_look"):
+			puppet.apply_team_look()
 	# Keep template entity_id in sync when we were assigned mech_player_b.
 	if _puppets.has(_controlled_entity_id):
 		var p = _puppets[_controlled_entity_id]
-		if p.has_method("apply_state") or "entity_id" in p:
-			p.set("entity_id", _controlled_entity_id)
+		p.set("entity_id", _controlled_entity_id)
+		if p.has_method("apply_team_look"):
+			p.apply_team_look()
 
 
 func _on_event(payload: Dictionary) -> void:

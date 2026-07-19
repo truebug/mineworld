@@ -1,12 +1,23 @@
 ## Visual puppet for a gateway-driven entity.
 ## Buffers the last two base_pose samples and interpolates between them,
 ## delayed by one state interval (standard entity interpolation).
+## Team look: tint + billboard tag by entity_id (A/B for demo room).
 class_name MWMechPuppet
 extends Node3D
 
 ## Must be @export so Web/macOS export packs the scene override.
 @export var entity_id: String = "mech_player"
 var interp_delay := 0.05
+
+## entity_id → body albedo (demo room A/B). Unknown ids stay neutral gray.
+const TEAM_COLORS := {
+	"mech_player": Color(0.22, 0.62, 0.95),
+	"mech_player_b": Color(0.95, 0.48, 0.18),
+}
+const TEAM_TAGS := {
+	"mech_player": "A",
+	"mech_player_b": "B",
+}
 
 var _prev_pos := Vector3.ZERO
 var _prev_yaw := 0.0
@@ -21,6 +32,35 @@ var _wall_at_last_state := 0.0
 var last_mw_x := 0.0
 var last_mw_y := 0.0
 var last_mw_yaw := 0.0
+
+
+func _ready() -> void:
+	apply_team_look()
+
+
+func apply_team_look() -> void:
+	"""Tint Body mesh and show A/B billboard from entity_id."""
+	var color: Color = TEAM_COLORS.get(entity_id, Color(0.65, 0.65, 0.68))
+	var body := get_node_or_null("Body") as MeshInstance3D
+	if body != null:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = color
+		mat.roughness = 0.55
+		mat.metallic = 0.15
+		body.material_override = mat
+	var tag := get_node_or_null("TeamTag") as Label3D
+	if tag == null:
+		tag = Label3D.new()
+		tag.name = "TeamTag"
+		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		tag.font_size = 72
+		tag.outline_size = 10
+		tag.outline_modulate = Color(0, 0, 0, 0.85)
+		tag.position = Vector3(0.0, 1.15, 0.0)
+		tag.pixel_size = 0.012
+		add_child(tag)
+	tag.text = str(TEAM_TAGS.get(entity_id, "?"))
+	tag.modulate = color
 
 
 func apply_state(entity: Dictionary, t_sim: float) -> void:
