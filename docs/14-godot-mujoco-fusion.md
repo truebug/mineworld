@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-19 |
 | **目标** | 在不破坏「Gateway 权威」的前提下，让 Godot 关卡/外观与 MuJoCo 物理世界更一致、更可玩、更可换真机模型 |
-| **关联** | [01](01-architecture.md) · [02](02-scene-contract.md) · [05](05-godot.md) · [06](06-mujoco.md) · [09](09-todo.md) · [15](15-course-correction.md) · [adr/001](adr/001-dual-engine-split.md) · [adr/002](adr/002-authority-and-sync.md) |
+| **关联** | [01](01-architecture.md) · [02](02-scene-contract.md) · [05](05-godot.md) · [06](06-mujoco.md) · [09](09-todo.md) · [15](15-course-correction.md) · [16](16-value-sprint.md) · [adr/001](adr/001-dual-engine-split.md) · [adr/002](adr/002-authority-and-sync.md) |
 
 > 方向来自 W2.3/W3 本机多人验收之后：下一阶段重心从「能连能控」转为 **场景/模型融合 + 可视化提升**，并探索 **真实 URDF/MJCF** 换皮。
 

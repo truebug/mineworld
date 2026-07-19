@@ -4,7 +4,7 @@
 |------|-----|
 | **状态** | Living |
 | **日期** | 2026-07-17 · 续记 2026-07-19 |
-| **纠偏主线** | [15-course-correction.md](15-course-correction.md) |
+| **纠偏主线** | [15-course-correction.md](15-course-correction.md) · [16-value-sprint.md](16-value-sprint.md) |
 
 ---
 
@@ -106,7 +106,7 @@
 - [x] 任务成功/失败判定（`demo_city` reach zone）
 - [x] 回放：Recordings 2D/3D + CSV 导出
 - [x] 第二关卡工作流验证（tutorial_02 / demo_city）
-- [ ] **纠偏 V1–V4**：控制升维 / 机体 / 接触任务 / 数据分层 — 见 [15](15-course-correction.md)
+- [ ] **纠偏 V/L 线**：`demo_workshop` + 臂/爪 + `joint_targets` + IL — 见 [16](16-value-sprint.md) · [09](09-todo.md)
 
 ### Phase 4 — 扩展
 

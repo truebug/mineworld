@@ -50,8 +50,9 @@
 
 铁律不变：Godot 不权威、MuJoCo 不叙事。下一阶段优先 **控制深度**，不是再扩城市皮。
 
-> **完整跑偏时间线、假偏航澄清与 V1–V5 纠偏计划**已抽成专项文档，避免与本文早期评审段落分叉：  
-> → **[15-course-correction.md](15-course-correction.md)**（战略 SSOT；与仓库根 [README](../README.md) 摘要互链）
+> **完整跑偏诊断**：[15-course-correction.md](15-course-correction.md)  
+> **冻结执行规格（车间 / 臂爪 / IL）**：[16-value-sprint.md](16-value-sprint.md)  
+> **勾选**：[09-todo.md](09-todo.md) `Now（V）`
 
 
 ## 1. 一句话结论

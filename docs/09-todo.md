@@ -5,12 +5,13 @@
 | **状态** | Living |
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | 演示/管道已收口；**下一阶段：纠偏提高数据价值（讨论后开 V\*）** |
+| **目标** | **V 线纠偏执行中**：车间关 + 臂/爪 + `joint_targets` + IL 样本 |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
 | **阶段评审** | [12-status-review.md](12-status-review.md) |
-| **跑偏与纠偏** | **[15-course-correction.md](15-course-correction.md)**（战略 SSOT） |
+| **跑偏与纠偏** | [15-course-correction.md](15-course-correction.md) |
+| **V 线规格** | **[16-value-sprint.md](16-value-sprint.md)**（决策冻结 · 验收 SSOT） |
 
 勾选约定：`[ ]` 未做 · `[x]` 完成 · `[-]` 取消 · `[~]` 暂缓
 
@@ -55,22 +56,71 @@
 | D12 | demo_city 终点开环 smoke | `--expect-objective` 直道东行至绿区 | [x] |
 | D13 | 录制索引 SQLite + 批量轨迹导出 | `recording_store` + `export_trajectories.py` + API | [x] |
 
-> **D 线已收口。** 城市皮/seed/路面不再作为主投入；见 [15](15-course-correction.md) V5。
+> **D 线已收口。** 城市皮/seed/路面不再作为主投入；见 [15](15-course-correction.md) V5 · [16](16-value-sprint.md)。
 
 ---
 
-## Next（V · 数据价值纠偏 · 待讨论后开干）
+## Now（V · 数据价值纠偏 · 已冻结）
 
-> 诊断与优先级见 **[15-course-correction.md](15-course-correction.md)**。  
-> **本表在讨论前不落具体实现勾选**——只占位，避免又开新的观感专题。
+> 规格 SSOT：[16-value-sprint.md](16-value-sprint.md)。  
+> 决策：臂+爪 · 键鼠滑条 · **`demo_workshop` 室内车间** · 优先 **IL/行为克隆**。  
+> 推荐顺序：`V4a` ∥ `L1` ∥ `V2a` → `V1*` → `V3a/b` → `V4b` → `V-IL`。
 
-| ID | 主题 | 状态 |
-|----|------|------|
-| V1 | 控制升维（`joint_targets` / 成对录制） | [ ] 待讨论 |
-| V2 | 机体升维（多关节 / 非纯 planar） | [ ] 待讨论 |
-| V3 | 接触任务加深（堆叠 / 门 / 抓取） | [ ] 待讨论 |
-| V4 | 数据分层（标签 / 难度 / 导出过滤） | [ ] 待讨论 |
-| V5 | 演示克制（观感项默认暂缓） | [ ] 待讨论 |
+### 冻结决策（摘要）
+
+| 项 | 选择 |
+|----|------|
+| 机体 | 平面底盘 + 附加臂/夹爪 |
+| UX | 键鼠 + 关节滑条 |
+| 关卡 | 新开 `demo_workshop`（大封闭车间）；`demo_city` 次要 |
+| 数据 | IL / 行为克隆优先 |
+
+### V4 · 数据标签（可先做）
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| V4a | header/index IL 最小标签 | `task_id` · `difficulty` · `control_mode(s)` · `outcome` · `seed` 入 header + sqlite | [ ] |
+| V4b | 导出服务 IL | CSV/JSONL 含关节 `cmd`+`joints`；可按 level/task/outcome 过滤 | [ ] |
+
+### L · 车间关
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| L1 | `demo_workshop` 契约 + 封闭车间壳 | 契约 JSON + `demo_workshop.tscn`；四面墙权威；无街道巡航叙事 | [ ] |
+| L2 | 工作台 / 料箱 trigger | 料箱 AABB + 工作区；`dynamic_props` 可动物 | [ ] |
+| L3 | 默认主演示切车间 | Gateway/Web 默认或文档明确主线为 workshop；city 可选手动 | [ ] |
+
+### V2 · 机体（臂+爪）
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| V2a | 底盘+臂+爪 MJCF | headless 可步进；关节名表进 16/ASSETS | [ ] |
+| V2b | Godot 跟皮 | 臂/爪随 `joints`；底盘复用 DiffBot 皮 | [ ] |
+| V2c | 许可登记 | 仅 CC0/MIT 或自建；ASSETS 记账 | [ ] |
+
+### V1 · 控制（joint_targets + 滑条）
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| V1a | Schema `joint_targets` | ws-messages + examples；可与 velocity 同会话并存 | [ ] |
+| V1b | Gateway 执行关节目标 | MuJoCo 伺服；smoke 改角可见 | [ ] |
+| V1c | 键鼠关节滑条 UX | Web/桌面：每关节滑条 + 可选快捷键；映射文档化 | [ ] |
+| V1d | 成对录制 | frames/export 含关节 cmd↔joints；3D 回放臂动 | [ ] |
+
+### V3 · IL 任务
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| V3a | 车间主目标 v1 | 箱子进入料箱区 → `objective_complete`（允许夹爪辅助推） | [ ] |
+| V3b | outcome 服务 IL | success/fail/abort 可筛；正样本导出默认 success | [ ] |
+| V3c | （可选）真夹取抬起 | 闭合+接触+离地；不阻塞 V3a | [ ] |
+| V-IL | IL 冒烟 | 至少 1 条 `demo_workshop` + success 可被 export 滤出 | [ ] |
+
+### V5 · 克制
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| V5 | 演示克制 | 不再开 city 观感专题；city 仅 bugfix | [x] 策略已生效 |
 
 ---
 

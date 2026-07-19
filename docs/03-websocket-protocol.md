@@ -2,8 +2,8 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Draft v0（Schema SSOT 已落盘） |
-| **日期** | 2026-07-17 |
+| **状态** | Draft v0（Schema SSOT 已落盘）；**V1a 将增 `joint_targets`（见 [16](16-value-sprint.md)）** |
+| **日期** | 2026-07-17 · 续记 2026-07-19 |
 | **传输** | WebSocket 文本帧，JSON 载荷 |
 | **SSOT** | [`schemas/ws-messages.v0.json`](../schemas/ws-messages.v0.json) · 扩展规则见 [`schemas/README.md`](../schemas/README.md) |
 

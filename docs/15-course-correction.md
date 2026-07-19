@@ -2,14 +2,14 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Living · SSOT for course correction |
+| **状态** | Living · 诊断 SSOT；**执行规格见 16** |
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **关联** | [00](00-vision.md) · [04](04-data-collection.md) · [08](08-modes-roadmap.md) · [09](09-todo.md) · [12](12-status-review.md) · [14](14-godot-mujoco-fusion.md) |
+| **关联** | [00](00-vision.md) · [04](04-data-collection.md) · [08](08-modes-roadmap.md) · [09](09-todo.md) · [12](12-status-review.md) · [14](14-godot-mujoco-fusion.md) · **[16](16-value-sprint.md)** |
 | **读者** | 贡献者、评审、后续排期讨论 |
 
 > 本文记录 **为什么会感觉跑偏**、**偏到了哪里**、**什么没有偏**，以及 **纠偏优先级**。  
-> 日常勾选仍以 [09-todo](09-todo.md) 为准；本文不替代 ADR 铁律。
+> 日常勾选：[09-todo](09-todo.md)。冻结执行规格：[16-value-sprint](16-value-sprint.md)。不替代 ADR 铁律。
 
 ---
 
@@ -92,42 +92,55 @@
 
 ---
 
-## 4. 纠偏计划（讨论后写入 09 再开干）
+## 4. 纠偏计划（已冻结 · 执行见 09 / 16）
 
 原则：**先加深控制与任务，再扩关卡皮与公网。**  
 公网 HTTPS / T2.7 手感仍可暂缓。
 
-### 4.1 纠偏主题（建议 ID 前缀 `V` = Value）
+### 4.0 产品决策冻结（2026-07-19）
 
-| ID | 主题 | 目标 | 验收方向（草案） |
-|----|------|------|------------------|
-| **V1** | 控制升维 | 引入 `joint_targets`（或轮臂混合）并与 state/`joints` 成对录制 | 协议样例 + smoke；回放可见关节角变化 |
-| **V2** | 机体升维 | 非 planar 多关节 mech（或手臂附加）进 `demo` 主线之一 | headless + mujoco smoke；Godot 跟皮 |
-| **V3** | 接触任务 | 推箱升级：对准 / 堆叠 / 门或抓取点；失败可再接管 | 任务事件进 header；成功率可统计 |
-| **V4** | 数据分层 | outcome + 子目标 + 难度标签；导出按任务过滤 | CSV/JSONL 含标签列；index.sqlite 可查 |
-| **V5** | 演示克制 | 城市皮只做必要修补；不再开新地图包专题 | `09` 中 D\* 观感项默认 `[~]` |
+| # | 议题 | 决策 |
+|---|------|------|
+| 1 | 机体 | **平面底盘 + 附加臂/夹爪** |
+| 2 | UX | **键鼠 + 关节滑条** |
+| 3 | 关卡 | **新开 `demo_workshop` 大封闭车间**；`demo_city` 次要 |
+| 4 | 数据用途 | **优先 IL / 行为克隆** |
+
+细规格与任务拆解 → **[16-value-sprint.md](16-value-sprint.md)**。  
+日常勾选 → **[09-todo.md](09-todo.md) `Now（V）`**。
+
+### 4.1 纠偏主题（V / L）
+
+| ID | 主题 | 本冲刺落点 | 状态 |
+|----|------|------------|------|
+| **V1** | 控制升维 | `joint_targets` + 滑条 + 成对录制 | 执行中（见 09） |
+| **V2** | 机体升维 | 底盘 + 臂 + 夹爪 | 执行中 |
+| **V3** | 接触任务 | 车间料箱区推入/置入（IL 正样本） | 执行中 |
+| **V4** | 数据分层 | header 标签 + IL 过滤导出 | 执行中 |
+| **V5** | 演示克制 | 不再扩 city 观感 | **已生效** |
+| **L\*** | 车间关 | `demo_workshop` 壳与 trigger | 执行中 |
 
 ### 4.2 明确不做（纠偏期）
 
 - 自动驾驶式车道/规划评测集
-- 公网运维优先于 V1–V3
+- 公网运维优先于 V1–V3 / L
 - 在 Godot 内嵌物理权威或客户端落盘
-- 未选清许可证前批量「任意 URDF」
+- 未选许可证清晰模型前批量「任意 URDF」
+- 全身人形主线、手柄/VR（本冲刺）
 
 ### 4.3 与已完成工作的关系
 
 | 已完成 | 纠偏中如何用 |
 |--------|----------------|
-| T2.6 `joints` / `joint_vels` | V1 的出口已铺好 |
-| F2–F8 URDF/跟皮/差速 | V2 的工程钩子 |
-| D2 推箱 | V3 的最小接触基线 |
-| D5/D8/D13 录制回放导出 | V4 的管道基线；提高的是 **内容标签与控制深度** |
-| demo_city 空气墙 + seed | 保留为娱乐壳；不再作为主投入面 |
+| T2.6 `joints` / `joint_vels` | V1 出口 |
+| F2–F8 URDF/跟皮/差速 | 底盘 + 跟皮钩子 |
+| D2 推箱 | 车间 `dynamic_props` 基线 |
+| D5/D8/D13 录制回放导出 | IL 样本检查管道 |
+| demo_city | 保留为次要壳；非本冲刺主投入 |
 
 ### 4.4 决策闸门
 
-后续具体勾选 **等本轮文档入库后的 todo 讨论** 再冻结进 [09-todo](09-todo.md) 的 `Now（V）` 表。  
-本文只固定 **诊断与优先级方向**，避免讨论前又开新的城市皮专题。
+~~待讨论~~ → **已冻结**（§4.0 + [16](16-value-sprint.md)）。变更须改 16 并同步 09。
 
 ---
 
@@ -138,9 +151,11 @@
 | 愿景原文 | [00-vision.md](00-vision.md) |
 | 采集目标 | [04-data-collection.md](04-data-collection.md) |
 | 执行勾选 | [09-todo.md](09-todo.md) |
-| 阶段评审（含早期定位校准段） | [12-status-review.md](12-status-review.md) |
+| 跑偏诊断 | [15-course-correction.md](15-course-correction.md)（本文） |
+| **V 线冻结规格** | **[16-value-sprint.md](16-value-sprint.md)** |
+| 阶段评审 | [12-status-review.md](12-status-review.md) |
 | 融合路线 | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
-| 仓库总览（含跑偏摘要） | [../README.md](../README.md) |
+| 仓库总览 | [../README.md](../README.md) |
 | 录制索引 / 导出 | `gateway/recording_store.py` · `scripts/export_trajectories.py` |
 
 ---
@@ -149,4 +164,5 @@
 
 | 日期 | 说明 |
 |------|------|
-| 2026-07-19 | 初版：跑偏诊断 + V1–V5 纠偏计划；待讨论后写入 09 |
+| 2026-07-19 | 初版：跑偏诊断 + V1–V5 方向 |
+| 2026-07-19 | 四项产品决策冻结；执行拆解移交 09 + 16 |

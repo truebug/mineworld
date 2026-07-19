@@ -6,12 +6,12 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | POC 管道已通（Web 单人/本机多人、`demo_city`、录制回放导出）；**主线纠偏：提高遥操数据价值（控制/任务深度）** |
+| **状态** | POC 管道已通；**主线：V 线纠偏执行中**（车间 + 臂/爪 + IL） |
 | **创建日期** | 2026-07-17 |
 | **定位** | 「头号玩家」式初始底座：可编辑共享世界 + 真物理机体 + 可回放的人类行为档案 |
-| **跑偏与纠偏（必读）** | [docs/15-course-correction.md](docs/15-course-correction.md) |
-| **阶段评审** | [docs/12-status-review.md](docs/12-status-review.md) |
-| **执行待办** | [docs/09-todo.md](docs/09-todo.md)（纠偏项讨论后再开 `Now（V）`） |
+| **跑偏与纠偏** | [docs/15-course-correction.md](docs/15-course-correction.md) |
+| **V 线规格（冻结）** | [docs/16-value-sprint.md](docs/16-value-sprint.md) |
+| **执行待办** | [docs/09-todo.md](docs/09-todo.md) `Now（V）` |
 | **Web / 多人** | [docs/13-web-multiplayer-demo.md](docs/13-web-multiplayer-demo.md) |
 
 ---
@@ -49,20 +49,27 @@
 | 控制与任务深度 | **滞后 · 纠偏主战场** |
 | 城市观感 / seed / 路面 | 已够用；纠偏期克制再扩 |
 
-### 纠偏计划（方向已定，细项待讨论）
+### 纠偏计划（已冻结 · 执行中）
 
-原则：**先加深控制与任务，再扩关卡皮与公网。**
+原则：**先加深控制与任务，再扩关卡皮与公网。** 细规格见 [docs/16-value-sprint.md](docs/16-value-sprint.md)。
 
-| ID | 主题 | 一句话 |
-|----|------|--------|
-| **V1** | 控制升维 | `joint_targets`（或轮臂混合），与 `joints` 成对录制 |
-| **V2** | 机体升维 | 多关节 / 非纯 planar 主线机体 |
-| **V3** | 接触任务 | 推箱升级：对准、堆叠、门/抓取；失败可纠偏 |
-| **V4** | 数据分层 | outcome + 子目标 + 难度进 header / 导出 |
-| **V5** | 演示克制 | 城市皮只必要修补，不再开地图包专题 |
+| 决策 | 选择 |
+|------|------|
+| 机体 | 平面底盘 + **附加臂/夹爪** |
+| UX | **键鼠 + 关节滑条** |
+| 关卡 | 新开 **`demo_workshop` 大封闭车间**（`demo_city` 次要） |
+| 数据 | 优先 **IL / 行为克隆** |
 
-公网 HTTPS、T2.7 手感补偿仍可暂缓。  
-**具体勾选等本轮文档入库后的 todo 讨论** 再写入 `docs/09-todo.md`。
+| ID | 主题 | 本冲刺落点 |
+|----|------|------------|
+| **V1** | 控制升维 | `joint_targets` + 滑条 + 成对录制 |
+| **V2** | 机体升维 | 底盘 + 臂 + 夹爪 |
+| **V3** | 接触任务 | 车间料箱区推入/置入 |
+| **V4** | 数据分层 | header 标签 + IL 过滤导出 |
+| **L\*** | 车间关 | `demo_workshop` 壳与 trigger |
+| **V5** | 演示克制 | 不再扩 city 观感（已生效） |
+
+公网 HTTPS、T2.7 仍暂缓。勾选见 [docs/09-todo.md](docs/09-todo.md)。
 
 ---
 
@@ -123,7 +130,8 @@ pip install -r gateway/requirements.txt
 
 | 文档 | 说明 |
 |------|------|
-| **[docs/15-course-correction.md](docs/15-course-correction.md)** | **跑偏纪要与纠偏计划（当前战略 SSOT）** |
+| [docs/15-course-correction.md](docs/15-course-correction.md) | **跑偏纪要与纠偏计划** |
+| [docs/16-value-sprint.md](docs/16-value-sprint.md) | **V 线冻结规格（车间/臂爪/IL）** |
 | [docs/00-vision.md](docs/00-vision.md) | 愿景、问题陈述、产品定位 |
 | [docs/01-architecture.md](docs/01-architecture.md) | 系统架构、职责边界、数据流 |
 | [docs/02-scene-contract.md](docs/02-scene-contract.md) | 场景契约：Godot 关卡 → MuJoCo 世界映射 |
@@ -173,4 +181,4 @@ mineworld/
 4. 到达终点 / 推箱等事件可触发
 5. 会话落盘，可在 Recordings 回放并导出 CSV
 
-**下一阶段**不再以「更好看的城」为主，而以 [15](docs/15-course-correction.md) 的 **V1–V4 数据价值** 为主。详见 [docs/08-modes-roadmap.md](docs/08-modes-roadmap.md)。
+**下一阶段**以 [16](docs/16-value-sprint.md) 为准：`demo_workshop` + 臂/爪 + IL 正样本；不再以「更好看的城」为主。详见 [docs/08-modes-roadmap.md](docs/08-modes-roadmap.md)。

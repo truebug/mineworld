@@ -6,7 +6,7 @@
 | **日期** | 2026-07-17 · 续记 2026-07-19 |
 | **定位** | 产品核心资产管道，与娱乐壳同等优先级 |
 | **SSOT** | [`schemas/recording-session.v0.json`](../schemas/recording-session.v0.json) |
-| **纠偏** | [15-course-correction.md](15-course-correction.md)（V1/V4：控制成对录制 + 任务分层） |
+| **纠偏** | [15-course-correction.md](15-course-correction.md) · **[16-value-sprint.md](16-value-sprint.md)**（IL 优先 · 成对 cmd/joints） |
 
 ---
 

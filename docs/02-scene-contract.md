@@ -2,8 +2,8 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Draft v0（Schema SSOT 已落盘） |
-| **日期** | 2026-07-17 |
+| **状态** | Draft v0（Schema SSOT 已落盘）；**下一关 `demo_workshop` 见 [16](16-value-sprint.md)** |
+| **日期** | 2026-07-17 · 续记 2026-07-19 |
 | **SSOT** | [`schemas/scene-contract.v0.json`](../schemas/scene-contract.v0.json) |
 
 ---
