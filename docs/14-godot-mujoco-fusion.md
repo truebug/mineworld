@@ -86,7 +86,7 @@
 | **F0** | 多人外观区分（A/B 染色 + 标签） | `?room=demo` 一眼可辨 | Done |
 | **F1** | tutorial 场景加 CC0 装饰（viewer_only）+ 地面材质 | 不改物理，观感提升 | Done |
 | **F2** | 自研 `planar_cart.urdf` → MJCF + `model_ref` | headless + smoke 能控 | Done |
-| **F3** | Godot 视觉与 URDF 几何进一步对齐（轮子等） | 位姿仍跟 state | Next |
+| **F3** | Godot 视觉与 URDF 几何对齐（底盘/轮/鼻） | 位姿仍跟 state | Done |
 | **F4** | 契约/插件：从 `.tscn` 导出障碍与 spawn（T4.2） | 关卡单源 | Later |
 
 **非目标（本阶段）**：在 Godot 内嵌 MuJoCo；自动从任意 URDF 一键生成完整可玩关；人形全身遥操手感（T2.7）。
@@ -124,7 +124,7 @@
 2. URDF→MJCF 工具链：仓库脚本 vs 外部预编译产物入库？  
 3. 关节控制是否从 `velocity` 基座扩展到 `joint_targets`（协议加字段，v0 兼容）？
 
-未拍板前：**F0–F2 已落地**（装饰 + URDF→MJCF 试点）；F3 对齐轮子视觉；第三方真机 URDF 另开选型。
+未拍板前：**F0–F3 已落地**；F4 契约导出 / 第三方真机 URDF 另开选型。
 
 ### F2 试点命令
 
@@ -136,4 +136,5 @@
 ```
 
 源文件：`mujoco/models/mechs/planar_cart.urdf` → 生成 `planar_cart.xml`；`world_flat.xml` include 该机甲。  
+Godot：`mech_puppet.gd` 按同一 URDF 尺寸生成底盘/轮/鼻（F3）；队伍色只染底盘。  
 注意：仓库目录名 `mujoco/` 会遮蔽 pip 包，脚本内已把 repo root 从 `sys.path` 去掉再 `import mujoco`。

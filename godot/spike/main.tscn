@@ -108,7 +108,7 @@ script = ExtResource("3_puppet")
 entity_id = "mech_player"
 interp_delay = 0.05
 
-[node name="Body" parent="MechPlayer" instance=ExtResource("8_crate")]
+[node name="Body" type="Node3D" parent="MechPlayer"]
 
 [node name="FrontArrow" parent="MechPlayer" instance=ExtResource("4_arrow")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.55, 0)

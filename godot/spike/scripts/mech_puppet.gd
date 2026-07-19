@@ -1,7 +1,8 @@
 ## Visual puppet for a gateway-driven entity.
 ## Buffers the last two base_pose samples and interpolates between them,
 ## delayed by one state interval (standard entity interpolation).
-## Team look: tint + billboard tag by entity_id (A/B for demo room).
+## F3: Body mesh matches planar_cart.urdf (chassis + wheels + nose).
+## Team look: tint chassis + billboard tag by entity_id (A/B).
 class_name MWMechPuppet
 extends Node3D
 
@@ -9,7 +10,7 @@ extends Node3D
 @export var entity_id: String = "mech_player"
 var interp_delay := 0.05
 
-## entity_id → body albedo (demo room A/B). Unknown ids stay neutral gray.
+## entity_id → chassis albedo (demo room A/B).
 const TEAM_COLORS := {
 	"mech_player": Color(0.22, 0.62, 0.95),
 	"mech_player_b": Color(0.95, 0.48, 0.18),
@@ -18,6 +19,21 @@ const TEAM_TAGS := {
 	"mech_player": "A",
 	"mech_player_b": "B",
 }
+
+## planar_cart.urdf geometry (MW Z-up meters). Keep in sync with URDF.
+const URDF_CHASSIS := Vector3(0.5, 0.5, 0.5)
+const URDF_NOSE := Vector3(0.16, 0.04, 0.04)
+const URDF_NOSE_POS := Vector3(0.3, 0.0, 0.1)
+const URDF_WHEEL_R := 0.08
+const URDF_WHEEL_LEN := 0.06
+const URDF_WHEEL_POS := [
+	Vector3(0.18, 0.22, -0.18),
+	Vector3(0.18, -0.22, -0.18),
+	Vector3(-0.18, 0.22, -0.18),
+	Vector3(-0.18, -0.22, -0.18),
+]
+const WHEEL_COLOR := Color(0.15, 0.15, 0.18)
+const NOSE_COLOR := Color(0.85, 0.2, 0.15)
 
 var _prev_pos := Vector3.ZERO
 var _prev_yaw := 0.0
@@ -32,21 +48,87 @@ var _wall_at_last_state := 0.0
 var last_mw_x := 0.0
 var last_mw_y := 0.0
 var last_mw_yaw := 0.0
+var _cart_built := false
 
 
 func _ready() -> void:
+	ensure_planar_cart_visual()
 	apply_team_look()
 
 
+func _mw_to_local(p: Vector3) -> Vector3:
+	"""Map MW/URDF Z-up point into Godot local (Y-up) on this puppet."""
+	return Vector3(p.x, p.z, -p.y)
+
+
+func _mw_size_to_local(s: Vector3) -> Vector3:
+	"""Map MW full-edge box size (x,y,z) → Godot BoxMesh size (x,y,z)."""
+	return Vector3(s.x, s.z, s.y)
+
+
+func ensure_planar_cart_visual() -> void:
+	"""Build/replace Body to match planar_cart.urdf (idempotent)."""
+	if _cart_built and get_node_or_null("Body/Chassis") != null:
+		return
+	var old := get_node_or_null("Body")
+	if old != null:
+		remove_child(old)
+		old.free()
+	var body := Node3D.new()
+	body.name = "Body"
+	add_child(body)
+
+	var chassis := MeshInstance3D.new()
+	chassis.name = "Chassis"
+	var box := BoxMesh.new()
+	box.size = _mw_size_to_local(URDF_CHASSIS)
+	chassis.mesh = box
+	chassis.set_meta("team_tint", true)
+	body.add_child(chassis)
+
+	var nose := MeshInstance3D.new()
+	nose.name = "Nose"
+	var nbox := BoxMesh.new()
+	nbox.size = _mw_size_to_local(URDF_NOSE)
+	nose.mesh = nbox
+	nose.position = _mw_to_local(URDF_NOSE_POS)
+	_tint_mesh(nose, NOSE_COLOR)
+	body.add_child(nose)
+
+	var i := 0
+	for wp in URDF_WHEEL_POS:
+		var wheel := MeshInstance3D.new()
+		wheel.name = "Wheel_%d" % i
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = URDF_WHEEL_R
+		cyl.bottom_radius = URDF_WHEEL_R
+		cyl.height = URDF_WHEEL_LEN
+		wheel.mesh = cyl
+		wheel.position = _mw_to_local(wp)
+		# Cylinder default axis = Godot Y; lay flat so axis ≈ MW ±Y (Godot ±Z).
+		wheel.rotation_degrees = Vector3(90, 0, 0)
+		_tint_mesh(wheel, WHEEL_COLOR)
+		body.add_child(wheel)
+		i += 1
+
+	_cart_built = true
+
+
 func apply_team_look() -> void:
-	"""Tint Body mesh(es) and show A/B billboard from entity_id."""
+	"""Tint chassis mesh and show A/B billboard from entity_id."""
+	ensure_planar_cart_visual()
 	var color: Color = TEAM_COLORS.get(entity_id, Color(0.65, 0.65, 0.68))
-	var body_root := get_node_or_null("Body")
-	if body_root is MeshInstance3D:
-		_tint_mesh(body_root as MeshInstance3D, color)
-	elif body_root != null:
-		for child in body_root.find_children("*", "MeshInstance3D", true, false):
-			_tint_mesh(child as MeshInstance3D, color)
+	var chassis := get_node_or_null("Body/Chassis") as MeshInstance3D
+	if chassis != null:
+		_tint_mesh(chassis, color)
+	else:
+		var body_root := get_node_or_null("Body")
+		if body_root is MeshInstance3D:
+			_tint_mesh(body_root as MeshInstance3D, color)
+		elif body_root != null:
+			for child in body_root.find_children("*", "MeshInstance3D", true, false):
+				if child.has_meta("team_tint"):
+					_tint_mesh(child as MeshInstance3D, color)
 	var tag := get_node_or_null("TeamTag") as Label3D
 	if tag == null:
 		tag = Label3D.new()
@@ -63,7 +145,7 @@ func apply_team_look() -> void:
 
 
 func _tint_mesh(mesh_inst: MeshInstance3D, color: Color) -> void:
-	"""Apply a simple albedo override for team color."""
+	"""Apply a simple albedo override."""
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.roughness = 0.55
