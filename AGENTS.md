@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. The project is at POC stage: `schemas/` and `docs/` are the source of truth, and design docs are written in Chinese — keep new docs consistent. The client engine was switched from GDevelop to Godot (see `docs/adr/003-client-engine-godot.md`); `gdevelop/` is archived legacy.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. The project is at POC stage: `schemas/` and `docs/` are the source of truth, and design docs are written in Chinese — keep new docs consistent. The client engine was switched from GDevelop to Godot (see `docs/adr/003-client-engine-godot.md`); `gdevelop/` is archived legacy. Current delivery focus is **Web export → hosted demo → multi-session / multiplayer** (see `docs/13-web-multiplayer-demo.md`); feel/latency polish (T2.7) is deferred.
 
 ## Project Structure & Module Organization
 

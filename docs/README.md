@@ -12,7 +12,8 @@
 6. [08-modes-roadmap.md](08-modes-roadmap.md) — MVP 与路线
 7. [09-todo.md](09-todo.md) — **可执行待办（当前执行入口）**
 8. [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) — **POC 规格 + MVP 薄架构（讨论入口）**
-9. [12-status-review.md](12-status-review.md) — **阶段回顾与方案评审（2026-07-19）**
+9. [12-status-review.md](12-status-review.md) — 阶段回顾与方案评审（2026-07-19）
+10. [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) — **Web / 线上多人 Demo 路线与审核（当前主线）**
 
 ## 实施参考
 
@@ -29,4 +30,5 @@
 ## 治理
 
 - [10-open-questions.md](10-open-questions.md)
-- [12-status-review.md](12-status-review.md) — 阶段审核与优先级建议
+- [12-status-review.md](12-status-review.md)
+- [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md)

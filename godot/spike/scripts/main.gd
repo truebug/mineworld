@@ -9,6 +9,7 @@ const TURN_SPEED := 1.0
 const CMD_HZ := 20.0
 
 @export var level_id := "tutorial_01"
+@export var gateway_url := "ws://127.0.0.1:8765"
 
 # Untyped on purpose: global class_name registration needs an editor scan
 # (.godot/global_script_class_cache.cfg), which a fresh headless run lacks.
@@ -33,8 +34,17 @@ func _ready() -> void:
 	ws.event_received.connect(_on_event)
 	ws.gateway_error.connect(_on_gateway_error)
 	ws.link_state_changed.connect(_on_link_state)
-	ws.connect_to_gateway()
+	ws.connect_to_gateway(_resolve_gateway_url())
 	_update_hud()
+
+
+func _resolve_gateway_url() -> String:
+	"""Prefer window.MINEWORLD_GATEWAY on Web; else exported gateway_url."""
+	if OS.has_feature("web"):
+		var from_js := str(JavaScriptBridge.eval("window.MINEWORLD_GATEWAY || ''"))
+		if from_js != "":
+			return from_js
+	return gateway_url
 
 
 func _on_hello(payload: Dictionary) -> void:

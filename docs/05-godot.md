@@ -68,13 +68,16 @@ rotation.y = yaw          # Z-up yaw（弧度）→ Godot 绕 Y 轴
 
 ### 5.2 运行时交付物
 
-- **MVP / T3.4**：macOS 原生导出（`godot/spike/export_presets.cfg` + `scripts/export_godot.sh` → `dist/macos/MineWorldSpike.app`）+ 本机 Gateway（`ws://127.0.0.1:8765`）
-- **前置**：与编辑器同版本的 **Export Templates**（Editor → Manage Export Templates）。产物目录 `dist/` 已 gitignore，勿入库。
-- **P1+**：再评估 Web 导出（包体、COOP/COEP 托管要求）
+- **当前主线（W1）**：Web 导出（`export_presets.cfg` preset `Web` + `scripts/export_godot.sh web`）+ `scripts/serve_web_demo.py`（COOP/COEP）+ 本机 Gateway
+- **备选**：macOS 原生导出（`export_godot.sh macos`）
+- **前置**：与编辑器同版本的 Export Templates（**含 Web**）。产物 `dist/` gitignore。
+- **线上多人**：分期见 [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md)；未完成会话隔离前勿称多人已可用
+- **P1+**：PWA / 应用商店分发非 Demo 必需
 
 ```bash
-bash scripts/export_godot.sh
-# GODOT=/path/to/Godot bash scripts/export_godot.sh
+bash scripts/export_godot.sh web
+bash scripts/export_godot.sh macos
+.venv/bin/python scripts/serve_web_demo.py
 ```
 
 ### 5.3 无头自动化（CI）

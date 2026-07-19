@@ -6,10 +6,11 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | POC-B：M2+M3+M4 已通过；**T3.4 桌面导出管线已就绪**（需本机一次安装 Godot 导出模板） |
+| **状态** | POC M1–M4 已入库；**主线转向 Web Demo（W1→W3 多人）**；T2.7 手感暂缓 |
 | **创建日期** | 2026-07-17 |
 | **定位** | 「头号玩家」式初始底座：可编辑共享世界 + 真物理机体 + 可回放的人类行为档案 |
-| **阶段评审** | [docs/12-status-review.md](docs/12-status-review.md)（2026-07-19） |
+| **阶段评审** | [docs/12-status-review.md](docs/12-status-review.md) |
+| **Web / 多人** | [docs/13-web-multiplayer-demo.md](docs/13-web-multiplayer-demo.md) |
 
 ---
 
@@ -17,40 +18,38 @@
 
 **Godot 负责关卡/任务/地图与可视化 Viewer；无头 MuJoCo 负责机甲关节级物理仿真；WebSocket 交换控制与状态；旁路录制遥操与交互轨迹，支撑学习、娱乐与商业多种模式。**
 
-POC 机甲为**自建盒子**（验证权威链路与协议）；真实人形/四足 MJCF 是后置换皮，不改 WS 契约形状。
+POC 机甲为**自建盒子**（验证权威链路与协议）；真实人形/四足 MJCF 是后置换皮，不改 WS 契约形状。交付重心转向 **浏览器可玩的线上 Demo**（先单人可部署，再会话隔离，再同关多人）。
 
 ---
 
 ## 本地 5 分钟演示
 
-### A. 开发预览（推荐日常）
+### A. 编辑器预览
 
 ```bash
 cd mineworld
 source .venv/bin/activate
-python gateway/echo_server.py                 # 终端 1：假物理；真物理加 --physics mujoco
-# 终端 2：
-godot --path godot/spike                      # 或编辑器打开后 F5
+python gateway/echo_server.py
+godot --path godot/spike    # 或 F5
 ```
 
-操作：W/S 前后 · Q/E 平移 · A/D 转向 · **T** 接管 · **R** 释放 · 开到终点区看 HUD `SUCCESS`。  
-默认 `fake` 可穿墙；撞墙需 `--physics mujoco`。相机：右键/中键环绕，滚轮缩放（无自由平移）。
-
-### B. 桌面导出包（T3.4）
-
-一次准备（本机）：Godot **Editor → Manage Export Templates → Download and Install**（版本对齐编辑器，当前验证 **4.7.1**）。
+### B. Web 本地 Demo（当前主线 W1）
 
 ```bash
-bash scripts/export_godot.sh                  # → dist/macos/MineWorldSpike.app
-# 终端 1 先起 Gateway，再：
+# 一次：Godot → 管理导出模板 → 安装 **Web**（版本对齐编辑器）
+bash scripts/export_godot.sh web
+python gateway/echo_server.py                 # 终端 1
+python scripts/serve_web_demo.py              # 终端 2 → http://127.0.0.1:8080/
+```
+
+可选：页面注入 `window.MINEWORLD_GATEWAY = "ws://127.0.0.1:8765"`。  
+托管必须带 COOP/COEP（`serve_web_demo.py` 已加）；勿直接双击 `index.html`。
+
+### C. macOS 桌面包（备选）
+
+```bash
+bash scripts/export_godot.sh macos
 open dist/macos/MineWorldSpike.app
-```
-
-冒烟（不启 UI）：
-
-```bash
-python scripts/ws_smoke_test.py
-python scripts/ws_smoke_test.py --expect-objective   # 直线开到终点
 ```
 
 详见 [gateway/README.md](gateway/README.md) · [godot/spike/README.md](godot/spike/README.md) · [docs/adr/003](docs/adr/003-client-engine-godot.md)。
@@ -81,6 +80,7 @@ pip install -r gateway/requirements.txt
 | [docs/10-open-questions.md](docs/10-open-questions.md) | 待决事项与评审清单 |
 | [docs/11-poc-mvp-architecture.md](docs/11-poc-mvp-architecture.md) | **POC 规格 + MVP 目标架构（讨论入口）** |
 | [docs/12-status-review.md](docs/12-status-review.md) | **阶段回顾与方案评审（2026-07-19）** |
+| [docs/13-web-multiplayer-demo.md](docs/13-web-multiplayer-demo.md) | **Web / 线上多人 Demo 路线与审核** |
 | [schemas/README.md](schemas/README.md) | **JSON Schema SSOT 与扩展规则** |
 | [docs/adr/001-dual-engine-split.md](docs/adr/001-dual-engine-split.md) | ADR：双引擎职责分离 |
 | [docs/adr/002-authority-and-sync.md](docs/adr/002-authority-and-sync.md) | ADR：物理权威与时序同步 |
