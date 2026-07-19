@@ -41,7 +41,7 @@
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | D1 | `demo_city` 主演示关（最小权威墙+终点；spawn/相机） | 默认契约/场景；smoke + `--expect-objective` | [x] |
-| D2 | T4.6 推箱玩法 | 契约 dynamic + 客户端 | [ ] |
+| D2 | T4.6 推箱玩法 | 契约 `dynamic_props` + MuJoCo 平面箱；`push_box_smoke.py` PASS | [x] |
 
 ---
 
@@ -102,7 +102,7 @@
 | T3.2 | 开环重放增强 | `replay_xy` 已覆盖轨迹 | [ ] |
 | T4.1 | Worker 池 | 与 W2.3 对齐 | [ ] |
 | T4.4 / T4.5 | 评测 API / AI 同通道 | [ ] |
-| T4.6 | 动态可交互物 L1 | [ ] |
+| T4.6 | 动态可交互物（推箱 L2 / D2） | `dynamic_props` + `push_box_smoke.py` | [x] |
 
 ---
 

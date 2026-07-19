@@ -24,6 +24,17 @@
       "physics_role": "mujoco_authoritative"
     }
   ],
+  "dynamic_props": [
+    {
+      "id": "prop_crate",
+      "kind": "dynamic_prop",
+      "shape": "box",
+      "size": [0.5, 0.5, 0.5],
+      "pose": { "x": 3.5, "y": 0.0, "z": 0.25, "yaw": 0.0 },
+      "mass": 1.2,
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
   "static_obstacles": [
     {
       "id": "boundary_n",

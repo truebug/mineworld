@@ -237,14 +237,18 @@ func _on_scene(payload: Dictionary) -> void:
 
 
 func _ensure_puppets(entities: Array) -> void:
-	"""Create/update puppets for each mech entity_id in the scene list."""
+	"""Create/update puppets for mechs and dynamic_props in the scene list."""
 	for entity in entities:
 		if typeof(entity) != TYPE_DICTIONARY:
 			continue
-		if str(entity.get("kind", "mech")) != "mech":
-			continue
+		var kind := str(entity.get("kind", "mech"))
 		var eid := str(entity.get("entity_id", ""))
 		if eid == "":
+			continue
+		if kind == "dynamic_prop":
+			_ensure_prop_puppet(eid)
+			continue
+		if kind != "mech":
 			continue
 		if not _puppets.has(eid):
 			var copy: Node3D = mech.duplicate()
@@ -263,6 +267,20 @@ func _ensure_puppets(entities: Array) -> void:
 		p.set("entity_id", _controlled_entity_id)
 		if p.has_method("apply_team_look"):
 			p.apply_team_look()
+
+
+func _ensure_prop_puppet(eid: String) -> void:
+	"""Spawn a pushable-box visual for dynamic_prop entity_id."""
+	if _puppets.has(eid):
+		return
+	var prop_script: Script = load("res://scripts/prop_puppet.gd") as Script
+	var node := Node3D.new()
+	node.set_script(prop_script)
+	node.name = "Prop_%s" % eid
+	node.set("entity_id", eid)
+	add_child(node)
+	_puppets[eid] = node
+	print("[MW] spawned prop entity_id=%s" % eid)
 
 
 func _on_event(payload: Dictionary) -> void:

@@ -42,9 +42,15 @@
       "items": { "$ref": "#/$defs/static_obstacle" },
       "default": []
     },
+    "dynamic_props": {
+      "type": "array",
+      "description": "Planar pushables (T4.6/D2): free slide_x/y + yaw, MuJoCo-authoritative.",
+      "items": { "$ref": "#/$defs/dynamic_prop" },
+      "default": []
+    },
     "interactives": {
       "type": "array",
-      "description": "Future: doors, pushables, etc. POC may leave empty.",
+      "description": "Future: doors, elevators, etc. POC may leave empty.",
       "items": { "$ref": "#/$defs/open_entity" },
       "default": []
     },
@@ -123,6 +129,41 @@
         "pose": { "$ref": "common.v0.json#/$defs/pose_yaw" },
         "physics_role": { "$ref": "common.v0.json#/$defs/physics_role" },
         "friction": { "type": "number" },
+        "meta": { "$ref": "common.v0.json#/$defs/meta" },
+        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+      },
+      "additionalProperties": true
+    },
+    "dynamic_prop": {
+      "type": "object",
+      "required": ["id", "shape", "size", "pose"],
+      "properties": {
+        "id": { "$ref": "common.v0.json#/$defs/entity_id" },
+        "kind": {
+          "type": "string",
+          "const": "dynamic_prop",
+          "description": "Optional discriminator."
+        },
+        "shape": {
+          "type": "string",
+          "description": "POC: box only.",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "examples": ["box"]
+        },
+        "size": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "Full XYZ extents (meters), same convention as static_obstacles."
+        },
+        "pose": { "$ref": "common.v0.json#/$defs/pose_yaw" },
+        "mass": { "type": "number", "exclusiveMinimum": 0, "default": 1.0 },
+        "friction": { "type": "number", "minimum": 0 },
+        "physics_role": {
+          "$ref": "common.v0.json#/$defs/physics_role",
+          "default": "mujoco_authoritative"
+        },
         "meta": { "$ref": "common.v0.json#/$defs/meta" },
         "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
       },

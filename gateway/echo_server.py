@@ -332,13 +332,67 @@ class MujocoMech(MechState):
         }
 
 
+class DynamicProp:
+    """Planar pushable box (T4.6): slide_x/y + yaw, no actuators."""
+
+    def __init__(
+        self,
+        entity_id: str,
+        model: "mujoco.MjModel",
+        data: "mujoco.MjData",
+        *,
+        body_name: str,
+        joint_prefix: str,
+    ) -> None:
+        self.entity_id = entity_id
+        self._model = model
+        self._data = data
+        self._body = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body_name)
+        if self._body < 0:
+            raise SystemExit(f"dynamic prop body missing: {body_name}")
+        jnt = lambda n: mujoco.mj_name2id(
+            model, mujoco.mjtObj.mjOBJ_JOINT, f"{joint_prefix}{n}"
+        )
+        self._qx = int(model.jnt_qposadr[jnt("sx")])
+        self._qy = int(model.jnt_qposadr[jnt("sy")])
+        self._qyaw = int(model.jnt_qposadr[jnt("yaw")])
+        self.x = self.y = self.z = self.yaw = 0.0
+        self.pull_state()
+
+    def reset_pose(self, pose: dict[str, Any]) -> None:
+        """Write spawn XY/yaw into planar joints (body origin at world Z only)."""
+        self._data.qpos[self._qx] = float(pose.get("x", 0.0))
+        self._data.qpos[self._qy] = float(pose.get("y", 0.0))
+        self._data.qpos[self._qyaw] = float(pose.get("yaw", 0.0))
+        mujoco.mj_forward(self._model, self._data)
+        self.pull_state()
+
+    def pull_state(self) -> None:
+        """Read body pose into fields for state broadcast."""
+        pos = self._data.xpos[self._body]
+        self.x = float(pos[0])
+        self.y = float(pos[1])
+        self.z = float(pos[2])
+        self.yaw = float(self._data.qpos[self._qyaw])
+
+    def to_entity_state(self) -> dict[str, Any]:
+        """Serialize prop as entity_state (no joints required)."""
+        q = _yaw_to_quat(self.yaw)
+        return {
+            "entity_id": self.entity_id,
+            "kind": "dynamic_prop",
+            "base_pose": {"x": self.x, "y": self.y, "z": self.z, "yaw": self.yaw, **q},
+        }
+
+
 @dataclass
 class Room:
-    """Logical shared world: mechs + members; one tick for all members."""
+    """Logical shared world: mechs + props + members; one tick for all members."""
 
     room_id: str
     contract: dict[str, Any]
     mechs: dict[str, MechState] = field(default_factory=dict)
+    props: dict[str, DynamicProp] = field(default_factory=dict)
     members: dict[str, Session] = field(default_factory=dict)
     tick: int = 0
     max_members: int = 1
@@ -369,6 +423,8 @@ class Room:
                 mujoco.mj_step(mujoco_mechs[0]._model, self.mj_data)
             for mech in mujoco_mechs:
                 mech.pull_state(dt)
+            for prop in self.props.values():
+                prop.pull_state()
             return
         for mech in self.mechs.values():
             mech.step(dt)
@@ -579,18 +635,60 @@ class EchoGateway:
             geom.conaffinity = 1
             geom.friction = list(OBSTACLE_FRICTION)
             appended += 1
+
+        props = self.contract.get("dynamic_props") or []
+        prop_n = self._append_dynamic_props(spec, props)
         LOG.info(
-            "mujoco world F7: %d mechs attached, %d/%d static_obstacles, level=%s",
+            "mujoco world F7: %d mechs attached, %d/%d static_obstacles, %d/%d dynamic_props, level=%s",
             len(spawns),
             appended,
             len(obstacles),
+            prop_n,
+            len(props),
             self.contract.get("level_id"),
         )
         return spec.compile()
 
-    def _make_room_mechs(self) -> tuple[dict[str, MechState], Any, int]:
-        """Instantiate contract mech_spawns; MuJoCo uses one shared MjData (F7)."""
+    def _append_dynamic_props(self, spec: Any, props: list) -> int:
+        """Add planar pushable boxes (slide_x/y + yaw) into the MjSpec."""
+        added = 0
+        for prop in props:
+            if prop.get("physics_role", "mujoco_authoritative") != "mujoco_authoritative":
+                continue
+            if prop.get("shape", "box") != "box":
+                LOG.warning("dynamic_prop %s: shape %r skipped", prop.get("id"), prop.get("shape"))
+                continue
+            pid = str(prop.get("id", f"prop_{added}"))
+            pose = prop.get("pose") or {}
+            z = float(pose.get("z", 0.25))
+            half = [float(s) / 2.0 for s in prop["size"]]
+            mass = float(prop.get("mass", 1.2))
+            body = spec.worldbody.add_body(name=pid, pos=[0.0, 0.0, z])
+            for axis, suffix, jtype in (
+                ([1.0, 0.0, 0.0], "sx", mujoco.mjtJoint.mjJNT_SLIDE),
+                ([0.0, 1.0, 0.0], "sy", mujoco.mjtJoint.mjJNT_SLIDE),
+                ([0.0, 0.0, 1.0], "yaw", mujoco.mjtJoint.mjJNT_HINGE),
+            ):
+                j = body.add_joint(name=f"{pid}_{suffix}", type=jtype, axis=axis)
+                j.damping = 0.15 if suffix != "yaw" else 0.08
+            geom = body.add_geom(
+                name=f"{pid}_geom",
+                type=mujoco.mjtGeom.mjGEOM_BOX,
+                size=half,
+                mass=mass,
+            )
+            geom.contype = 1
+            geom.conaffinity = 1
+            fr = float(prop.get("friction", OBSTACLE_FRICTION[0]))
+            geom.friction = [fr, 0.05, 0.01]
+            geom.rgba = [0.72, 0.48, 0.22, 1.0]
+            added += 1
+        return added
+
+    def _make_room_mechs(self) -> tuple[dict[str, MechState], dict[str, DynamicProp], Any, int]:
+        """Instantiate contract mechs + props; MuJoCo uses one shared MjData (F7)."""
         mechs: dict[str, MechState] = {}
+        props: dict[str, DynamicProp] = {}
         shared = None
         substeps = 1
         if self.mj_model is not None:
@@ -614,7 +712,23 @@ class EchoGateway:
                 mech = MechState("mech_player")
             mech.reset_pose({})
             mechs["mech_player"] = mech
-        return mechs, shared, substeps
+        if shared is not None:
+            for prop in self.contract.get("dynamic_props") or []:
+                if prop.get("physics_role", "mujoco_authoritative") != "mujoco_authoritative":
+                    continue
+                if prop.get("shape", "box") != "box":
+                    continue
+                pid = str(prop["id"])
+                dp = DynamicProp(
+                    pid,
+                    self.mj_model,
+                    shared,
+                    body_name=pid,
+                    joint_prefix=f"{pid}_",
+                )
+                dp.reset_pose(prop.get("pose") or {})
+                props[pid] = dp
+        return mechs, props, shared, substeps
 
     def _leave_room(self, session: Session) -> None:
         """Detach session from its room; drop empty rooms."""
@@ -758,17 +872,25 @@ class EchoGateway:
 
         room = self.rooms.get(room_id)
         if room is None:
-            mechs, mj_data, mj_substeps = self._make_room_mechs()
+            mechs, props, mj_data, mj_substeps = self._make_room_mechs()
             room = Room(
                 room_id=room_id,
                 contract=self.contract,
                 mechs=mechs,
+                props=props,
                 max_members=max_members,
                 mj_data=mj_data,
                 mj_substeps=mj_substeps,
             )
             self.rooms[room_id] = room
-            LOG.info("room=%s created max_members=%d mechs=%s shared_mj=%s", room_id, max_members, list(room.mechs), mj_data is not None)
+            LOG.info(
+                "room=%s created max_members=%d mechs=%s props=%s shared_mj=%s",
+                room_id,
+                max_members,
+                list(room.mechs),
+                list(room.props),
+                mj_data is not None,
+            )
         else:
             active = [s for s in room.members.values() if s.joined and not s.closed]
             if len(active) >= room.max_members:
@@ -860,6 +982,14 @@ class EchoGateway:
                     "controllable": False,
                 }
             )
+        for prop in self.contract.get("dynamic_props") or []:
+            entities.append(
+                {
+                    "entity_id": prop["id"],
+                    "kind": "dynamic_prop",
+                    "controllable": False,
+                }
+            )
 
         await send_json(
             session.ws,
@@ -902,7 +1032,8 @@ class EchoGateway:
                 room.tick += 1
                 state_payload = {
                     "kind": "full",
-                    "entities": [m.to_entity_state() for m in room.mechs.values()],
+                    "entities": [m.to_entity_state() for m in room.mechs.values()]
+                    + [p.to_entity_state() for p in room.props.values()],
                 }
                 for session in members:
                     tick_events = list(session.pending_events)
