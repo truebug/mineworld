@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | 多人本机 Demo 已通；F0–F7 完成；**Next：F8 Godot 自动跟皮** |
+| **目标** | 多人本机 Demo 已通；F0–F8 融合完成 |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -30,9 +30,9 @@
 | F5 | 第三方 DiffBot URDF 换皮（planar 包装） | headless + mujoco smoke | [x] |
 | F6 | 真差速：左右轮 hinge + body `vx/ω`→轮速；`joints` 含轮 | headless 平面跟踪仍 PASS；smoke 见轮关节 | [x] |
 | F7 | 机甲互撞（同房共享 MjData） | `?room=demo` 两机可撞；`scripts/mech_collision_smoke.py` PASS | [x] |
-| F8 | Godot 自动跟皮（少手抄 URDF 常量） | 改 URDF 重生成后傀儡尺寸自动对齐 | [ ] |
+| F8 | Godot 自动跟皮（少手抄 URDF 常量） | 改 URDF 重生成后傀儡尺寸自动对齐 | [x] |
 
-顺序：F6 → F7 → F8。`main` 已含 W2.3 / W3 / T2.6 与 F0–F5。
+顺序：F6 → F7 → F8（已完成）。`main` 已含 W2.3 / W3 / T2.6 与 F0–F8。
 
 ---
 

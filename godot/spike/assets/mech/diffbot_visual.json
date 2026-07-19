@@ -1,0 +1,55 @@
+{
+  "source": "diffbot.urdf",
+  "frame": "mineworld_zup_m",
+  "chassis": {
+    "size": [
+      1.0,
+      1.0,
+      0.5
+    ]
+  },
+  "wheels": [
+    {
+      "name": "left_wheel",
+      "joint": "left_wheel_joint",
+      "pos": [
+        0.0,
+        -0.5,
+        -0.25
+      ],
+      "radius": 0.15,
+      "length": 0.2
+    },
+    {
+      "name": "right_wheel",
+      "joint": "right_wheel_joint",
+      "pos": [
+        0.0,
+        0.5,
+        -0.25
+      ],
+      "radius": 0.15,
+      "length": 0.2
+    }
+  ],
+  "casters": [
+    {
+      "name": "caster_frontal_wheel",
+      "pos": [
+        0.35,
+        0.0,
+        -0.25
+      ],
+      "radius": 0.15
+    },
+    {
+      "name": "caster_rear_wheel",
+      "pos": [
+        -0.35,
+        0.0,
+        -0.25
+      ],
+      "radius": 0.15
+    }
+  ]
+}

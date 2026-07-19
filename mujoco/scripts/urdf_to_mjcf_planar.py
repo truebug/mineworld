@@ -2,25 +2,29 @@
 
 URDF supplies visual/collision geometry (F2/F5). MJCF adds POC planar joints
 (slide_x / slide_y / yaw_z) + velocity actuators. Continuous cylinder wheels
-become hinge bodies + velocity actuators (F6 differential mapping in Gateway).
-Fixed casters stay visual-only geoms.
+become hinge bodies (F6). Fixed casters stay visual-only geoms.
+
+F8: also writes Godot visual JSON (chassis/wheels/casters) so the puppet
+does not hard-code URDF dimensions.
 
 Usage (repo root):
   .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py --check
-  .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py \\
-      --urdf mujoco/models/mechs/planar_cart.urdf \\
-      --out mujoco/models/mechs/planar_cart.xml --check
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 MECHS = Path(__file__).resolve().parents[1] / "models" / "mechs"
+REPO = Path(__file__).resolve().parents[2]
 DEFAULT_URDF = MECHS / "third_party" / "diffbot" / "diffbot.urdf"
 DEFAULT_MJCF = MECHS / "diffbot_planar.xml"
+DEFAULT_GODOT_VISUAL = (
+    REPO / "godot" / "spike" / "assets" / "mech" / "diffbot_visual.json"
+)
 
 
 def _parse_rgba(visual: ET.Element) -> str:
@@ -90,6 +94,66 @@ def _find_parent_joint(root: ET.Element, link_name: str) -> ET.Element | None:
         if child is not None and child.get("link") == link_name:
             return j
     return None
+
+
+def extract_godot_visual(urdf_path: Path) -> dict:
+    """Parse URDF into a Godot puppet visual dict (MW Z-up meters)."""
+    root = ET.parse(urdf_path).getroot()
+    base = root.find("./link[@name='base_link']")
+    if base is None:
+        raise SystemExit("URDF missing link base_link")
+    visual = base.find("visual")
+    if visual is None:
+        raise SystemExit("URDF base_link missing visual")
+    box = _parse_box(visual)
+    if box is None:
+        raise SystemExit("URDF base_link visual must be a box")
+    wheels: list[dict] = []
+    casters: list[dict] = []
+    for link in root.findall("link"):
+        name = link.get("name", "")
+        if name == "base_link":
+            continue
+        joint = _find_parent_joint(root, name)
+        if joint is None:
+            continue
+        ox, oy, oz = _parse_origin(joint)
+        wv = link.find("visual")
+        if wv is None:
+            continue
+        jtype = (joint.get("type") or "").lower()
+        cyl = _parse_cylinder(wv)
+        if jtype == "continuous" and cyl is not None:
+            radius, length = cyl
+            wheels.append(
+                {
+                    "name": name,
+                    "joint": joint.get("name") or f"{name}_joint",
+                    "pos": [ox, oy, oz],
+                    "radius": radius,
+                    "length": length,
+                }
+            )
+            continue
+        sphere_r = _parse_sphere(wv)
+        if sphere_r is not None:
+            casters.append({"name": name, "pos": [ox, oy, oz], "radius": sphere_r})
+    return {
+        "source": urdf_path.name,
+        "frame": "mineworld_zup_m",
+        "chassis": {"size": [box[0], box[1], box[2]]},
+        "wheels": wheels,
+        "casters": casters,
+    }
+
+
+def write_godot_visual(urdf_path: Path, out_path: Path) -> dict:
+    """Write Godot visual JSON next to the spike assets; return the payload."""
+    payload = extract_godot_visual(urdf_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    print(f"wrote {out_path}")
+    return payload
 
 
 def compile_urdf(urdf_path: Path) -> str:
@@ -220,6 +284,12 @@ def main() -> int:
     parser.add_argument("--urdf", type=Path, default=DEFAULT_URDF)
     parser.add_argument("--out", type=Path, default=DEFAULT_MJCF)
     parser.add_argument(
+        "--godot-visual",
+        type=Path,
+        default=DEFAULT_GODOT_VISUAL,
+        help="Write Godot puppet visual JSON (F8); empty string to skip",
+    )
+    parser.add_argument(
         "--check",
         action="store_true",
         help="Load generated MJCF with mujoco after write",
@@ -229,6 +299,8 @@ def main() -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(xml, encoding="utf-8")
     print(f"wrote {args.out}")
+    if str(args.godot_visual):
+        write_godot_visual(args.urdf, args.godot_visual)
     if args.check:
         import sys
 
@@ -241,6 +313,14 @@ def main() -> int:
             f"mujoco OK nq={model.nq} nv={model.nv} nu={model.nu} "
             f"bodies={model.nbody}"
         )
+        if str(args.godot_visual):
+            vis = json.loads(args.godot_visual.read_text(encoding="utf-8"))
+            assert vis.get("chassis", {}).get("size"), "godot visual missing chassis"
+            assert len(vis.get("wheels") or []) >= 2, "godot visual needs ≥2 wheels"
+            print(
+                f"godot visual OK chassis={vis['chassis']['size']} "
+                f"wheels={len(vis['wheels'])} casters={len(vis.get('casters') or [])}"
+            )
     return 0
 
 

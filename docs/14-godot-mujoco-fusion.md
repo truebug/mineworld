@@ -91,11 +91,13 @@
 | **F5** | 第三方 DiffBot URDF → planar MJCF 换皮 | headless + mujoco smoke；协议仍 velocity | Done |
 | **F6** | 真差速轮：hinge + `vx/ω`→ω_L/ω_R；底盘仍 planar 权威 | headless PASS；state `joints` 含轮 | Done |
 | **F7** | 同房共享 MjData → 机甲互撞 | demo 房可撞；`mech_collision_smoke.py` | Done |
-| **F8** | Godot 自动跟皮（消手抄常量） | URDF 变几何后傀儡自动对齐 | Next |
+| **F8** | Godot 自动跟皮（消手抄常量） | URDF 变几何后傀儡自动对齐 | Done |
 
 **F6 说明（KISS）**：协议仍 body `velocity`；Gateway 按差速写左右轮 `qpos/qvel`；底盘 planar 权威（轮接触推车留后）。
 
 **F7 说明**：`world_flat` 去掉单 chassis 后，按 `mech_spawns` attach 带 `{entity_id}/` 前缀的机甲；Room 共用一份 `MjData`，每 tick 各机写 ctrl → 一次 `mj_step`。
+
+**F8 说明**：`urdf_to_mjcf_planar.py` 同步写出 `godot/spike/assets/mech/diffbot_visual.json`；`mech_puppet.gd` 运行时加载，不再手抄尺寸。
 
 **非目标（本阶段）**：在 Godot 内嵌 MuJoCo；自动从任意 URDF 一键生成完整可玩关；人形全身遥操手感（T2.7）。
 
@@ -132,12 +134,12 @@
 2. URDF→MJCF 工具链：仓库脚本 vs 外部预编译产物入库？  
 3. 关节控制是否从 `velocity` 基座扩展到 `joint_targets`（协议加字段，v0 兼容）？
 
-**F0–F7 已落地**；下一步：**F8 Godot 自动跟皮**。公网 W2 / 更复杂真机 URDF 仍后置。
+**F0–F8 已落地**。公网 W2 / 更复杂真机 URDF / 轮接触推车仍后置。
 
-### F2 / F4 / F5 / F7 命令
+### F2 / F4 / F5 / F7 / F8 命令
 
 ```bash
-# F5 default skin (DiffBot → diffbot_planar.xml)
+# F5/F8: DiffBot → MJCF + Godot visual JSON
 .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py --check
 .venv/bin/python mujoco/scripts/headless_run.py
 .venv/bin/python scripts/mech_collision_smoke.py   # F7
