@@ -182,6 +182,31 @@ func apply_state(entity: Dictionary, t_sim: float) -> void:
 		_prev_time = t_sim - interp_delay
 		position = _next_pos
 		rotation.y = _next_yaw
+	_apply_wheel_spin(entity.get("joints", {}))
+
+
+func _apply_wheel_spin(joints: Variant) -> void:
+	"""F6: spin drive-wheel meshes from hinge joint angles (MW +Y axle)."""
+	if typeof(joints) != TYPE_DICTIONARY:
+		return
+	ensure_planar_cart_visual()
+	var body := get_node_or_null("Body")
+	if body == null:
+		return
+	# Joint names from DiffBot URDF; fall back to first two Wheel_* nodes.
+	var angles: Array = []
+	for key in ["left_wheel_joint", "right_wheel_joint"]:
+		if joints.has(key):
+			angles.append(float(joints[key]))
+	var wi := 0
+	for child in body.get_children():
+		if not str(child.name).begins_with("Wheel_"):
+			continue
+		if wi >= angles.size():
+			break
+		# Mesh laid with rotation_degrees.x=90 so local Y ≈ axle; spin on Y.
+		(child as Node3D).rotation = Vector3(deg_to_rad(90.0), float(angles[wi]), 0.0)
+		wi += 1
 
 
 func _process(_delta: float) -> void:

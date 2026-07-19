@@ -70,6 +70,7 @@ async def smoke(
         saw_objective = False
         saw_state = False
         saw_joints = False
+        saw_wheels = False
         last_x = None
         deadline = asyncio.get_event_loop().time() + seconds
         while asyncio.get_event_loop().time() < deadline:
@@ -95,10 +96,12 @@ async def smoke(
                 joints = ent.get("joints") or {}
                 if "slide_x" in joints and "slide_y" in joints and "yaw_z" in joints:
                     saw_joints = True
+                if "left_wheel_joint" in joints and "right_wheel_joint" in joints:
+                    saw_wheels = True
                 print(
                     f"state tick={msg['tick']} x={ent['base_pose']['x']:.3f} "
                     f"y={ent['base_pose']['y']:.3f} yaw={ent['base_pose']['yaw']:.3f} "
-                    f"joints={bool(joints)}"
+                    f"joints={bool(joints)} wheels={saw_wheels}"
                 )
 
         if expect_objective:
@@ -113,6 +116,12 @@ async def smoke(
             return 1
         if not saw_joints:
             print("FAIL: expected joints slide_x/slide_y/yaw_z on state", file=sys.stderr)
+            return 1
+        if not saw_wheels:
+            print(
+                "FAIL: expected F6 wheel joints left_wheel_joint/right_wheel_joint",
+                file=sys.stderr,
+            )
             return 1
         if last_x is None or last_x <= 0.05:
             print("FAIL: expected motion in +x from vx=1", last_x, file=sys.stderr)

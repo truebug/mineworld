@@ -89,6 +89,13 @@
 | **F3** | Godot 视觉与 URDF 几何对齐（底盘/轮/鼻） | 位姿仍跟 state | Done |
 | **F4** | 契约导出：从 `.tscn` 抽取障碍/trigger/spawn（T4.2） | `scripts/export_scene_contract.py --check` | Done |
 | **F5** | 第三方 DiffBot URDF → planar MJCF 换皮 | headless + mujoco smoke；协议仍 velocity | Done |
+| **F6** | 真差速轮：hinge + `vx/ω`→ω_L/ω_R；底盘仍 planar 权威 | headless PASS；state `joints` 含轮 | Done |
+| **F7** | 同房共享 MjData → 机甲互撞 | demo 房可撞；`mech_collision_smoke.py` | Done |
+| **F8** | Godot 自动跟皮（消手抄常量） | URDF 变几何后傀儡自动对齐 | Next |
+
+**F6 说明（KISS）**：协议仍 body `velocity`；Gateway 按差速写左右轮 `qpos/qvel`；底盘 planar 权威（轮接触推车留后）。
+
+**F7 说明**：`world_flat` 去掉单 chassis 后，按 `mech_spawns` attach 带 `{entity_id}/` 前缀的机甲；Room 共用一份 `MjData`，每 tick 各机写 ctrl → 一次 `mj_step`。
 
 **非目标（本阶段）**：在 Godot 内嵌 MuJoCo；自动从任意 URDF 一键生成完整可玩关；人形全身遥操手感（T2.7）。
 
@@ -112,7 +119,7 @@
 |------|------|------------|
 | W2.3 / W3 / T2.6 | Done | 多人与 joints 为融合前置 |
 | 公网 W2.1/2/4 | 暂缓 | 不阻塞 F0–F2 |
-| 机甲互撞 | 可选 | 共享 MjData；可与 F2 后并行 |
+| 机甲互撞 | Done（F7） | 同房共享 MjData |
 | T4.2 契约导出 | Later | 对应 F4 |
 
 执行勾选以 [09-todo](09-todo.md) 为准。
@@ -125,14 +132,15 @@
 2. URDF→MJCF 工具链：仓库脚本 vs 外部预编译产物入库？  
 3. 关节控制是否从 `velocity` 基座扩展到 `joint_targets`（协议加字段，v0 兼容）？
 
-未拍板前：**F0–F5 已落地**；下一步可选：真差速轮动、更复杂真机 URDF、互撞、公网 W2。
+**F0–F7 已落地**；下一步：**F8 Godot 自动跟皮**。公网 W2 / 更复杂真机 URDF 仍后置。
 
-### F2 / F4 / F5 命令
+### F2 / F4 / F5 / F7 命令
 
 ```bash
 # F5 default skin (DiffBot → diffbot_planar.xml)
 .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py --check
 .venv/bin/python mujoco/scripts/headless_run.py
+.venv/bin/python scripts/mech_collision_smoke.py   # F7
 .venv/bin/python scripts/export_scene_contract.py --check
 .venv/bin/python gateway/echo_server.py --physics mujoco
 .venv/bin/python scripts/ws_smoke_test.py

@@ -7,6 +7,6 @@
 | **License** | Apache License 2.0 (`LICENSE`) |
 | **Vendored as-is** | `urdf/*.xacro`, `rviz/*.rviz` |
 | **Derived** | `diffbot.urdf` — plain URDF (prefix="") from xacro, **geometry ×10** (~1 m footprint) for POC visibility |
-| **MineWorld add** | Planar joints via `mechs/diffbot_planar.xml`; chassis mass/`Izz` not volume-scaled (servo tracking) |
+| **MineWorld add** | Planar joints + F6 wheel hinges; Gateway maps `vx/ω`→ω_L/ω_R; mass/`Izz` not volume-scaled |
 
 This is a **skin/geometry** pilot: wheels/casters are visual in MJCF; teleop remains body-frame velocity.

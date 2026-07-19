@@ -7,11 +7,12 @@ Physics backends (--physics):
 
 Rooms (W2.3 / W3):
   join.payload.room_id omitted → private room (= session_id), one member.
-  room_id "demo" → shared room, max 2 members; each mech has its own MjData
-  (same MjModel). State fans out to all members. No inter-mech collision yet.
+  room_id "demo" → shared room, max 2 members; F7: one shared MjData so
+  mechs can collide (joints/actuators prefixed by entity_id).
 
 Recording (T2.5): on join, writes recordings/sessions/<id>/header.json + frames.jsonl.
-Joints (T2.6): entity_state includes joints / joint_vels for slide_x/y + yaw_z.
+Joints (T2.6 / F6): entity_state includes joints / joint_vels (planar + wheels).
+F7: one shared MjData per Room so mechs can collide (prefixed joints/actuators).
 """
 
 from __future__ import annotations
@@ -150,22 +151,84 @@ class MujocoMech(MechState):
     The chassis slide joints translate in the parent (world) frame (they
     compose before the hinge), so the body-frame velocity command must be
     rotated by the current yaw — same math as the fake integrator.
-    Each mech owns its own MjData (W2.3 / W3); no inter-mech collision yet.
+
+    F7: Room shares one MjData; joint/actuator names are prefixed
+    ``{entity_id}/``. ``apply_ctrl`` runs per mech; Room calls ``mj_step``
+    once; then ``pull_state`` reads qpos and syncs F6 wheel kinematics.
     """
 
-    def __init__(self, entity_id: str, model: "mujoco.MjModel", data: "mujoco.MjData") -> None:
+    def __init__(
+        self,
+        entity_id: str,
+        model: "mujoco.MjModel",
+        data: "mujoco.MjData",
+        *,
+        prefix: str = "",
+    ) -> None:
         super().__init__(entity_id)
         self._model = model
         self._data = data
-        jnt = lambda n: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, n)
+        self._prefix = prefix
+        jnt = lambda n: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, f"{prefix}{n}")
+        act = lambda n: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{prefix}{n}")
         self._qx = model.jnt_qposadr[jnt("slide_x")]
         self._qy = model.jnt_qposadr[jnt("slide_y")]
         self._qyaw = model.jnt_qposadr[jnt("yaw_z")]
         self._dx = model.jnt_dofadr[jnt("slide_x")]
         self._dy = model.jnt_dofadr[jnt("slide_y")]
         self._dyaw = model.jnt_dofadr[jnt("yaw_z")]
+        self._act_vx = act("vx")
+        self._act_vy = act("vy")
+        self._act_yaw = act("yaw_rate")
+        self._chassis = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, f"{prefix}chassis")
+        self._wheel_left: tuple[str, int, int] | None = None
+        self._wheel_right: tuple[str, int, int] | None = None
+        self._track = 0.0
+        self._wheel_r = 0.15
+        self._wheel_angle_l = 0.0
+        self._wheel_angle_r = 0.0
+        self._resolve_diff_drive()
         self._substeps = max(1, int(round(DT / model.opt.timestep)))
         self.reset_pose({})
+
+    def _resolve_diff_drive(self) -> None:
+        """Pick left/right wheel hinge joints for this mech prefix."""
+        model = self._model
+        candidates: list[tuple[str, int, int, float]] = []
+        for jid in range(model.njnt):
+            jname = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_JOINT, jid) or ""
+            if self._prefix and not jname.startswith(self._prefix):
+                continue
+            short = jname[len(self._prefix) :] if self._prefix else jname
+            if "wheel" not in short.lower():
+                continue
+            if short in ("slide_x", "slide_y", "yaw_z"):
+                continue
+            if model.jnt_type[jid] != mujoco.mjtJoint.mjJNT_HINGE:
+                continue
+            body_id = int(model.jnt_bodyid[jid])
+            y = float(model.body_pos[body_id][1])
+            gadr = int(model.body_geomadr[body_id])
+            radius = float(model.geom_size[gadr][0]) if gadr >= 0 else 0.15
+            candidates.append(
+                (jname, int(model.jnt_qposadr[jid]), int(model.jnt_dofadr[jid]), y)
+            )
+            self._wheel_r = radius
+        if len(candidates) < 2:
+            return
+        candidates.sort(key=lambda c: c[3])
+        left, right = candidates[0], candidates[-1]
+        self._wheel_left = (left[0], left[1], left[2])
+        self._wheel_right = (right[0], right[1], right[2])
+        self._track = abs(right[3] - left[3])
+        logging.getLogger("mineworld.gateway").info(
+            "F6 diff-drive entity=%s track=%.3f r=%.3f joints=%s/%s",
+            self.entity_id,
+            self._track,
+            self._wheel_r,
+            left[0],
+            right[0],
+        )
 
     def reset_pose(self, pose: dict[str, Any]) -> None:
         super().reset_pose(pose)
@@ -174,33 +237,88 @@ class MujocoMech(MechState):
         self._data.qpos[self._qx] = self.x
         self._data.qpos[self._qy] = self.y
         self._data.qpos[self._qyaw] = self.yaw
-        self._data.qvel[:] = 0.0
-        self._data.ctrl[:] = 0.0
+        # Clear this mech's dofs only (shared MjData).
+        self._data.qvel[self._dx] = 0.0
+        self._data.qvel[self._dy] = 0.0
+        self._data.qvel[self._dyaw] = 0.0
+        self._data.ctrl[self._act_vx] = 0.0
+        self._data.ctrl[self._act_vy] = 0.0
+        self._data.ctrl[self._act_yaw] = 0.0
+        self._wheel_angle_l = 0.0
+        self._wheel_angle_r = 0.0
+        if self._wheel_left is not None and self._wheel_right is not None:
+            self._data.qpos[self._wheel_left[1]] = 0.0
+            self._data.qpos[self._wheel_right[1]] = 0.0
+            self._data.qvel[self._wheel_left[2]] = 0.0
+            self._data.qvel[self._wheel_right[2]] = 0.0
         mujoco.mj_forward(self._model, self._data)
 
-    def step(self, dt: float) -> None:
+    def apply_ctrl(self) -> None:
+        """Write this mech's planar velocity actuators (shared MjData)."""
         if not self.controlled:
-            self._data.ctrl[:] = 0.0
+            self._data.ctrl[self._act_vx] = 0.0
+            self._data.ctrl[self._act_vy] = 0.0
+            self._data.ctrl[self._act_yaw] = 0.0
+            return
+        yaw = float(self._data.qpos[self._qyaw])
+        c, s = math.cos(yaw), math.sin(yaw)
+        self._data.ctrl[self._act_vx] = c * self.vx - s * self.vy
+        self._data.ctrl[self._act_vy] = s * self.vx + c * self.vy
+        self._data.ctrl[self._act_yaw] = self.yaw_rate
+
+    def _sync_wheels(self, dt: float) -> None:
+        """Overwrite wheel qpos/qvel from body vx / yaw_rate (kinematic DiffBot)."""
+        if self._wheel_left is None or self._wheel_right is None or self._wheel_r <= 1e-6:
+            return
+        if not self.controlled:
+            w_l = w_r = 0.0
         else:
-            yaw = float(self._data.qpos[self._qyaw])
-            c, s = math.cos(yaw), math.sin(yaw)
-            self._data.ctrl[0] = c * self.vx - s * self.vy
-            self._data.ctrl[1] = s * self.vx + c * self.vy
-            self._data.ctrl[2] = self.yaw_rate
-        for _ in range(self._substeps):
-            mujoco.mj_step(self._model, self._data)
+            half_l = 0.5 * self._track
+            w_l = (self.vx - self.yaw_rate * half_l) / self._wheel_r
+            w_r = (self.vx + self.yaw_rate * half_l) / self._wheel_r
+        self._wheel_angle_l += w_l * dt
+        self._wheel_angle_r += w_r * dt
+        self._data.qpos[self._wheel_left[1]] = self._wheel_angle_l
+        self._data.qpos[self._wheel_right[1]] = self._wheel_angle_r
+        self._data.qvel[self._wheel_left[2]] = w_l
+        self._data.qvel[self._wheel_right[2]] = w_r
+
+    def pull_state(self, dt: float) -> None:
+        """Read chassis pose from shared MjData after Room mj_step."""
+        self._sync_wheels(dt)
         d = self._data
         self.x = float(d.qpos[self._qx])
         self.y = float(d.qpos[self._qy])
-        # qpos is the kinematic truth (slide x/y + hinge z); xpos needs a
-        # forward pass to re-sync after mj_step for the same tick.
         mujoco.mj_forward(self._model, d)
-        self.z = float(d.xpos[mujoco.mj_name2id(self._model, mujoco.mjtObj.mjOBJ_BODY, "chassis")][2])
+        self.z = float(d.xpos[self._chassis][2])
         self.yaw = float(d.qpos[self._qyaw])
+
+    def step(self, dt: float) -> None:
+        """Solo step (unused when Room owns shared mj_step); kept for tests."""
+        self.apply_ctrl()
+        for _ in range(self._substeps):
+            mujoco.mj_step(self._model, self._data)
+        self.pull_state(dt)
 
     def to_entity_state(self) -> dict[str, Any]:
         q = _yaw_to_quat(self.yaw)
         d = self._data
+        joints = {
+            "slide_x": float(d.qpos[self._qx]),
+            "slide_y": float(d.qpos[self._qy]),
+            "yaw_z": float(d.qpos[self._qyaw]),
+        }
+        joint_vels = {
+            "slide_x": float(d.qvel[self._dx]),
+            "slide_y": float(d.qvel[self._dy]),
+            "yaw_z": float(d.qvel[self._dyaw]),
+        }
+        if self._wheel_left is not None and self._wheel_right is not None:
+            for meta in (self._wheel_left, self._wheel_right):
+                jname, qadr, dadr = meta
+                short = jname[len(self._prefix) :] if self._prefix else jname
+                joints[short] = float(d.qpos[qadr])
+                joint_vels[short] = float(d.qvel[dadr])
         return {
             "entity_id": self.entity_id,
             "base_pose": {"x": self.x, "y": self.y, "z": self.z, "yaw": self.yaw, **q},
@@ -209,16 +327,8 @@ class MujocoMech(MechState):
                 "vy": float(d.qvel[self._dy]),
                 "vz": 0.0,
             },
-            "joints": {
-                "slide_x": float(d.qpos[self._qx]),
-                "slide_y": float(d.qpos[self._qy]),
-                "yaw_z": float(d.qpos[self._qyaw]),
-            },
-            "joint_vels": {
-                "slide_x": float(d.qvel[self._dx]),
-                "slide_y": float(d.qvel[self._dy]),
-                "yaw_z": float(d.qvel[self._dyaw]),
-            },
+            "joints": joints,
+            "joint_vels": joint_vels,
         }
 
 
@@ -232,6 +342,9 @@ class Room:
     members: dict[str, Session] = field(default_factory=dict)
     tick: int = 0
     max_members: int = 1
+    # F7: shared MuJoCo state so mechs collide; None for fake physics.
+    mj_data: Any = None
+    mj_substeps: int = 1
 
     def free_spawn_id(self) -> str | None:
         """Return first mech spawn id not claimed by a joined member."""
@@ -245,6 +358,20 @@ class Room:
             if eid and eid not in taken and eid in self.mechs:
                 return str(eid)
         return None
+
+    def step_physics(self, dt: float) -> None:
+        """Advance all mechs; MuJoCo rooms share one mj_step (F7)."""
+        mujoco_mechs = [m for m in self.mechs.values() if isinstance(m, MujocoMech)]
+        if self.mj_data is not None and mujoco_mechs:
+            for mech in mujoco_mechs:
+                mech.apply_ctrl()
+            for _ in range(self.mj_substeps):
+                mujoco.mj_step(mujoco_mechs[0]._model, self.mj_data)
+            for mech in mujoco_mechs:
+                mech.pull_state(dt)
+            return
+        for mech in self.mechs.values():
+            mech.step(dt)
 
 
 @dataclass
@@ -403,14 +530,34 @@ class EchoGateway:
         }
 
     def _build_mujoco_world(self, model_path: Path) -> "mujoco.MjModel":
-        """Load base MJCF and append contract static_obstacles as static geoms.
+        """Build multi-mech world: ground + one attached chassis per spawn (F7).
 
-        Only shape=box is supported at POC stage. Contract size is the full
-        edge length; MJCF geom size is the half-extent. Obstacles with a
-        physics_role other than mujoco_authoritative are viewer-only and
-        skipped here.
+        Starts from ``world_flat.xml`` (ground), strips the single included
+        chassis, then attaches ``model_ref`` MJCF once per ``mech_spawns`` with
+        prefix ``{entity_id}/``. Contract static_obstacles are appended as
+        static box geoms (T2.3).
         """
+        models_dir = model_path.parent
         spec = mujoco.MjSpec.from_file(str(model_path))
+        # Drop the single-mech include so we can attach N prefixed copies.
+        chassis = spec.worldbody.first_body()
+        if chassis is not None and (chassis.name or "") == "chassis":
+            spec.delete(chassis)
+
+        spawns = list(self.contract.get("mech_spawns") or [])
+        if not spawns:
+            spawns = [{"id": "mech_player", "model_ref": "mechs/diffbot_planar.xml", "pose": {}}]
+
+        for spawn in spawns:
+            eid = str(spawn.get("id", "mech_player"))
+            rel = str(spawn.get("model_ref") or "mechs/diffbot_planar.xml")
+            mech_path = models_dir / rel
+            if not mech_path.is_file():
+                raise SystemExit(f"mech model_ref not found: {mech_path}")
+            child = mujoco.MjSpec.from_file(str(mech_path))
+            frame = spec.worldbody.add_frame(name=f"frame_{eid}", pos=[0.0, 0.0, 0.0])
+            spec.attach(child, prefix=f"{eid}/", frame=frame)
+
         obstacles = self.contract.get("static_obstacles") or []
         appended = 0
         for ob in obstacles:
@@ -428,40 +575,46 @@ class EchoGateway:
                 pos=[float(pose.get("x", 0.0)), float(pose.get("y", 0.0)), float(pose.get("z", 0.0))],
                 quat=[quat["qw"], quat["qx"], quat["qy"], quat["qz"]],
             )
-            # <default> in box_mech.xml does not reach geoms added via MjSpec.
             geom.contype = 1
             geom.conaffinity = 1
             geom.friction = list(OBSTACLE_FRICTION)
             appended += 1
         LOG.info(
-            "mujoco world: %d/%d static_obstacles appended from contract level=%s",
+            "mujoco world F7: %d mechs attached, %d/%d static_obstacles, level=%s",
+            len(spawns),
             appended,
             len(obstacles),
             self.contract.get("level_id"),
         )
         return spec.compile()
 
-    def _make_mech(self, entity_id: str, pose: dict[str, Any]) -> MechState:
-        """Create one mech; MuJoCo path allocates a fresh MjData per mech."""
-        if self.mj_model is not None:
-            data = mujoco.MjData(self.mj_model)
-            mech = MujocoMech(entity_id, self.mj_model, data)
-        else:
-            mech = MechState(entity_id)
-        mech.reset_pose(pose)
-        mech.controlled = False
-        mech.vx = mech.vy = mech.yaw_rate = 0.0
-        return mech
-
-    def _make_room_mechs(self) -> dict[str, MechState]:
-        """Instantiate all contract mech_spawns for a new Room."""
+    def _make_room_mechs(self) -> tuple[dict[str, MechState], Any, int]:
+        """Instantiate contract mech_spawns; MuJoCo uses one shared MjData (F7)."""
         mechs: dict[str, MechState] = {}
+        shared = None
+        substeps = 1
+        if self.mj_model is not None:
+            shared = mujoco.MjData(self.mj_model)
+            substeps = max(1, int(round(DT / self.mj_model.opt.timestep)))
         for spawn in self.contract.get("mech_spawns") or []:
             eid = str(spawn.get("id", "mech_player"))
-            mechs[eid] = self._make_mech(eid, spawn.get("pose") or {})
+            pose = spawn.get("pose") or {}
+            if shared is not None:
+                mech = MujocoMech(eid, self.mj_model, shared, prefix=f"{eid}/")
+            else:
+                mech = MechState(eid)
+            mech.reset_pose(pose)
+            mech.controlled = False
+            mech.vx = mech.vy = mech.yaw_rate = 0.0
+            mechs[eid] = mech
         if not mechs:
-            mechs["mech_player"] = self._make_mech("mech_player", {})
-        return mechs
+            if shared is not None:
+                mech = MujocoMech("mech_player", self.mj_model, shared, prefix="mech_player/")
+            else:
+                mech = MechState("mech_player")
+            mech.reset_pose({})
+            mechs["mech_player"] = mech
+        return mechs, shared, substeps
 
     def _leave_room(self, session: Session) -> None:
         """Detach session from its room; drop empty rooms."""
@@ -605,14 +758,17 @@ class EchoGateway:
 
         room = self.rooms.get(room_id)
         if room is None:
+            mechs, mj_data, mj_substeps = self._make_room_mechs()
             room = Room(
                 room_id=room_id,
                 contract=self.contract,
-                mechs=self._make_room_mechs(),
+                mechs=mechs,
                 max_members=max_members,
+                mj_data=mj_data,
+                mj_substeps=mj_substeps,
             )
             self.rooms[room_id] = room
-            LOG.info("room=%s created max_members=%d mechs=%s", room_id, max_members, list(room.mechs))
+            LOG.info("room=%s created max_members=%d mechs=%s shared_mj=%s", room_id, max_members, list(room.mechs), mj_data is not None)
         else:
             active = [s for s in room.members.values() if s.joined and not s.closed]
             if len(active) >= room.max_members:
@@ -742,8 +898,7 @@ class EchoGateway:
                 members = [s for s in room.members.values() if s.joined and not s.closed]
                 if not members:
                     continue
-                for mech in room.mechs.values():
-                    mech.step(DT)
+                room.step_physics(DT)
                 room.tick += 1
                 state_payload = {
                     "kind": "full",

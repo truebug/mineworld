@@ -1,8 +1,9 @@
 """Compile a mech URDF → planar MJCF (MineWorld velocity control wrapper).
 
 URDF supplies visual/collision geometry (F2/F5). MJCF adds POC planar joints
-(slide_x / slide_y / yaw_z) + velocity actuators so Gateway MujocoMech works
-unchanged. Wheels/casters are visual-only (no differential actuators).
+(slide_x / slide_y / yaw_z) + velocity actuators. Continuous cylinder wheels
+become hinge bodies + velocity actuators (F6 differential mapping in Gateway).
+Fixed casters stay visual-only geoms.
 
 Usage (repo root):
   .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py --check
@@ -92,7 +93,7 @@ def _find_parent_joint(root: ET.Element, link_name: str) -> ET.Element | None:
 
 
 def compile_urdf(urdf_path: Path) -> str:
-    """Build MJCF XML string from URDF + POC planar actuators."""
+    """Build MJCF XML string from URDF + planar + optional wheel hinges."""
     root = ET.parse(urdf_path).getroot()
     robot_name = root.get("name") or urdf_path.stem
     model_name = f"{robot_name}_planar"
@@ -124,6 +125,7 @@ def compile_urdf(urdf_path: Path) -> str:
     z0 = round(z0, 6)
 
     extra_geoms: list[str] = []
+    wheel_bodies: list[str] = []
     for link in root.findall("link"):
         name = link.get("name", "")
         if name == "base_link":
@@ -136,7 +138,22 @@ def compile_urdf(urdf_path: Path) -> str:
         if wv is None:
             continue
         rgba_v = _parse_rgba(wv)
+        jtype = (joint.get("type") or "").lower()
         cyl = _parse_cylinder(wv)
+        # F6: continuous cylinder → hinge body (Gateway writes ω from vx/yaw_rate).
+        if jtype == "continuous" and cyl is not None:
+            radius, length = cyl
+            jname = joint.get("name") or f"{name}_joint"
+            wheel_bodies.append(
+                f'      <body name="{name}" pos="{ox} {oy} {oz}">\n'
+                f'        <joint name="{jname}" type="hinge" axis="0 1 0" '
+                f'damping="0.01"/>\n'
+                f'        <geom name="{name}_geom" type="cylinder" '
+                f'size="{radius} {length * 0.5}" quat="0.7071 0.7071 0 0" '
+                f'mass="0.05" contype="0" conaffinity="0" rgba="{rgba_v}"/>\n'
+                f"      </body>"
+            )
+            continue
         if cyl is not None:
             radius, length = cyl
             extra_geoms.append(
@@ -162,13 +179,14 @@ def compile_urdf(urdf_path: Path) -> str:
                 f'rgba="{rgba_v}"/>'
             )
 
-    extras_block = "\n".join(extra_geoms)
+    extras_block = "\n".join(extra_geoms + wheel_bodies)
     src = urdf_path.name
     return f"""<mujoco model="{model_name}">
   <!--
     AUTO-GENERATED from {src} by urdf_to_mjcf_planar.py — do not hand-edit;
     re-run the script. Planar free-plane joints + velocity servos are MineWorld
-    POC control (same contract as box_mech / planar_cart).
+    chassis authority; continuous wheels are F6 hinges (Gateway sets ω from
+    body vx/yaw_rate; not contact-driven).
   -->
   <option timestep="0.002" integrator="RK4" gravity="0 0 -9.81"/>
 

@@ -73,9 +73,31 @@ def main() -> int:
             s * args.vx + c * args.vy,
             args.yaw_rate,
         ])
-        data.ctrl[:] = ctrl_world
+        data.ctrl[:] = 0.0
+        n = min(3, model.nu)
+        data.ctrl[:n] = ctrl_world[:n]
+        jl = jnt("left_wheel_joint")
+        jr = jnt("right_wheel_joint")
+        w_l = w_r = 0.0
+        ql = qr = dl = dr = -1
+        if jl >= 0 and jr >= 0:
+            bl = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "left_wheel")
+            br = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "right_wheel")
+            track = abs(float(model.body_pos[br][1] - model.body_pos[bl][1]))
+            gadr = int(model.body_geomadr[bl])
+            radius = float(model.geom_size[gadr][0])
+            half_l = 0.5 * track
+            w_l = (args.vx - args.yaw_rate * half_l) / radius
+            w_r = (args.vx + args.yaw_rate * half_l) / radius
+            ql, dl = int(model.jnt_qposadr[jl]), int(model.jnt_dofadr[jl])
+            qr, dr = int(model.jnt_qposadr[jr]), int(model.jnt_dofadr[jr])
         for _ in range(substeps):
             mujoco.mj_step(model, data)
+        if ql >= 0:
+            data.qpos[ql] = float(data.qpos[ql]) + w_l * DT_TICK
+            data.qpos[qr] = float(data.qpos[qr]) + w_r * DT_TICK
+            data.qvel[dl] = w_l
+            data.qvel[dr] = w_r
         if not np.isfinite(data.qpos).all() or not np.isfinite(data.qvel).all():
             print(f"FAIL: non-finite state at t={data.time:.2f}s")
             return 1
