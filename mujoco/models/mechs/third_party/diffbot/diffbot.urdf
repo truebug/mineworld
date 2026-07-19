@@ -1,118 +1,156 @@
 <?xml version="1.0"?>
 <!--
-  MineWorld vendored DiffBot-style URDF (Apache-2.0).
-  Geometry follows the common ros2_control DiffBot / diff_drive test layout:
-  flat chassis box, left/right drive wheels, rear caster.
-  Source attribution: mujoco/models/mechs/third_party/diffbot/README.md
+  Plain URDF expanded from ros2_control_demo_description DiffBot xacro
+  (prefix="") for MineWorld urdf_to_mjcf_planar.py. Source xacro remains in urdf/.
+  Upstream: ros-controls/ros2_control_demos @ 1c5c4399a66302987af83684469fe9fde42a0e67
+  License: Apache-2.0 (see LICENSE).
+
+  Geometry: official DiffBot ×10 (≈1.0 m chassis footprint) for POC visibility.
+  Chassis mass/Izz kept for MineWorld planar velocity-servo tracking (not volume-scaled).
 
   Simulation authority = generated MJCF (diffbot_planar.xml) with MineWorld
   planar velocity joints — not native differential wheel actuators.
 -->
 <robot name="diffbot">
   <link name="base_link">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="1.0 1.0 0.5"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <geometry>
+        <box size="1.0 1.0 0.5"/>
+      </geometry>
+      <material name="orange">
+        <color rgba="1.0 0.4235294118 0.03921568627 1"/>
+      </material>
+    </visual>
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
+      <!-- Not volume-scaled with ×10 geometry; tuned for planar velocity servos. -->
       <mass value="12.0"/>
-      <inertia ixx="0.15" ixy="0" ixz="0" iyy="0.25" iyz="0" izz="0.30"/>
+      <inertia ixx="0.15" ixy="0.0" ixz="0.0" iyy="0.25" iyz="0.0" izz="0.30"/>
     </inertial>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <!-- L x W x H (meters), Z-up -->
-        <box size="0.40 0.28 0.12"/>
-      </geometry>
-      <material name="chassis_mat">
-        <color rgba="0.20 0.55 0.90 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.40 0.28 0.12"/>
-      </geometry>
-    </collision>
   </link>
 
-  <!-- Drive wheels: continuous in URDF; MJCF treats as fixed visuals -->
-  <link name="wheel_left">
-    <visual>
-      <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
-      <geometry>
-        <cylinder radius="0.08" length="0.04"/>
-      </geometry>
-      <material name="wheel_mat">
-        <color rgba="0.12 0.12 0.14 1"/>
-      </material>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
-      <geometry>
-        <cylinder radius="0.08" length="0.04"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="wheel_left_joint" type="continuous">
+  <joint name="left_wheel_joint" type="continuous">
     <parent link="base_link"/>
-    <child link="wheel_left"/>
-    <origin xyz="0.0 0.16 -0.04" rpy="0 0 0"/>
+    <child link="left_wheel"/>
+    <origin xyz="0 -0.5 -0.25" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
+    <dynamics damping="0.2"/>
+    <limit effort="100" velocity="1.0"/>
   </joint>
-
-  <link name="wheel_right">
-    <visual>
-      <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
-      <geometry>
-        <cylinder radius="0.08" length="0.04"/>
-      </geometry>
-      <material name="wheel_mat">
-        <color rgba="0.12 0.12 0.14 1"/>
-      </material>
-    </visual>
+  <link name="left_wheel">
     <collision>
       <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
       <geometry>
-        <cylinder radius="0.08" length="0.04"/>
+        <cylinder length="0.2" radius="0.15"/>
       </geometry>
     </collision>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
+      <geometry>
+        <cylinder length="0.2" radius="0.15"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1"/>
+      </material>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
+      <mass value="0.3"/>
+      <inertia ixx="2.275e-05" ixy="0.0" ixz="0.0" iyy="2.275e-05" iyz="0.0" izz="3.375e-05"/>
+    </inertial>
   </link>
-  <joint name="wheel_right_joint" type="continuous">
+
+  <joint name="right_wheel_joint" type="continuous">
     <parent link="base_link"/>
-    <child link="wheel_right"/>
-    <origin xyz="0.0 -0.16 -0.04" rpy="0 0 0"/>
+    <child link="right_wheel"/>
+    <origin xyz="0 0.5 -0.25" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
+    <dynamics damping="0.2"/>
+    <limit effort="100" velocity="1.0"/>
   </joint>
+  <link name="right_wheel">
+    <collision>
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
+      <geometry>
+        <cylinder length="0.2" radius="0.15"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
+      <geometry>
+        <cylinder length="0.2" radius="0.15"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1"/>
+      </material>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0" rpy="1.57079632679 0 0"/>
+      <mass value="0.3"/>
+      <inertia ixx="2.275e-05" ixy="0.0" ixz="0.0" iyy="2.275e-05" iyz="0.0" izz="3.375e-05"/>
+    </inertial>
+  </link>
 
-  <link name="caster">
+  <joint name="caster_frontal_wheel_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="caster_frontal_wheel"/>
+    <origin xyz="0.35 0 -0.25" rpy="0 0 0"/>
+  </joint>
+  <link name="caster_frontal_wheel">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.15"/>
+      </geometry>
+    </collision>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <sphere radius="0.035"/>
+        <sphere radius="0.15"/>
       </geometry>
-      <material name="caster_mat">
-        <color rgba="0.35 0.35 0.38 1"/>
+      <material name="white">
+        <color rgba="1 1 1 1"/>
       </material>
     </visual>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="9e-06" ixy="0.0" ixz="0.0" iyy="9e-06" iyz="0.0" izz="9e-06"/>
+    </inertial>
   </link>
-  <joint name="caster_fixed" type="fixed">
-    <parent link="base_link"/>
-    <child link="caster"/>
-    <origin xyz="-0.16 0 -0.055" rpy="0 0 0"/>
-  </joint>
 
-  <link name="nose">
+  <joint name="caster_rear_wheel_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="caster_rear_wheel"/>
+    <origin xyz="-0.35 0 -0.25" rpy="0 0 0"/>
+  </joint>
+  <link name="caster_rear_wheel">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.15"/>
+      </geometry>
+    </collision>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.06 0.08 0.03"/>
+        <sphere radius="0.15"/>
       </geometry>
-      <material name="nose_mat">
-        <color rgba="0.95 0.75 0.15 1"/>
+      <material name="white">
+        <color rgba="1 1 1 1"/>
       </material>
     </visual>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="9e-06" ixy="0.0" ixz="0.0" iyy="9e-06" iyz="0.0" izz="9e-06"/>
+    </inertial>
   </link>
-  <joint name="nose_fixed" type="fixed">
-    <parent link="base_link"/>
-    <child link="nose"/>
-    <origin xyz="0.22 0 0.02" rpy="0 0 0"/>
-  </joint>
 </robot>

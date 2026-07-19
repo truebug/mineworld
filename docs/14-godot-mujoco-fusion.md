@@ -138,7 +138,7 @@
 .venv/bin/python scripts/ws_smoke_test.py
 ```
 
-默认机甲：`mechs/diffbot_planar.xml`（源 URDF：`third_party/diffbot/diffbot.urdf`，Apache-2.0）。  
+默认机甲：`mechs/diffbot_planar.xml`（上游：`third_party/diffbot/` = ros2_control_demos DiffBot `@1c5c439`，Apache-2.0）。  
 `planar_cart` 仍可 `--urdf/--out` 重新生成作 fallback。  
 Godot `mech_puppet.gd` 尺寸与 DiffBot URDF 对齐；队伍色只染底盘。  
 注意：仓库目录名 `mujoco/` 会遮蔽 pip 包，脚本内已把 repo root 从 `sys.path` 去掉再 `import mujoco`。

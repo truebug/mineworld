@@ -13,7 +13,7 @@
       "pose": {
         "x": 0.0,
         "y": -0.0,
-        "z": 0.12,
+        "z": 0.5,
         "yaw": 0.0
       },
       "player_slot": 0,
@@ -26,7 +26,7 @@
       "pose": {
         "x": 0,
         "y": 2,
-        "z": 0.12,
+        "z": 0.5,
         "yaw": 0
       },
       "player_slot": 1,
@@ -57,7 +57,7 @@
       "id": "obj_reach_zone",
       "type": "reach_region",
       "target": "trigger_finish",
-      "description": "到达终点区"
+      "description": "\u5230\u8fbe\u7ec8\u70b9\u533a"
     }
   ],
   "triggers": [

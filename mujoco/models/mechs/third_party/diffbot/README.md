@@ -1,12 +1,12 @@
-# Third-party DiffBot (MineWorld F5 pilot)
+# Third-party DiffBot (MineWorld F5)
 
 | Field | Value |
 |-------|-------|
-| **Upstream** | [ros-controls/ros2_control_demos](https://github.com/ros-controls/ros2_control_demos) Example 2 “DiffBot” / [ros2_controllers](https://github.com/ros-controls/ros2_controllers) diff_drive test bot conventions |
-| **License** | Apache License 2.0 |
-| **What we vendor** | Simplified **plain URDF** (boxes/cylinders only, no mesh binaries) matching the common DiffBot chassis + dual wheel + caster layout used in those demos |
-| **What we add** | MineWorld planar free-plane joints (`slide_x`/`slide_y`/`yaw_z`) via `urdf_to_mjcf_planar.py` — control protocol unchanged |
+| **Upstream** | [ros-controls/ros2_control_demos](https://github.com/ros-controls/ros2_control_demos) `ros2_control_demo_description/diffbot/` |
+| **Revision** | `1c5c4399a66302987af83684469fe9fde42a0e67` |
+| **License** | Apache License 2.0 (`LICENSE`) |
+| **Vendored as-is** | `urdf/*.xacro`, `rviz/*.rviz` |
+| **Derived** | `diffbot.urdf` — plain URDF (prefix="") from xacro, **geometry ×10** (~1 m footprint) for POC visibility |
+| **MineWorld add** | Planar joints via `mechs/diffbot_planar.xml`; chassis mass/`Izz` not volume-scaled (servo tracking) |
 
-Apache-2.0 requires retaining copyright notices; see `LICENSE` in this folder (SPDX excerpt + NOTICE).
-
-This is a **skin/geometry** pilot: wheels are visual in MJCF; teleop remains body-frame velocity.
+This is a **skin/geometry** pilot: wheels/casters are visual in MJCF; teleop remains body-frame velocity.

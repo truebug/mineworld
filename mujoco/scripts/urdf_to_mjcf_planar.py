@@ -109,8 +109,19 @@ def compile_urdf(urdf_path: Path) -> str:
     rgba = _parse_rgba(visual)
     mass_el = base.find("./inertial/mass")
     mass = float(mass_el.get("value", "10")) if mass_el is not None else 10.0
-    # Chassis center height = full Z so wheel bottoms near z=0 for DiffBot layout.
-    z0 = box[2]
+    inertia_el = base.find("./inertial/inertia")
+    if inertia_el is not None:
+        ixx = float(inertia_el.get("ixx", "0.15"))
+        iyy = float(inertia_el.get("iyy", "0.25"))
+        izz = float(inertia_el.get("izz", "0.30"))
+    else:
+        # Floor for tiny URDF boxes: geom-derived Izz is too small for yaw servo.
+        ixx, iyy, izz = 0.15, 0.25, 0.30
+    # Chassis center height: prefer full box Z (wheel-ish layouts). Tiny
+    # DiffBot-scale boxes need extra clearance so floor friction does not
+    # fight the planar velocity servos.
+    z0 = max(box[2], hz + 0.05)
+    z0 = round(z0, 6)
 
     extra_geoms: list[str] = []
     for link in root.findall("link"):
@@ -125,10 +136,8 @@ def compile_urdf(urdf_path: Path) -> str:
         if wv is None:
             continue
         rgba_v = _parse_rgba(wv)
-        if "wheel" in name:
-            cyl = _parse_cylinder(wv)
-            if cyl is None:
-                continue
+        cyl = _parse_cylinder(wv)
+        if cyl is not None:
             radius, length = cyl
             extra_geoms.append(
                 f'      <geom name="{name}" type="cylinder" size="{radius} {length * 0.5}" '
@@ -172,8 +181,9 @@ def compile_urdf(urdf_path: Path) -> str:
       <joint name="slide_x" type="slide" axis="1 0 0" damping="0.2"/>
       <joint name="slide_y" type="slide" axis="0 1 0" damping="0.2"/>
       <joint name="yaw_z" type="hinge" axis="0 0 1" damping="0.05"/>
+      <inertial pos="0 0 0" mass="{mass}" diaginertia="{ixx} {iyy} {izz}"/>
       <geom name="chassis_box" type="box" size="{hx} {hy} {hz}"
-            mass="{mass}" rgba="{rgba}"/>
+            rgba="{rgba}"/>
 {extras_block}
     </body>
   </worldbody>

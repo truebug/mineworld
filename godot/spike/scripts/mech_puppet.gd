@@ -20,21 +20,21 @@ const TEAM_TAGS := {
 	"mech_player_b": "B",
 }
 
-## third_party/diffbot/diffbot.urdf geometry (MW Z-up meters). Keep in sync.
-const URDF_CHASSIS := Vector3(0.40, 0.28, 0.12)
-const URDF_NOSE := Vector3(0.06, 0.08, 0.03)
-const URDF_NOSE_POS := Vector3(0.22, 0.0, 0.02)
-const URDF_WHEEL_R := 0.08
-const URDF_WHEEL_LEN := 0.04
+## third_party/diffbot/diffbot.urdf geometry (MW Z-up meters, ×10 skin). Keep in sync.
+const URDF_CHASSIS := Vector3(1.0, 1.0, 0.5)
+const URDF_WHEEL_R := 0.15
+const URDF_WHEEL_LEN := 0.2
 const URDF_WHEEL_POS := [
-	Vector3(0.0, 0.16, -0.04),
-	Vector3(0.0, -0.16, -0.04),
+	Vector3(0.0, -0.5, -0.25),
+	Vector3(0.0, 0.5, -0.25),
 ]
-const URDF_CASTER_R := 0.035
-const URDF_CASTER_POS := Vector3(-0.16, 0.0, -0.055)
-const WHEEL_COLOR := Color(0.12, 0.12, 0.14)
-const NOSE_COLOR := Color(0.95, 0.75, 0.15)
-const CASTER_COLOR := Color(0.35, 0.35, 0.38)
+const URDF_CASTER_R := 0.15
+const URDF_CASTER_POS := [
+	Vector3(0.35, 0.0, -0.25),
+	Vector3(-0.35, 0.0, -0.25),
+]
+const WHEEL_COLOR := Color(0.0, 0.0, 0.0)
+const CASTER_COLOR := Color(1.0, 1.0, 1.0)
 
 var _prev_pos := Vector3.ZERO
 var _prev_yaw := 0.0
@@ -87,24 +87,18 @@ func ensure_planar_cart_visual() -> void:
 	chassis.set_meta("team_tint", true)
 	body.add_child(chassis)
 
-	var nose := MeshInstance3D.new()
-	nose.name = "Nose"
-	var nbox := BoxMesh.new()
-	nbox.size = _mw_size_to_local(URDF_NOSE)
-	nose.mesh = nbox
-	nose.position = _mw_to_local(URDF_NOSE_POS)
-	_tint_mesh(nose, NOSE_COLOR)
-	body.add_child(nose)
-
-	var caster := MeshInstance3D.new()
-	caster.name = "Caster"
-	var sphere := SphereMesh.new()
-	sphere.radius = URDF_CASTER_R
-	sphere.height = URDF_CASTER_R * 2.0
-	caster.mesh = sphere
-	caster.position = _mw_to_local(URDF_CASTER_POS)
-	_tint_mesh(caster, CASTER_COLOR)
-	body.add_child(caster)
+	var ci := 0
+	for cp in URDF_CASTER_POS:
+		var caster := MeshInstance3D.new()
+		caster.name = "Caster_%d" % ci
+		var sphere := SphereMesh.new()
+		sphere.radius = URDF_CASTER_R
+		sphere.height = URDF_CASTER_R * 2.0
+		caster.mesh = sphere
+		caster.position = _mw_to_local(cp)
+		_tint_mesh(caster, CASTER_COLOR)
+		body.add_child(caster)
+		ci += 1
 
 	var i := 0
 	for wp in URDF_WHEEL_POS:
