@@ -1,6 +1,10 @@
 ## MineWorld Godot spike — session shell.
 ## Connects to the Python gateway, joins a level, takes/releases control,
-## drives a capsule puppet with WASD/QE (authority stays server-side).
+## drives capsule puppets with WASD/QE (authority stays server-side).
+##
+## Multiplayer (W3): join with room_id (export or window.MINEWORLD_ROOM);
+## empty = private room. Scene assigns controlled_entity_id; extra mechs
+## are duplicated from MechPlayer.
 ##
 ## Web keyboard: single-thread export + document listeners via JavaScriptBridge
 ## (eval/window._mw_keys readback is unreliable; InputMap often fails in browser).
@@ -18,9 +22,12 @@ const _WEB_BLOCK_CODES := {
 
 @export var level_id := "tutorial_01"
 @export var gateway_url := "ws://127.0.0.1:8765"
+## Empty = private room (gateway uses session_id). Set "demo" for shared room.
+@export var room_id := ""
 
 @onready var ws = $WsClient
 @onready var mech = $MechPlayer
+@onready var camera_rig = $CameraRig
 @onready var hud_label: Label = $Hud/PanelContainer/MarginContainer/Label
 
 var _session_id := ""
@@ -39,6 +46,10 @@ var _web_blur_cb
 var _held_codes: Dictionary = {}
 var _held: Dictionary = {}
 var _web_key_logged := false
+## entity_id → MWMechPuppet
+var _puppets: Dictionary = {}
+var _controlled_entity_id := "mech_player"
+var _joined_room_id := ""
 
 
 func _ready() -> void:
@@ -49,6 +60,8 @@ func _ready() -> void:
 	ws.event_received.connect(_on_event)
 	ws.gateway_error.connect(_on_gateway_error)
 	ws.link_state_changed.connect(_on_link_state)
+	mech.entity_id = "mech_player"
+	_puppets["mech_player"] = mech
 	if _is_web:
 		_install_web_keyboard_bridge()
 	ws.connect_to_gateway(_resolve_gateway_url())
@@ -87,10 +100,10 @@ func _on_dom_key_event(args: Array) -> void:
 		match code:
 			"KeyT":
 				if not _controlled and not _mission_done and ws.session_id != "":
-					ws.send_cmd({"action": "take_control", "entity_id": "mech_player"})
+					ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
 			"KeyR":
 				if _controlled and ws.session_id != "":
-					ws.send_cmd({"action": "release_control", "entity_id": "mech_player"})
+					ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
 
 
 func _on_dom_blur(_args: Array) -> void:
@@ -112,11 +125,41 @@ func _resolve_gateway_url() -> String:
 	return gateway_url
 
 
+func _resolve_room_id() -> String:
+	"""Web: ?room= → window.MINEWORLD_ROOM → sessionStorage; else @export room_id.
+
+	Do not rely on `window.MINEWORLD_ROOM=...; location.reload()` — reload clears
+	window vars. Prefer http://host/?room=demo for e2e.
+	"""
+	if _is_web:
+		var from_q := str(JavaScriptBridge.eval(
+			"(function(){try{return new URLSearchParams(location.search).get('room')||''}catch(e){return ''}})()",
+			true
+		))
+		if from_q != "":
+			return from_q
+		var from_js := str(JavaScriptBridge.eval(
+			"window.MINEWORLD_ROOM || sessionStorage.getItem('MINEWORLD_ROOM') || ''",
+			true
+		))
+		if from_js != "":
+			return from_js
+	return room_id
+
+
+func _own_mech() -> Node3D:
+	"""Puppet for the assigned controlled entity."""
+	if _puppets.has(_controlled_entity_id):
+		return _puppets[_controlled_entity_id]
+	return mech
+
+
 func _on_hello(payload: Dictionary) -> void:
 	_hello = payload
 	_session_id = ws.session_id
-	print("[MW] hello session=%s payload=%s" % [_session_id, payload])
-	ws.join(level_id, "godot_spike")
+	_joined_room_id = _resolve_room_id()
+	print("[MW] hello session=%s room=%s payload=%s" % [_session_id, _joined_room_id, payload])
+	ws.join(level_id, "godot_spike", _joined_room_id)
 	_update_hud()
 
 
@@ -125,7 +168,43 @@ func _on_scene(payload: Dictionary) -> void:
 	_controlled = false
 	_mission_done = false
 	_status_line = ""
-	ws.send_cmd({"action": "take_control", "entity_id": "mech_player"})
+	var ext: Dictionary = payload.get("extensions", {})
+	if typeof(ext) == TYPE_DICTIONARY:
+		var mw: Variant = ext.get("mw", {})
+		if typeof(mw) == TYPE_DICTIONARY:
+			if str(mw.get("controlled_entity_id", "")) != "":
+				_controlled_entity_id = str(mw.get("controlled_entity_id"))
+			if str(mw.get("room_id", "")) != "":
+				_joined_room_id = str(mw.get("room_id"))
+	_ensure_puppets(payload.get("entities", []) as Array)
+	var own := _own_mech()
+	if camera_rig != null and camera_rig.has_method("set_target"):
+		camera_rig.set_target(own)
+	ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
+
+
+func _ensure_puppets(entities: Array) -> void:
+	"""Create/update puppets for each mech entity_id in the scene list."""
+	for entity in entities:
+		if typeof(entity) != TYPE_DICTIONARY:
+			continue
+		if str(entity.get("kind", "mech")) != "mech":
+			continue
+		var eid := str(entity.get("entity_id", ""))
+		if eid == "" or _puppets.has(eid):
+			continue
+		var copy: Node3D = mech.duplicate()
+		copy.name = "Mech_%s" % eid
+		if copy.has_method("apply_state") or "entity_id" in copy:
+			copy.set("entity_id", eid)
+		add_child(copy)
+		_puppets[eid] = copy
+		print("[MW] spawned puppet entity_id=%s" % eid)
+	# Keep template entity_id in sync when we were assigned mech_player_b.
+	if _puppets.has(_controlled_entity_id):
+		var p = _puppets[_controlled_entity_id]
+		if p.has_method("apply_state") or "entity_id" in p:
+			p.set("entity_id", _controlled_entity_id)
 
 
 func _on_event(payload: Dictionary) -> void:
@@ -140,12 +219,12 @@ func _on_event(payload: Dictionary) -> void:
 			_mission_done = true
 			_status_line = "SUCCESS · %s" % payload.get("objective_id", "?")
 			if _controlled:
-				ws.send_cmd({"action": "release_control", "entity_id": "mech_player"})
+				ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
 		"objective_failed":
 			_mission_done = true
 			_status_line = "FAIL · %s" % payload.get("objective_id", "?")
 			if _controlled:
-				ws.send_cmd({"action": "release_control", "entity_id": "mech_player"})
+				ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
 	_update_hud()
 
 
@@ -160,31 +239,26 @@ func _on_link_state(_connected: bool) -> void:
 
 
 func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
-	var want_id: String = "mech_player"
-	if mech.entity_id != "":
-		want_id = mech.entity_id
-	var matched := false
 	for entity in payload.get("entities", []):
 		if typeof(entity) != TYPE_DICTIONARY:
 			continue
-		if str(entity.get("entity_id", "")) == want_id:
-			mech.apply_state(entity, t_sim)
-			matched = true
-			break
-	if not matched and tick == 20:
-		var ids: Array = []
-		for entity in payload.get("entities", []):
-			if typeof(entity) == TYPE_DICTIONARY:
-				ids.append(entity.get("entity_id", "?"))
-		push_warning("[MW] state entity miss want=%s got=%s" % [want_id, ids])
+		var eid := str(entity.get("entity_id", ""))
+		if eid == "" or not _puppets.has(eid):
+			continue
+		var puppet = _puppets[eid]
+		if puppet.has_method("apply_state"):
+			puppet.apply_state(entity, t_sim)
+	var own = _own_mech()
 	if tick - _last_log_tick >= 20:
 		_last_log_tick = tick
 		var held_w := _web_key("KeyW") if _is_web else _key_down(KEY_W)
+		var mw_x := float(own.get("last_mw_x")) if "last_mw_x" in own else 0.0
+		var mw_y := float(own.get("last_mw_y")) if "last_mw_y" in own else 0.0
 		print(
-			"[MW] state tick=%d t_sim=%.3f srv=(%.2f, %.2f) pos=(%.2f, %.2f) heldW=%s ctrl=%s"
+			"[MW] state tick=%d t_sim=%.3f srv=(%.2f, %.2f) pos=(%.2f, %.2f) heldW=%s ctrl=%s entity=%s"
 			% [
-				tick, t_sim, mech.last_mw_x, mech.last_mw_y,
-				mech.position.x, mech.position.z, held_w, _controlled,
+				tick, t_sim, mw_x, mw_y,
+				own.position.x, own.position.z, held_w, _controlled, _controlled_entity_id,
 			]
 		)
 	_update_hud(tick, t_sim)
@@ -210,10 +284,10 @@ func _input(event: InputEvent) -> void:
 			match code:
 				KEY_T:
 					if not _controlled and not _mission_done:
-						ws.send_cmd({"action": "take_control", "entity_id": "mech_player"})
+						ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
 				KEY_R:
 					if _controlled:
-						ws.send_cmd({"action": "release_control", "entity_id": "mech_player"})
+						ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
 
 
 func _set_held(code: int, pressed: bool) -> void:
@@ -263,9 +337,9 @@ func _send_velocity_cmd() -> void:
 			vy = Input.get_axis("strafe_left", "strafe_right") * -MOVE_SPEED
 			yaw_rate = Input.get_axis("turn_cw", "turn_ccw") * TURN_SPEED
 	if vx != 0.0 or vy != 0.0 or yaw_rate != 0.0:
-		print("[MW] cmd vx=%.1f vy=%.1f yaw_rate=%.1f" % [vx, vy, yaw_rate])
+		print("[MW] cmd vx=%.1f vy=%.1f yaw_rate=%.1f entity=%s" % [vx, vy, yaw_rate, _controlled_entity_id])
 	ws.send_cmd({
-		"entity_id": "mech_player",
+		"entity_id": _controlled_entity_id,
 		"control_mode": "velocity",
 		"vx": vx,
 		"vy": vy,
@@ -282,8 +356,12 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	var state_name := "disconnected"
 	if ws.session_id != "":
 		state_name = "linked"
+	var own = _own_mech()
 	var text := "MineWorld Spike\n"
-	text += "link: %s | control: %s\n" % [state_name, "ON" if _controlled else "OFF"]
+	text += "link: %s | control: %s | entity: %s\n" % [
+		state_name, "ON" if _controlled else "OFF", _controlled_entity_id,
+	]
+	text += "room: %s\n" % (_joined_room_id if _joined_room_id != "" else "(private)")
 	if _is_web:
 		text += "input: document→godot | heldW=%s\n" % _web_key("KeyW")
 	if _status_line != "":
@@ -298,7 +376,7 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		text += "frame: %s | features: %s\n" % [_hello.get("frame", "?"), _hello.get("features", [])]
 	if tick >= 0:
 		text += "tick=%d t_sim=%.2f\n" % [tick, t_sim]
-		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [mech.position.x, mech.position.z, mech.rotation.y]
+		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [own.position.x, own.position.z, own.rotation.y]
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
 	text += "\nWS move | QE strafe | AD turn | T take | R release"

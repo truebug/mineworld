@@ -22,6 +22,12 @@ func _ready() -> void:
 	_update_camera()
 
 
+func set_target(node: Node3D) -> void:
+	"""Follow a different mech (e.g. assigned controlled_entity_id)."""
+	_target = node
+	_update_camera()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:

@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | W1 本地 Web 单人已通；**下一主线：可部署（W2）→ 多人 Demo（W3）** |
+| **目标** | 本地 Web 私房隔离 + `demo` 同关两人已通；公网 W2 仍暂缓 |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **阶段评审** | [12-status-review.md](12-status-review.md) |
@@ -14,17 +14,39 @@
 
 ---
 
-## Now（W2 · 可部署单人 / 多会话）
+## Now（可选短增量）
 
-> POC M1–M4、macOS 导出、**W1 本地 Web 单人**已通。T2.7 手感 **暂缓**。  
-> **当前唯一主线**：**W2 可部署**（HTTPS + wss + 会话隔离）。详见 [13](13-web-multiplayer-demo.md)。
+> W2.3 / W3 / T2.6 **已完成并本机双浏览器验收**。T2.7、公网 W2.1/2/4 **暂缓**。  
+> 下一项按产品需要三选一，无强制顺序。
+
+| ID | 任务 | 备注 | 状态 |
+|----|------|------|------|
+| — | 机甲外观区分（颜色/标签） | 双端易辨认 | [ ] |
+| — | `demo` 房录制双实体抽检 | frames 含两 mech | [ ] |
+| — | 机甲互撞（共享 MjData） | 改 MJCF；非阻塞 | [ ] |
+
+---
+
+## Done（W2.3 → W3 → T2.6 · 2026-07-19）
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| W2.1 | HTTPS 静态托管 Web 包 | CDN / Nginx 可打开 | [ ] |
-| W2.2 | `wss://` 反代 Gateway | 禁止公网裸 ws | [ ] |
-| W2.3 | **一会话一 MjData**（或多进程） | 两标签互不踩仿真 | [ ] |
-| W2.4 | 一页运维/安全说明 | 限流、绑定、演示密钥 | [ ] |
+| W2.3 | **一会话一 MjData**（Room 私房） | 两标签互不踩仿真 | [x] |
+| W3.1 | Room + 多实体 state fan-out | 两人互见对方傀儡 | [x] |
+| W3.2 | 客户端多傀儡 | 按 entity_id；己方可控 | [x] |
+| W3.3 | `join.room_id`（默认私房；`demo` 共享） | 满员 `ROOM_FULL`；各控一台 | [x] |
+| T2.6 | state/录制输出 `joints`(+`joint_vels`) | 样例 + smoke | [x] |
+
+本机双端 e2e（**用 URL，勿依赖 `window.*=...; reload`**）：
+
+```bash
+.venv/bin/python gateway/echo_server.py --no-record
+.venv/bin/python scripts/serve_web_demo.py
+# Chrome / Safari 均打开（先到得 mech_player，后到得 mech_player_b）：
+#   http://127.0.0.1:8080/?room=demo
+# 私房隔离：打开 http://127.0.0.1:8080/ （无 ?room=）
+.venv/bin/python scripts/ws_smoke_test.py
+```
 
 ---
 
@@ -45,22 +67,14 @@ bash scripts/export_godot.sh web
 
 ---
 
-## Next（W3 · 同关多人）
-
-| ID | 任务 | 备注 | 状态 |
-|----|------|------|------|
-| W3.1 | 同关多实体 / 观战最小 | 控制权仲裁 | [ ] |
-| W3.2 | 客户端多傀儡 | 按 entity_id | [ ] |
-| W3.3 | 房间码 / room_id | 可先固定 demo 房 | [ ] |
-
----
-
-## 暂缓
+## Later / 暂缓
 
 | ID | 任务 | 状态 |
 |----|------|------|
-| T2.7 | 输入延迟补偿 v0 | [~] 手感暂缓；W1 通后再排 |
-| T2.6 | 传感器 joints 出口 | [~] 非 Web/多人阻塞 |
+| W2.1 | HTTPS 静态托管 Web 包 | [~] 公网暂缓 |
+| W2.2 | `wss://` 反代 Gateway | [~] 公网暂缓 |
+| W2.4 | 一页运维/安全说明 | [~] 公网暂缓 |
+| T2.7 | 输入延迟补偿 v0 | [~] 手感暂缓 |
 
 ---
 
@@ -71,6 +85,8 @@ bash scripts/export_godot.sh web
 | M1 连通 · M2 真物理 · M3 录制 · M4 可玩闭环 | [x] |
 | T3.4 macOS 导出管线 | [x] |
 | Web preset + 本地托管 + 浏览器键盘桥 / entity_id（W1） | [x] |
+| T2.3 契约障碍物进 MuJoCo | [x] |
+| W2.3 会话隔离 · W3 同关两人 · T2.6 joints | [x] |
 
 详细历史勾选见 git 历史与 [12](12-status-review.md)；完整旧表已收敛，避免双源。
 
@@ -91,7 +107,7 @@ bash scripts/export_godot.sh web
 
 ## 明确不做（近期）
 
-- 在未完成 W2.3 前宣称「线上多人已可用」
 - 账号 / 计费 / 编辑器 SaaS
 - 用引擎 Multiplayer 同步 MuJoCo 位姿
-- 恢复优先排期 T2.7（除非 Web Demo 已对外）
+- 未做互撞前宣称「物理乱斗」
+- 恢复优先排期 T2.7 / 公网 W2.1–2.4（除非 Demo 要对外）

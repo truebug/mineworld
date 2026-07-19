@@ -60,11 +60,15 @@ func send_cmd(payload: Dictionary) -> void:
 	send_msg({"type": "cmd", "session_id": session_id, "payload": payload})
 
 
-func join(level_id: String, player_name: String) -> void:
+func join(level_id: String, player_name: String, room_id: String = "") -> void:
+	"""Join a level; empty room_id → private room (gateway uses session_id)."""
+	var payload := {"level_id": level_id, "player_name": player_name}
+	if room_id != "":
+		payload["room_id"] = room_id
 	send_msg({
 		"type": "join",
 		"session_id": session_id,
-		"payload": {"level_id": level_id, "player_name": player_name},
+		"payload": payload,
 	})
 
 

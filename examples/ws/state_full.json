@@ -18,7 +18,17 @@
           "qz": 0,
           "yaw": 0.08
         },
-        "velocities": { "vx": 0.48, "vy": 0.02 }
+        "velocities": { "vx": 0.48, "vy": 0.02 },
+        "joints": {
+          "slide_x": 1.2,
+          "slide_y": 0.1,
+          "yaw_z": 0.08
+        },
+        "joint_vels": {
+          "slide_x": 0.48,
+          "slide_y": 0.02,
+          "yaw_z": 0.0
+        }
       }
     ]
   }

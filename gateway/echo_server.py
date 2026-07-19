@@ -5,7 +5,13 @@ Physics backends (--physics):
   mujoco - real MuJoCo sim (POC-B / T2.2): cmd -> ctrl, state <- qpos.
            Contract static_obstacles are appended as static geoms (T2.3).
 
+Rooms (W2.3 / W3):
+  join.payload.room_id omitted → private room (= session_id), one member.
+  room_id "demo" → shared room, max 2 members; each mech has its own MjData
+  (same MjModel). State fans out to all members. No inter-mech collision yet.
+
 Recording (T2.5): on join, writes recordings/sessions/<id>/header.json + frames.jsonl.
+Joints (T2.6): entity_state includes joints / joint_vels for slide_x/y + yaw_z.
 """
 
 from __future__ import annotations
@@ -43,6 +49,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTRACT = REPO_ROOT / "examples" / "contracts" / "tutorial_01.json"
 DEFAULT_RECORD_DIR = REPO_ROOT / "recordings" / "sessions"
 OBSTACLE_FRICTION = (0.8, 0.02, 0.01)  # aligned with ground/chassis defaults
+DEMO_ROOM_ID = "demo"
+DEMO_ROOM_MAX = 2
 
 
 def _yaw_to_quat(yaw: float) -> dict[str, float]:
@@ -123,6 +131,16 @@ class MechState:
                 **q,
             },
             "velocities": {"vx": self.vx, "vy": self.vy, "vz": 0.0},
+            "joints": {
+                "slide_x": self.x,
+                "slide_y": self.y,
+                "yaw_z": self.yaw,
+            },
+            "joint_vels": {
+                "slide_x": self.vx,
+                "slide_y": self.vy,
+                "yaw_z": self.yaw_rate,
+            },
         }
 
 
@@ -132,6 +150,7 @@ class MujocoMech(MechState):
     The chassis slide joints translate in the parent (world) frame (they
     compose before the hinge), so the body-frame velocity command must be
     rotated by the current yaw — same math as the fake integrator.
+    Each mech owns its own MjData (W2.3 / W3); no inter-mech collision yet.
     """
 
     def __init__(self, entity_id: str, model: "mujoco.MjModel", data: "mujoco.MjData") -> None:
@@ -190,7 +209,42 @@ class MujocoMech(MechState):
                 "vy": float(d.qvel[self._dy]),
                 "vz": 0.0,
             },
+            "joints": {
+                "slide_x": float(d.qpos[self._qx]),
+                "slide_y": float(d.qpos[self._qy]),
+                "yaw_z": float(d.qpos[self._qyaw]),
+            },
+            "joint_vels": {
+                "slide_x": float(d.qvel[self._dx]),
+                "slide_y": float(d.qvel[self._dy]),
+                "yaw_z": float(d.qvel[self._dyaw]),
+            },
         }
+
+
+@dataclass
+class Room:
+    """Logical shared world: mechs + members; one tick for all members."""
+
+    room_id: str
+    contract: dict[str, Any]
+    mechs: dict[str, MechState] = field(default_factory=dict)
+    members: dict[str, Session] = field(default_factory=dict)
+    tick: int = 0
+    max_members: int = 1
+
+    def free_spawn_id(self) -> str | None:
+        """Return first mech spawn id not claimed by a joined member."""
+        taken = {
+            s.controlled_entity_id
+            for s in self.members.values()
+            if s.controlled_entity_id and s.joined and not s.closed
+        }
+        for spawn in self.contract.get("mech_spawns") or []:
+            eid = spawn.get("id")
+            if eid and eid not in taken and eid in self.mechs:
+                return str(eid)
+        return None
 
 
 @dataclass
@@ -198,30 +252,22 @@ class Session:
     session_id: str
     ws: ServerConnection
     contract: dict[str, Any]
-    tick: int = 0
     joined: bool = False
     level_id: str | None = None
-    mech: MechState = field(default_factory=lambda: MechState("mech_player"))
+    room: Room | None = None
+    controlled_entity_id: str | None = None
     pending_events: list[dict[str, Any]] = field(default_factory=list)
     closed: bool = False
     recorder: SessionRecorder | None = None
     completed_objectives: set[str] = field(default_factory=set)
     outcome: str | None = None
 
-    def reset_from_contract(self) -> None:
-        spawns = self.contract.get("mech_spawns") or []
-        if not spawns:
-            return
-        spawn = spawns[0]
-        pose = spawn.get("pose") or {}
-        entity_id = spawn.get("id", "mech_player")
-        if self.mech is None or self.mech.entity_id != entity_id:
-            self.mech = MechState(entity_id=entity_id)
-        self.mech.reset_pose(pose)
-        self.mech.controlled = False
-        self.mech.vx = self.mech.vy = self.mech.yaw_rate = 0.0
-        self.completed_objectives.clear()
-        self.outcome = None
+    @property
+    def mech(self) -> MechState | None:
+        """Assigned mech in the current room, if any."""
+        if self.room is None or not self.controlled_entity_id:
+            return None
+        return self.room.mechs.get(self.controlled_entity_id)
 
 
 def load_contract(path: Path) -> dict[str, Any]:
@@ -241,8 +287,10 @@ def point_in_aabb(x: float, y: float, z: float, mn: list[float], mx: list[float]
 def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
     """Gateway-authoritative objective checks (T3.1). Emit each objective once."""
     events: list[dict[str, Any]] = []
-    triggers = {t["id"]: t for t in (session.contract.get("triggers") or []) if t.get("id")}
     mech = session.mech
+    if mech is None:
+        return events
+    triggers = {t["id"]: t for t in (session.contract.get("triggers") or []) if t.get("id")}
     for obj in session.contract.get("objectives") or []:
         obj_id = obj.get("id")
         if not obj_id or obj_id in session.completed_objectives:
@@ -304,7 +352,7 @@ async def send_json(ws: ServerConnection, msg: dict[str, Any]) -> None:
 
 
 class EchoGateway:
-    """Single-process POC gateway: kinematic integrator + WS fan-out."""
+    """Single-process POC gateway: Room tick + WS fan-out."""
 
     def __init__(
         self,
@@ -316,20 +364,17 @@ class EchoGateway:
     ) -> None:
         self.contract = contract
         self.sessions: dict[str, Session] = {}
+        self.rooms: dict[str, Room] = {}
         self.physics = physics
         self.record_dir = record_dir
         self.record_every_n_ticks = record_every_n_ticks
         self.mj_model = None
-        self.mj_data = None
         if physics == "mujoco":
             if mujoco is None:
                 raise SystemExit("mujoco not installed: pip install mujoco==3.6.0")
             if model_path is None:
                 raise SystemExit("--physics mujoco requires --model")
             self.mj_model = self._build_mujoco_world(model_path)
-            # Single shared MjData: fine for POC single-client; multi-session
-            # needs one MjData per session (or a worker pool).
-            self.mj_data = mujoco.MjData(self.mj_model)
 
     def _feature_flags(self) -> list[str]:
         """Return hello/recording feature tags for the active physics backend."""
@@ -396,15 +441,49 @@ class EchoGateway:
         )
         return spec.compile()
 
+    def _make_mech(self, entity_id: str, pose: dict[str, Any]) -> MechState:
+        """Create one mech; MuJoCo path allocates a fresh MjData per mech."""
+        if self.mj_model is not None:
+            data = mujoco.MjData(self.mj_model)
+            mech = MujocoMech(entity_id, self.mj_model, data)
+        else:
+            mech = MechState(entity_id)
+        mech.reset_pose(pose)
+        mech.controlled = False
+        mech.vx = mech.vy = mech.yaw_rate = 0.0
+        return mech
+
+    def _make_room_mechs(self) -> dict[str, MechState]:
+        """Instantiate all contract mech_spawns for a new Room."""
+        mechs: dict[str, MechState] = {}
+        for spawn in self.contract.get("mech_spawns") or []:
+            eid = str(spawn.get("id", "mech_player"))
+            mechs[eid] = self._make_mech(eid, spawn.get("pose") or {})
+        if not mechs:
+            mechs["mech_player"] = self._make_mech("mech_player", {})
+        return mechs
+
+    def _leave_room(self, session: Session) -> None:
+        """Detach session from its room; drop empty rooms."""
+        room = session.room
+        if room is None:
+            return
+        room.members.pop(session.session_id, None)
+        if session.controlled_entity_id:
+            mech = room.mechs.get(session.controlled_entity_id)
+            if mech is not None:
+                mech.controlled = False
+                mech.vx = mech.vy = mech.yaw_rate = 0.0
+        session.room = None
+        session.controlled_entity_id = None
+        session.joined = False
+        if not room.members:
+            self.rooms.pop(room.room_id, None)
+            LOG.info("room=%s empty, removed", room.room_id)
+
     async def handler(self, ws: ServerConnection) -> None:
         session_id = str(uuid.uuid4())
         session = Session(session_id=session_id, ws=ws, contract=self.contract)
-        if self.mj_data is not None:
-            spawns = self.contract.get("mech_spawns") or [{}]
-            session.mech = MujocoMech(
-                spawns[0].get("id", "mech_player"), self.mj_model, self.mj_data
-            )
-        session.reset_from_contract()
         self.sessions[session_id] = session
         LOG.info("client connected session=%s", session_id)
 
@@ -434,6 +513,7 @@ class EchoGateway:
             session.closed = True
             outcome = session.outcome or "disconnect"
             self._close_recorder(session, outcome=outcome)
+            self._leave_room(session)
             self.sessions.pop(session_id, None)
 
     async def _on_message(self, session: Session, raw: str | bytes) -> None:
@@ -458,12 +538,12 @@ class EchoGateway:
         if msg_type == "join":
             await self._handle_join(session, payload)
         elif msg_type == "cmd":
-            events = session.mech.apply_cmd(payload)
-            session.pending_events.extend(events)
+            await self._handle_cmd(session, payload)
         elif msg_type == "bye":
             session.closed = True
             outcome = session.outcome or "abort"
             self._close_recorder(session, outcome=outcome)
+            self._leave_room(session)
             await session.ws.close()
         else:
             await send_json(
@@ -477,6 +557,28 @@ class EchoGateway:
                     },
                 ),
             )
+
+    async def _handle_cmd(self, session: Session, payload: dict[str, Any]) -> None:
+        """Accept cmds only for the session's assigned entity."""
+        mech = session.mech
+        if mech is None or not session.joined:
+            return
+        target = payload.get("entity_id")
+        if target is not None and str(target) != mech.entity_id:
+            await send_json(
+                session.ws,
+                envelope(
+                    "error",
+                    session_id=session.session_id,
+                    payload={
+                        "code": "NOT_YOUR_ENTITY",
+                        "message": f"control limited to {mech.entity_id}",
+                    },
+                ),
+            )
+            return
+        events = mech.apply_cmd(payload)
+        session.pending_events.extend(events)
 
     async def _handle_join(self, session: Session, payload: dict[str, Any]) -> None:
         level_id = payload.get("level_id") or self.contract.get("level_id")
@@ -495,10 +597,76 @@ class EchoGateway:
             )
             return
 
+        # Private room when omitted (= W2.3 isolation).
+        room_id = str(payload.get("room_id") or session.session_id)
+        max_members = DEMO_ROOM_MAX if room_id == DEMO_ROOM_ID else 1
+
+        self._leave_room(session)
+
+        room = self.rooms.get(room_id)
+        if room is None:
+            room = Room(
+                room_id=room_id,
+                contract=self.contract,
+                mechs=self._make_room_mechs(),
+                max_members=max_members,
+            )
+            self.rooms[room_id] = room
+            LOG.info("room=%s created max_members=%d mechs=%s", room_id, max_members, list(room.mechs))
+        else:
+            active = [s for s in room.members.values() if s.joined and not s.closed]
+            if len(active) >= room.max_members:
+                await send_json(
+                    session.ws,
+                    envelope(
+                        "error",
+                        session_id=session.session_id,
+                        payload={
+                            "code": "ROOM_FULL",
+                            "message": f"room {room_id} is full (max {room.max_members})",
+                        },
+                    ),
+                )
+                return
+
+        entity_id = room.free_spawn_id()
+        if entity_id is None:
+            await send_json(
+                session.ws,
+                envelope(
+                    "error",
+                    session_id=session.session_id,
+                    payload={
+                        "code": "ROOM_FULL",
+                        "message": f"no free mech spawn in room {room_id}",
+                    },
+                ),
+            )
+            return
+
+        # First member into an existing empty room already reset via _make_room_mechs.
+        # Re-join private room: reset that mech to spawn pose.
+        if room_id != DEMO_ROOM_ID or len([s for s in room.members.values() if s.joined]) == 0:
+            spawn = next(
+                (s for s in (self.contract.get("mech_spawns") or []) if s.get("id") == entity_id),
+                None,
+            )
+            pose = (spawn or {}).get("pose") or {}
+            room.mechs[entity_id].reset_pose(pose)
+            room.mechs[entity_id].controlled = False
+            room.mechs[entity_id].vx = room.mechs[entity_id].vy = room.mechs[entity_id].yaw_rate = 0.0
+            if room_id != DEMO_ROOM_ID:
+                room.tick = 0
+
         session.level_id = level_id
         session.joined = True
-        session.tick = 0
-        session.reset_from_contract()
+        session.room = room
+        session.controlled_entity_id = entity_id
+        session.completed_objectives.clear()
+        session.outcome = None
+        session.pending_events.clear()
+        room.members[session.session_id] = session
+
         self._close_recorder(session, outcome="abort")
         if self.record_dir is not None:
             software: dict[str, Any] = {"gateway_version": PROTOCOL_VERSION}
@@ -519,12 +687,13 @@ class EchoGateway:
 
         entities = []
         for spawn in self.contract.get("mech_spawns") or []:
+            sid = spawn["id"]
             entities.append(
                 {
-                    "entity_id": spawn["id"],
+                    "entity_id": sid,
                     "kind": "mech",
                     "model_ref": spawn.get("model_ref"),
-                    "controllable": True,
+                    "controllable": sid == entity_id,
                 }
             )
         for obs in self.contract.get("static_obstacles") or []:
@@ -541,77 +710,88 @@ class EchoGateway:
             envelope(
                 "scene",
                 session_id=session.session_id,
-                tick=0,
+                tick=room.tick,
                 payload={
                     "level_id": level_id,
                     "contract_version": self.contract.get("contract_version", "0.1"),
                     "seed": self.contract.get("seed"),
                     "entities": entities,
                     "objectives": self.contract.get("objectives") or [],
+                    "extensions": {
+                        "mw": {
+                            "room_id": room_id,
+                            "controlled_entity_id": entity_id,
+                        }
+                    },
                 },
             ),
         )
-        LOG.info("session=%s joined level=%s", session.session_id, level_id)
+        LOG.info(
+            "session=%s joined level=%s room=%s entity=%s",
+            session.session_id,
+            level_id,
+            room_id,
+            entity_id,
+        )
 
     async def sim_loop(self) -> None:
-        """Advance all joined sessions at SIM_HZ; broadcast state at STATE_HZ."""
+        """Advance each Room at SIM_HZ; broadcast state at STATE_HZ to members."""
         while True:
             await asyncio.sleep(DT)
-            for session in list(self.sessions.values()):
-                if session.closed or not session.joined:
+            for room in list(self.rooms.values()):
+                members = [s for s in room.members.values() if s.joined and not s.closed]
+                if not members:
                     continue
-                session.mech.step(DT)
-                session.tick += 1
-                tick_events = list(session.pending_events)
-                session.pending_events.clear()
-                objective_events = evaluate_objectives(session)
-                if objective_events:
-                    tick_events.extend(objective_events)
-                    if session.recorder is not None and session.outcome:
-                        session.recorder.set_outcome(session.outcome)
+                for mech in room.mechs.values():
+                    mech.step(DT)
+                room.tick += 1
                 state_payload = {
                     "kind": "full",
-                    "entities": [session.mech.to_entity_state()],
+                    "entities": [m.to_entity_state() for m in room.mechs.values()],
                 }
-                if session.recorder is not None:
-                    session.recorder.write_frame(
-                        tick=session.tick,
-                        cmd=self._applied_cmd(session.mech),
-                        state=state_payload,
-                        events=tick_events,
-                    )
-                try:
-                    for ev in tick_events:
-                        await send_json(
-                            session.ws,
-                            envelope(
-                                "event",
-                                session_id=session.session_id,
-                                tick=session.tick,
-                                payload=ev,
-                            ),
+                for session in members:
+                    tick_events = list(session.pending_events)
+                    session.pending_events.clear()
+                    objective_events = evaluate_objectives(session)
+                    if objective_events:
+                        tick_events.extend(objective_events)
+                        if session.recorder is not None and session.outcome:
+                            session.recorder.set_outcome(session.outcome)
+                    if session.recorder is not None and session.mech is not None:
+                        session.recorder.write_frame(
+                            tick=room.tick,
+                            cmd=self._applied_cmd(session.mech),
+                            state=state_payload,
+                            events=tick_events,
                         )
-
-                    if session.tick % STATE_EVERY_N_TICKS == 0:
-                        await send_json(
-                            session.ws,
-                            envelope(
-                                "state",
-                                session_id=session.session_id,
-                                tick=session.tick,
-                                payload=state_payload,
-                            ),
+                    try:
+                        for ev in tick_events:
+                            await send_json(
+                                session.ws,
+                                envelope(
+                                    "event",
+                                    session_id=session.session_id,
+                                    tick=room.tick,
+                                    payload=ev,
+                                ),
+                            )
+                        if room.tick % STATE_EVERY_N_TICKS == 0:
+                            await send_json(
+                                session.ws,
+                                envelope(
+                                    "state",
+                                    session_id=session.session_id,
+                                    tick=room.tick,
+                                    payload=state_payload,
+                                ),
+                            )
+                    except websockets.ConnectionClosed:
+                        session.closed = True
+                    except Exception:
+                        LOG.exception(
+                            "sim_loop send failed session=%s", session.session_id
                         )
-                except websockets.ConnectionClosed:
-                    # Client vanished between the liveness check above and the
-                    # send; the handler's finally block removes the session.
-                    # Never let a dead session kill the loop for the others.
-                    session.closed = True
-                except Exception:
-                    LOG.exception(
-                        "sim_loop send failed session=%s", session.session_id
-                    )
-                    session.closed = True
+                        session.closed = True
 
 
 async def run(
