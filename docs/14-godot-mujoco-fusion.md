@@ -87,7 +87,7 @@
 | **F1** | tutorial 场景加 CC0 装饰（viewer_only）+ 地面材质 | 不改物理，观感提升 | Done |
 | **F2** | 自研 `planar_cart.urdf` → MJCF + `model_ref` | headless + smoke 能控 | Done |
 | **F3** | Godot 视觉与 URDF 几何对齐（底盘/轮/鼻） | 位姿仍跟 state | Done |
-| **F4** | 契约/插件：从 `.tscn` 导出障碍与 spawn（T4.2） | 关卡单源 | Later |
+| **F4** | 契约导出：从 `.tscn` 抽取障碍/trigger/spawn（T4.2） | `scripts/export_scene_contract.py --check` | Done |
 
 **非目标（本阶段）**：在 Godot 内嵌 MuJoCo；自动从任意 URDF 一键生成完整可玩关；人形全身遥操手感（T2.7）。
 

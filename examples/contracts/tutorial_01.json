@@ -10,7 +10,12 @@
     {
       "id": "mech_player",
       "model_ref": "mechs/planar_cart.xml",
-      "pose": { "x": 0, "y": 0, "z": 0.5, "yaw": 0 },
+      "pose": {
+        "x": 0.0,
+        "y": -0.0,
+        "z": 0.5,
+        "yaw": 0.0
+      },
       "player_slot": 0,
       "control_mode": "velocity",
       "physics_role": "mujoco_authoritative"
@@ -18,7 +23,12 @@
     {
       "id": "mech_player_b",
       "model_ref": "mechs/planar_cart.xml",
-      "pose": { "x": 0, "y": 2, "z": 0.5, "yaw": 0 },
+      "pose": {
+        "x": 0,
+        "y": 2,
+        "z": 0.5,
+        "yaw": 0
+      },
       "player_slot": 1,
       "control_mode": "velocity",
       "physics_role": "mujoco_authoritative"
@@ -28,8 +38,17 @@
     {
       "id": "wall_01",
       "shape": "box",
-      "size": [0.2, 2, 1],
-      "pose": { "x": 5, "y": 0, "z": 0.5, "yaw": 0 },
+      "size": [
+        0.2,
+        2.0,
+        1.0
+      ],
+      "pose": {
+        "x": 5.0,
+        "y": -0.0,
+        "z": 0.5,
+        "yaw": 0.0
+      },
       "physics_role": "mujoco_authoritative"
     }
   ],
@@ -45,10 +64,25 @@
     {
       "id": "trigger_finish",
       "type": "aabb",
-      "min": [9, -1, 0],
-      "max": [11, 1, 2]
+      "min": [
+        9.0,
+        -1.0,
+        0.0
+      ],
+      "max": [
+        11.0,
+        1.0,
+        2.0
+      ]
     }
   ],
-  "tags": ["poc", "tutorial"],
-  "extensions": {}
+  "tags": [
+    "poc",
+    "tutorial"
+  ],
+  "extensions": {
+    "mw": {
+      "exported_from": "godot/spike/main.tscn"
+    }
+  }
 }

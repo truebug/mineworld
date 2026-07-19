@@ -26,8 +26,9 @@
 | F1 | tutorial_01 加 CC0 装饰 / 地面（viewer_only） | 物理冒烟不变；观感提升 | [x] |
 | F2 | 试点真实 URDF/MJCF → 转 MJCF + `model_ref` | headless + smoke 可控 | [x] |
 | F3 | Godot 加载同款视觉 mesh（换胶囊） | 位姿仍跟 state | [x] |
+| F4 | `.tscn` → 契约导出（T4.2） | `export_scene_contract.py --check` | [x] |
 
-`main` 已含 W2.3 / W3 / T2.6（`4b12b49`）。
+`main` 已含 W2.3 / W3 / T2.6 与 F0–F4。
 
 ---
 
@@ -68,7 +69,7 @@
 | T2.7 | 输入延迟补偿 v0 | [~] |
 | — | 机甲互撞（共享 MjData） | [ ] 可选 |
 | — | `demo` 房录制双实体抽检 | [ ] 可选 |
-| F4 / T4.2 | `.tscn` → 契约导出 | [ ] |
+| F4 / T4.2 | `.tscn` → 契约导出 | 见 Now F4 | [x] |
 
 ---
 

@@ -68,10 +68,15 @@ mesh = SubResource("mesh_ground")
 [node name="Wall01" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, 0)
 mesh = SubResource("mesh_wall")
+metadata/mujoco_entity_id = "wall_01"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
 
 [node name="FinishZone" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1, 0)
 mesh = SubResource("mesh_zone")
+metadata/mujoco_entity_id = "trigger_finish"
+metadata/contract_kind = "trigger_aabb"
 
 [node name="Decor" type="Node3D" parent="."]
 metadata/physics_role = "viewer_only"
@@ -107,6 +112,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.8, -0.8)
 script = ExtResource("3_puppet")
 entity_id = "mech_player"
 interp_delay = 0.05
+metadata/mujoco_entity_id = "mech_player"
+metadata/contract_kind = "mech_spawn"
+metadata/player_slot = 0
+metadata/model_ref = "mechs/planar_cart.xml"
+metadata/spawn_z = 0.5
 
 [node name="Body" type="Node3D" parent="MechPlayer"]
 
