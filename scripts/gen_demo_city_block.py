@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 from pathlib import Path
 from typing import Any
@@ -118,8 +119,41 @@ def _build_roads() -> list[dict[str, Any]]:
     return roads
 
 
+def _build_street_props(rng: random.Random, buildings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """KayKit sidewalk props near buildings (viewer_only)."""
+    assets = [
+        "streetlight.gltf",
+        "bench.gltf",
+        "bush.gltf",
+        "firehydrant.gltf",
+        "dumpster.gltf",
+    ]
+    props: list[dict[str, Any]] = []
+    for b in buildings:
+        if rng.random() > 0.42:
+            continue
+        # Offset toward nearest street: random cardinal, ~lot edge.
+        angle = rng.choice([0.0, HALF_PI, 3.14159265359, -HALF_PI])
+        dist = (LOT - 1.0) * 0.5 + 0.35
+        px = float(b["x"]) + math.cos(angle) * dist
+        py = float(b["y"]) + math.sin(angle) * dist
+        asset = rng.choice(assets)
+        scale = 1.0 if asset != "bush.gltf" else rng.choice([0.8, 1.0, 1.2])
+        props.append(
+            {
+                "id": f"decor_{len(props)}",
+                "asset": asset,
+                "x": round(px, 3),
+                "y": round(py, 3),
+                "yaw": angle + HALF_PI,
+                "scale": scale,
+            }
+        )
+    return props
+
+
 def build_layout(seed: int) -> dict[str, Any]:
-    """Build layout dict: buildings + roads + bounds + spawn/finish hints."""
+    """Build layout dict: buildings + roads + props + spawn/finish hints."""
     rng = random.Random(seed)
     min_x, max_x, min_y, max_y = _bounds()
     buildings: list[dict[str, Any]] = []
@@ -209,7 +243,7 @@ def build_layout(seed: int) -> dict[str, Any]:
     spawn_x = OX - STREET * 0.5
     finish_x = max_x - STREET * 0.5
     finish_y = spawn_y
-    # Crate on the drive corridor (push-box); smoke uses Δx so a brief bump is OK.
+    # Crate on the drive corridor (pushable); open-loop finish may shove it east.
     crate_x = spawn_x + 2.5
     crate_y = spawn_y
 
@@ -231,6 +265,7 @@ def build_layout(seed: int) -> dict[str, Any]:
         },
         "crate": {"x": round(crate_x, 3), "y": round(crate_y, 3)},
         "buildings": buildings,
+        "props": _build_street_props(rng, buildings),
         "roads": _build_roads(),
         "obstacles": obstacles,
         "ground": {
@@ -337,6 +372,7 @@ def godot_layout_view(layout: dict[str, Any]) -> dict[str, Any]:
         "crate": layout["crate"],
         "ground": layout["ground"],
         "buildings": layout["buildings"],
+        "props": layout.get("props") or [],
         "roads": layout.get("roads") or [],
     }
 
@@ -354,6 +390,7 @@ def generate_and_write(seed: int) -> dict[str, Any]:
     return {
         "seed": seed,
         "buildings": len(layout["buildings"]),
+        "props": len(godot_layout["props"]),
         "roads": len(godot_layout["roads"]),
         "obstacles": len(layout["obstacles"]),
         "bounds": layout["bounds"],
@@ -370,7 +407,8 @@ def main() -> None:
     summary = generate_and_write(args.seed)
     print(
         f"OK seed={summary['seed']} buildings={summary['buildings']} "
-        f"roads={summary['roads']} obstacles={summary['obstacles']}"
+        f"props={summary.get('props', '?')} roads={summary['roads']} "
+        f"obstacles={summary['obstacles']}"
     )
     print(f"  contract → {summary['contract']}")
     print(f"  layout   → {summary['layout']}")

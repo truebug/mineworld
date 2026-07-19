@@ -187,7 +187,7 @@
     return tracks;
   }
 
-  function drawPlot(canvas, tracks) {
+  function drawPlot(canvas, tracks, markers) {
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
     const cssW = canvas.clientWidth;
@@ -241,10 +241,12 @@
         if (idx === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
       });
       ctx.stroke();
-      if (arr.length) {
-        const [ex, ey] = toScreen(arr[arr.length - 1].x, arr[arr.length - 1].y);
+      const mark = markers && markers[eid];
+      const last = mark || (arr.length ? arr[arr.length - 1] : null);
+      if (last) {
+        const [ex, ey] = toScreen(last.x, last.y);
         ctx.beginPath();
-        ctx.arc(ex, ey, 4, 0, Math.PI * 2);
+        ctx.arc(ex, ey, mark ? 6 : 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.font = "12px ui-monospace, monospace";
         ctx.fillText(eid, ex + 8, ey - 8);
@@ -261,25 +263,76 @@
       "<div id='status'>加载 frames…</div>" +
       "<canvas id='plot'></canvas>" +
       "<div class='actions'>" +
+      "<button type='button' id='btn-play'>▶ Play 2D</button>" +
+      "<button type='button' id='btn-pause'>Pause</button>" +
+      "<a href='/?replay=" + encodeURIComponent(s.session_id) + "'>▶ 3D Replay</a>" +
       "<a href='/api/recordings/" + encodeURIComponent(s.session_id) + "' target='_blank'>header.json</a>" +
       "<a href='/api/recordings/" + encodeURIComponent(s.session_id) + "/frames' target='_blank'>frames.jsonl</a>" +
+      "<a href='/api/recordings/export.csv'>Export all CSV</a>" +
       "</div>";
     const status = document.getElementById("status");
     const canvas = document.getElementById("plot");
+    let frames = [];
+    let tracks = {};
+    let playTimer = null;
+    let playIdx = 0;
     try {
       const res = await fetch("/api/recordings/" + encodeURIComponent(s.session_id) + "/frames");
       if (!res.ok) throw new Error("HTTP " + res.status);
       const text = await res.text();
-      const frames = text.split("\n").filter(Boolean).map((line) => JSON.parse(line));
-      const tracks = extractTracks(frames);
+      frames = text.split("\n").filter(Boolean).map((line) => JSON.parse(line));
+      tracks = extractTracks(frames);
       status.textContent =
         (s.level_id || "?") + " · outcome=" + (s.outcome || "?") +
         " · " + frames.length + " frames · entities: " +
         (Object.keys(tracks).join(", ") || "(none)");
-      drawPlot(canvas, tracks);
+      drawPlot(canvas, tracks, null);
     } catch (err) {
       status.textContent = "加载失败: " + err;
+      return;
     }
+
+    function stopPlay() {
+      if (playTimer) {
+        clearInterval(playTimer);
+        playTimer = null;
+      }
+    }
+
+    function frameMarkers(idx) {
+      const markers = {};
+      const fr = frames[idx];
+      if (!fr) return markers;
+      const state = fr.state || {};
+      for (const ent of state.entities || []) {
+        const id = ent.entity_id;
+        if (!id) continue;
+        const pose = ent.base_pose || {};
+        markers[id] = { x: Number(pose.x) || 0, y: Number(pose.y) || 0 };
+      }
+      return markers;
+    }
+
+    document.getElementById("btn-play").addEventListener("click", () => {
+      stopPlay();
+      if (!frames.length) return;
+      playIdx = 0;
+      const t0 = performance.now();
+      const tStart = frames[0].t_sim || 0;
+      playTimer = setInterval(() => {
+        const elapsed = (performance.now() - t0) / 1000;
+        const target = tStart + elapsed;
+        while (playIdx + 1 < frames.length && (frames[playIdx + 1].t_sim || 0) <= target) {
+          playIdx += 1;
+        }
+        drawPlot(canvas, tracks, frameMarkers(playIdx));
+        status.textContent =
+          "play t_sim=" + (frames[playIdx].t_sim || 0).toFixed(2) +
+          " · frame " + (playIdx + 1) + "/" + frames.length;
+        if (playIdx >= frames.length - 1) stopPlay();
+      }, 50);
+    });
+    document.getElementById("btn-pause").addEventListener("click", stopPlay);
   }
 
   loadList().catch((err) => {

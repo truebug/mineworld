@@ -12,16 +12,9 @@ import sys
 
 import websockets
 
-# demo_city snake (body-frame): E → N → E → S → finish
-# (vx, yaw_rate, duration_s)
-DEMO_CITY_MAZE_SCRIPT: list[tuple[float, float, float]] = [
-    (1.0, 0.0, 19.0),
-    (0.15, 0.85, 1.9),
-    (1.0, 0.0, 5.5),
-    (0.15, -0.85, 1.9),
-    (1.0, 0.0, 9.5),
-    (0.15, -0.85, 1.9),
-    (1.0, 0.0, 6.0),
+# demo_city: straight E-W corridor spawn → finish (~51 m at vx=1).
+DEMO_CITY_FINISH_SCRIPT: list[tuple[float, float, float]] = [
+    (1.0, 0.0, 58.0),
 ]
 
 
@@ -44,12 +37,14 @@ async def _send_vel(ws, session_id: str, vx: float, yaw_rate: float) -> None:
     )
 
 
-async def _run_maze_script(ws, session_id: str) -> None:
-    """Open-loop maze drive for demo_city expect-objective."""
-    for vx, yaw_rate, dur in DEMO_CITY_MAZE_SCRIPT:
+async def _run_vel_script(
+    ws, session_id: str, script: list[tuple[float, float, float]]
+) -> None:
+    """Open-loop velocity segments (vx, yaw_rate, duration_s)."""
+    for vx, yaw_rate, dur in script:
         await _send_vel(ws, session_id, vx, yaw_rate)
         await asyncio.sleep(dur)
-    await _send_vel(ws, session_id, 1.0, 0.0)
+    await _send_vel(ws, session_id, 0.0, 0.0)
 
 
 async def smoke(
@@ -93,10 +88,10 @@ async def smoke(
         script_task = None
         drive_yaw = 0.0 if level_id == "demo_city" else yaw_rate
         if expect_objective and level_id == "demo_city":
-            # City-block streets: objective is for human play; smoke checks +x drive only.
-            print("note: demo_city block — objective is manual; checking drive only")
-            expect_objective = False
-            await _send_vel(ws, session_id, 1.0, 0.0)
+            print("note: demo_city corridor — open-loop +x to finish")
+            script_task = asyncio.create_task(
+                _run_vel_script(ws, session_id, DEMO_CITY_FINISH_SCRIPT)
+            )
         elif expect_objective:
             await _send_vel(ws, session_id, 1.0, drive_yaw)
         else:
@@ -189,7 +184,7 @@ def main() -> None:
     parser.add_argument(
         "--expect-objective",
         action="store_true",
-        help="Drive until objective_complete (straight lane levels). demo_city maze = manual",
+        help="Drive until objective_complete (demo_city: straight corridor ~58s)",
     )
     parser.add_argument(
         "--yaw-rate",
@@ -202,8 +197,8 @@ def main() -> None:
     if yaw is None:
         yaw = 0.0 if args.expect_objective else 0.2
     seconds = args.seconds
-    if args.expect_objective and args.level_id != "demo_city" and seconds < 18.0:
-        seconds = 18.0
+    if args.expect_objective and seconds < 18.0:
+        seconds = 65.0 if args.level_id == "demo_city" else 18.0
     raise SystemExit(
         asyncio.run(
             smoke(

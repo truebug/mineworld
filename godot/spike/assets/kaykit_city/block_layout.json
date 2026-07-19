@@ -358,6 +358,104 @@
       ]
     }
   ],
+  "props": [
+    {
+      "id": "decor_0",
+      "asset": "bush.gltf",
+      "x": 11.0,
+      "y": -9.15,
+      "yaw": 3.14159265358,
+      "scale": 0.8
+    },
+    {
+      "id": "decor_1",
+      "asset": "bush.gltf",
+      "x": 21.85,
+      "y": -11.5,
+      "yaw": 1.57079632679,
+      "scale": 1.0
+    },
+    {
+      "id": "decor_2",
+      "asset": "dumpster.gltf",
+      "x": 28.0,
+      "y": -9.15,
+      "yaw": 3.14159265358,
+      "scale": 1.0
+    },
+    {
+      "id": "decor_3",
+      "asset": "firehydrant.gltf",
+      "x": 45.0,
+      "y": -13.85,
+      "yaw": 0.0,
+      "scale": 1.0
+    },
+    {
+      "id": "decor_4",
+      "asset": "bench.gltf",
+      "x": 19.5,
+      "y": -0.65,
+      "yaw": 3.14159265358,
+      "scale": 1.0
+    },
+    {
+      "id": "decor_5",
+      "asset": "dumpster.gltf",
+      "x": 36.5,
+      "y": 7.85,
+      "yaw": 3.14159265358,
+      "scale": 1.0
+    },
+    {
+      "id": "decor_6",
+      "asset": "firehydrant.gltf",
+      "x": 28.0,
+      "y": 16.35,
+      "yaw": 3.14159265358,
+      "scale": 1.0
+    },
+    {
+      "id": "decor_7",
+      "asset": "dumpster.gltf",
+      "x": 45.0,
+      "y": 11.65,
+      "yaw": 0.0,
+      "scale": 1.0
+    },
+    {
+      "id": "decor_8",
+      "asset": "streetlight.gltf",
+      "x": 4.85,
+      "y": 22.5,
+      "yaw": 1.57079632679,
+      "scale": 1.0
+    },
+    {
+      "id": "decor_9",
+      "asset": "streetlight.gltf",
+      "x": 25.65,
+      "y": 22.5,
+      "yaw": 4.71238898038,
+      "scale": 1.0
+    },
+    {
+      "id": "decor_10",
+      "asset": "firehydrant.gltf",
+      "x": 36.5,
+      "y": 24.85,
+      "yaw": 3.14159265358,
+      "scale": 1.0
+    },
+    {
+      "id": "decor_11",
+      "asset": "dumpster.gltf",
+      "x": 42.65,
+      "y": 22.5,
+      "yaw": 4.71238898038,
+      "scale": 1.0
+    }
+  ],
   "roads": [
     {
       "id": "road_0",

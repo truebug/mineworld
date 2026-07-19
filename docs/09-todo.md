@@ -49,6 +49,10 @@
 | D7 | 随机街区 + 楼宇占地空气墙 | `gen_demo_city_block.py` + `city_block_dress.gd`；棕墙隐藏 | [x] |
 | D9 | Web 选 seed / 一键重生街区 | `POST /api/city-block` + shell 控件；Gateway 契约 mtime 热加载 | [x] |
 | D10 | 路面贴花 / 更密路网观感（仍空气墙权威） | 楼宇间深色沥青带 + 浅灰人行底（无 KayKit 标线砖） | [x] |
+| D8 | 客户端内帧回放 | Recordings 2D Play + `/?replay=` 3D 离线驱动傀儡 | [x] |
+| D11 | KayKit 街道小品 | layout `props`（灯/椅/灌木/消防栓） | [x] |
+| D12 | demo_city 终点开环 smoke | `--expect-objective` 直道东行至绿区 | [x] |
+| D13 | 录制索引 SQLite + 批量轨迹导出 | `recording_store` + `export_trajectories.py` + API | [x] |
 
 ---
 
@@ -88,7 +92,6 @@
 | W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] |
 | T2.7 | 输入延迟补偿 v0 | [~] |
 | — | `demo` 房录制双实体抽检 | [ ] 可选 |
-| D8 | 客户端内帧回放（读 `frames.jsonl` 驱动傀儡） | [ ] 暂缓 |
 | F7 | 机甲互撞（共享 MjData） | 见 Now F7 | [x] |
 | F4 / T4.2 | `.tscn` → 契约导出 | 见 Now F4 | [x] |
 

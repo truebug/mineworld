@@ -74,13 +74,15 @@ func _apply_data(data: Dictionary) -> void:
 	"""Rebuild Decor from a layout dict."""
 	_hide_authority_walls()
 	_place_buildings(data)
+	_place_props(data)
 	_place_roads(data)
 	_place_markers(data)
 	print(
-		"[MW] city block dress seed=%s buildings=%d roads=%d"
+		"[MW] city block dress seed=%s buildings=%d props=%d roads=%d"
 		% [
 			data.get("seed", "?"),
 			(data.get("buildings", []) as Array).size(),
+			(data.get("props", []) as Array).size(),
 			(data.get("roads", []) as Array).size(),
 		]
 	)
@@ -104,6 +106,14 @@ func _place_buildings(data: Dictionary) -> void:
 	_clear_children(city)
 	for entry in data.get("buildings", []):
 		_instance_asset(city, entry)
+
+
+func _place_props(data: Dictionary) -> void:
+	"""Instance sidewalk KayKit props (lights, benches, bushes)."""
+	var props := _ensure_group("Props")
+	_clear_children(props)
+	for entry in data.get("props", []):
+		_instance_asset(props, entry)
 
 
 func _place_roads(data: Dictionary) -> void:

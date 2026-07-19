@@ -4,6 +4,8 @@ Also exposes local recording history (D5) and city-block regen (D9):
   GET  /api/recordings              → session list JSON
   GET  /api/recordings/<id>         → header.json
   GET  /api/recordings/<id>/frames  → frames.jsonl
+  GET  /api/recordings/export.csv   → all-session trajectory CSV
+  POST /api/recordings/reindex      → rebuild recordings/index.sqlite
   GET  /api/city-block              → current seed summary
   GET  /api/city-block/layout       → live block_layout.json (Godot Web dress)
   POST /api/city-block              → {"seed": N} regenerate contract+layout
@@ -22,6 +24,8 @@ Local API (same origin as the demo):
 GET  /api/recordings                 # session list
 GET  /api/recordings/<id>            # header.json
 GET  /api/recordings/<id>/frames     # frames.jsonl
+GET  /api/recordings/export.csv      # trajectory CSV attachment
+POST /api/recordings/reindex         # rebuild index.sqlite
 GET  /api/city-block                 # {seed, buildings, roads, ...}
 GET  /api/city-block/layout          # Godot dress JSON
 POST /api/city-block                 # body {"seed": 7} or {"seed": null} random
@@ -45,6 +49,10 @@ from typing import Any
 from urllib.parse import unquote, urlparse
 
 REPO = Path(__file__).resolve().parents[1]
+if str(REPO / "gateway") not in sys.path:
+    sys.path.insert(0, str(REPO / "gateway"))
+
+from recording_store import DB_PATH, export_trajectories_text, list_sessions, rebuild_sqlite  # noqa: E402
 LAYOUT_PATH = REPO / "godot" / "spike" / "assets" / "kaykit_city" / "block_layout.json"
 CONTRACT_PATH = REPO / "examples" / "contracts" / "demo_city.json"
 
@@ -57,40 +65,6 @@ def _safe_session_id(raw: str) -> str | None:
         if not (ch.isalnum() or ch in "-_"):
             return None
     return raw
-
-
-def list_sessions(root: Path) -> list[dict[str, Any]]:
-    """Scan recordings/sessions/* and return summary dicts (newest first)."""
-    if not root.is_dir():
-        return []
-    out: list[dict[str, Any]] = []
-    for child in root.iterdir():
-        if not child.is_dir():
-            continue
-        header_path = child / "header.json"
-        frames_path = child / "frames.jsonl"
-        if not header_path.is_file():
-            continue
-        try:
-            header = json.loads(header_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        stats = header.get("stats") or {}
-        out.append(
-            {
-                "session_id": header.get("session_id") or child.name,
-                "level_id": header.get("level_id"),
-                "outcome": header.get("outcome"),
-                "started_at": header.get("started_at"),
-                "ended_at": header.get("ended_at"),
-                "duration_sim_s": stats.get("duration_sim_s"),
-                "num_frames": stats.get("num_frames"),
-                "features": header.get("features") or [],
-                "has_frames": frames_path.is_file(),
-            }
-        )
-    out.sort(key=lambda s: str(s.get("started_at") or ""), reverse=True)
-    return out
 
 
 def _city_block_summary() -> dict[str, Any]:
@@ -163,6 +137,15 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _send_csv_attachment(self, data: bytes, filename: str = "trajectories.csv") -> None:
+        """Stream CSV bytes as a download attachment."""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/csv; charset=utf-8")
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def _read_json_body(self) -> dict[str, Any] | None:
         """Parse a small JSON object body; None on empty/invalid."""
         length = int(self.headers.get("Content-Length") or 0)
@@ -193,6 +176,14 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
 
         if path == "/api/recordings":
             self._send_json({"sessions": list_sessions(self.recordings_root)})
+            return
+
+        if path == "/api/recordings/export.csv":
+            csv_bytes = export_trajectories_text(
+                self.recordings_root,
+                format="csv",
+            ).encode("utf-8")
+            self._send_csv_attachment(csv_bytes)
             return
 
         if path.startswith("/api/recordings/"):
@@ -236,6 +227,10 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
+        if path == "/api/recordings/reindex":
+            count = rebuild_sqlite(self.recordings_root, DB_PATH)
+            self._send_json({"ok": True, "count": count})
+            return
         if path != "/api/city-block":
             self._send_json({"error": "not_found"}, 404)
             return

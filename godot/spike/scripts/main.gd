@@ -54,10 +54,19 @@ var _banner_layer: CanvasLayer
 var _banner_title: Label
 var _banner_sub: Label
 var _sfx: AudioStreamPlayer
+## D8: offline frame replay (?replay=<session_id>); skips gateway.
+var _replay_session := ""
+var _replay_frames: Array = []
+var _replay_playing := false
+var _replay_speed := 1.0
+var _replay_t := 0.0
+var _replay_idx := 0
+var _replay_status := ""
 
 
 func _ready() -> void:
 	_is_web = OS.has_feature("web")
+	_replay_session = _resolve_replay_id()
 	ws.hello_received.connect(_on_hello)
 	ws.scene_received.connect(_on_scene)
 	ws.state_received.connect(_on_state)
@@ -76,9 +85,164 @@ func _ready() -> void:
 		get_viewport().size_changed.connect(_ensure_hud_layout)
 	if _is_web:
 		_install_web_keyboard_bridge()
+	if _replay_session != "":
+		_start_replay_mode()
+		return
 	ws.connect_to_gateway(_resolve_gateway_url())
 	_update_hud()
 
+
+func _resolve_replay_id() -> String:
+	"""Web: ?replay=<session_id> for D8 offline playback."""
+	if not _is_web:
+		return ""
+	return str(JavaScriptBridge.eval(
+		"(function(){try{return new URLSearchParams(location.search).get('replay')||''}catch(e){return ''}})()",
+		true
+	))
+
+
+func _start_replay_mode() -> void:
+	"""Fetch frames.jsonl and drive puppets without Gateway."""
+	_replay_status = "loading frames…"
+	_update_hud()
+	var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
+	if origin == "":
+		_replay_status = "replay: no origin"
+		_update_hud()
+		return
+	var http := HTTPRequest.new()
+	http.name = "ReplayHttp"
+	add_child(http)
+	http.request_completed.connect(_on_replay_http.bind(http))
+	var url := "%s/api/recordings/%s/frames" % [origin, _replay_session.uri_encode()]
+	var err := http.request(url)
+	if err != OK:
+		_replay_status = "replay HTTP err %s" % err
+		http.queue_free()
+		_update_hud()
+
+
+func _on_replay_http(
+	result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	body: PackedByteArray,
+	http: HTTPRequest,
+) -> void:
+	"""Parse JSONL frames and start playback."""
+	http.queue_free()
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		_replay_status = "replay load fail %s/%s" % [result, response_code]
+		_update_hud()
+		return
+	var lines := body.get_string_from_utf8().split("\n", false)
+	_replay_frames.clear()
+	for line in lines:
+		if str(line).strip_edges() == "":
+			continue
+		var parsed = JSON.parse_string(line)
+		if typeof(parsed) == TYPE_DICTIONARY:
+			_replay_frames.append(parsed)
+	if _replay_frames.is_empty():
+		_replay_status = "replay: empty frames"
+		_update_hud()
+		return
+	# Seed puppets from first frame entities.
+	var first: Dictionary = _replay_frames[0]
+	var state: Variant = first.get("state", {})
+	if typeof(state) == TYPE_DICTIONARY:
+		_ensure_puppets((state as Dictionary).get("entities", []) as Array)
+	_replay_playing = true
+	_replay_t = 0.0
+	_replay_idx = 0
+	_replay_status = "REPLAY · %s · %d frames · Space pause" % [
+		_replay_session.substr(0, 8), _replay_frames.size()
+	]
+	var own := _own_mech()
+	if camera_rig != null and camera_rig.has_method("set_target"):
+		camera_rig.set_target(own)
+	_apply_replay_frame(0)
+	_update_hud()
+
+
+func _apply_replay_frame(idx: int) -> void:
+	"""Apply one recorded frame to puppets."""
+	if idx < 0 or idx >= _replay_frames.size():
+		return
+	var frame: Dictionary = _replay_frames[idx]
+	var t_sim := float(frame.get("t_sim", 0.0))
+	var state: Variant = frame.get("state", {})
+	if typeof(state) != TYPE_DICTIONARY:
+		return
+	for entity in (state as Dictionary).get("entities", []):
+		if typeof(entity) != TYPE_DICTIONARY:
+			continue
+		var eid := str(entity.get("entity_id", ""))
+		if eid == "":
+			continue
+		if not _puppets.has(eid):
+			_ensure_puppets([entity])
+		if not _puppets.has(eid):
+			continue
+		var puppet = _puppets[eid]
+		if puppet.has_method("apply_state"):
+			puppet.apply_state(entity, t_sim)
+	_replay_idx = idx
+	_update_hud(-1, t_sim)
+
+
+func _process_replay(delta: float) -> void:
+	"""Advance offline replay clock and apply nearest frame."""
+	if _is_web and camera_rig != null and camera_rig.has_method("pan_axes"):
+		var pan_r := 0.0
+		var pan_f := 0.0
+		if _web_key("ArrowRight"):
+			pan_r += 1.0
+		if _web_key("ArrowLeft"):
+			pan_r -= 1.0
+		if _web_key("ArrowUp"):
+			pan_f += 1.0
+		if _web_key("ArrowDown"):
+			pan_f -= 1.0
+		camera_rig.pan_axes(pan_r, pan_f, delta)
+	if not _replay_playing or _replay_frames.is_empty():
+		return
+	_replay_t += delta * _replay_speed
+	var last: Dictionary = _replay_frames[_replay_frames.size() - 1]
+	var t_max := float(last.get("t_sim", 0.0))
+	if _replay_t >= t_max:
+		_replay_t = t_max
+		_replay_playing = false
+		_replay_status = "REPLAY done · Space restart · Esc back"
+	while _replay_idx + 1 < _replay_frames.size():
+		var nxt: Dictionary = _replay_frames[_replay_idx + 1]
+		if float(nxt.get("t_sim", 0.0)) > _replay_t:
+			break
+		_replay_idx += 1
+	_apply_replay_frame(_replay_idx)
+
+
+func _toggle_replay_pause() -> void:
+	"""Space: pause/resume or restart when finished."""
+	if _replay_frames.is_empty():
+		return
+	var last: Dictionary = _replay_frames[_replay_frames.size() - 1]
+	var t_max := float(last.get("t_sim", 0.0))
+	if _replay_t >= t_max and not _replay_playing:
+		_replay_t = 0.0
+		_replay_idx = 0
+		_replay_playing = true
+		_replay_status = "REPLAY · %s · %d frames" % [
+			_replay_session.substr(0, 8), _replay_frames.size()
+		]
+		_apply_replay_frame(0)
+		return
+	_replay_playing = not _replay_playing
+	_replay_status = (
+		"REPLAY paused" if not _replay_playing else "REPLAY playing"
+	)
+	_update_hud()
 
 func _resolve_hud_label() -> Label:
 	"""Resolve Label under Hud (Margin/... or legacy PanelContainer/...)."""
@@ -283,6 +447,9 @@ func _on_dom_key_event(args: Array) -> void:
 			"KeyR":
 				if _controlled and ws.session_id != "":
 					ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
+			"Space":
+				if _replay_session != "":
+					_toggle_replay_pause()
 
 
 func _on_dom_blur(_args: Array) -> void:
@@ -469,6 +636,9 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	if _replay_session != "":
+		_process_replay(delta)
+		return
 	# Web: arrow keys pan camera (document bridge). Desktop: camera_rig reads Input.
 	if _is_web and camera_rig != null and camera_rig.has_method("pan_axes"):
 		var pan_r := 0.0
@@ -496,8 +666,13 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and not _is_web:
 		_set_held(event.keycode, event.pressed)
 		_set_held(event.physical_keycode, event.pressed)
-		if event.pressed and not event.echo and ws.session_id != "":
+		if event.pressed and not event.echo:
 			var code: int = event.keycode if event.keycode != KEY_NONE else event.physical_keycode
+			if code == KEY_SPACE and _replay_session != "":
+				_toggle_replay_pause()
+				return
+			if ws.session_id == "":
+				return
 			match code:
 				KEY_T:
 					if not _controlled and not _mission_done:
@@ -570,10 +745,29 @@ func _notification(what: int) -> void:
 
 
 func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
+	var own = _own_mech()
+	if _replay_session != "":
+		var text := "MineWorld · REPLAY\n"
+		text += "%s\n" % _replay_status
+		text += "session: %s\n" % _replay_session
+		if tick >= 0 or t_sim > 0.0:
+			text += "t_sim=%.2f frame=%d/%d\n" % [
+				t_sim if t_sim > 0.0 else _replay_t,
+				_replay_idx + 1,
+				_replay_frames.size(),
+			]
+			text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [
+				own.position.x, own.position.z, own.rotation.y,
+			]
+		text += "\nSpace pause/restart | arrows pan | C center | Recordings ←"
+		if _is_web:
+			_push_web_hud(text)
+		elif hud_label != null:
+			hud_label.text = text
+		return
 	var state_name := "disconnected"
 	if ws.session_id != "":
 		state_name = "linked"
-	var own = _own_mech()
 	var text := "MineWorld · %s\n" % level_id
 	text += "link: %s | control: %s | entity: %s\n" % [
 		state_name, "ON" if _controlled else "OFF", _controlled_entity_id,
