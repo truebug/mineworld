@@ -22,6 +22,15 @@
 
 详见 [09](09-todo.md) · [13](13-web-multiplayer-demo.md)。下文「一句话结论 / R1 共享 MjData」以当时评审为准；**R1 已由 Room 私房缓解**（同关仍为每机甲独立 data，无互撞）。
 
+### 续记 · 2026-07-19（D3–D7 · 主演示关）
+
+| 项 | 结果 |
+|----|------|
+| D3–D5 | Web HUD custom shell；SUCCESS + beep；`/api/recordings` 历史列表 |
+| D6 | KayKit City Builder Bits（CC0）换皮 `demo_city` |
+| D7 | `gen_demo_city_block.py` 随机街区；楼宇占地 = MuJoCo 空气墙（棕墙隐藏） |
+| 下一刀建议 | D8 客户端帧回放 · D9 Web 选 seed · D10 路面贴花 |
+
 ## 1. 一句话结论
 
 **主线正确、节奏健康、集成风险已被压住；下一步应收束到「可玩闭环（M4）」而非继续扩关卡/扩能力。**

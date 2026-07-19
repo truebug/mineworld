@@ -48,7 +48,7 @@
 | D1 | 录制存储位置 | 本地目录 / S3 / 时序库 | **Partial**：POC 已本地 `recordings/sessions/<id>/`（单人/多人 join 即录，`--no-record` 可关）。D5 已用 `serve_web_demo` 列会话；存储抽象 `RecordingStore`（FS → SQLite → RDS/S3）不改 `header.json`+`frames.jsonl` 语义 |
 | D2 | 玩家标识脱敏 | UUID 映射表 | Open |
 | D3 | 数据许可法律模板 | 商业前必备 | Open |
-| L1 | 成品 Godot 地图包作默认关 | KayKit City Builder Bits → `demo_city` viewer_only 换皮 | **Partial**（D6 首包已入；整张成品地图仍可换） |
+| L1 | 成品 Godot 地图包作默认关 | KayKit 楼宇 + `gen_demo_city_block.py` 随机街区空气墙 | **Closed（v0）**（D6/D7；整张第三方成品地图仍可再换） |
 
 ---
 

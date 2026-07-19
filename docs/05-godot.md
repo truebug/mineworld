@@ -105,6 +105,7 @@ godot --headless --path godot/spike --script res://headless/smoke_client.gd
 godot/
 └── spike/               # POC-A M1 镜像（见 godot/spike/README.md）
     ├── project.godot
+    ├── demo_city.tscn            # 主演示关（KayKit + 空气墙；见 gen_demo_city_block.py）
     ├── tutorial_02.tscn          # city-level (Kenney assets)
     ├── main.tscn
     ├── scripts/         # ws_client / mech_puppet / main / camera_rig
