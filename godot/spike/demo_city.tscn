@@ -1,14 +1,14 @@
-[gd_scene load_steps=31 format=3 uid="uid://b0mineworlddemocity"]
+[gd_scene load_steps=36 format=3 uid="uid://b0mineworlddemocity"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/ws_client.gd" id="2_ws"]
 [ext_resource type="Script" path="res://scripts/mech_puppet.gd" id="3_puppet"]
-[ext_resource type="PackedScene" path="res://assets/city/building-a.glb" id="4_citya"]
-[ext_resource type="PackedScene" path="res://assets/city/building-b.glb" id="5_cityb"]
-[ext_resource type="PackedScene" path="res://assets/city/building-c.glb" id="6_cityc"]
-[ext_resource type="PackedScene" path="res://assets/city/building-d.glb" id="7_cityd"]
-[ext_resource type="PackedScene" path="res://assets/city/building-skyscraper-a.glb" id="8_skya"]
-[ext_resource type="PackedScene" path="res://assets/city/building-skyscraper-b.glb" id="9_skyb"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/building_A.gltf" id="4_citya"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/building_B.gltf" id="5_cityb"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/building_C.gltf" id="6_cityc"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/building_D.gltf" id="7_cityd"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/building_E.gltf" id="8_skya"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/building_F.gltf" id="9_skyb"]
 [ext_resource type="PackedScene" path="res://assets/platformer/block-grass-long.glb" id="10_plong"]
 [ext_resource type="PackedScene" path="res://assets/platformer/block-grass-large.glb" id="11_plarge"]
 [ext_resource type="PackedScene" path="res://assets/platformer/crate.glb" id="12_crate"]
@@ -17,6 +17,11 @@
 [ext_resource type="PackedScene" path="res://assets/platformer/tree-pine.glb" id="15_tree"]
 [ext_resource type="PackedScene" path="res://assets/platformer/arrow.glb" id="16_arrow"]
 [ext_resource type="Script" path="res://scripts/camera_rig.gd" id="17_camrig"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/building_G.gltf" id="18_cityg"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/building_H.gltf" id="19_cityh"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/streetlight.gltf" id="20_light"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/road_straight.gltf" id="21_road"]
+[ext_resource type="PackedScene" path="res://assets/kaykit_city/car_sedan.gltf" id="22_car"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -184,31 +189,52 @@ metadata/physics_role = "viewer_only"
 [node name="City" type="Node3D" parent="Decor"]
 
 [node name="BuildingA" parent="Decor/City" instance=ExtResource("4_citya")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 10)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 2, 0, 10)
 
 [node name="BuildingB" parent="Decor/City" instance=ExtResource("5_cityb")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 10.5)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 8, 0, 10.5)
 
 [node name="BuildingC" parent="Decor/City" instance=ExtResource("6_cityc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 10)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 14, 0, 10)
 
 [node name="BuildingD" parent="Decor/City" instance=ExtResource("7_cityd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 10.5)
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 20, 0, 10.5)
 
-[node name="SkyA" parent="Decor/City" instance=ExtResource("8_skya")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 0, 11)
+[node name="BuildingE" parent="Decor/City" instance=ExtResource("8_skya")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 26, 0, 11)
 
 [node name="BuildingA2" parent="Decor/City" instance=ExtResource("4_citya")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 4, 0, -10)
+transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 4, 0, -10)
 
 [node name="BuildingB2" parent="Decor/City" instance=ExtResource("5_cityb")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 10, 0, -10.5)
+transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 10, 0, -10.5)
 
 [node name="BuildingD2" parent="Decor/City" instance=ExtResource("7_cityd")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 18, 0, -10)
+transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 18, 0, -10)
 
-[node name="SkyB" parent="Decor/City" instance=ExtResource("9_skyb")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 25, 0, -11)
+[node name="BuildingF" parent="Decor/City" instance=ExtResource("9_skyb")]
+transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 25, 0, -11)
+
+[node name="BuildingG" parent="Decor/City" instance=ExtResource("18_cityg")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -4, 0, 2)
+
+[node name="BuildingH" parent="Decor/City" instance=ExtResource("19_cityh")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 32, 0, 4)
+
+[node name="RoadN" parent="Decor/City" instance=ExtResource("21_road")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 10, 0.01, 12.5)
+
+[node name="RoadS" parent="Decor/City" instance=ExtResource("21_road")]
+transform = Transform3D(-2, 0, 0, 0, 2, 0, 0, 0, -2, 16, 0.01, -12.5)
+
+[node name="Light1" parent="Decor/City" instance=ExtResource("20_light")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0.5, 0, 8.5)
+
+[node name="Light2" parent="Decor/City" instance=ExtResource("20_light")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 28, 0, -8.5)
+
+[node name="ParkedCar" parent="Decor/City" instance=ExtResource("22_car")]
+transform = Transform3D(0, 0, 2, 0, 2, 0, -2, 0, 0, 30, 0, -3)
 
 [node name="Tree01" parent="Decor" instance=ExtResource("15_tree")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 9)

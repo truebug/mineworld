@@ -45,7 +45,7 @@
 | D3 | Web HUD 彻底修好（custom shell · `#mw-hud` 在 body） | 导出校验 body 内 HUD；浏览器无左裁切 | [x] |
 | D4 | 通关反馈 SUCCESS 大字 + 短蜂鸣 | `objective_complete` → 横幅 + beep | [x] |
 | D5 | 录制历史列表 + 选择回放（多会话） | `GET /api/recordings` + `recordings.html` 轨迹预览；本地 FS | [x] |
-| D6 | 导入成品免费地图包作默认关（CC0） | 视觉层可换皮；权威障碍仍走契约/`static_obstacles` | [ ] |
+| D6 | 导入成品免费地图包作默认关（CC0） | KayKit City Bits 换皮 `demo_city`；权威障碍仍走契约 | [x] |
 
 ---
 

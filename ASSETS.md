@@ -20,6 +20,7 @@
 | 资产 | 来源 | 许可 | 用途 / 存放位置 | 署名要求 | 入库日期 |
 |------|------|------|----------------|----------|----------|
 | Platformer Kit 4.1 | [kenney.nl/assets/platformer-kit](https://kenney.nl/assets/platformer-kit) | CC0 | `tutorial_02` 平台跳跃素材；`godot/spike/assets/platformer/`（含 License）；**F1** 亦用于 `main.tscn` / tutorial_01 装饰 | 无 | 2026-07-18 |
-| City Kit (Commercial) 2.1 | [kenney.nl/assets/city-kit-commercial](https://kenney.nl/assets/city-kit-commercial) | CC0 | 城市/建筑环境素材；`godot/spike/assets/city/` | 无 | 2026-07-18 |
+| City Kit (Commercial) 2.1 | [kenney.nl/assets/city-kit-commercial](https://kenney.nl/assets/city-kit-commercial) | CC0 | 城市/建筑环境素材；`godot/spike/assets/city/`（仍可用于 tutorial_02） | 无 | 2026-07-18 |
+| KayKit City Builder Bits 1.0（子集） | [itch](https://kaylousberg.itch.io/city-builder-bits) · [GitHub](https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0) | CC0 | `demo_city` 默认关城市皮；`godot/spike/assets/kaykit_city/`（gltf+atlas；见目录 ASSETS.md） | 无（可署名 Kay Lousberg） | 2026-07-19 |
 | planar_cart URDF/MJCF | 本仓库自研 F2 试点 | MIT（仓库许可） | `mujoco/models/mechs/planar_cart.urdf` → `planar_cart.xml`（fallback） | 无 | 2026-07-19 |
 | DiffBot URDF skin（F5） | [ros2_control_demos](https://github.com/ros-controls/ros2_control_demos) `@1c5c439` `ros2_control_demo_description/diffbot/` | Apache-2.0 | `mujoco/models/mechs/third_party/diffbot/` → `diffbot_planar.xml`（默认 world） | 保留 `LICENSE` | 2026-07-19 |

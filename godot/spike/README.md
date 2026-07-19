@@ -3,6 +3,7 @@
 | 字段 | 值 |
 |------|-----|
 | **状态** | Accepted 基线（选型已定案，见 [`docs/adr/003-client-engine-godot.md`](../../docs/adr/003-client-engine-godot.md)） |
+
 | **日期** | 2026-07-17 |
 | **对应验收** | `docs/11-poc-mvp-architecture.md` §7.1（M1） |
 
@@ -26,7 +27,11 @@
 godot/spike/
 ├── project.godot            # 工程（输入映射 WASD/QE + T/R）；主场景 demo_city.tscn
 ├── export_presets.cfg       # macOS 桌面导出（T3.4）
-├── demo_city.tscn           # **主演示关**（城市装饰 + 权威路缘/减速墩/终点）
+├── demo_city.tscn           # **主演示关**（KayKit 城市皮 + 权威墙/终点；契约不变）
+├── assets/
+│   ├── kaykit_city/         # KayKit City Builder Bits（CC0，viewer_only）
+│   ├── city/                # Kenney City Kit（tutorial_02 等仍可用）
+│   └── platformer/          # Kenney Platformer Kit
 ├── main.tscn                # tutorial_01（地面/墙/终点区/胶囊/相机/HUD）
 ├── scripts/
 │   ├── ws_client.gd         # MWWsClient：WebSocket + 消息分发（无渲染逻辑）
