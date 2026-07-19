@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | 多人本机 Demo 已通；**主线转向 Godot↔MuJoCo 场景/模型融合（F0–F2）** |
+| **目标** | 多人本机 Demo 已通；**Godot↔MuJoCo 融合 F0–F4 已完成** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |

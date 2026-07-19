@@ -124,17 +124,19 @@
 2. URDF→MJCF 工具链：仓库脚本 vs 外部预编译产物入库？  
 3. 关节控制是否从 `velocity` 基座扩展到 `joint_targets`（协议加字段，v0 兼容）？
 
-未拍板前：**F0–F3 已落地**；F4 契约导出 / 第三方真机 URDF 另开选型。
+未拍板前：**F0–F4 已落地**；下一步可选：第三方真机 URDF、Godot 编辑器内一键导出插件、公网 W2。
 
-### F2 试点命令
+### F2 / F4 命令
 
 ```bash
 .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py --check
-.venv/bin/python mujoco/scripts/headless_run.py          # T2.1 PASS
+.venv/bin/python mujoco/scripts/headless_run.py
+.venv/bin/python scripts/export_scene_contract.py --check   # F4: tscn ↔ contract
+.venv/bin/python scripts/export_scene_contract.py           # rewrite contract from main.tscn
 .venv/bin/python gateway/echo_server.py --physics mujoco
-.venv/bin/python scripts/ws_smoke_test.py                # smoke OK
+.venv/bin/python scripts/ws_smoke_test.py
 ```
 
 源文件：`mujoco/models/mechs/planar_cart.urdf` → 生成 `planar_cart.xml`；`world_flat.xml` include 该机甲。  
-Godot：`mech_puppet.gd` 按同一 URDF 尺寸生成底盘/轮/鼻（F3）；队伍色只染底盘。  
+Godot：`mech_puppet.gd` 按同一 URDF 尺寸生成底盘/轮/鼻（F3）；`main.tscn` 节点 `metadata/contract_kind` 供 F4 导出。  
 注意：仓库目录名 `mujoco/` 会遮蔽 pip 包，脚本内已把 repo root 从 `sys.path` 去掉再 `import mujoco`。
