@@ -48,11 +48,19 @@ case "$TARGET" in
       echo "ERROR: export finished but $OUT_FILE not found" >&2
       exit 1
     fi
-    echo "OK: $OUT_DIR"
-    echo "Serve with COOP/COEP (required for threaded Godot Web builds):"
+    # Main-thread key bridge (required: multi-thread workers cannot bind document).
+    cp "$PROJECT/web/mw_key_bridge.js" "$OUT_DIR/mw_key_bridge.js"
+    if ! grep -q "mw_key_bridge.js" "$OUT_FILE"; then
+      # Fallback if head_include was stripped: inject before </head>
+      sed -i.bak 's#</head>#<script src="mw_key_bridge.js"></script></head>#' "$OUT_FILE"
+      rm -f "$OUT_FILE.bak"
+    fi
+    echo "OK: $OUT_DIR (single-thread Web + mw_key_bridge.js)"
+    echo "Serve:"
     echo "  .venv/bin/python scripts/serve_web_demo.py"
-    echo "Gateway (same machine):"
+    echo "Gateway:"
     echo "  .venv/bin/python gateway/echo_server.py --host 127.0.0.1"
+    echo "Expect console: [MW] key bridge installed on document"
     ;;
   macos|macOS|osx)
     PRESET="macOS"

@@ -2,6 +2,9 @@
 ## Connects to the Python gateway, joins a level, takes/releases control,
 ## drives a capsule puppet with WASD/QE (authority stays server-side).
 ## T: take_control · R: release_control · HUD shows objective outcome.
+##
+## Web: Godot often gets mouse but not keyboard (canvas focus / InputMap).
+## Use a document-level JS keydown/keyup bridge (KeyboardEvent.code).
 extends Node3D
 
 const MOVE_SPEED := 1.0
@@ -25,22 +28,48 @@ var _last_log_tick := -1
 var _controlled := false
 var _mission_done := false
 var _status_line := ""
+var _is_web := false
+## Desktop fallback: keycode → pressed
+var _held: Dictionary = {}
 
 
 func _ready() -> void:
+	_is_web = OS.has_feature("web")
 	ws.hello_received.connect(_on_hello)
 	ws.scene_received.connect(_on_scene)
 	ws.state_received.connect(_on_state)
 	ws.event_received.connect(_on_event)
 	ws.gateway_error.connect(_on_gateway_error)
 	ws.link_state_changed.connect(_on_link_state)
+	if _is_web:
+		_install_web_keyboard_bridge()
 	ws.connect_to_gateway(_resolve_gateway_url())
 	_update_hud()
 
 
+func _install_web_keyboard_bridge() -> void:
+	"""No-op installer: bridge lives in mw_key_bridge.js (page main thread).
+
+	Multi-threaded Godot workers cannot attach document key listeners reliably;
+	export copies mw_key_bridge.js and index.html loads it via head_include.
+	"""
+	var ok := str(JavaScriptBridge.eval("window._mwKeyBridge ? '1' : '0'"))
+	print("[MW] key bridge present=", ok)
+	if ok != "1":
+		push_warning("[MW] mw_key_bridge.js missing — re-run: bash scripts/export_godot.sh web")
+
+
+func _web_key(code: String) -> bool:
+	"""Read KeyboardEvent.code from the page-level JS bridge."""
+	var v: Variant = JavaScriptBridge.eval(
+		"(window._mw_keys && window._mw_keys['%s'] === true)" % code
+	)
+	return v == true or v == 1 or str(v).to_lower() == "true"
+
+
 func _resolve_gateway_url() -> String:
 	"""Prefer window.MINEWORLD_GATEWAY on Web; else exported gateway_url."""
-	if OS.has_feature("web"):
+	if _is_web:
 		var from_js := str(JavaScriptBridge.eval("window.MINEWORLD_GATEWAY || ''"))
 		if from_js != "":
 			return from_js
@@ -107,6 +136,7 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 func _process(delta: float) -> void:
 	if ws.session_id == "":
 		return
+	_poll_web_take_release()
 	if not _controlled or _mission_done:
 		return
 	_cmd_timer += delta
@@ -115,25 +145,85 @@ func _process(delta: float) -> void:
 		_send_velocity_cmd()
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not (event is InputEventKey) or not event.pressed or event.echo:
+func _poll_web_take_release() -> void:
+	"""Edge-detect T/R on Web via JS bridge (Godot may never see those keys)."""
+	if not _is_web:
 		return
-	if ws.session_id == "":
+	# Simple level detect each frame; send once while held by clearing after send is hard.
+	# Use one-shot flags stored on window.
+	var take := str(JavaScriptBridge.eval("window._mw_pulse_take || ''"))
+	var release := str(JavaScriptBridge.eval("window._mw_pulse_release || ''"))
+	if take == "1":
+		JavaScriptBridge.eval("window._mw_pulse_take = ''")
+		if not _controlled and not _mission_done:
+			ws.send_cmd({"action": "take_control", "entity_id": "mech_player"})
+	if release == "1":
+		JavaScriptBridge.eval("window._mw_pulse_release = ''")
+		if _controlled:
+			ws.send_cmd({"action": "release_control", "entity_id": "mech_player"})
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and not _is_web:
+		_set_held(event.keycode, event.pressed)
+		_set_held(event.physical_keycode, event.pressed)
+		if event.pressed and not event.echo and ws.session_id != "":
+			var code: int = event.keycode if event.keycode != KEY_NONE else event.physical_keycode
+			match code:
+				KEY_T:
+					if not _controlled and not _mission_done:
+						ws.send_cmd({"action": "take_control", "entity_id": "mech_player"})
+				KEY_R:
+					if _controlled:
+						ws.send_cmd({"action": "release_control", "entity_id": "mech_player"})
+
+
+func _set_held(code: int, pressed: bool) -> void:
+	"""Record key down/up; ignore KEY_NONE."""
+	if code == KEY_NONE:
 		return
-	match event.keycode:
-		KEY_T:
-			if not _controlled and not _mission_done:
-				ws.send_cmd({"action": "take_control", "entity_id": "mech_player"})
-		KEY_R:
-			if _controlled:
-				ws.send_cmd({"action": "release_control", "entity_id": "mech_player"})
+	_held[code] = pressed
+
+
+func _key_down(code: int) -> bool:
+	"""True if this keycode is currently held (desktop)."""
+	return bool(_held.get(code, false))
 
 
 func _send_velocity_cmd() -> void:
-	var vx := Input.get_axis("move_back", "move_forward") * MOVE_SPEED
-	# Body frame (Z-up, forward +X): +vy = strafe left, +yaw_rate = CCW.
-	var vy := Input.get_axis("strafe_left", "strafe_right") * -MOVE_SPEED
-	var yaw_rate := Input.get_axis("turn_cw", "turn_ccw") * TURN_SPEED
+	var vx := 0.0
+	var vy := 0.0
+	var yaw_rate := 0.0
+	if _is_web:
+		if _web_key("KeyW") or _web_key("ArrowUp"):
+			vx += MOVE_SPEED
+		if _web_key("KeyS") or _web_key("ArrowDown"):
+			vx -= MOVE_SPEED
+		if _web_key("KeyQ"):
+			vy += MOVE_SPEED
+		if _web_key("KeyE"):
+			vy -= MOVE_SPEED
+		if _web_key("KeyA") or _web_key("ArrowLeft"):
+			yaw_rate += TURN_SPEED
+		if _web_key("KeyD") or _web_key("ArrowRight"):
+			yaw_rate -= TURN_SPEED
+	else:
+		if _key_down(KEY_W) or _key_down(KEY_UP):
+			vx += MOVE_SPEED
+		if _key_down(KEY_S) or _key_down(KEY_DOWN):
+			vx -= MOVE_SPEED
+		if _key_down(KEY_Q):
+			vy += MOVE_SPEED
+		if _key_down(KEY_E):
+			vy -= MOVE_SPEED
+		if _key_down(KEY_A) or _key_down(KEY_LEFT):
+			yaw_rate += TURN_SPEED
+		if _key_down(KEY_D) or _key_down(KEY_RIGHT):
+			yaw_rate -= TURN_SPEED
+		if vx == 0.0 and vy == 0.0 and yaw_rate == 0.0:
+			vx = Input.get_axis("move_back", "move_forward") * MOVE_SPEED
+			vy = Input.get_axis("strafe_left", "strafe_right") * -MOVE_SPEED
+			yaw_rate = Input.get_axis("turn_cw", "turn_ccw") * TURN_SPEED
 	ws.send_cmd({
 		"entity_id": "mech_player",
 		"control_mode": "velocity",
@@ -154,6 +244,8 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		state_name = "linked"
 	var text := "MineWorld Spike\n"
 	text += "link: %s | control: %s\n" % [state_name, "ON" if _controlled else "OFF"]
+	if _is_web:
+		text += "input: browser key bridge (WASD)\n"
 	if _status_line != "":
 		text += "%s\n" % _status_line
 	if _hello:
