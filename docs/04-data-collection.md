@@ -125,6 +125,6 @@ Schema：[`schemas/recording-session.v0.json`](../schemas/recording-session.v0.j
 
 ## 8. MVP 验收
 
-- [ ] 单次会话完整落盘（header + 至少 10s 帧数据）
-- [ ] 可用脚本读取 JSONL 并绘制基座轨迹
-- [ ] `session_id` 与 WS 日志可关联排错
+- [x] 单次会话完整落盘（header + 至少 10s 帧数据）
+- [x] 可用脚本读取 JSONL 并绘制基座轨迹
+- [x] `session_id` 与 WS 日志可关联排错

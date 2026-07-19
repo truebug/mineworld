@@ -6,15 +6,18 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | POC-A（M1 连通）已通过 / POC-B（真仿真）进行中 |
+| **状态** | POC-B：M2 真物理 + M3 可录已通过；下一步收束 **M4 可玩闭环** |
 | **创建日期** | 2026-07-17 |
 | **定位** | 「头号玩家」式初始底座：可编辑共享世界 + 真物理机体 + 可回放的人类行为档案 |
+| **阶段评审** | [docs/12-status-review.md](docs/12-status-review.md)（2026-07-19） |
 
 ---
 
 ## 一句话
 
 **Godot 负责关卡/任务/地图与可视化 Viewer；无头 MuJoCo 负责机甲关节级物理仿真；WebSocket 交换控制与状态；旁路录制遥操与交互轨迹，支撑学习、娱乐与商业多种模式。**
+
+POC 机甲为**自建盒子**（验证权威链路与协议）；真实人形/四足 MJCF 是后置换皮，不改 WS 契约形状。
 
 ---
 
@@ -56,6 +59,7 @@ godot --headless --path godot/spike --script res://headless/smoke_client.gd   # 
 | [docs/09-todo.md](docs/09-todo.md) | **可执行待办清单（当前执行入口）** |
 | [docs/10-open-questions.md](docs/10-open-questions.md) | 待决事项与评审清单 |
 | [docs/11-poc-mvp-architecture.md](docs/11-poc-mvp-architecture.md) | **POC 规格 + MVP 目标架构（讨论入口）** |
+| [docs/12-status-review.md](docs/12-status-review.md) | **阶段回顾与方案评审（2026-07-19）** |
 | [schemas/README.md](schemas/README.md) | **JSON Schema SSOT 与扩展规则** |
 | [docs/adr/001-dual-engine-split.md](docs/adr/001-dual-engine-split.md) | ADR：双引擎职责分离 |
 | [docs/adr/002-authority-and-sync.md](docs/adr/002-authority-and-sync.md) | ADR：物理权威与时序同步 |

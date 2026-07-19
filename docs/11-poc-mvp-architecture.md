@@ -236,11 +236,11 @@ Client                    Gateway                     MuJoCo
 
 ### 7.2 POC-B 通过（M2 + 最小 M3）
 
-- [ ] 关闭假积分；位姿来自 `mujoco.MjData`
-- [ ] 加速/转向 cmd 改变仿真轨迹（肉眼可辨）
-- [ ] 盒体障碍存在时，运动受阻或可碰撞（至少不穿模到离谱）
-- [ ] `recordings/sessions/<id>/header.json` + `frames.jsonl` 存在且 ≥10s
-- [ ] `scripts/replay_xy.py`（或等价）画出 x–y 轨迹图
+- [x] 关闭假积分；位姿来自 `mujoco.MjData`（`--physics mujoco`；`--physics fake` 保留回归）
+- [x] 加速/转向 cmd 改变仿真轨迹（肉眼可辨）
+- [x] 盒体障碍存在时，运动受阻或可碰撞（至少不穿模到离谱）
+- [x] `recordings/sessions/<id>/header.json` + `frames.jsonl` 存在且 ≥10s
+- [x] `scripts/replay_xy.py`（或等价）画出 x–y 轨迹图
 
 ### 7.3 MVP 通过（M4，POC 之后）
 

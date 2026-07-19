@@ -28,6 +28,8 @@ python gateway/echo_server.py --physics mujoco \
 # hello.features 将包含 "mujoco"；契约 static_obstacles(box) 会作为静态 geom 加入仿真
 ```
 
+默认在 `recordings/sessions/<session_id>/` 落盘 `header.json` + `frames.jsonl`（join 后开始；断开时收尾）。可用 `--no-record` 关闭，或 `--record-dir` 改路径。
+
 可选参数：
 
 ```bash
@@ -40,9 +42,13 @@ python gateway/echo_server.py --host 127.0.0.1 --port 8765 --contract examples/c
 
 ```bash
 python scripts/ws_smoke_test.py
+# 录制验收（墙钟略长于 10s，确保 sim ≥10s）：
+python scripts/ws_smoke_test.py --seconds 11.5
+python scripts/replay_xy.py recordings/sessions/<session_id> --ascii
 ```
 
 期望：打印 `hello ok` → `scene ok` → `event player_take_control` → 若干 `state` 且 `x` 增大 → `smoke OK`。
+录制目录应有 `header.json`（`stats.duration_sim_s` ≥ 10）与 `frames.jsonl`。
 
 ## 协议摘要
 

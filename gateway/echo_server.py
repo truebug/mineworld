@@ -4,6 +4,8 @@ Physics backends (--physics):
   fake   - in-process kinematic integrator (POC-A; regression fallback)
   mujoco - real MuJoCo sim (POC-B / T2.2): cmd -> ctrl, state <- qpos.
            Contract static_obstacles are appended as static geoms (T2.3).
+
+Recording (T2.5): on join, writes recordings/sessions/<id>/header.json + frames.jsonl.
 """
 
 from __future__ import annotations
@@ -21,6 +23,8 @@ from typing import Any
 import websockets
 from websockets.asyncio.server import ServerConnection, serve
 
+from recorder import SessionRecorder
+
 try:  # optional: only --physics mujoco needs it
     import mujoco
 except ImportError:  # pragma: no cover
@@ -35,9 +39,9 @@ STATE_HZ = 20
 STATE_EVERY_N_TICKS = max(1, SIM_HZ // STATE_HZ)
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
-DEFAULT_CONTRACT = (
-    Path(__file__).resolve().parents[1] / "examples" / "contracts" / "tutorial_01.json"
-)
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONTRACT = REPO_ROOT / "examples" / "contracts" / "tutorial_01.json"
+DEFAULT_RECORD_DIR = REPO_ROOT / "recordings" / "sessions"
 OBSTACLE_FRICTION = (0.8, 0.02, 0.01)  # aligned with ground/chassis defaults
 
 
@@ -200,6 +204,7 @@ class Session:
     mech: MechState = field(default_factory=lambda: MechState("mech_player"))
     pending_events: list[dict[str, Any]] = field(default_factory=list)
     closed: bool = False
+    recorder: SessionRecorder | None = None
 
     def reset_from_contract(self) -> None:
         spawns = self.contract.get("mech_spawns") or []
@@ -252,10 +257,14 @@ class EchoGateway:
         contract: dict[str, Any],
         physics: str = "fake",
         model_path: Path | None = None,
+        record_dir: Path | None = DEFAULT_RECORD_DIR,
+        record_every_n_ticks: int = 1,
     ) -> None:
         self.contract = contract
         self.sessions: dict[str, Session] = {}
         self.physics = physics
+        self.record_dir = record_dir
+        self.record_every_n_ticks = record_every_n_ticks
         self.mj_model = None
         self.mj_data = None
         if physics == "mujoco":
@@ -267,6 +276,32 @@ class EchoGateway:
             # Single shared MjData: fine for POC single-client; multi-session
             # needs one MjData per session (or a worker pool).
             self.mj_data = mujoco.MjData(self.mj_model)
+
+    def _feature_flags(self) -> list[str]:
+        """Return hello/recording feature tags for the active physics backend."""
+        return ["fake_kinematics" if self.physics == "fake" else "mujoco"]
+
+    def _close_recorder(self, session: Session, outcome: str) -> None:
+        """Finalize session recording if one is open."""
+        if session.recorder is None:
+            return
+        try:
+            session.recorder.close(outcome=outcome)
+        except Exception:
+            LOG.exception("recorder close failed session=%s", session.session_id)
+        session.recorder = None
+
+    def _applied_cmd(self, mech: MechState) -> dict[str, Any] | None:
+        """Control applied this tick (velocity setpoints), or None if idle."""
+        if not mech.controlled:
+            return None
+        return {
+            "entity_id": mech.entity_id,
+            "control_mode": "velocity",
+            "vx": mech.vx,
+            "vy": mech.vy,
+            "yaw_rate": mech.yaw_rate,
+        }
 
     def _build_mujoco_world(self, model_path: Path) -> "mujoco.MjModel":
         """Load base MJCF and append contract static_obstacles as static geoms.
@@ -331,7 +366,7 @@ class EchoGateway:
                     "sim_hz": SIM_HZ,
                     "state_hz": STATE_HZ,
                     "frame": self.contract.get("frame", "mineworld_zup_m"),
-                    "features": ["fake_kinematics" if self.physics == "fake" else "mujoco"],
+                    "features": self._feature_flags(),
                 },
             ),
         )
@@ -343,6 +378,7 @@ class EchoGateway:
             LOG.info("client closed session=%s", session_id)
         finally:
             session.closed = True
+            self._close_recorder(session, outcome="disconnect")
             self.sessions.pop(session_id, None)
 
     async def _on_message(self, session: Session, raw: str | bytes) -> None:
@@ -371,6 +407,7 @@ class EchoGateway:
             session.pending_events.extend(events)
         elif msg_type == "bye":
             session.closed = True
+            self._close_recorder(session, outcome="abort")
             await session.ws.close()
         else:
             await send_json(
@@ -406,6 +443,23 @@ class EchoGateway:
         session.joined = True
         session.tick = 0
         session.reset_from_contract()
+        self._close_recorder(session, outcome="abort")
+        if self.record_dir is not None:
+            software: dict[str, Any] = {"gateway_version": PROTOCOL_VERSION}
+            if self.physics == "mujoco" and mujoco is not None:
+                software["mujoco_version"] = getattr(mujoco, "__version__", "unknown")
+            session.recorder = SessionRecorder(
+                self.record_dir,
+                session_id=session.session_id,
+                contract=self.contract,
+                protocol_version=PROTOCOL_VERSION,
+                dt=DT,
+                sim_hz=SIM_HZ,
+                state_hz=STATE_HZ,
+                record_every_n_ticks=self.record_every_n_ticks,
+                features=self._feature_flags(),
+                software=software,
+            )
 
         entities = []
         for spawn in self.contract.get("mech_spawns") or []:
@@ -452,8 +506,21 @@ class EchoGateway:
                     continue
                 session.mech.step(DT)
                 session.tick += 1
+                tick_events = list(session.pending_events)
+                session.pending_events.clear()
+                state_payload = {
+                    "kind": "full",
+                    "entities": [session.mech.to_entity_state()],
+                }
+                if session.recorder is not None:
+                    session.recorder.write_frame(
+                        tick=session.tick,
+                        cmd=self._applied_cmd(session.mech),
+                        state=state_payload,
+                        events=tick_events,
+                    )
                 try:
-                    for ev in session.pending_events:
+                    for ev in tick_events:
                         await send_json(
                             session.ws,
                             envelope(
@@ -463,7 +530,6 @@ class EchoGateway:
                                 payload=ev,
                             ),
                         )
-                    session.pending_events.clear()
 
                     if session.tick % STATE_EVERY_N_TICKS == 0:
                         await send_json(
@@ -472,10 +538,7 @@ class EchoGateway:
                                 "state",
                                 session_id=session.session_id,
                                 tick=session.tick,
-                                payload={
-                                    "kind": "full",
-                                    "entities": [session.mech.to_entity_state()],
-                                },
+                                payload=state_payload,
                             ),
                         )
                 except websockets.ConnectionClosed:
@@ -490,18 +553,33 @@ class EchoGateway:
                     session.closed = True
 
 
-async def run(host: str, port: int, contract_path: Path, physics: str, model_path: Path | None) -> None:
+async def run(
+    host: str,
+    port: int,
+    contract_path: Path,
+    physics: str,
+    model_path: Path | None,
+    record_dir: Path | None,
+    record_every_n_ticks: int,
+) -> None:
     contract = load_contract(contract_path)
-    gateway = EchoGateway(contract, physics=physics, model_path=model_path)
+    gateway = EchoGateway(
+        contract,
+        physics=physics,
+        model_path=model_path,
+        record_dir=record_dir,
+        record_every_n_ticks=record_every_n_ticks,
+    )
     asyncio.create_task(gateway.sim_loop())
 
     LOG.info(
-        "listening ws://%s:%s contract=%s level=%s physics=%s",
+        "listening ws://%s:%s contract=%s level=%s physics=%s record_dir=%s",
         host,
         port,
         contract_path,
         contract.get("level_id"),
         physics,
+        record_dir,
     )
     try:
         async with serve(gateway.handler, host, port):
@@ -539,8 +617,25 @@ def main() -> None:
     parser.add_argument(
         "--model",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "mujoco" / "models" / "world_flat.xml",
+        default=REPO_ROOT / "mujoco" / "models" / "world_flat.xml",
         help="MJCF model path (required for --physics mujoco)",
+    )
+    parser.add_argument(
+        "--record-dir",
+        type=Path,
+        default=DEFAULT_RECORD_DIR,
+        help="Session recording root (header.json + frames.jsonl per session)",
+    )
+    parser.add_argument(
+        "--no-record",
+        action="store_true",
+        help="Disable session recording",
+    )
+    parser.add_argument(
+        "--record-every-n-ticks",
+        type=int,
+        default=1,
+        help="Downsample recording (1 = every sim tick)",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
@@ -549,8 +644,19 @@ def main() -> None:
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+    record_dir = None if args.no_record else args.record_dir
     try:
-        asyncio.run(run(args.host, args.port, args.contract, args.physics, args.model))
+        asyncio.run(
+            run(
+                args.host,
+                args.port,
+                args.contract,
+                args.physics,
+                args.model,
+                record_dir,
+                args.record_every_n_ticks,
+            )
+        )
     except KeyboardInterrupt:
         LOG.info("shutdown")
 

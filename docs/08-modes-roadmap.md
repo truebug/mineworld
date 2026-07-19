@@ -84,11 +84,12 @@
 - [x] `scripts/ws_smoke_test.py` 冒烟
 - [x] 客户端 + WebSocket：hello/join/WASD 驱动 MechPlayer（GDevelop demo0 与 Godot spike 各跑通一次；现行基线 `godot/spike`，选型见 [adr/003](adr/003-client-engine-godot.md)）
 
-### Phase 2 — 真仿真（POC-B，下一步）
+### Phase 2 — 真仿真（POC-B）
 
-- [ ] MuJoCo 单机甲 + 契约障碍
-- [ ] state 广播 + 客户端驱动 3D 对象
-- [ ] 接管 / 释放 + 基础录制
+- [x] MuJoCo 单机甲 + 契约障碍（T2.1–T2.3）
+- [x] state 广播 + 客户端驱动 3D 对象
+- [x] 基础录制（T2.5：`header.json` + `frames.jsonl`）
+- [ ] 接管 / 释放 UI 完善（T2.4）
 
 ### Phase 3 — 可玩与数据（预计 4–8 周）
 
