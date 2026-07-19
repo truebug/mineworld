@@ -19,5 +19,6 @@
 
 | 资产 | 来源 | 许可 | 用途 / 存放位置 | 署名要求 | 入库日期 |
 |------|------|------|----------------|----------|----------|
-| Platformer Kit 4.1 | [kenney.nl/assets/platformer-kit](https://kenney.nl/assets/platformer-kit) | CC0 | `tutorial_02` 平台跳跃素材；`assets/kenney/platformer-kit/`（含 License.txt） | 无 | 2026-07-18 |
-| City Kit (Commercial) 2.1 | [kenney.nl/assets/city-kit-commercial](https://kenney.nl/assets/city-kit-commercial) | CC0 | 城市/建筑环境素材；`assets/kenney/city-kit-commercial/`（含 License.txt） | 无 | 2026-07-18 |
+| Platformer Kit 4.1 | [kenney.nl/assets/platformer-kit](https://kenney.nl/assets/platformer-kit) | CC0 | `tutorial_02` 平台跳跃素材；`godot/spike/assets/platformer/`（含 License）；**F1** 亦用于 `main.tscn` / tutorial_01 装饰 | 无 | 2026-07-18 |
+| City Kit (Commercial) 2.1 | [kenney.nl/assets/city-kit-commercial](https://kenney.nl/assets/city-kit-commercial) | CC0 | 城市/建筑环境素材；`godot/spike/assets/city/` | 无 | 2026-07-18 |
+| planar_cart URDF/MJCF | 本仓库自研 F2 试点 | MIT（仓库许可） | `mujoco/models/mechs/planar_cart.urdf` → `planar_cart.xml`（`urdf_to_mjcf_planar.py`） | 无 | 2026-07-19 |

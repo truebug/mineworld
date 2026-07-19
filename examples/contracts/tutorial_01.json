@@ -9,7 +9,7 @@
   "mech_spawns": [
     {
       "id": "mech_player",
-      "model_ref": "mechs/box_mech.xml",
+      "model_ref": "mechs/planar_cart.xml",
       "pose": { "x": 0, "y": 0, "z": 0.5, "yaw": 0 },
       "player_slot": 0,
       "control_mode": "velocity",
@@ -17,7 +17,7 @@
     },
     {
       "id": "mech_player_b",
-      "model_ref": "mechs/box_mech.xml",
+      "model_ref": "mechs/planar_cart.xml",
       "pose": { "x": 0, "y": 2, "z": 0.5, "yaw": 0 },
       "player_slot": 1,
       "control_mode": "velocity",

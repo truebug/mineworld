@@ -1,0 +1,117 @@
+<?xml version="1.0"?>
+<!--
+  MineWorld F2 pilot URDF: planar cart (visual + inertial).
+  Simulation authority remains MJCF (see planar_cart.xml), produced by
+  mujoco/scripts/urdf_to_mjcf_planar.py — same slide_x/slide_y/yaw_z control
+  contract as box_mech. Wheels are fixed visuals in URDF; MJCF adds planar
+  free-plane joints for POC velocity teleop.
+-->
+<robot name="planar_cart">
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="10.0"/>
+      <inertia ixx="0.2" ixy="0" ixz="0" iyy="0.2" iyz="0" izz="0.2"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.5 0.5 0.5"/>
+      </geometry>
+      <material name="chassis_mat">
+        <color rgba="0.55 0.58 0.62 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.5 0.5 0.5"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="wheel_fl">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder radius="0.08" length="0.06"/>
+      </geometry>
+      <material name="wheel_mat">
+        <color rgba="0.15 0.15 0.18 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="wheel_fl_fixed" type="fixed">
+    <parent link="base_link"/>
+    <child link="wheel_fl"/>
+    <origin xyz="0.18 0.22 -0.18" rpy="0 0 0"/>
+  </joint>
+
+  <link name="wheel_fr">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder radius="0.08" length="0.06"/>
+      </geometry>
+      <material name="wheel_mat">
+        <color rgba="0.15 0.15 0.18 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="wheel_fr_fixed" type="fixed">
+    <parent link="base_link"/>
+    <child link="wheel_fr"/>
+    <origin xyz="0.18 -0.22 -0.18" rpy="0 0 0"/>
+  </joint>
+
+  <link name="wheel_rl">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder radius="0.08" length="0.06"/>
+      </geometry>
+      <material name="wheel_mat">
+        <color rgba="0.15 0.15 0.18 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="wheel_rl_fixed" type="fixed">
+    <parent link="base_link"/>
+    <child link="wheel_rl"/>
+    <origin xyz="-0.18 0.22 -0.18" rpy="0 0 0"/>
+  </joint>
+
+  <link name="wheel_rr">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder radius="0.08" length="0.06"/>
+      </geometry>
+      <material name="wheel_mat">
+        <color rgba="0.15 0.15 0.18 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="wheel_rr_fixed" type="fixed">
+    <parent link="base_link"/>
+    <child link="wheel_rr"/>
+    <origin xyz="-0.18 -0.22 -0.18" rpy="0 0 0"/>
+  </joint>
+
+  <link name="nose">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.16 0.04 0.04"/>
+      </geometry>
+      <material name="nose_mat">
+        <color rgba="0.85 0.2 0.15 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="nose_fixed" type="fixed">
+    <parent link="base_link"/>
+    <child link="nose"/>
+    <origin xyz="0.3 0 0.1" rpy="0 0 0"/>
+  </joint>
+</robot>

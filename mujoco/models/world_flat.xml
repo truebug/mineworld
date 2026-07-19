@@ -1,6 +1,6 @@
 <mujoco model="world_flat">
-  <!-- Flat ground + box mech. Includes mech def (option/defaults merged). -->
-  <include file="mechs/box_mech.xml"/>
+  <!-- Flat ground + planar_cart (F2 URDF→MJCF pilot). -->
+  <include file="mechs/planar_cart.xml"/>
 
   <worldbody>
     <geom name="ground" type="plane" size="30 30 0.1"

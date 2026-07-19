@@ -1,0 +1,33 @@
+<mujoco model="planar_cart">
+  <!--
+    AUTO-GENERATED from planar_cart.urdf by urdf_to_mjcf_planar.py — do not
+    hand-edit; re-run the script. Planar free-plane joints + velocity servos
+    are MineWorld POC control (same contract as box_mech).
+  -->
+  <option timestep="0.002" integrator="RK4" gravity="0 0 -9.81"/>
+
+  <default>
+    <geom contype="1" conaffinity="1" friction="0.8 0.02 0.01"/>
+  </default>
+
+  <worldbody>
+    <body name="chassis" pos="0 0 0.5">
+      <joint name="slide_x" type="slide" axis="1 0 0" damping="0.2"/>
+      <joint name="slide_y" type="slide" axis="0 1 0" damping="0.2"/>
+      <joint name="yaw_z" type="hinge" axis="0 0 1" damping="0.05"/>
+      <geom name="chassis_box" type="box" size="0.25 0.25 0.25"
+            mass="10" rgba="0.55 0.58 0.62 1"/>
+      <geom name="nose" type="box" size="0.08 0.02 0.02" pos="0.3 0.0 0.1" mass="0" contype="0" conaffinity="0" rgba="0.85 0.2 0.15 1"/>
+      <geom name="wheel_fl" type="cylinder" size="0.08 0.03" pos="0.18 0.22 -0.18" quat="0.7071 0.7071 0 0" mass="0" contype="0" conaffinity="0" rgba="0.15 0.15 0.18 1"/>
+      <geom name="wheel_fr" type="cylinder" size="0.08 0.03" pos="0.18 -0.22 -0.18" quat="0.7071 0.7071 0 0" mass="0" contype="0" conaffinity="0" rgba="0.15 0.15 0.18 1"/>
+      <geom name="wheel_rl" type="cylinder" size="0.08 0.03" pos="-0.18 0.22 -0.18" quat="0.7071 0.7071 0 0" mass="0" contype="0" conaffinity="0" rgba="0.15 0.15 0.18 1"/>
+      <geom name="wheel_rr" type="cylinder" size="0.08 0.03" pos="-0.18 -0.22 -0.18" quat="0.7071 0.7071 0 0" mass="0" contype="0" conaffinity="0" rgba="0.15 0.15 0.18 1"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <velocity name="vx" joint="slide_x" kv="120" forcerange="-400 400" ctrlrange="-3 3"/>
+    <velocity name="vy" joint="slide_y" kv="120" forcerange="-400 400" ctrlrange="-3 3"/>
+    <velocity name="yaw_rate" joint="yaw_z" kv="60" forcerange="-200 200" ctrlrange="-6 6"/>
+  </actuator>
+</mujoco>

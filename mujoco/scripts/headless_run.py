@@ -16,7 +16,12 @@ from __future__ import annotations
 
 import argparse
 import math
+import sys
 from pathlib import Path
+
+# Repo folder `mujoco/` shadows the pip package; prefer site-packages.
+_REPO = Path(__file__).resolve().parents[2]
+sys.path = [p for p in sys.path if Path(p).resolve() != _REPO]
 
 import mujoco
 import numpy as np

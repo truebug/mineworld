@@ -23,8 +23,8 @@
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | F0 | 机甲 A/B 外观区分（染色 + 头顶标签） | `?room=demo` 一眼可辨 | [x] |
-| F1 | tutorial_01 加 CC0 装饰 / 地面（viewer_only） | 物理冒烟不变；观感提升 | [ ] |
-| F2 | 试点真实 URDF/MJCF → 转 MJCF + `model_ref` | headless + smoke 可控 | [ ] |
+| F1 | tutorial_01 加 CC0 装饰 / 地面（viewer_only） | 物理冒烟不变；观感提升 | [x] |
+| F2 | 试点真实 URDF/MJCF → 转 MJCF + `model_ref` | headless + smoke 可控 | [x] |
 | F3 | Godot 加载同款视觉 mesh（换胶囊） | 位姿仍跟 state | [ ] |
 
 `main` 已含 W2.3 / W3 / T2.6（`4b12b49`）。
