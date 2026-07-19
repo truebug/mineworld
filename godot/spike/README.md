@@ -27,7 +27,7 @@
 godot/spike/
 ├── project.godot            # 工程（输入映射 WASD/QE + T/R）；主场景 demo_city.tscn
 ├── export_presets.cfg       # macOS 桌面导出（T3.4）
-├── demo_city.tscn           # **主演示关**（KayKit 城市皮 + 权威墙/终点；契约不变）
+├── demo_city.tscn           # **主演示关**（随机街区 + 楼宇占地空气墙；见 gen_demo_city_block.py）
 ├── assets/
 │   ├── kaykit_city/         # KayKit City Builder Bits（CC0，viewer_only）
 │   ├── city/                # Kenney City Kit（tutorial_02 等仍可用）
@@ -123,7 +123,8 @@ Gateway 地址：默认 `ws://127.0.0.1:8765`；Web 页可设 `window.MINEWORLD_
 
 ## 7. 已知边界（spike 阶段）
 
-- 默认主场景 `demo_city.tscn`：双机同框 + 权威路缘/减速墩/终点；城市资产 `viewer_only`
+- 默认主场景 `demo_city.tscn`：双机同框；KayKit 楼=`viewer_only`；占地盒=MuJoCo 空气墙
+- 重新生成街区：`.venv/bin/python scripts/gen_demo_city_block.py --seed 42`（可改 seed）
 - `main.tscn`（tutorial_01）仍可用；墙/终点按对应契约手工摆位
 - 插值用「延迟一拍」策略（50ms）；未做丢包外推与回滚
 - 未接 GDevelop 侧既有的摇杆/键盘双输入 UI

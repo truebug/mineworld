@@ -1,0 +1,355 @@
+{
+  "seed": 42,
+  "bounds": {
+    "min_x": -3.5,
+    "max_x": 51.0,
+    "min_y": -17.5,
+    "max_y": 28.5
+  },
+  "spawn": {
+    "x": -1.75,
+    "y": -7.25
+  },
+  "finish": {
+    "x": 49.25,
+    "y": -7.25,
+    "half_x": 2.0,
+    "half_y": 1.8
+  },
+  "crate": {
+    "x": 0.75,
+    "y": -7.25
+  },
+  "ground": {
+    "cx": 23.75,
+    "cy": 5.5,
+    "sx": 62.5,
+    "sy": 54.0
+  },
+  "buildings": [
+    {
+      "id": "bldg_0_0",
+      "asset": "building_B.gltf",
+      "x": 2.5,
+      "y": -11.5,
+      "yaw": 0.0,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_1_0",
+      "asset": "building_E.gltf",
+      "x": 11.0,
+      "y": -11.5,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_2_0",
+      "asset": "building_D.gltf",
+      "x": 19.5,
+      "y": -11.5,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_3_0",
+      "asset": "building_B.gltf",
+      "x": 28.0,
+      "y": -11.5,
+      "yaw": 0.0,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_4_0",
+      "asset": "building_G.gltf",
+      "x": 36.5,
+      "y": -11.5,
+      "yaw": 0.0,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_5_0",
+      "asset": "building_A.gltf",
+      "x": 45.0,
+      "y": -11.5,
+      "yaw": 0.0,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_0_1",
+      "asset": "building_D.gltf",
+      "x": 2.5,
+      "y": -3.0,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_1_1",
+      "asset": "building_A.gltf",
+      "x": 11.0,
+      "y": -3.0,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_2_1",
+      "asset": "building_G.gltf",
+      "x": 19.5,
+      "y": -3.0,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_3_1",
+      "asset": "building_E.gltf",
+      "x": 28.0,
+      "y": -3.0,
+      "yaw": 0.0,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_4_1",
+      "asset": "building_C.gltf",
+      "x": 36.5,
+      "y": -3.0,
+      "yaw": -1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_5_1",
+      "asset": "building_F.gltf",
+      "x": 45.0,
+      "y": -3.0,
+      "yaw": 3.14159265359,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_0_2",
+      "asset": "building_C.gltf",
+      "x": 2.5,
+      "y": 5.5,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_1_2",
+      "asset": "building_F.gltf",
+      "x": 11.0,
+      "y": 5.5,
+      "yaw": 0.0,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_4_2",
+      "asset": "building_E.gltf",
+      "x": 36.5,
+      "y": 5.5,
+      "yaw": 0.0,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_0_3",
+      "asset": "building_H.gltf",
+      "x": 2.5,
+      "y": 14.0,
+      "yaw": 0.0,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_1_3",
+      "asset": "building_G.gltf",
+      "x": 11.0,
+      "y": 14.0,
+      "yaw": 0.0,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_2_3",
+      "asset": "building_F.gltf",
+      "x": 19.5,
+      "y": 14.0,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_3_3",
+      "asset": "building_A.gltf",
+      "x": 28.0,
+      "y": 14.0,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_4_3",
+      "asset": "building_B.gltf",
+      "x": 36.5,
+      "y": 14.0,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_5_3",
+      "asset": "building_B.gltf",
+      "x": 45.0,
+      "y": 14.0,
+      "yaw": -1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_0_4",
+      "asset": "building_E.gltf",
+      "x": 2.5,
+      "y": 22.5,
+      "yaw": -1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_1_4",
+      "asset": "building_F.gltf",
+      "x": 11.0,
+      "y": 22.5,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_2_4",
+      "asset": "building_F.gltf",
+      "x": 19.5,
+      "y": 22.5,
+      "yaw": 3.14159265359,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_3_4",
+      "asset": "building_D.gltf",
+      "x": 28.0,
+      "y": 22.5,
+      "yaw": 3.14159265359,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_4_4",
+      "asset": "building_B.gltf",
+      "x": 36.5,
+      "y": 22.5,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    },
+    {
+      "id": "bldg_5_4",
+      "asset": "building_D.gltf",
+      "x": 45.0,
+      "y": 22.5,
+      "yaw": 1.57079632679,
+      "scale": 2.5,
+      "footprint": [
+        4.0,
+        4.0
+      ]
+    }
+  ]
+}

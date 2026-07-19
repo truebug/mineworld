@@ -91,22 +91,23 @@ async def smoke(
         )
 
         script_task = None
+        drive_yaw = 0.0 if level_id == "demo_city" else yaw_rate
         if expect_objective and level_id == "demo_city":
-            # Open-loop maze scripts are brittle under MuJoCo contact; demo_city
-            # objective is for human play. Still verify motion + joints below.
-            print("note: demo_city maze — objective is manual; checking drive only")
+            # City-block streets: objective is for human play; smoke checks +x drive only.
+            print("note: demo_city block — objective is manual; checking drive only")
             expect_objective = False
             await _send_vel(ws, session_id, 1.0, 0.0)
         elif expect_objective:
-            await _send_vel(ws, session_id, 1.0, yaw_rate)
+            await _send_vel(ws, session_id, 1.0, drive_yaw)
         else:
-            await _send_vel(ws, session_id, 1.0, yaw_rate)
+            await _send_vel(ws, session_id, 1.0, drive_yaw)
 
         saw_take = False
         saw_objective = False
         saw_state = False
         saw_joints = False
         saw_wheels = False
+        first_x = None
         last_x = None
         deadline = asyncio.get_event_loop().time() + seconds
         while asyncio.get_event_loop().time() < deadline:
@@ -129,6 +130,8 @@ async def smoke(
                     entities[0],
                 )
                 last_x = ent["base_pose"]["x"]
+                if first_x is None:
+                    first_x = last_x
                 joints = ent.get("joints") or {}
                 if "slide_x" in joints and "slide_y" in joints and "yaw_z" in joints:
                     saw_joints = True
@@ -166,8 +169,13 @@ async def smoke(
                 file=sys.stderr,
             )
             return 1
-        if last_x is None or last_x <= 0.05:
-            print("FAIL: expected motion in +x from vx=1", last_x, file=sys.stderr)
+        # demo_city spawn may be at negative x; require forward progress, not absolute x.
+        if first_x is None or last_x is None or (last_x - first_x) < 0.4:
+            print(
+                "FAIL: expected motion in +x from vx=1",
+                f"first={first_x} last={last_x}",
+                file=sys.stderr,
+            )
             return 1
         print("smoke OK")
         return 0
