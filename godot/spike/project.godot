@@ -15,8 +15,15 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="MineWorld Spike"
-run/main_scene="res://main.tscn"
+run/main_scene="res://demo_city.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [input]
 

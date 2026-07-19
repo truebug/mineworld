@@ -9,7 +9,7 @@ const GLOBAL_TIMEOUT_MS := 10000
 
 var _ws := WebSocketPeer.new()
 var _session_id := ""
-var _level_id := "tutorial_01"
+var _level_id := "demo_city"
 var _phase := "connect"
 var _saw_event := false
 var _last_x := 0.0

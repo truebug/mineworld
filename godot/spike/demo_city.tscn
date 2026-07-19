@@ -1,0 +1,303 @@
+[gd_scene load_steps=31 format=3 uid="uid://b0mineworlddemocity"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/ws_client.gd" id="2_ws"]
+[ext_resource type="Script" path="res://scripts/mech_puppet.gd" id="3_puppet"]
+[ext_resource type="PackedScene" path="res://assets/city/building-a.glb" id="4_citya"]
+[ext_resource type="PackedScene" path="res://assets/city/building-b.glb" id="5_cityb"]
+[ext_resource type="PackedScene" path="res://assets/city/building-c.glb" id="6_cityc"]
+[ext_resource type="PackedScene" path="res://assets/city/building-d.glb" id="7_cityd"]
+[ext_resource type="PackedScene" path="res://assets/city/building-skyscraper-a.glb" id="8_skya"]
+[ext_resource type="PackedScene" path="res://assets/city/building-skyscraper-b.glb" id="9_skyb"]
+[ext_resource type="PackedScene" path="res://assets/platformer/block-grass-long.glb" id="10_plong"]
+[ext_resource type="PackedScene" path="res://assets/platformer/block-grass-large.glb" id="11_plarge"]
+[ext_resource type="PackedScene" path="res://assets/platformer/crate.glb" id="12_crate"]
+[ext_resource type="PackedScene" path="res://assets/platformer/flag.glb" id="13_flag"]
+[ext_resource type="PackedScene" path="res://assets/platformer/coin-gold.glb" id="14_coin"]
+[ext_resource type="PackedScene" path="res://assets/platformer/tree-pine.glb" id="15_tree"]
+[ext_resource type="PackedScene" path="res://assets/platformer/arrow.glb" id="16_arrow"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="17_camrig"]
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
+sky_top_color = Color(0.35, 0.55, 0.85, 1)
+sky_horizon_color = Color(0.75, 0.8, 0.88, 1)
+ground_bottom_color = Color(0.25, 0.24, 0.23, 1)
+ground_horizon_color = Color(0.55, 0.54, 0.5, 1)
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.85, 0.88, 0.92, 1)
+ambient_light_energy = 0.5
+
+[sub_resource type="StandardMaterial3D" id="mat_ground"]
+albedo_color = Color(0.38, 0.4, 0.36, 1)
+roughness = 0.95
+
+[sub_resource type="PlaneMesh" id="mesh_ground"]
+material = SubResource("mat_ground")
+size = Vector2(36, 22)
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.55, 0.42, 0.32, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="mat_zone"]
+albedo_color = Color(0.2, 0.8, 0.4, 0.35)
+transparency = 1
+
+[sub_resource type="BoxMesh" id="mesh_w0"]
+material = SubResource("mat_wall")
+size = Vector3(34.0, 1.2, 0.5)
+
+[sub_resource type="BoxMesh" id="mesh_w1"]
+material = SubResource("mat_wall")
+size = Vector3(0.5, 1.2, 18.5)
+
+[sub_resource type="BoxMesh" id="mesh_w2"]
+material = SubResource("mat_wall")
+size = Vector3(20.0, 1.2, 0.5)
+
+[sub_resource type="BoxMesh" id="mesh_w3"]
+material = SubResource("mat_wall")
+size = Vector3(22.0, 1.2, 0.5)
+
+[sub_resource type="BoxMesh" id="mesh_w4"]
+material = SubResource("mat_wall")
+size = Vector3(0.5, 1.2, 5.5)
+
+[sub_resource type="BoxMesh" id="mesh_w5"]
+material = SubResource("mat_wall")
+size = Vector3(8.0, 1.2, 0.5)
+
+[sub_resource type="BoxMesh" id="mesh_w6"]
+material = SubResource("mat_wall")
+size = Vector3(0.5, 1.2, 4.0)
+
+[sub_resource type="BoxMesh" id="mesh_zone"]
+material = SubResource("mat_zone")
+size = Vector3(4.0, 2.0, 3.2)
+[node name="DemoCity" type="Node3D"]
+script = ExtResource("1_main")
+level_id = "demo_city"
+room_id = "demo"
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.353553, 0.612372, 0, 0.866025, 0.5, -0.707107, -0.353553, 0.612372, 12, 14, 0)
+shadow_enabled = true
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("17_camrig")
+target_path = NodePath("../MechPlayer")
+distance = 22.0
+min_distance = 6.0
+max_distance = 48.0
+pitch = -0.62
+yaw = 0.4
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0, 0)
+mesh = SubResource("mesh_ground")
+
+[node name="Authority" type="Node3D" parent="."]
+
+[node name="BoundaryN" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.5, 0.6, -9.0)
+mesh = SubResource("mesh_w0")
+metadata/mujoco_entity_id = "boundary_n"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="BoundaryS" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.5, 0.6, 9.0)
+mesh = SubResource("mesh_w0")
+metadata/mujoco_entity_id = "boundary_s"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="BoundaryW" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.6, -0.0)
+mesh = SubResource("mesh_w1")
+metadata/mujoco_entity_id = "boundary_w"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="BoundaryE" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31.5, 0.6, -0.0)
+mesh = SubResource("mesh_w1")
+metadata/mujoco_entity_id = "boundary_e"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="ShelfNorth" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0.6, -3.0)
+mesh = SubResource("mesh_w2")
+metadata/mujoco_entity_id = "shelf_north"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="ShelfSouth" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.5, 0.6, 3.0)
+mesh = SubResource("mesh_w3")
+metadata/mujoco_entity_id = "shelf_south"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="BlockMid" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.0, 0.6, -0.0)
+mesh = SubResource("mesh_w4")
+metadata/mujoco_entity_id = "block_mid"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="BlockUpper" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 0.6, -5.5)
+mesh = SubResource("mesh_w5")
+metadata/mujoco_entity_id = "block_upper"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="BlockTurn" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.0, 0.6, 5.5)
+mesh = SubResource("mesh_w6")
+metadata/mujoco_entity_id = "block_turn"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="FinishZone" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.5, 1.0, -0.0)
+mesh = SubResource("mesh_zone")
+metadata/mujoco_entity_id = "trigger_finish"
+metadata/contract_kind = "trigger_aabb"
+[node name="Decor" type="Node3D" parent="."]
+metadata/physics_role = "viewer_only"
+
+[node name="City" type="Node3D" parent="Decor"]
+
+[node name="BuildingA" parent="Decor/City" instance=ExtResource("4_citya")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 10)
+
+[node name="BuildingB" parent="Decor/City" instance=ExtResource("5_cityb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 10.5)
+
+[node name="BuildingC" parent="Decor/City" instance=ExtResource("6_cityc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 10)
+
+[node name="BuildingD" parent="Decor/City" instance=ExtResource("7_cityd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 10.5)
+
+[node name="SkyA" parent="Decor/City" instance=ExtResource("8_skya")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 0, 11)
+
+[node name="BuildingA2" parent="Decor/City" instance=ExtResource("4_citya")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 4, 0, -10)
+
+[node name="BuildingB2" parent="Decor/City" instance=ExtResource("5_cityb")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 10, 0, -10.5)
+
+[node name="BuildingD2" parent="Decor/City" instance=ExtResource("7_cityd")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 18, 0, -10)
+
+[node name="SkyB" parent="Decor/City" instance=ExtResource("9_skyb")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 25, 0, -11)
+
+[node name="Tree01" parent="Decor" instance=ExtResource("15_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 9)
+
+[node name="Tree02" parent="Decor" instance=ExtResource("15_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 9)
+
+[node name="Tree03" parent="Decor" instance=ExtResource("15_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0, -9)
+
+[node name="Tree04" parent="Decor" instance=ExtResource("15_tree")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, -9)
+
+[node name="GrassN" parent="Decor" instance=ExtResource("10_plong")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 9.2)
+
+[node name="GrassS" parent="Decor" instance=ExtResource("10_plong")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, -9.2)
+
+[node name="Plaza" parent="Decor" instance=ExtResource("11_plarge")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.5, 0, 0)
+
+[node name="FinishFlag" parent="Decor" instance=ExtResource("13_flag")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.7, 0.5, 0.8)
+
+[node name="PropCrate" parent="Decor" instance=ExtResource("12_crate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 1.0)
+
+[node name="CoinHint" parent="Decor" instance=ExtResource("14_coin")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.8, 0.8, -5.0)
+
+[node name="MechPlayer" type="Node3D" parent="."]
+script = ExtResource("3_puppet")
+entity_id = "mech_player"
+interp_delay = 0.05
+metadata/mujoco_entity_id = "mech_player"
+metadata/contract_kind = "mech_spawn"
+metadata/player_slot = 0
+metadata/model_ref = "mechs/diffbot_planar.xml"
+metadata/spawn_z = 0.5
+
+[node name="FrontArrow" parent="MechPlayer" instance=ExtResource("16_arrow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.55, 0)
+
+[node name="MechPlayerB" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.1)
+script = ExtResource("3_puppet")
+entity_id = "mech_player_b"
+interp_delay = 0.05
+metadata/mujoco_entity_id = "mech_player_b"
+metadata/contract_kind = "mech_spawn"
+metadata/player_slot = 1
+metadata/model_ref = "mechs/diffbot_planar.xml"
+metadata/spawn_z = 0.5
+
+[node name="FrontArrow" parent="MechPlayerB" instance=ExtResource("16_arrow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.55, 0)
+
+[node name="WsClient" type="Node" parent="."]
+script = ExtResource("2_ws")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+layer = 10
+visible = false
+
+[node name="Margin" type="MarginContainer" parent="Hud"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+
+[node name="PanelContainer" type="PanelContainer" parent="Hud/Margin"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+custom_minimum_size = Vector2(480, 0)
+
+[node name="MarginContainer" type="MarginContainer" parent="Hud/Margin/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Label" type="Label" parent="Hud/Margin/PanelContainer/MarginContainer"]
+layout_mode = 2
+text = "MineWorld · demo_city maze
+WASD · QE · T/R · follow the corridor to green finish"

@@ -17,14 +17,14 @@ pip install -r gateway/requirements.txt
 
 python gateway/echo_server.py
 # 默认: ws://127.0.0.1:8765
-# 契约: examples/contracts/tutorial_01.json
+# 契约: examples/contracts/demo_city.json
 ```
 
 真物理模式（MuJoCo，含契约静态障碍碰撞）：
 
 ```bash
-python gateway/echo_server.py --physics mujoco \
-    --contract examples/contracts/tutorial_01.json
+python gateway/echo_server.py --physics mujoco
+# 或显式: --contract examples/contracts/demo_city.json
 # hello.features 将包含 "mujoco"；契约 static_obstacles(box) 会作为静态 geom 加入仿真
 ```
 
@@ -33,7 +33,7 @@ python gateway/echo_server.py --physics mujoco \
 可选参数：
 
 ```bash
-python gateway/echo_server.py --host 127.0.0.1 --port 8765 --contract examples/contracts/tutorial_01.json -v
+python gateway/echo_server.py --host 127.0.0.1 --port 8765 --contract examples/contracts/demo_city.json -v
 ```
 
 ## 冒烟测试
@@ -60,7 +60,7 @@ python scripts/ws_smoke_test.py --expect-objective
 ## 协议摘要
 
 1. 连接后服务端推 `hello`
-2. 客户端发 `join`（`level_id: tutorial_01`）→ 收 `scene`
+2. 客户端发 `join`（`level_id: demo_city`）→ 收 `scene`
 3. 发 `cmd`：`take_control`，再发 `velocity`（`vx/vy/yaw_rate`）
 4. 服务端按 50Hz 积分、约 20Hz 广播 `state`
 

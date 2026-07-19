@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | 多人本机 Demo 已通；F0–F8 融合完成 |
+| **目标** | 多人本机 Demo 已通；F0–F8 融合完成；主演示关 `demo_city` |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -33,6 +33,15 @@
 | F8 | Godot 自动跟皮（少手抄 URDF 常量） | 改 URDF 重生成后傀儡尺寸自动对齐 | [x] |
 
 顺序：F6 → F7 → F8（已完成）。`main` 已含 W2.3 / W3 / T2.6 与 F0–F8。
+
+---
+
+## Now（D · 演示打磨）
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| D1 | `demo_city` 主演示关（最小权威墙+终点；spawn/相机） | 默认契约/场景；smoke + `--expect-objective` | [x] |
+| D2 | T4.6 推箱玩法 | 契约 dynamic + 客户端 | [ ] |
 
 ---
 

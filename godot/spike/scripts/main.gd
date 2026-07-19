@@ -20,7 +20,7 @@ const _WEB_BLOCK_CODES := {
 	"Space": true,
 }
 
-@export var level_id := "tutorial_01"
+@export var level_id := "demo_city"
 @export var gateway_url := "ws://127.0.0.1:8765"
 ## Empty = private room (gateway uses session_id). Set "demo" for shared room.
 @export var room_id := ""
@@ -28,7 +28,7 @@ const _WEB_BLOCK_CODES := {
 @onready var ws = $WsClient
 @onready var mech = $MechPlayer
 @onready var camera_rig = $CameraRig
-@onready var hud_label: Label = $Hud/PanelContainer/MarginContainer/Label
+@onready var hud_label: Label = _resolve_hud_label()
 
 var _session_id := ""
 var _hello: Dictionary = {}
@@ -62,10 +62,63 @@ func _ready() -> void:
 	ws.link_state_changed.connect(_on_link_state)
 	mech.entity_id = "mech_player"
 	_puppets["mech_player"] = mech
+	var mech_b := get_node_or_null("MechPlayerB")
+	if mech_b != null:
+		_puppets["mech_player_b"] = mech_b
+	_ensure_hud_layout()
+	call_deferred("_ensure_hud_layout")
+	if not get_viewport().size_changed.is_connected(_ensure_hud_layout):
+		get_viewport().size_changed.connect(_ensure_hud_layout)
 	if _is_web:
 		_install_web_keyboard_bridge()
 	ws.connect_to_gateway(_resolve_gateway_url())
 	_update_hud()
+
+
+func _resolve_hud_label() -> Label:
+	"""Resolve Label under Hud (Margin/... or legacy PanelContainer/...)."""
+	for path in [
+		"Hud/Margin/PanelContainer/MarginContainer/Label",
+		"Hud/Root/PanelContainer/MarginContainer/Label",
+		"Hud/PanelContainer/MarginContainer/Label",
+	]:
+		var n := get_node_or_null(path)
+		if n != null:
+			return n as Label
+	return $Hud/PanelContainer/MarginContainer/Label as Label
+
+
+func _ensure_hud_layout() -> void:
+	"""Desktop: top-left shrink panel. Web: hide Godot HUD (DOM overlay instead)."""
+	if _is_web:
+		var hud := get_node_or_null("Hud") as CanvasLayer
+		if hud != null:
+			hud.visible = false
+		return
+	var margin := get_node_or_null("Hud/Margin") as MarginContainer
+	if margin != null:
+		margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+		margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var panel := get_node_or_null("Hud/Margin/PanelContainer") as PanelContainer
+	if panel == null:
+		panel = get_node_or_null("Hud/Root/PanelContainer") as PanelContainer
+	if panel == null:
+		panel = get_node_or_null("Hud/PanelContainer") as PanelContainer
+	if panel == null:
+		return
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	panel.custom_minimum_size = Vector2(480, 0)
+
+
+func _push_web_hud(text: String) -> void:
+	"""Web-only: update static #mw-hud in index.html (avoids Godot Control clip)."""
+	var payload := JSON.stringify(text)
+	JavaScriptBridge.eval(
+		"(function(t){var el=document.getElementById('mw-hud');"
+		+ "if(el){el.textContent=t;}})(%s);" % payload,
+		true
+	)
 
 
 func _install_web_keyboard_bridge() -> void:
@@ -362,7 +415,7 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	if ws.session_id != "":
 		state_name = "linked"
 	var own = _own_mech()
-	var text := "MineWorld Spike\n"
+	var text := "MineWorld · %s\n" % level_id
 	text += "link: %s | control: %s | entity: %s\n" % [
 		state_name, "ON" if _controlled else "OFF", _controlled_entity_id,
 	]
@@ -371,6 +424,8 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		text += "input: document→godot | heldW=%s\n" % _web_key("KeyW")
 	if _status_line != "":
 		text += "%s\n" % _status_line
+	if _mission_done:
+		text += "MISSION COMPLETE — reach zone OK\n"
 	if _hello:
 		text += "protocol: %s | dt=%.2f sim=%dHz state=%dHz\n" % [
 			_hello.get("protocol_version", "?"),
@@ -384,6 +439,9 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [own.position.x, own.position.z, own.rotation.y]
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
-	text += "\nWS move | QE strafe | AD turn | T take | R release"
+	text += "\nWASD move | QE turn | T take | R release | goal: green finish"
 	text += "\nRMB/MMB orbit | wheel zoom"
-	hud_label.text = text
+	if _is_web:
+		_push_web_hud(text)
+	elif hud_label != null:
+		hud_label.text = text

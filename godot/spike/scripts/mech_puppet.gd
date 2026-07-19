@@ -23,6 +23,8 @@ const TEAM_TAGS := {
 }
 const WHEEL_COLOR := Color(0.0, 0.0, 0.0)
 const CASTER_COLOR := Color(1.0, 1.0, 1.0)
+const FRONT_ARROW_SCENE := preload("res://assets/platformer/arrow.glb")
+const FRONT_ARROW_POS := Vector3(0.55, 0.55, 0.0)
 
 var _prev_pos := Vector3.ZERO
 var _prev_yaw := 0.0
@@ -43,7 +45,18 @@ var _wheel_joint_names: PackedStringArray = PackedStringArray()
 
 func _ready() -> void:
 	ensure_planar_cart_visual()
+	_ensure_front_arrow()
 	apply_team_look()
+
+
+func _ensure_front_arrow() -> void:
+	"""Attach a forward marker on +X (MW forward); follows this puppet."""
+	if get_node_or_null("FrontArrow") != null:
+		return
+	var arrow: Node3D = FRONT_ARROW_SCENE.instantiate() as Node3D
+	arrow.name = "FrontArrow"
+	arrow.position = FRONT_ARROW_POS
+	add_child(arrow)
 
 
 func _mw_to_local(p: Vector3) -> Vector3:
@@ -140,8 +153,8 @@ func ensure_planar_cart_visual() -> void:
 		cyl.height = wl
 		wheel.mesh = cyl
 		wheel.position = _mw_to_local(_vec3_from_array(wd.get("pos", []), Vector3.ZERO))
-		# Cylinder default axis = Godot Y; lay flat so axis ≈ MW ±Y (Godot ±Z).
-		wheel.rotation_degrees = Vector3(90, 0, 0)
+		# Cylinder default axis = Godot +Y; Rx(90) → axle along Godot +Z (MW ±Y).
+		wheel.basis = Basis(Vector3.RIGHT, PI * 0.5)
 		_tint_mesh(wheel, WHEEL_COLOR)
 		body.add_child(wheel)
 		_wheel_joint_names.append(str(wd.get("joint", "left_wheel_joint")))
@@ -153,6 +166,7 @@ func ensure_planar_cart_visual() -> void:
 func apply_team_look() -> void:
 	"""Tint chassis mesh and show A/B billboard from entity_id."""
 	ensure_planar_cart_visual()
+	_ensure_front_arrow()
 	var color: Color = TEAM_COLORS.get(entity_id, Color(0.65, 0.65, 0.68))
 	var chassis := get_node_or_null("Body/Chassis") as MeshInstance3D
 	if chassis != null:
@@ -217,7 +231,7 @@ func apply_state(entity: Dictionary, t_sim: float) -> void:
 
 
 func _apply_wheel_spin(joints: Variant) -> void:
-	"""F6: spin drive-wheel meshes from hinge joint angles (MW +Y axle)."""
+	"""F6: spin drive-wheel meshes from hinge joint angles (MW +Y axle → Godot +Z)."""
 	if typeof(joints) != TYPE_DICTIONARY:
 		return
 	ensure_planar_cart_visual()
@@ -238,8 +252,10 @@ func _apply_wheel_spin(joints: Variant) -> void:
 			continue
 		if wi >= angles.size():
 			break
-		# Mesh laid with rotation_degrees.x=90 so local Y ≈ axle; spin on Y.
-		(child as Node3D).rotation = Vector3(deg_to_rad(90.0), float(angles[wi]), 0.0)
+		# Rest Rx(90) then spin about mesh +Y (= axle after rest). Do NOT set
+		# rotation.y — that is Godot up (yaw), which looks like a turntable.
+		var angle := float(angles[wi])
+		(child as Node3D).basis = Basis(Vector3.RIGHT, PI * 0.5) * Basis(Vector3.UP, angle)
 		wi += 1
 
 

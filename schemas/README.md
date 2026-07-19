@@ -48,6 +48,7 @@
 
 ```bash
 # 需安装: npm i -g ajv-cli
+ajv validate -s schemas/scene-contract.v0.json -d examples/contracts/demo_city.json -c ajv-formats
 ajv validate -s schemas/scene-contract.v0.json -d examples/contracts/tutorial_01.json -c ajv-formats
 ajv validate -s schemas/ws-messages.v0.json -d examples/ws/hello.json
 ajv validate -s schemas/recording-session.v0.json#/$defs/header -d examples/recordings/sample_header.json

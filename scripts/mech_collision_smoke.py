@@ -12,7 +12,7 @@ sys.path = [p for p in sys.path if Path(p).resolve() != _REPO]
 import mujoco
 
 MODELS = _REPO / "mujoco" / "models"
-CONTRACT = _REPO / "examples" / "contracts" / "tutorial_01.json"
+CONTRACT = _REPO / "examples" / "contracts" / "demo_city.json"
 
 
 def build_dual_world() -> mujoco.MjModel:

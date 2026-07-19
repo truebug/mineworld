@@ -2,6 +2,7 @@
 
 | 路径 | 说明 |
 |------|------|
+| `contracts/demo_city.json` | **主演示关**（城市装饰 + 最小权威墙/终点） |
 | `contracts/tutorial_01.json` | POC 教程关场景契约（对齐 scene-contract.v0） |
 | `ws/hello.json` · `cmd_velocity.json` · `state_full.json` | WS 消息样例 |
 | `recordings/sample_header.json` · `sample_frames.jsonl` | 录制样例 |

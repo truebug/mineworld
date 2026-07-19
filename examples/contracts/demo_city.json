@@ -1,0 +1,121 @@
+{
+  "contract_version": "0.1",
+  "level_id": "demo_city",
+  "seed": 42,
+  "frame": "mineworld_zup_m",
+  "sim": {
+    "dt": 0.02
+  },
+  "mech_spawns": [
+    {
+      "id": "mech_player",
+      "model_ref": "mechs/diffbot_planar.xml",
+      "pose": { "x": 0.0, "y": 0.0, "z": 0.5, "yaw": 0.0 },
+      "player_slot": 0,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "mech_player_b",
+      "model_ref": "mechs/diffbot_planar.xml",
+      "pose": { "x": 0.0, "y": -1.1, "z": 0.5, "yaw": 0.0 },
+      "player_slot": 1,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
+  "static_obstacles": [
+    {
+      "id": "boundary_n",
+      "shape": "box",
+      "size": [34.0, 0.5, 1.2],
+      "pose": { "x": 14.5, "y": 9.0, "z": 0.6, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "boundary_s",
+      "shape": "box",
+      "size": [34.0, 0.5, 1.2],
+      "pose": { "x": 14.5, "y": -9.0, "z": 0.6, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "boundary_w",
+      "shape": "box",
+      "size": [0.5, 18.5, 1.2],
+      "pose": { "x": -2.5, "y": 0.0, "z": 0.6, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "boundary_e",
+      "shape": "box",
+      "size": [0.5, 18.5, 1.2],
+      "pose": { "x": 31.5, "y": 0.0, "z": 0.6, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "shelf_north",
+      "shape": "box",
+      "size": [20.0, 0.5, 1.2],
+      "pose": { "x": 7.5, "y": 3.0, "z": 0.6, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "shelf_south",
+      "shape": "box",
+      "size": [22.0, 0.5, 1.2],
+      "pose": { "x": 18.5, "y": -3.0, "z": 0.6, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "block_mid",
+      "shape": "box",
+      "size": [0.5, 5.5, 1.2],
+      "pose": { "x": 21.0, "y": 0.0, "z": 0.6, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "block_upper",
+      "shape": "box",
+      "size": [8.0, 0.5, 1.2],
+      "pose": { "x": 24.5, "y": 5.5, "z": 0.6, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "block_turn",
+      "shape": "box",
+      "size": [0.5, 4.0, 1.2],
+      "pose": { "x": 12.0, "y": -5.5, "z": 0.6, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
+  "objectives": [
+    {
+      "id": "obj_reach_zone",
+      "type": "reach_region",
+      "target": "trigger_finish",
+      "description": "迷宫：东行→北绕→再东→南入终点绿区"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "trigger_finish",
+      "type": "aabb",
+      "min": [26.5, -1.6, 0.0],
+      "max": [30.5, 1.6, 2.0]
+    }
+  ],
+  "tags": ["poc", "demo", "city", "maze"],
+  "extensions": {
+    "mw": {
+      "client_scene": "res://demo_city.tscn",
+      "exported_from": "godot/spike/demo_city.tscn",
+      "path_hint": "east under shelf_north → north past gap → east over block_mid → south to finish",
+      "assets": {
+        "city": "Kenney City Kit (Commercial) 2.1, CC0",
+        "platformer": "Kenney Platformer Kit 4.1, CC0"
+      },
+      "note": "viewer_only city decor; maze boxes MuJoCo-authoritative; ~3m corridors"
+    }
+  }
+}

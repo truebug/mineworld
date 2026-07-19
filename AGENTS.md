@@ -6,7 +6,7 @@ MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authorit
 
 - `docs/` — design docs (`00-vision.md` … `14-godot-mujoco-fusion.md`); decisions in `docs/adr/`; `docs/09-todo.md` is the execution entry point.
 - `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, dual physics backends (`--physics fake|mujoco`). MuJoCo mode (T2.2) loads MJCF and appends contract `static_obstacles` as static geoms (T2.3).
-- `godot/` — Godot client projects; `spike/` is the verified baseline (`project.godot` + `*.tscn` + `*.gd`). Includes `main.tscn` (tutorial_01) and `tutorial_02.tscn` (city-level, Kenney CC0 assets). CameraRig provides follow-orbit with RMB/MMB drag and wheel zoom.
+- `godot/` — Godot client projects; `spike/` is the verified baseline (`project.godot` + `*.tscn` + `*.gd`). Main demo: `demo_city.tscn` (Kenney city decor + authoritative curbs/chicanes/finish). Also `main.tscn` (tutorial_01) and `tutorial_02.tscn`. CameraRig: follow-orbit, RMB/MMB drag, wheel zoom.
 - `gdevelop/` — archived GDevelop POC-A project (`demo0/`); do not extend.
 - `mujoco/` — MJCF models (`models/mechs/box_mech.xml`, `models/world_flat.xml`) and headless scripts (`scripts/headless_run.py`). Mech is slide x/y + hinge z + velocity servos.
 - `schemas/` — JSON Schema SSOT (draft 2020-12), files named `*.v0.json`.
