@@ -29,7 +29,9 @@
 | D3–D5 | Web HUD custom shell；SUCCESS + beep；`/api/recordings` 历史列表 |
 | D6 | KayKit City Builder Bits（CC0）换皮 `demo_city` |
 | D7 | `gen_demo_city_block.py` 随机街区；楼宇占地 = MuJoCo 空气墙（棕墙隐藏） |
-| 下一刀建议 | D8 客户端帧回放 · D9 Web 选 seed · D10 路面贴花 |
+| D9 | Web seed 控件 + `POST /api/city-block`；Gateway 契约热加载 |
+| D10 | KayKit 路面网格 → 深色沥青带（无标线砖） |
+| 下一刀建议 | D8 客户端帧回放（暂缓） |
 
 ## 1. 一句话结论
 

@@ -1,9 +1,12 @@
 """Serve Godot Web export with COOP/COEP headers (W1 local demo).
 
-Also exposes local recording history (D5):
-  GET /api/recordings              → session list JSON
-  GET /api/recordings/<id>         → header.json
-  GET /api/recordings/<id>/frames  → frames.jsonl
+Also exposes local recording history (D5) and city-block regen (D9):
+  GET  /api/recordings              → session list JSON
+  GET  /api/recordings/<id>         → header.json
+  GET  /api/recordings/<id>/frames  → frames.jsonl
+  GET  /api/city-block              → current seed summary
+  GET  /api/city-block/layout       → live block_layout.json (Godot Web dress)
+  POST /api/city-block              → {"seed": N} regenerate contract+layout
 
 Usage (from repo root, after `bash scripts/export_godot.sh web`):
   bash scripts/serve_web.sh restart          # 推荐：先杀旧 :8080 再启动
@@ -16,12 +19,17 @@ History UI: http://127.0.0.1:8080/recordings.html (or in-game top-right **Record
 Local API (same origin as the demo):
 
 ```text
-GET /api/recordings                 # session list
-GET /api/recordings/<id>            # header.json
-GET /api/recordings/<id>/frames     # frames.jsonl
+GET  /api/recordings                 # session list
+GET  /api/recordings/<id>            # header.json
+GET  /api/recordings/<id>/frames     # frames.jsonl
+GET  /api/city-block                 # {seed, buildings, roads, ...}
+GET  /api/city-block/layout          # Godot dress JSON
+POST /api/city-block                 # body {"seed": 7} or {"seed": null} random
 ```
 
 Sessions are read from `recordings/sessions/` (Gateway default record dir).
+After POST city-block, reload the page (private room) so Gateway picks up the
+new contract via mtime and Godot re-fetches layout.
 """
 
 from __future__ import annotations
@@ -29,10 +37,16 @@ from __future__ import annotations
 import argparse
 import json
 import functools
+import random
+import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
+
+REPO = Path(__file__).resolve().parents[1]
+LAYOUT_PATH = REPO / "godot" / "spike" / "assets" / "kaykit_city" / "block_layout.json"
+CONTRACT_PATH = REPO / "examples" / "contracts" / "demo_city.json"
 
 
 def _safe_session_id(raw: str) -> str | None:
@@ -79,14 +93,55 @@ def list_sessions(root: Path) -> list[dict[str, Any]]:
     return out
 
 
+def _city_block_summary() -> dict[str, Any]:
+    """Read current layout/contract seed summary."""
+    seed = None
+    buildings = 0
+    roads = 0
+    bounds: dict[str, Any] = {}
+    if LAYOUT_PATH.is_file():
+        try:
+            data = json.loads(LAYOUT_PATH.read_text(encoding="utf-8"))
+            seed = data.get("seed")
+            buildings = len(data.get("buildings") or [])
+            roads = len(data.get("roads") or [])
+            bounds = data.get("bounds") or {}
+        except (OSError, json.JSONDecodeError):
+            pass
+    if seed is None and CONTRACT_PATH.is_file():
+        try:
+            seed = json.loads(CONTRACT_PATH.read_text(encoding="utf-8")).get("seed")
+        except (OSError, json.JSONDecodeError):
+            pass
+    return {
+        "seed": seed,
+        "buildings": buildings,
+        "roads": roads,
+        "bounds": bounds,
+        "layout": str(LAYOUT_PATH.relative_to(REPO)),
+        "contract": str(CONTRACT_PATH.relative_to(REPO)),
+    }
+
+
+def _regen_city_block(seed: int) -> dict[str, Any]:
+    """Run gen_demo_city_block.generate_and_write(seed)."""
+    scripts = REPO / "scripts"
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    import gen_demo_city_block  # noqa: WPS433 — local helper next to this script
+
+    return gen_demo_city_block.generate_and_write(int(seed))
+
+
 class CoopCoepHandler(SimpleHTTPRequestHandler):
-    """Static file handler + local recording API (D5)."""
+    """Static file handler + local recording / city-block API."""
 
     recordings_root: Path = Path()
 
     def end_headers(self) -> None:
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
@@ -108,9 +163,33 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _read_json_body(self) -> dict[str, Any] | None:
+        """Parse a small JSON object body; None on empty/invalid."""
+        length = int(self.headers.get("Content-Length") or 0)
+        if length <= 0 or length > 4096:
+            return {}
+        raw = self.rfile.read(length)
+        try:
+            data = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return None
+        if isinstance(data, dict):
+            return data
+        return None
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
+
+        if path == "/api/city-block":
+            self._send_json(_city_block_summary())
+            return
+        if path == "/api/city-block/layout":
+            if not LAYOUT_PATH.is_file():
+                self._send_json({"error": "missing_layout"}, 404)
+                return
+            self._send_text_file(LAYOUT_PATH, "application/json; charset=utf-8")
+            return
 
         if path == "/api/recordings":
             self._send_json({"sessions": list_sessions(self.recordings_root)})
@@ -154,9 +233,37 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
 
         super().do_GET()
 
+    def do_POST(self) -> None:
+        parsed = urlparse(self.path)
+        path = unquote(parsed.path)
+        if path != "/api/city-block":
+            self._send_json({"error": "not_found"}, 404)
+            return
+        body = self._read_json_body()
+        if body is None:
+            self._send_json({"error": "bad_json"}, 400)
+            return
+        seed_raw = body.get("seed", None)
+        if seed_raw is None:
+            seed = random.randint(0, 999_999)
+        else:
+            try:
+                seed = int(seed_raw)
+            except (TypeError, ValueError):
+                self._send_json({"error": "bad_seed"}, 400)
+                return
+        try:
+            summary = _regen_city_block(seed)
+        except Exception as exc:  # noqa: BLE001 — surface to browser
+            self._send_json({"error": "regen_failed", "message": str(exc)}, 500)
+            return
+        summary["ok"] = True
+        summary["hint"] = "reload page (private room) so Gateway + dress pick up the new seed"
+        self._send_json(summary)
+
 
 def main() -> None:
-    repo = Path(__file__).resolve().parents[1]
+    repo = REPO
     parser = argparse.ArgumentParser(description="Serve MineWorld Web export with COOP/COEP")
     parser.add_argument(
         "--dir",
@@ -195,7 +302,7 @@ def main() -> None:
     print(f"recordings {recordings_root}")
     print(f"open http://{args.host}:{args.port}/")
     print(f"history http://{args.host}:{args.port}/recordings.html")
-    print("headers: COOP=same-origin COEP=require-corp")
+    print("headers: COOP=same-origin COEP=require-corp CORP=same-origin")
     print("gateway expected at ws://127.0.0.1:8765 (override via window.MINEWORLD_GATEWAY)")
     try:
         server.serve_forever()

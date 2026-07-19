@@ -11,7 +11,7 @@ MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authorit
 - `mujoco/` — MJCF models (`models/mechs/box_mech.xml`, `models/world_flat.xml`) and headless scripts (`scripts/headless_run.py`). Mech is slide x/y + hinge z + velocity servos.
 - `schemas/` — JSON Schema SSOT (draft 2020-12), files named `*.v0.json`.
 - `examples/` — sample contracts, WS messages, and recordings used for validation.
-- `scripts/` — helpers (`ws_smoke_test.py`, `serve_web.sh`, `gen_demo_city_block.py`).
+- `scripts/` — helpers (`ws_smoke_test.py`, `serve_web.sh`, `serve_web_demo.py` city-block API, `gen_demo_city_block.py`).
 
 ## Build, Test, and Development Commands
 

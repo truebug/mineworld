@@ -588,7 +588,7 @@
       "client_scene": "res://demo_city.tscn",
       "exported_from": "scripts/gen_demo_city_block.py",
       "layout": "res://assets/kaykit_city/block_layout.json",
-      "notes": "Buildings=viewer_only; footprints=MuJoCo air walls; streets drivible."
+      "notes": "Buildings=viewer_only; asphalt strips on streets; footprints=MuJoCo air walls."
     }
   }
 }

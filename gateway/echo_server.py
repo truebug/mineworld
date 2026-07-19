@@ -544,13 +544,22 @@ class EchoGateway:
         model_path: Path | None = None,
         record_dir: Path | None = DEFAULT_RECORD_DIR,
         record_every_n_ticks: int = 1,
+        contract_path: Path | None = None,
     ) -> None:
         self.contract = contract
+        self.contract_path = contract_path
+        self._contract_mtime: float | None = None
+        if contract_path is not None:
+            try:
+                self._contract_mtime = contract_path.stat().st_mtime
+            except OSError:
+                self._contract_mtime = None
         self.sessions: dict[str, Session] = {}
         self.rooms: dict[str, Room] = {}
         self.physics = physics
         self.record_dir = record_dir
         self.record_every_n_ticks = record_every_n_ticks
+        self.model_path = model_path
         self.mj_model = None
         if physics == "mujoco":
             if mujoco is None:
@@ -558,6 +567,40 @@ class EchoGateway:
             if model_path is None:
                 raise SystemExit("--physics mujoco requires --model")
             self.mj_model = self._build_mujoco_world(model_path)
+
+    def _maybe_reload_contract(self) -> None:
+        """Hot-reload contract (+ rebuild MuJoCo world) when the file changes (D9).
+
+        Active rooms keep their old MjData/contract until empty; new rooms use
+        the reloaded world.
+        """
+        if self.contract_path is None:
+            return
+        try:
+            mtime = self.contract_path.stat().st_mtime
+        except OSError:
+            return
+        if self._contract_mtime is not None and mtime == self._contract_mtime:
+            return
+        prev_seed = self.contract.get("seed")
+        self.contract = load_contract(self.contract_path)
+        self._contract_mtime = mtime
+        if self.physics == "mujoco" and self.model_path is not None:
+            self.mj_model = self._build_mujoco_world(self.model_path)
+        # Drop empty rooms so the next join recreates with the new contract.
+        dead = [
+            rid
+            for rid, room in self.rooms.items()
+            if not any(s.joined and not s.closed for s in room.members.values())
+        ]
+        for rid in dead:
+            del self.rooms[rid]
+        LOG.info(
+            "contract reloaded seed %s → %s (dropped %d empty rooms)",
+            prev_seed,
+            self.contract.get("seed"),
+            len(dead),
+        )
 
     def _feature_flags(self) -> list[str]:
         """Return hello/recording feature tags for the active physics backend."""
@@ -848,6 +891,7 @@ class EchoGateway:
         session.pending_events.extend(events)
 
     async def _handle_join(self, session: Session, payload: dict[str, Any]) -> None:
+        self._maybe_reload_contract()
         level_id = payload.get("level_id") or self.contract.get("level_id")
         expected = self.contract.get("level_id")
         if level_id != expected:
@@ -1096,6 +1140,7 @@ async def run(
         model_path=model_path,
         record_dir=record_dir,
         record_every_n_ticks=record_every_n_ticks,
+        contract_path=contract_path,
     )
     asyncio.create_task(gateway.sim_loop())
 

@@ -47,6 +47,8 @@
 | D5 | 录制历史列表 + 选择回放（多会话） | `GET /api/recordings` + `recordings.html` 轨迹预览；本地 FS | [x] |
 | D6 | 导入成品免费地图包作默认关（CC0） | KayKit City Bits 换皮 `demo_city`；权威障碍仍走契约 | [x] |
 | D7 | 随机街区 + 楼宇占地空气墙 | `gen_demo_city_block.py` + `city_block_dress.gd`；棕墙隐藏 | [x] |
+| D9 | Web 选 seed / 一键重生街区 | `POST /api/city-block` + shell 控件；Gateway 契约 mtime 热加载 | [x] |
+| D10 | 路面贴花 / 更密路网观感（仍空气墙权威） | 楼宇间深色沥青带 + 浅灰人行底（无 KayKit 标线砖） | [x] |
 
 ---
 
@@ -86,9 +88,7 @@
 | W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] |
 | T2.7 | 输入延迟补偿 v0 | [~] |
 | — | `demo` 房录制双实体抽检 | [ ] 可选 |
-| D8 | 客户端内帧回放（读 `frames.jsonl` 驱动傀儡） | [ ] 建议下一刀 |
-| D9 | Web 选 seed / 一键重生街区 | [ ] |
-| D10 | 路面贴花 / 更密路网观感（仍空气墙权威） | [ ] |
+| D8 | 客户端内帧回放（读 `frames.jsonl` 驱动傀儡） | [ ] 暂缓 |
 | F7 | 机甲互撞（共享 MjData） | 见 Now F7 | [x] |
 | F4 / T4.2 | `.tscn` → 契约导出 | 见 Now F4 | [x] |
 

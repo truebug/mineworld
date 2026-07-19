@@ -46,6 +46,9 @@ BUILDING_ASSETS = [
 # KayKit meshes are ~2m; scale ≈ LOT / 2 so footprint matches air wall.
 BUILDING_SCALE = LOT / 2.0
 WALL_H = 3.5
+HALF_PI = 1.57079632679
+# Asphalt strips slightly narrower than street so lots read as sidewalk.
+ROAD_WIDTH = STREET * 0.9
 
 
 def _bounds() -> tuple[float, float, float, float]:
@@ -62,8 +65,61 @@ def _lot_center(col: int, row: int) -> tuple[float, float]:
     return OX + col * PITCH + LOT * 0.5, OY + row * PITCH + LOT * 0.5
 
 
+def _street_centers() -> tuple[list[float], list[float]]:
+    """N-S and E-W street centerlines (MW x / y)."""
+    xs = [OX - STREET * 0.5]
+    for col in range(COLS):
+        xs.append(OX + col * PITCH + LOT + STREET * 0.5)
+    ys = [OY - STREET * 0.5]
+    for row in range(ROWS):
+        ys.append(OY + row * PITCH + LOT + STREET * 0.5)
+    return xs, ys
+
+
+def _build_roads() -> list[dict[str, Any]]:
+    """Plain asphalt strips along street corridors (no KayKit lane textures)."""
+    min_x, max_x, min_y, max_y = _bounds()
+    street_xs, street_ys = _street_centers()
+    span_x = max_x - min_x
+    span_y = max_y - min_y
+    mid_x = (min_x + max_x) * 0.5
+    mid_y = (min_y + max_y) * 0.5
+    roads: list[dict[str, Any]] = []
+    rid = 0
+
+    # E-W corridors (full block length).
+    for sy in street_ys:
+        roads.append(
+            {
+                "id": f"road_{rid}",
+                "kind": "strip",
+                "x": round(mid_x, 3),
+                "y": round(sy, 3),
+                "sx": round(span_x + STREET * 0.2, 3),
+                "sy": round(ROAD_WIDTH, 3),
+            }
+        )
+        rid += 1
+
+    # N-S corridors (full block length).
+    for sx in street_xs:
+        roads.append(
+            {
+                "id": f"road_{rid}",
+                "kind": "strip",
+                "x": round(sx, 3),
+                "y": round(mid_y, 3),
+                "sx": round(ROAD_WIDTH, 3),
+                "sy": round(span_y + STREET * 0.2, 3),
+            }
+        )
+        rid += 1
+
+    return roads
+
+
 def build_layout(seed: int) -> dict[str, Any]:
-    """Build layout dict: buildings + bounds + spawn/finish hints."""
+    """Build layout dict: buildings + roads + bounds + spawn/finish hints."""
     rng = random.Random(seed)
     min_x, max_x, min_y, max_y = _bounds()
     buildings: list[dict[str, Any]] = []
@@ -80,7 +136,7 @@ def build_layout(seed: int) -> dict[str, Any]:
                     continue
             cx, cy = _lot_center(col, row)
             asset = rng.choice(BUILDING_ASSETS)
-            yaw = rng.choice([0.0, 1.57079632679, 3.14159265359, -1.57079632679])
+            yaw = rng.choice([0.0, HALF_PI, 3.14159265359, -HALF_PI])
             bid = f"bldg_{col}_{row}"
             buildings.append(
                 {
@@ -175,12 +231,15 @@ def build_layout(seed: int) -> dict[str, Any]:
         },
         "crate": {"x": round(crate_x, 3), "y": round(crate_y, 3)},
         "buildings": buildings,
+        "roads": _build_roads(),
         "obstacles": obstacles,
         "ground": {
             "cx": round(mid_x, 3),
             "cy": round(mid_y, 3),
             "sx": round(span_x + 8.0, 3),
             "sy": round(span_y + 8.0, 3),
+            # Light sidewalk base under lots; asphalt strips overlay streets.
+            "color": [0.62, 0.64, 0.66, 1.0],
         },
     }
 
@@ -261,21 +320,16 @@ def write_contract(layout: dict[str, Any]) -> None:
                 "client_scene": "res://demo_city.tscn",
                 "exported_from": "scripts/gen_demo_city_block.py",
                 "layout": "res://assets/kaykit_city/block_layout.json",
-                "notes": "Buildings=viewer_only; footprints=MuJoCo air walls; streets drivible.",
+                "notes": "Buildings=viewer_only; asphalt strips on streets; footprints=MuJoCo air walls.",
             }
         },
     }
     CONTRACT_PATH.write_text(json.dumps(contract, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate demo_city city-block layout")
-    parser.add_argument("--seed", type=int, default=42)
-    args = parser.parse_args()
-
-    layout = build_layout(args.seed)
-    # Strip obstacles from layout file (Godot only needs buildings + markers).
-    godot_layout = {
+def godot_layout_view(layout: dict[str, Any]) -> dict[str, Any]:
+    """Strip MuJoCo obstacles; keep viewer dress fields."""
+    return {
         "seed": layout["seed"],
         "bounds": layout["bounds"],
         "spawn": layout["spawn"],
@@ -283,17 +337,44 @@ def main() -> None:
         "crate": layout["crate"],
         "ground": layout["ground"],
         "buildings": layout["buildings"],
+        "roads": layout.get("roads") or [],
     }
+
+
+def generate_and_write(seed: int) -> dict[str, Any]:
+    """Build layout, write contract + block_layout.json, return summary."""
+    layout = build_layout(seed)
+    godot_layout = godot_layout_view(layout)
     LAYOUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    LAYOUT_PATH.write_text(json.dumps(godot_layout, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    write_contract(layout)
-    print(
-        f"OK seed={args.seed} buildings={len(layout['buildings'])} "
-        f"obstacles={len(layout['obstacles'])}"
+    LAYOUT_PATH.write_text(
+        json.dumps(godot_layout, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
     )
-    print(f"  contract → {CONTRACT_PATH.relative_to(REPO)}")
-    print(f"  layout   → {LAYOUT_PATH.relative_to(REPO)}")
-    b = layout["bounds"]
+    write_contract(layout)
+    return {
+        "seed": seed,
+        "buildings": len(layout["buildings"]),
+        "roads": len(godot_layout["roads"]),
+        "obstacles": len(layout["obstacles"]),
+        "bounds": layout["bounds"],
+        "contract": str(CONTRACT_PATH.relative_to(REPO)),
+        "layout": str(LAYOUT_PATH.relative_to(REPO)),
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Generate demo_city city-block layout")
+    parser.add_argument("--seed", type=int, default=42)
+    args = parser.parse_args()
+
+    summary = generate_and_write(args.seed)
+    print(
+        f"OK seed={summary['seed']} buildings={summary['buildings']} "
+        f"roads={summary['roads']} obstacles={summary['obstacles']}"
+    )
+    print(f"  contract → {summary['contract']}")
+    print(f"  layout   → {summary['layout']}")
+    b = summary["bounds"]
     print(
         f"  bounds MW x=[{b['min_x']},{b['max_x']}] y=[{b['min_y']},{b['max_y']}]"
     )

@@ -123,8 +123,10 @@ Gateway 地址：默认 `ws://127.0.0.1:8765`；Web 页可设 `window.MINEWORLD_
 
 ## 7. 已知边界（spike 阶段）
 
-- 默认主场景 `demo_city.tscn`：双机同框；KayKit 楼=`viewer_only`；占地盒=MuJoCo 空气墙
+- 默认主场景 `demo_city.tscn`：双机同框；KayKit 楼=`viewer_only`；街道=深色沥青带；占地盒=MuJoCo 空气墙
 - 重新生成街区：`.venv/bin/python scripts/gen_demo_city_block.py --seed 42`（可改 seed）
+- Web：右下角 **seed / Regen / Random** → `POST /api/city-block` 后自动刷新（私房）；无需重导出即可拉新 layout
+- Gateway：join 时若 `demo_city.json` mtime 变了会重建 MuJoCo 世界（占用中的房间仍用旧图直到空）
 - `main.tscn`（tutorial_01）仍可用；墙/终点按对应契约手工摆位
 - 插值用「延迟一拍」策略（50ms）；未做丢包外推与回滚
 - 未接 GDevelop 侧既有的摇杆/键盘双输入 UI
