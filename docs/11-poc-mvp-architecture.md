@@ -244,9 +244,9 @@ Client                    Gateway                     MuJoCo
 
 ### 7.3 MVP 通过（M4，POC 之后）
 
-- [ ] 进关 → 接管 → 到达终点 → `objective_complete` → 结算 UI
+- [x] 进关 → 接管 → 到达终点 → `objective_complete` → 结算 UI（Gateway AABB + Godot HUD；`ws_smoke_test.py --expect-objective`）
 - [ ] 同一 `seed` + 契约可开环重放轨迹（允许数值误差带说明）
-- [ ] README 有「本地 5 分钟跑通」步骤
+- [x] README 有「本地 5 分钟跑通」步骤（含 T3.4 导出说明）
 
 ---
 

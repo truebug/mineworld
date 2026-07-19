@@ -50,6 +50,13 @@ python scripts/replay_xy.py recordings/sessions/<session_id> --ascii
 期望：打印 `hello ok` → `scene ok` → `event player_take_control` → 若干 `state` 且 `x` 增大 → `smoke OK`。
 录制目录应有 `header.json`（`stats.duration_sim_s` ≥ 10）与 `frames.jsonl`。
 
+任务闭环（T3.1，fake 物理直线开到终点区）：
+
+```bash
+python scripts/ws_smoke_test.py --expect-objective
+# 期望 event objective_complete → smoke OK (objective)
+```
+
 ## 协议摘要
 
 1. 连接后服务端推 `hello`

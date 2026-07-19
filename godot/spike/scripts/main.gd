@@ -1,6 +1,7 @@
-## MineWorld Godot spike — POC-A M1 mirror.
-## Connects to the Python gateway, joins tutorial_01, takes control,
+## MineWorld Godot spike — session shell.
+## Connects to the Python gateway, joins a level, takes/releases control,
 ## drives a capsule puppet with WASD/QE (authority stays server-side).
+## T: take_control · R: release_control · HUD shows objective outcome.
 extends Node3D
 
 const MOVE_SPEED := 1.0
@@ -20,6 +21,9 @@ var _hello: Dictionary = {}
 var _last_error := ""
 var _cmd_timer := 0.0
 var _last_log_tick := -1
+var _controlled := false
+var _mission_done := false
+var _status_line := ""
 
 
 func _ready() -> void:
@@ -43,11 +47,31 @@ func _on_hello(payload: Dictionary) -> void:
 
 func _on_scene(payload: Dictionary) -> void:
 	print("[MW] scene level=%s entities=%d" % [payload.get("level_id", ""), (payload.get("entities", []) as Array).size()])
+	_controlled = false
+	_mission_done = false
+	_status_line = ""
 	ws.send_cmd({"action": "take_control", "entity_id": "mech_player"})
 
 
 func _on_event(payload: Dictionary) -> void:
-	print("[MW] event %s" % payload.get("event_type", ""))
+	var et := str(payload.get("event_type", ""))
+	print("[MW] event %s" % et)
+	match et:
+		"player_take_control":
+			_controlled = true
+		"player_release_control":
+			_controlled = false
+		"objective_complete":
+			_mission_done = true
+			_status_line = "SUCCESS · %s" % payload.get("objective_id", "?")
+			if _controlled:
+				ws.send_cmd({"action": "release_control", "entity_id": "mech_player"})
+		"objective_failed":
+			_mission_done = true
+			_status_line = "FAIL · %s" % payload.get("objective_id", "?")
+			if _controlled:
+				ws.send_cmd({"action": "release_control", "entity_id": "mech_player"})
+	_update_hud()
 
 
 func _on_gateway_error(payload: Dictionary) -> void:
@@ -73,10 +97,26 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 func _process(delta: float) -> void:
 	if ws.session_id == "":
 		return
+	if not _controlled or _mission_done:
+		return
 	_cmd_timer += delta
 	if _cmd_timer >= 1.0 / CMD_HZ:
 		_cmd_timer = 0.0
 		_send_velocity_cmd()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	if ws.session_id == "":
+		return
+	match event.keycode:
+		KEY_T:
+			if not _controlled and not _mission_done:
+				ws.send_cmd({"action": "take_control", "entity_id": "mech_player"})
+		KEY_R:
+			if _controlled:
+				ws.send_cmd({"action": "release_control", "entity_id": "mech_player"})
 
 
 func _send_velocity_cmd() -> void:
@@ -103,7 +143,9 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	if ws.session_id != "":
 		state_name = "linked"
 	var text := "MineWorld Spike\n"
-	text += "link: %s\n" % state_name
+	text += "link: %s | control: %s\n" % [state_name, "ON" if _controlled else "OFF"]
+	if _status_line != "":
+		text += "%s\n" % _status_line
 	if _hello:
 		text += "protocol: %s | dt=%.2f sim=%dHz state=%dHz\n" % [
 			_hello.get("protocol_version", "?"),
@@ -117,5 +159,6 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [mech.position.x, mech.position.z, mech.rotation.y]
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
-	text += "\nWS move | QE strafe | AD turn | RMB/MMB drag orbit | wheel zoom"
+	text += "\nWS move | QE strafe | AD turn | T take | R release"
+	text += "\nRMB/MMB orbit | wheel zoom"
 	hud_label.text = text

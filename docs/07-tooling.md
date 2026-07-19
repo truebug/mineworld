@@ -110,9 +110,9 @@ Git                 → 工程与契约版本管理
 
 ## 7. 待建自动化（P1）
 
-- [ ] `scripts/export-godot.sh`：`--export-release` 一键导出桌面包
+- [x] `scripts/export_godot.sh`：`--export-release` 一键导出 macOS 桌面包（T3.4）
 - [ ] `scripts/validate-contract.sh`：JSON Schema 校验场景契约
-- [ ] `scripts/replay-session.py`：读取 JSONL 回放
+- [ ] `scripts/replay-session.py`：读取 JSONL 回放（`replay_xy.py` 已覆盖轨迹）
 
 ---
 

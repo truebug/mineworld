@@ -19,3 +19,6 @@ gdevelop/**/Exported/
 # Godot editor / import caches
 godot/**/.godot/
 .godot/
+
+# Local desktop export output (T3.4)
+/dist/

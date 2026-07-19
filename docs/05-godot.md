@@ -68,8 +68,14 @@ rotation.y = yaw          # Z-up yaw（弧度）→ Godot 绕 Y 轴
 
 ### 5.2 运行时交付物
 
-- **MVP**：macOS/桌面原生导出 + 本机 Gateway（`ws://127.0.0.1:8765`）
+- **MVP / T3.4**：macOS 原生导出（`godot/spike/export_presets.cfg` + `scripts/export_godot.sh` → `dist/macos/MineWorldSpike.app`）+ 本机 Gateway（`ws://127.0.0.1:8765`）
+- **前置**：与编辑器同版本的 **Export Templates**（Editor → Manage Export Templates）。产物目录 `dist/` 已 gitignore，勿入库。
 - **P1+**：再评估 Web 导出（包体、COOP/COEP 托管要求）
+
+```bash
+bash scripts/export_godot.sh
+# GODOT=/path/to/Godot bash scripts/export_godot.sh
+```
 
 ### 5.3 无头自动化（CI）
 
@@ -110,5 +116,5 @@ godot/
 - [x] 键盘 cmd 驱动 state 回显（WASD/QE）
 - [x] 跟随环绕相机（CameraRig：RMB/MMB 环绕、滚轮缩放）
 - [x] tutorial_02 城市关人工验收（6 实体、Kenney 资产）
-- [ ] 原生导出包验证（P1）
+- [x] 原生导出管线（T3.4：`export_presets.cfg` + `scripts/export_godot.sh`；本机需导出模板）
 - [ ] 契约导出编辑器插件（P1）

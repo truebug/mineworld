@@ -24,12 +24,14 @@
 
 ```
 godot/spike/
-├── project.godot            # 工程（输入映射 WASD/QE）
+├── project.godot            # 工程（输入映射 WASD/QE + T/R）
+├── export_presets.cfg       # macOS 桌面导出（T3.4）
 ├── main.tscn                # 主场景（地面/墙/终点区/胶囊/相机/HUD）
 ├── scripts/
 │   ├── ws_client.gd         # MWWsClient：WebSocket + 消息分发（无渲染逻辑）
 │   ├── mech_puppet.gd       # MWMechPuppet：双缓冲 state 插值傀儡
-│   └── main.gd              # 会话流程 + 输入采集 + HUD
+│   ├── camera_rig.gd        # 跟随环绕相机
+│   └── main.gd              # 会话流程 + 输入采集 + HUD / 结算
 └── headless/
     └── smoke_client.gd      # 无头自测（等价 scripts/ws_smoke_test.py）
 ```
@@ -65,8 +67,10 @@ godot --path godot/spike          # 或直接运行主场景
 | W / S | move_forward / move_back | `vx = ±1.0` |
 | Q / E | strafe_left / strafe_right | `vy = ±1.0`（+vy = 左平移） |
 | A / D | turn_ccw / turn_cw | `yaw_rate = ±1.0`（+ = 逆时针） |
+| T | take_control | 接管机甲 |
+| R | release_control | 释放控制 |
 
-cmd 上行频率 20Hz（与 state 下行对齐）；松手发零速。
+cmd 上行频率 20Hz（与 state 下行对齐）；松手发零速。到达终点（Gateway `objective_complete`）后 HUD 显示 SUCCESS 并自动 release。
 绑定用 `physical_keycode`，macOS 中文输入法切换布局不影响 WASD/QE。
 
 ### 相机（跟随环绕，CameraRig）
@@ -81,7 +85,17 @@ cmd 上行频率 20Hz（与 state 下行对齐）；松手发零速。
 **焦点提示**：从编辑器 F6/▶ 启动后，需先**点击一次游戏画面**让窗口获得键盘焦点，
 按键才会进入 Input 系统（编辑器内联运行的正常行为，导出独立包无此问题）。
 
-## 5. M1 验收对照
+## 5. 桌面导出（T3.4）
+
+```bash
+# 一次：Godot Editor → Manage Export Templates → Download and Install（对齐 4.7.x）
+bash scripts/export_godot.sh
+open ../../dist/macos/MineWorldSpike.app   # 从仓库根目录：open dist/macos/MineWorldSpike.app
+```
+
+导出预设：`export_presets.cfg`（preset 名 `macOS`）。产物在仓库根 `dist/`（gitignore）。
+
+## 6. M1 验收对照
 
 | `docs/11` §7.1 条目 | 本 spike 对应 |
 |------|------|
@@ -90,7 +104,7 @@ cmd 上行频率 20Hz（与 state 下行对齐）；松手发零速。
 | 客户端连接成功、键盘发 cmd、3D 对象随 state 移动 | `main.tscn` 运行场景 |
 | 协议字段与 `03` 草案一致 | 全部消息走 `MWWsClient`，无私货字段 |
 
-## 6. 已知边界（spike 阶段）
+## 7. 已知边界（spike 阶段）
 
 - 只渲染 `mech_player` 一个实体；墙/终点区按契约 `tutorial_01.json` 手工摆位
 - 插值用「延迟一拍」策略（50ms）；未做丢包外推与回滚

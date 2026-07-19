@@ -205,6 +205,8 @@ class Session:
     pending_events: list[dict[str, Any]] = field(default_factory=list)
     closed: bool = False
     recorder: SessionRecorder | None = None
+    completed_objectives: set[str] = field(default_factory=set)
+    outcome: str | None = None
 
     def reset_from_contract(self) -> None:
         spawns = self.contract.get("mech_spawns") or []
@@ -218,11 +220,63 @@ class Session:
         self.mech.reset_pose(pose)
         self.mech.controlled = False
         self.mech.vx = self.mech.vy = self.mech.yaw_rate = 0.0
+        self.completed_objectives.clear()
+        self.outcome = None
 
 
 def load_contract(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as f:
         return json.load(f)
+
+
+def point_in_aabb(x: float, y: float, z: float, mn: list[float], mx: list[float]) -> bool:
+    """Return True if point lies inside an axis-aligned box (inclusive)."""
+    return (
+        float(mn[0]) <= x <= float(mx[0])
+        and float(mn[1]) <= y <= float(mx[1])
+        and float(mn[2]) <= z <= float(mx[2])
+    )
+
+
+def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
+    """Gateway-authoritative objective checks (T3.1). Emit each objective once."""
+    events: list[dict[str, Any]] = []
+    triggers = {t["id"]: t for t in (session.contract.get("triggers") or []) if t.get("id")}
+    mech = session.mech
+    for obj in session.contract.get("objectives") or []:
+        obj_id = obj.get("id")
+        if not obj_id or obj_id in session.completed_objectives:
+            continue
+        if obj.get("type") != "reach_region":
+            continue
+        trig = triggers.get(obj.get("target"))
+        if not trig or trig.get("type") != "aabb":
+            continue
+        mn = trig.get("min") or []
+        mx = trig.get("max") or []
+        if len(mn) < 3 or len(mx) < 3:
+            continue
+        if not point_in_aabb(mech.x, mech.y, mech.z, mn, mx):
+            continue
+        session.completed_objectives.add(obj_id)
+        session.outcome = "success"
+        events.append(
+            {
+                "event_type": "objective_complete",
+                "objective_id": obj_id,
+                "entity_id": mech.entity_id,
+                "detail": {"trigger_id": trig["id"]},
+            }
+        )
+        LOG.info(
+            "session=%s objective_complete id=%s at (%.2f, %.2f, %.2f)",
+            session.session_id,
+            obj_id,
+            mech.x,
+            mech.y,
+            mech.z,
+        )
+    return events
 
 
 def envelope(
@@ -378,7 +432,8 @@ class EchoGateway:
             LOG.info("client closed session=%s", session_id)
         finally:
             session.closed = True
-            self._close_recorder(session, outcome="disconnect")
+            outcome = session.outcome or "disconnect"
+            self._close_recorder(session, outcome=outcome)
             self.sessions.pop(session_id, None)
 
     async def _on_message(self, session: Session, raw: str | bytes) -> None:
@@ -407,7 +462,8 @@ class EchoGateway:
             session.pending_events.extend(events)
         elif msg_type == "bye":
             session.closed = True
-            self._close_recorder(session, outcome="abort")
+            outcome = session.outcome or "abort"
+            self._close_recorder(session, outcome=outcome)
             await session.ws.close()
         else:
             await send_json(
@@ -508,6 +564,11 @@ class EchoGateway:
                 session.tick += 1
                 tick_events = list(session.pending_events)
                 session.pending_events.clear()
+                objective_events = evaluate_objectives(session)
+                if objective_events:
+                    tick_events.extend(objective_events)
+                    if session.recorder is not None and session.outcome:
+                        session.recorder.set_outcome(session.outcome)
                 state_payload = {
                     "kind": "full",
                     "entities": [session.mech.to_entity_state()],

@@ -94,6 +94,13 @@ class SessionRecorder:
         """Return True if this sim tick should append a frame."""
         return tick % self.record_every_n_ticks == 0
 
+    def set_outcome(self, outcome: str) -> None:
+        """Update header outcome while the session is still running."""
+        if self._closed:
+            return
+        self._header["outcome"] = outcome
+        self._flush_header()
+
     def write_frame(
         self,
         *,
