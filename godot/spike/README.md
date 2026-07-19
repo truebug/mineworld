@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Accepted 基线（选型见 [`docs/adr/003`](../../docs/adr/003-client-engine-godot.md)）；主场景 `demo_city` |
+| **状态** | Accepted 基线（选型见 [`docs/adr/003`](../../docs/adr/003-client-engine-godot.md)）；主场景 `demo_workshop`（L3） |
 | **日期** | 2026-07-17 · 续记 2026-07-19 |
 | **对应验收** | M1 + Web Demo + 录制回放；战略见 [`docs/15-course-correction.md`](../../docs/15-course-correction.md) |
 
@@ -25,9 +25,10 @@
 
 ```
 godot/spike/
-├── project.godot            # 工程（输入映射 WASD/QE + T/R）；主场景 demo_city.tscn
+├── project.godot            # 工程（输入映射 WASD/QE + T/R）；主场景 demo_workshop.tscn
 ├── export_presets.cfg       # macOS 桌面导出（T3.4）
-├── demo_city.tscn           # **主演示关**（随机街区 + 楼宇占地空气墙；见 gen_demo_city_block.py）
+├── demo_workshop.tscn       # **默认主演示关**（封闭车间；L1/L3）
+├── demo_city.tscn           # 次要：随机街区 + 楼宇占地空气墙（见 gen_demo_city_block.py）
 ├── assets/
 │   ├── kaykit_city/         # KayKit City Builder Bits（CC0，viewer_only）
 │   ├── city/                # Kenney City Kit（tutorial_02 等仍可用）
@@ -78,6 +79,7 @@ godot --path godot/spike          # 或直接运行主场景
 
 cmd 上行频率 20Hz（与 state 下行对齐）；松手发零速。到达终点（Gateway `objective_complete`）后弹出 **SUCCESS** 大字 + 短蜂鸣，并自动 release。
 Web HUD 走自定义 `web/shell.html` 的 DOM `#mw-hud`（不在 Godot CanvasLayer，避免裁切）。
+点击左上角 `#mw-hud` 可收起/展开（状态记在 `localStorage`）；Godot 经 `MW_SET_HUD` 更新正文。
 绑定用 `physical_keycode`，macOS 中文输入法切换布局不影响 WASD/QE。
 
 ### 相机（跟随环绕，CameraRig）
@@ -123,10 +125,11 @@ Gateway 地址：默认 `ws://127.0.0.1:8765`；Web 页可设 `window.MINEWORLD_
 
 ## 7. 已知边界（spike 阶段）
 
-- 默认主场景 `demo_city.tscn`：双机同框；KayKit 楼=`viewer_only`；街道=深色沥青带；占地盒=MuJoCo 空气墙
+- 默认主场景 `demo_workshop.tscn`（L3）；`demo_city` 可选手动打开 + `--contract demo_city.json`
+- `demo_city`：双机同框；KayKit 楼=`viewer_only`；街道=深色沥青带；占地盒=MuJoCo 空气墙
 - 重新生成街区：`.venv/bin/python scripts/gen_demo_city_block.py --seed 42`（可改 seed）
-- Web：右下角 **seed / Regen / Random** → `POST /api/city-block` 后自动刷新（私房）；无需重导出即可拉新 layout
-- Gateway：join 时若 `demo_city.json` mtime 变了会重建 MuJoCo 世界（占用中的房间仍用旧图直到空）
+- Web（city）：右下角 **seed / Regen / Random** → `POST /api/city-block` 后自动刷新（私房）；无需重导出即可拉新 layout
+- Gateway 默认 `demo_workshop.json`；契约 mtime 变了会重建 MuJoCo 世界（占用中的房间仍用旧图直到空）
 - `main.tscn`（tutorial_01）仍可用；墙/终点按对应契约手工摆位
 - 插值用「延迟一拍」策略（50ms）；未做丢包外推与回滚
 - 未接 GDevelop 侧既有的摇杆/键盘双输入 UI

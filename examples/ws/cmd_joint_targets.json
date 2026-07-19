@@ -1,0 +1,16 @@
+{
+  "type": "cmd",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "tick": 1300,
+  "t_sim": 2.6,
+  "payload": {
+    "entity_id": "mech_player",
+    "control_mode": "joint_targets",
+    "joint_targets": {
+      "arm_yaw": 0.4,
+      "arm_shoulder": 0.6,
+      "arm_elbow": -0.9,
+      "gripper": 0.03
+    }
+  }
+}

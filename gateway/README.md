@@ -19,14 +19,14 @@ pip install -r gateway/requirements.txt
 
 python gateway/echo_server.py
 # 默认: ws://127.0.0.1:8765
-# 契约: examples/contracts/demo_city.json
+# 契约: examples/contracts/demo_workshop.json（L3；city 用 --contract demo_city.json）
 ```
 
 真物理模式（MuJoCo，含契约静态障碍碰撞）：
 
 ```bash
 python gateway/echo_server.py --physics mujoco
-# 或显式: --contract examples/contracts/demo_city.json
+# 默认 workshop；city: --contract examples/contracts/demo_city.json
 # hello.features 将包含 "mujoco"；契约 static_obstacles(box) 会作为静态 geom 加入仿真
 # 契约文件 mtime 变化时，新房间会热重建 MuJoCo 世界（D9）
 ```
@@ -36,7 +36,7 @@ python gateway/echo_server.py --physics mujoco
 可选参数：
 
 ```bash
-python gateway/echo_server.py --host 127.0.0.1 --port 8765 --contract examples/contracts/demo_city.json -v
+python gateway/echo_server.py --host 127.0.0.1 --port 8765 --contract examples/contracts/demo_workshop.json -v
 ```
 
 ## 冒烟测试

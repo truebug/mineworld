@@ -138,7 +138,7 @@ V4a 标签（无物理依赖）
 
 ---
 
-## 6. 关节与控制约定（草案，实现时钉死）
+## 6. 关节与控制约定（V2a 已钉死名）
 
 | 子系统 | 控制 | 说明 |
 |--------|------|------|
@@ -146,7 +146,31 @@ V4a 标签（无物理依赖）
 | 臂 | `joint_targets` 字典 `name → q` | 2–3 hinge；限幅在 MJCF |
 | 夹爪 | `joint_targets` 开合 | 1 DoF；或对称两指同一目标 |
 
+### 6.1 `mechs/diffbot_arm_gripper.xml` 关节名表
+
+| 名 | 类型 | 用途 | 执行器 |
+|----|------|------|--------|
+| `slide_x` / `slide_y` / `yaw_z` | slide / hinge | 平面底盘 | `vx` / `vy` / `yaw_rate`（velocity） |
+| `left_wheel_joint` / `right_wheel_joint` | hinge | DiffBot 皮（运动学） | 无 |
+| `arm_yaw` | hinge Z | 臂基座偏航 | `arm_yaw`（position） |
+| `arm_shoulder` | hinge Y | 上臂俯仰 | `arm_shoulder`（position） |
+| `arm_elbow` | hinge Y | 肘 | `arm_elbow`（position） |
+| `gripper` | slide | 指开合（0=合，0.05=开） | `gripper`（position） |
+
 录制：每一帧若有 cmd，保留完整 payload；state 继续带全量相关 `joints`。
+
+### 6.2 V1c 滑条映射
+
+| UI | 关节 | 范围 |
+|----|------|------|
+| yaw | `arm_yaw` | −2.8 … 2.8 rad |
+| shoulder | `arm_shoulder` | −1.4 … 1.6 |
+| elbow | `arm_elbow` | −2.4 … 0.2 |
+| gripper | `gripper` | 0 … 0.05 m（开） |
+
+- **Web**：`shell.html` `#mw-joints` → `window.MW_JOINT_TARGETS`；与 `velocity` 同 20 Hz cmd。
+- **桌面**：左下 `HSlider` 面板（`main.gd`）。
+- 底盘仍 WASD/QE；T/R = 接管/释放（非夹爪）。
 
 ---
 
@@ -184,3 +208,8 @@ extensions.mw.editor.client_scene: res://demo_workshop.tscn
 | 日期 | 说明 |
 |------|------|
 | 2026-07-19 | 初版：四项产品决策冻结 + L/V 任务拆解；同步 09 |
+| 2026-07-19 | V4a + L1 + V2a：IL header 标签、`demo_workshop`、`diffbot_arm_gripper.xml` |
+| 2026-07-19 | L3：默认主场景 / Gateway 契约切到 `demo_workshop`；city 手动回切 |
+| 2026-07-19 | V1a/b：`joint_targets` schema + Gateway 位置伺服；MJCF `angle=radian` |
+| 2026-07-19 | V1c 滑条 + V2b 几何臂跟 `joints` |
+| 2026-07-19 | 车间 Factory 皮 + 铺地；Web `#mw-hud` 点击收起；V2c 台账；本批入库 |

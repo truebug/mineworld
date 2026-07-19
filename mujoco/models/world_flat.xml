@@ -1,5 +1,6 @@
 <mujoco model="world_flat">
   <!-- Flat ground + DiffBot planar wrapper (F5 third-party URDF skin). -->
+  <compiler angle="radian"/>
   <include file="mechs/diffbot_planar.xml"/>
 
   <worldbody>

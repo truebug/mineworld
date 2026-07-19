@@ -1,0 +1,104 @@
+{
+  "contract_version": "0.1",
+  "level_id": "demo_workshop",
+  "seed": 7,
+  "frame": "mineworld_zup_m",
+  "sim": {
+    "dt": 0.02
+  },
+  "mech_spawns": [
+    {
+      "id": "mech_player",
+      "model_ref": "mechs/diffbot_arm_gripper.xml",
+      "pose": {
+        "x": 4.0,
+        "y": 0.0,
+        "z": 0.5,
+        "yaw": 0.0
+      },
+      "player_slot": 0,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
+  "dynamic_props": [
+    {
+      "id": "prop_crate",
+      "kind": "dynamic_prop",
+      "shape": "box",
+      "size": [0.5, 0.5, 0.5],
+      "pose": {
+        "x": 8.0,
+        "y": 0.0,
+        "z": 0.25,
+        "yaw": 0.0
+      },
+      "mass": 1.2,
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
+  "static_obstacles": [
+    {
+      "id": "wall_n",
+      "shape": "box",
+      "size": [30.0, 0.5, 4.0],
+      "pose": { "x": 15.0, "y": -12.0, "z": 2.0, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_s",
+      "shape": "box",
+      "size": [30.0, 0.5, 4.0],
+      "pose": { "x": 15.0, "y": 12.0, "z": 2.0, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_w",
+      "shape": "box",
+      "size": [0.5, 24.0, 4.0],
+      "pose": { "x": 0.0, "y": 0.0, "z": 2.0, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_e",
+      "shape": "box",
+      "size": [0.5, 24.0, 4.0],
+      "pose": { "x": 30.0, "y": 0.0, "z": 2.0, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "workbench",
+      "shape": "box",
+      "size": [4.0, 2.0, 1.0],
+      "pose": { "x": 15.0, "y": -8.0, "z": 0.5, "yaw": 0.0 },
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
+  "objectives": [
+    {
+      "id": "obj_stow_crate",
+      "type": "reach_region",
+      "target": "trigger_bin",
+      "description": "车间：将箱子推入料箱区（V3a 可改为夹爪辅助）"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "trigger_bin",
+      "type": "aabb",
+      "min": [24.0, -2.0, 0.0],
+      "max": [28.0, 2.0, 2.0]
+    }
+  ],
+  "tags": ["poc", "workshop", "il", "arm_gripper"],
+  "extensions": {
+    "mw.il": {
+      "task_id": "obj_stow_crate",
+      "difficulty": "poc"
+    },
+    "mw.editor": {
+      "client_scene": "res://demo_workshop.tscn",
+      "notes": "Enclosed indoor workshop; walls authoritative; no street cruise."
+    }
+  }
+}

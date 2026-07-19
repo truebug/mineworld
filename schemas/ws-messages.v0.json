@@ -192,6 +192,10 @@
         "y": { "type": "number" },
         "z": { "type": "number" },
         "yaw": { "type": "number" },
+        "joint_targets": {
+          "$ref": "common.v0.json#/$defs/string_map_number",
+          "description": "Position setpoints (joint short name → q). May coexist with velocity in the same cmd."
+        },
         "joints": { "$ref": "common.v0.json#/$defs/string_map_number" },
         "buttons": { "$ref": "common.v0.json#/$defs/string_map_bool" },
         "axes": { "$ref": "common.v0.json#/$defs/string_map_number" },

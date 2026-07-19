@@ -1,0 +1,87 @@
+<mujoco model="diffbot_arm_gripper">
+  <!--
+    MineWorld V2a: planar DiffBot-style chassis + 3-DoF arm + 1-DoF gripper.
+    Hand-authored (not from urdf_to_mjcf_planar). Chassis actuators keep names
+    vx / vy / yaw_rate so Gateway velocity control stays unchanged. Arm/gripper
+    use position actuators for upcoming joint_targets (V1b).
+  -->
+  <compiler angle="radian"/>
+  <option timestep="0.002" integrator="RK4" gravity="0 0 -9.81"/>
+
+  <default>
+    <geom contype="1" conaffinity="1" friction="0.8 0.02 0.01"/>
+    <position kp="80" forcerange="-80 80" ctrlrange="-3.14 3.14"/>
+  </default>
+
+  <worldbody>
+    <body name="chassis" pos="0 0 0.5">
+      <joint name="slide_x" type="slide" axis="1 0 0" damping="0.2"/>
+      <joint name="slide_y" type="slide" axis="0 1 0" damping="0.2"/>
+      <joint name="yaw_z" type="hinge" axis="0 0 1" damping="0.05"/>
+      <inertial pos="0 0 0.05" mass="14.0" diaginertia="0.18 0.28 0.35"/>
+      <geom name="chassis_box" type="box" size="0.5 0.5 0.25"
+            rgba="1.0 0.4235294118 0.03921568627 1"/>
+      <geom name="caster_frontal_wheel" type="sphere" size="0.15" pos="0.35 0.0 -0.25"
+            mass="0" contype="0" conaffinity="0" rgba="1 1 1 1"/>
+      <geom name="caster_rear_wheel" type="sphere" size="0.15" pos="-0.35 0.0 -0.25"
+            mass="0" contype="0" conaffinity="0" rgba="1 1 1 1"/>
+      <body name="left_wheel" pos="0.0 -0.5 -0.25">
+        <joint name="left_wheel_joint" type="hinge" axis="0 1 0" damping="0.01"/>
+        <geom name="left_wheel_geom" type="cylinder" size="0.15 0.1"
+              quat="0.7071 0.7071 0 0" mass="0.05" contype="0" conaffinity="0" rgba="0 0 0 1"/>
+      </body>
+      <body name="right_wheel" pos="0.0 0.5 -0.25">
+        <joint name="right_wheel_joint" type="hinge" axis="0 1 0" damping="0.01"/>
+        <geom name="right_wheel_geom" type="cylinder" size="0.15 0.1"
+              quat="0.7071 0.7071 0 0" mass="0.05" contype="0" conaffinity="0" rgba="0 0 0 1"/>
+      </body>
+
+      <!-- Arm mounted on chassis top; joint names are IL / V1 stable IDs. -->
+      <body name="arm_base" pos="0.15 0 0.25">
+        <geom name="arm_base_geom" type="cylinder" size="0.08 0.04" rgba="0.35 0.38 0.42 1"/>
+        <body name="arm_yaw_link" pos="0 0 0.06">
+          <joint name="arm_yaw" type="hinge" axis="0 0 1" range="-2.8 2.8" damping="0.2"/>
+          <inertial pos="0 0 0.12" mass="0.8" diaginertia="0.01 0.01 0.008"/>
+          <geom name="arm_yaw_geom" type="capsule" fromto="0 0 0 0 0 0.24" size="0.05"
+                rgba="0.45 0.5 0.55 1"/>
+          <body name="arm_shoulder_link" pos="0 0 0.24">
+            <joint name="arm_shoulder" type="hinge" axis="0 1 0" range="-1.4 1.6" damping="0.25"/>
+            <inertial pos="0.18 0 0" mass="0.7" diaginertia="0.008 0.012 0.012"/>
+            <geom name="arm_upper_geom" type="capsule" fromto="0 0 0 0.36 0 0" size="0.045"
+                  rgba="0.5 0.55 0.6 1"/>
+            <body name="arm_elbow_link" pos="0.36 0 0">
+              <joint name="arm_elbow" type="hinge" axis="0 1 0" range="-2.4 0.2" damping="0.2"/>
+              <inertial pos="0.14 0 0" mass="0.5" diaginertia="0.005 0.008 0.008"/>
+              <geom name="arm_fore_geom" type="capsule" fromto="0 0 0 0.28 0 0" size="0.04"
+                    rgba="0.55 0.6 0.65 1"/>
+              <body name="gripper_base" pos="0.28 0 0">
+                <geom name="gripper_palm" type="box" size="0.04 0.06 0.03" rgba="0.3 0.32 0.35 1"/>
+                <body name="finger_l" pos="0.05 0.05 0">
+                  <joint name="gripper" type="slide" axis="0 1 0" range="0 0.05" damping="0.05"/>
+                  <inertial pos="0.03 0 0" mass="0.05" diaginertia="0.0001 0.0001 0.0001"/>
+                  <geom name="finger_l_geom" type="box" size="0.04 0.012 0.025"
+                        rgba="0.7 0.75 0.8 1"/>
+                </body>
+                <body name="finger_r" pos="0.05 -0.05 0">
+                  <!-- Visual mirror only; driven later via equality / dual target (V1). -->
+                  <geom name="finger_r_geom" type="box" size="0.04 0.012 0.025"
+                        rgba="0.7 0.75 0.8 1"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <velocity name="vx" joint="slide_x" kv="120" forcerange="-400 400" ctrlrange="-3 3"/>
+    <velocity name="vy" joint="slide_y" kv="120" forcerange="-400 400" ctrlrange="-3 3"/>
+    <velocity name="yaw_rate" joint="yaw_z" kv="60" forcerange="-200 200" ctrlrange="-6 6"/>
+    <position name="arm_yaw" joint="arm_yaw" kp="100" ctrlrange="-2.8 2.8"/>
+    <position name="arm_shoulder" joint="arm_shoulder" kp="120" ctrlrange="-1.4 1.6"/>
+    <position name="arm_elbow" joint="arm_elbow" kp="100" ctrlrange="-2.4 0.2"/>
+    <position name="gripper" joint="gripper" kp="60" forcerange="-40 40" ctrlrange="0 0.05"/>
+  </actuator>
+</mujoco>

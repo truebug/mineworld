@@ -20,7 +20,7 @@ const _WEB_BLOCK_CODES := {
 	"Space": true,
 }
 
-@export var level_id := "demo_city"
+@export var level_id := "demo_workshop"
 @export var gateway_url := "ws://127.0.0.1:8765"
 ## Empty = private room (gateway uses session_id). Set "demo" for shared room.
 @export var room_id := ""
@@ -62,6 +62,20 @@ var _replay_speed := 1.0
 var _replay_t := 0.0
 var _replay_idx := 0
 var _replay_status := ""
+## V1c: held arm/gripper setpoints (desktop sliders / web MW_JOINT_TARGETS).
+var _joint_targets: Dictionary = {
+	"arm_yaw": 0.0,
+	"arm_shoulder": 0.0,
+	"arm_elbow": 0.0,
+	"gripper": 0.0,
+}
+var _joint_panel: CanvasLayer
+const _JOINT_SPECS := [
+	{"id": "arm_yaw", "label": "yaw", "min": -2.8, "max": 2.8, "step": 0.02},
+	{"id": "arm_shoulder", "label": "shoulder", "min": -1.4, "max": 1.6, "step": 0.02},
+	{"id": "arm_elbow", "label": "elbow", "min": -2.4, "max": 0.2, "step": 0.02},
+	{"id": "gripper", "label": "gripper", "min": 0.0, "max": 0.05, "step": 0.001},
+]
 
 
 func _ready() -> void:
@@ -80,6 +94,7 @@ func _ready() -> void:
 		_puppets["mech_player_b"] = mech_b
 	_ensure_mission_banner()
 	_ensure_hud_layout()
+	_ensure_joint_sliders()
 	call_deferred("_ensure_hud_layout")
 	if not get_viewport().size_changed.is_connected(_ensure_hud_layout):
 		get_viewport().size_changed.connect(_ensure_hud_layout)
@@ -326,26 +341,14 @@ func _ensure_mission_banner() -> void:
 
 
 func _push_web_hud(text: String) -> void:
-	"""Web-only: ensure #mw-hud is last child of body with inline styles (no clip)."""
+	"""Web-only: push HUD text via shell.html MW_SET_HUD (click-to-collapse)."""
 	var payload := JSON.stringify(text)
 	JavaScriptBridge.eval(
 		"(function(t){"
+		+ "if(typeof window.MW_SET_HUD==='function'){window.MW_SET_HUD(t);return;}"
 		+ "var el=document.getElementById('mw-hud');"
-		+ "if(!el){el=document.createElement('pre');el.id='mw-hud';}"
-		+ "if(el.parentElement!==document.body){document.body.appendChild(el);}"
-		+ "else{document.body.appendChild(el);}"
+		+ "if(!el){el=document.createElement('pre');el.id='mw-hud';document.body.appendChild(el);}"
 		+ "el.textContent=t;"
-		+ "el.setAttribute('style',"
-		+ "'position:fixed!important;left:16px!important;top:16px!important;"
-		+ "right:auto!important;bottom:auto!important;transform:none!important;"
-		+ "z-index:2147483646!important;margin:0!important;padding:12px 14px!important;"
-		+ "max-width:min(520px,calc(100vw - 32px))!important;width:auto!important;"
-		+ "height:auto!important;overflow:visible!important;clip:auto!important;"
-		+ "clip-path:none!important;background:rgba(20,22,28,0.92)!important;"
-		+ "color:#e8eaed!important;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace!important;"
-		+ "white-space:pre-wrap!important;word-break:break-word!important;"
-		+ "border-radius:8px!important;pointer-events:none!important;"
-		+ "box-shadow:0 2px 12px rgba(0,0,0,0.45)!important;border:1px solid #3d4450!important');"
 		+ "})(%s);" % payload,
 		true
 	)
@@ -694,6 +697,72 @@ func _key_down(code: int) -> bool:
 	return bool(_held.get(code, false))
 
 
+func _ensure_joint_sliders() -> void:
+	"""Desktop: bottom-left HSliders for arm/gripper (V1c). Web uses DOM #mw-joints."""
+	if _is_web or _joint_panel != null:
+		return
+	_joint_panel = CanvasLayer.new()
+	_joint_panel.name = "JointSliders"
+	_joint_panel.layer = 12
+	var root := MarginContainer.new()
+	root.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	root.offset_left = 12
+	root.offset_bottom = -12
+	root.offset_right = 280
+	root.offset_top = -160
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
+	var panel := PanelContainer.new()
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	var col := VBoxContainer.new()
+	var title := Label.new()
+	title.text = "Arm / gripper"
+	col.add_child(title)
+	for spec in _JOINT_SPECS:
+		var row := HBoxContainer.new()
+		var lab := Label.new()
+		lab.text = str(spec["label"])
+		lab.custom_minimum_size = Vector2(72, 0)
+		var slider := HSlider.new()
+		slider.name = "Slider_%s" % spec["id"]
+		slider.min_value = float(spec["min"])
+		slider.max_value = float(spec["max"])
+		slider.step = float(spec["step"])
+		slider.value = float(_joint_targets.get(spec["id"], 0.0))
+		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		slider.custom_minimum_size = Vector2(120, 0)
+		var jid := str(spec["id"])
+		slider.value_changed.connect(func(v: float) -> void: _joint_targets[jid] = v)
+		row.add_child(lab)
+		row.add_child(slider)
+		col.add_child(row)
+	margin.add_child(col)
+	panel.add_child(margin)
+	root.add_child(panel)
+	_joint_panel.add_child(root)
+	add_child(_joint_panel)
+
+
+func _read_joint_targets() -> Dictionary:
+	"""Current joint setpoints from web DOM or desktop sliders."""
+	if _is_web:
+		var raw := str(JavaScriptBridge.eval(
+			"JSON.stringify(window.MW_JOINT_TARGETS||{})"
+		))
+		var parsed: Variant = JSON.parse_string(raw)
+		if typeof(parsed) == TYPE_DICTIONARY:
+			var out: Dictionary = {}
+			for spec in _JOINT_SPECS:
+				var jid := str(spec["id"])
+				out[jid] = float((parsed as Dictionary).get(jid, _joint_targets.get(jid, 0.0)))
+			_joint_targets = out
+			return out
+	return _joint_targets.duplicate()
+
+
 func _send_velocity_cmd() -> void:
 	var vx := 0.0
 	var vy := 0.0
@@ -730,13 +799,15 @@ func _send_velocity_cmd() -> void:
 			yaw_rate = Input.get_axis("turn_cw", "turn_ccw") * TURN_SPEED
 	if vx != 0.0 or vy != 0.0 or yaw_rate != 0.0:
 		print("[MW] cmd vx=%.1f vy=%.1f yaw_rate=%.1f entity=%s" % [vx, vy, yaw_rate, _controlled_entity_id])
-	ws.send_cmd({
+	var payload := {
 		"entity_id": _controlled_entity_id,
 		"control_mode": "velocity",
 		"vx": vx,
 		"vy": vy,
 		"yaw_rate": yaw_rate,
-	})
+		"joint_targets": _read_joint_targets(),
+	}
+	ws.send_cmd(payload)
 
 
 func _notification(what: int) -> void:
@@ -792,7 +863,7 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [own.position.x, own.position.z, own.rotation.y]
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
-	text += "\nWASD move | QE turn | T take | R release | goal: green finish"
+	text += "\nWASD move | QE turn | T take | R release | arm sliders (bottom-left)"
 	text += "\nRMB/MMB orbit | wheel zoom | arrows pan | C center"
 	if _is_web:
 		text += "\nRecordings → top-right link"

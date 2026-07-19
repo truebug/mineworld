@@ -6,7 +6,7 @@ MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authorit
 
 - `docs/` — design docs (`00` … `16-value-sprint.md`); `docs/09-todo.md` execution; **`16` is the frozen V-sprint spec**; `15` is drift diagnosis.
 - `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, `--physics fake|mujoco`; `recording_store.py`.
-- `godot/` — spike baseline; current main demo still `demo_city` until L3 switches default to `demo_workshop`.
+- `godot/` — spike baseline; default main scene `demo_workshop` (L3); `demo_city` via scene + `--contract`.
 - `gdevelop/` — archived legacy.
 - `mujoco/` — MJCF + headless scripts; upcoming arm/gripper on planar base (V2a).
 - `schemas/` — JSON Schema SSOT (`*.v0.json`).

@@ -109,8 +109,18 @@ body {
 	white-space: pre-wrap;
 	word-break: break-word;
 	border-radius: 8px;
-	pointer-events: none;
+	border: 1px solid #3d4450;
+	pointer-events: auto;
+	cursor: pointer;
+	user-select: none;
 	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+#mw-hud.collapsed {
+	padding: 8px 12px;
+	max-width: none;
+	white-space: nowrap;
+	opacity: 0.92;
 }
 
 #mw-success {
@@ -196,6 +206,48 @@ body {
 	opacity: 0.85;
 	font: 11px/1.3 ui-monospace, Menlo, Consolas, monospace;
 }
+
+#mw-joints {
+	position: fixed;
+	left: max(16px, env(safe-area-inset-left, 0px));
+	bottom: max(16px, env(safe-area-inset-bottom, 0px));
+	z-index: 2147483646;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 8px 10px;
+	min-width: 220px;
+	max-width: min(280px, calc(100vw - 32px));
+	background: rgba(20, 22, 28, 0.88);
+	color: #e8eaed;
+	font: 12px/1.2 ui-sans-serif, system-ui, sans-serif;
+	border-radius: 8px;
+	border: 1px solid #3d4450;
+	pointer-events: auto;
+}
+
+#mw-joints .mw-j-title {
+	font-weight: 600;
+	margin-bottom: 2px;
+}
+
+#mw-joints label {
+	display: grid;
+	grid-template-columns: 88px 1fr 44px;
+	align-items: center;
+	gap: 6px;
+}
+
+#mw-joints input[type="range"] {
+	width: 100%;
+	accent-color: #5dff8a;
+}
+
+#mw-joints .mw-j-val {
+	font: 11px/1 ui-monospace, Menlo, Consolas, monospace;
+	opacity: 0.9;
+	text-align: right;
+}
 		</style>
 		$GODOT_HEAD_INCLUDE
 	</head>
@@ -214,7 +266,7 @@ body {
 			<div id="status-notice"></div>
 		</div>
 
-		<pre id="mw-hud">MineWorld · connecting…</pre>
+		<pre id="mw-hud" title="Click to collapse">MineWorld · connecting…</pre>
 		<div id="mw-success" aria-live="polite">
 			<div class="mw-title">SUCCESS</div>
 			<div class="mw-sub"></div>
@@ -228,6 +280,13 @@ body {
 			<button type="button" id="mw-seed-rnd">Random</button>
 			<span id="mw-seed-status"></span>
 		</div>
+		<div id="mw-joints">
+			<div class="mw-j-title">Arm / gripper</div>
+			<label>yaw <input id="mw-j-arm_yaw" type="range" min="-2.8" max="2.8" step="0.02" value="0"><span class="mw-j-val" data-for="arm_yaw">0.00</span></label>
+			<label>shoulder <input id="mw-j-arm_shoulder" type="range" min="-1.4" max="1.6" step="0.02" value="0"><span class="mw-j-val" data-for="arm_shoulder">0.00</span></label>
+			<label>elbow <input id="mw-j-arm_elbow" type="range" min="-2.4" max="0.2" step="0.02" value="0"><span class="mw-j-val" data-for="arm_elbow">0.00</span></label>
+			<label>gripper <input id="mw-j-gripper" type="range" min="0" max="0.05" step="0.001" value="0"><span class="mw-j-val" data-for="gripper">0.000</span></label>
+		</div>
 
 		<script src="$GODOT_URL"></script>
 		<script>
@@ -236,6 +295,69 @@ const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
 const engine = new Engine(GODOT_CONFIG);
 
 (function () {
+	/* Click #mw-hud to collapse / expand; Godot calls MW_SET_HUD each frame. */
+	(function setupHudCollapse() {
+		const el = document.getElementById('mw-hud');
+		if (!el) {
+			return;
+		}
+		let collapsed = false;
+		let fullText = el.textContent || '';
+		try {
+			collapsed = localStorage.getItem('mw-hud-collapsed') === '1';
+		} catch (err) { /* ignore */ }
+
+		function render() {
+			if (collapsed) {
+				el.textContent = 'MineWorld · HUD ▸';
+				el.classList.add('collapsed');
+				el.title = 'Click to expand';
+			} else {
+				el.textContent = fullText || 'MineWorld · connecting…';
+				el.classList.remove('collapsed');
+				el.title = 'Click to collapse';
+			}
+		}
+
+		window.MW_SET_HUD = function (t) {
+			fullText = t == null ? '' : String(t);
+			render();
+		};
+
+		el.addEventListener('click', function () {
+			collapsed = !collapsed;
+			try {
+				localStorage.setItem('mw-hud-collapsed', collapsed ? '1' : '0');
+			} catch (err) { /* ignore */ }
+			render();
+		});
+		render();
+	})();
+
+	window.MW_JOINT_TARGETS = {
+		arm_yaw: 0,
+		arm_shoulder: 0,
+		arm_elbow: 0,
+		gripper: 0,
+	};
+	const jointIds = ['arm_yaw', 'arm_shoulder', 'arm_elbow', 'gripper'];
+	jointIds.forEach(function (id) {
+		const input = document.getElementById('mw-j-' + id);
+		const valEl = document.querySelector('.mw-j-val[data-for="' + id + '"]');
+		if (!input) {
+			return;
+		}
+		const sync = function () {
+			const v = Number(input.value);
+			window.MW_JOINT_TARGETS[id] = v;
+			if (valEl) {
+				valEl.textContent = id === 'gripper' ? v.toFixed(3) : v.toFixed(2);
+			}
+		};
+		input.addEventListener('input', sync);
+		sync();
+	});
+
 	const seedInput = document.getElementById('mw-seed-input');
 	const seedStatus = document.getElementById('mw-seed-status');
 	const seedGo = document.getElementById('mw-seed-go');

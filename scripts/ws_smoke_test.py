@@ -180,7 +180,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", default="ws://127.0.0.1:8765")
     parser.add_argument("--seconds", type=float, default=1.5)
-    parser.add_argument("--level-id", default="demo_city")
+    parser.add_argument("--level-id", default="demo_workshop")
     parser.add_argument(
         "--expect-objective",
         action="store_true",

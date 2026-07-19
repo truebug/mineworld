@@ -22,3 +22,7 @@ godot/**/.godot/
 
 # Local desktop export output (T3.4)
 /dist/
+
+# Dropped asset archives (extract subset into godot/spike/assets/; never commit zips)
+/*.zip
+/kenney_*.zip

@@ -81,7 +81,9 @@
 cd mineworld
 source .venv/bin/activate
 python gateway/echo_server.py --physics mujoco
-godot --path godot/spike    # 或 F5；主场景 demo_city
+godot --path godot/spike    # 或 F5；默认主场景 demo_workshop（L3）
+# 回 city：project.godot 改回 demo_city.tscn + Gateway --contract demo_city.json + 再 export web
+
 ```
 
 ### B. Web 本地 Demo
@@ -105,7 +107,8 @@ bash scripts/serve_web.sh restart                          # 终端 2 → http:/
 ```bash
 .venv/bin/python scripts/ws_smoke_test.py
 .venv/bin/python scripts/push_box_smoke.py
-.venv/bin/python scripts/ws_smoke_test.py --expect-objective   # demo_city 开环到终点
+.venv/bin/python scripts/joint_targets_smoke.py   # V1b：臂关节跟目标（mujoco + workshop）
+.venv/bin/python scripts/ws_smoke_test.py --expect-objective   # 需 Gateway 加载 demo_city 契约时用 --level-id demo_city
 ```
 
 ### D. macOS 桌面包（备选）
@@ -175,10 +178,10 @@ mineworld/
 
 ## 最小可玩闭环（已达成的 POC 形态）
 
-1. 进世界（Web 或编辑器 · `demo_city`）
+1. 进世界（Web 或编辑器 · 默认 `demo_workshop`）
 2. 接管机甲（T）并遥操（WASD/QE）
 3. 状态由 MuJoCo 驱动回显
-4. 到达终点 / 推箱等事件可触发
+4. 推箱 / 进料箱区等事件可触发（V3 完善中）
 5. 会话落盘，可在 Recordings 回放并导出 CSV
 
-**下一阶段**以 [16](docs/16-value-sprint.md) 为准：`demo_workshop` + 臂/爪 + IL 正样本；不再以「更好看的城」为主。详见 [docs/08-modes-roadmap.md](docs/08-modes-roadmap.md)。
+**当前主线**以 [16](docs/16-value-sprint.md) 为准：车间 + 臂/爪 + IL；`demo_city` 可选手动回切。详见 [docs/08-modes-roadmap.md](docs/08-modes-roadmap.md)。

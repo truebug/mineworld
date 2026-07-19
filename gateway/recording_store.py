@@ -44,6 +44,10 @@ def _session_summary(child: Path, header: dict[str, Any], *, has_frames: bool) -
     return {
         "session_id": header.get("session_id") or child.name,
         "level_id": header.get("level_id"),
+        "task_id": header.get("task_id"),
+        "difficulty": header.get("difficulty"),
+        "control_mode": header.get("control_mode"),
+        "control_modes": header.get("control_modes") or [],
         "outcome": header.get("outcome"),
         "started_at": header.get("started_at"),
         "ended_at": header.get("ended_at"),
@@ -51,6 +55,7 @@ def _session_summary(child: Path, header: dict[str, Any], *, has_frames: bool) -
         "num_frames": stats.get("num_frames"),
         "features": list(features),
         "has_frames": has_frames,
+        "seed": header.get("seed"),
     }
 
 
@@ -79,7 +84,6 @@ def _session_index_row(child: Path, header: dict[str, Any], *, has_frames: bool)
     """Extend list summary with sqlite-only columns."""
     row = _session_summary(child, header, has_frames=has_frames)
     row["contract_hash"] = header.get("contract_hash")
-    row["seed"] = header.get("seed")
     return row
 
 
@@ -88,11 +92,16 @@ def rebuild_sqlite(root: Path, db_path: Path) -> int:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
     try:
+        conn.execute("DROP TABLE IF EXISTS sessions")
         conn.execute(
             """
-            CREATE TABLE IF NOT EXISTS sessions (
+            CREATE TABLE sessions (
                 session_id TEXT PRIMARY KEY,
                 level_id TEXT,
+                task_id TEXT,
+                difficulty TEXT,
+                control_mode TEXT,
+                control_modes TEXT,
                 outcome TEXT,
                 started_at TEXT,
                 ended_at TEXT,
@@ -124,6 +133,10 @@ def rebuild_sqlite(root: Path, db_path: Path) -> int:
                 (
                     summary["session_id"],
                     summary.get("level_id"),
+                    summary.get("task_id"),
+                    summary.get("difficulty"),
+                    summary.get("control_mode"),
+                    json.dumps(summary.get("control_modes") or [], ensure_ascii=False),
                     summary.get("outcome"),
                     summary.get("started_at"),
                     summary.get("ended_at"),
@@ -138,10 +151,10 @@ def rebuild_sqlite(root: Path, db_path: Path) -> int:
         conn.executemany(
             """
             INSERT OR REPLACE INTO sessions (
-                session_id, level_id, outcome, started_at, ended_at,
-                duration_sim_s, num_frames, features, has_frames,
-                contract_hash, seed
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                session_id, level_id, task_id, difficulty, control_mode, control_modes,
+                outcome, started_at, ended_at, duration_sim_s, num_frames, features,
+                has_frames, contract_hash, seed
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             rows,
         )

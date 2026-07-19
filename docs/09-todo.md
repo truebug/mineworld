@@ -79,32 +79,32 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| V4a | header/index IL 最小标签 | `task_id` · `difficulty` · `control_mode(s)` · `outcome` · `seed` 入 header + sqlite | [ ] |
+| V4a | header/index IL 最小标签 | `task_id` · `difficulty` · `control_mode(s)` · `outcome` · `seed` 入 header + sqlite | [x] |
 | V4b | 导出服务 IL | CSV/JSONL 含关节 `cmd`+`joints`；可按 level/task/outcome 过滤 | [ ] |
 
 ### L · 车间关
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| L1 | `demo_workshop` 契约 + 封闭车间壳 | 契约 JSON + `demo_workshop.tscn`；四面墙权威；无街道巡航叙事 | [ ] |
+| L1 | `demo_workshop` 契约 + 封闭车间壳 | 契约 JSON + `demo_workshop.tscn`；四面墙权威；无街道巡航叙事 | [x] |
 | L2 | 工作台 / 料箱 trigger | 料箱 AABB + 工作区；`dynamic_props` 可动物 | [ ] |
-| L3 | 默认主演示切车间 | Gateway/Web 默认或文档明确主线为 workshop；city 可选手动 | [ ] |
+| L3 | 默认主演示切车间 | Gateway/Web 默认或文档明确主线为 workshop；city 可选手动 | [x] |
 
 ### V2 · 机体（臂+爪）
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| V2a | 底盘+臂+爪 MJCF | headless 可步进；关节名表进 16/ASSETS | [ ] |
-| V2b | Godot 跟皮 | 臂/爪随 `joints`；底盘复用 DiffBot 皮 | [ ] |
-| V2c | 许可登记 | 仅 CC0/MIT 或自建；ASSETS 记账 | [ ] |
+| V2a | 底盘+臂+爪 MJCF | headless 可步进；关节名表进 16/ASSETS | [x] |
+| V2b | Godot 跟皮 | 臂/爪随 `joints`；底盘复用 DiffBot 皮 | [x] |
+| V2c | 许可登记 | 仅 CC0/MIT 或自建；ASSETS 记账 | [x] |
 
 ### V1 · 控制（joint_targets + 滑条）
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| V1a | Schema `joint_targets` | ws-messages + examples；可与 velocity 同会话并存 | [ ] |
-| V1b | Gateway 执行关节目标 | MuJoCo 伺服；smoke 改角可见 | [ ] |
-| V1c | 键鼠关节滑条 UX | Web/桌面：每关节滑条 + 可选快捷键；映射文档化 | [ ] |
+| V1a | Schema `joint_targets` | ws-messages + examples；可与 velocity 同会话并存 | [x] |
+| V1b | Gateway 执行关节目标 | MuJoCo 伺服；smoke 改角可见 | [x] |
+| V1c | 键鼠关节滑条 UX | Web/桌面：每关节滑条 + 可选快捷键；映射文档化 | [x] |
 | V1d | 成对录制 | frames/export 含关节 cmd↔joints；3D 回放臂动 | [ ] |
 
 ### V3 · IL 任务
@@ -121,6 +121,13 @@
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | V5 | 演示克制 | 不再开 city 观感专题；city 仅 bugfix | [x] 策略已生效 |
+
+### 演示打磨（本批入库）
+
+| 项 | 说明 | 状态 |
+|----|------|------|
+| Workshop Factory 皮 + 铺地 | `workshop_dress.gd` + Kenney Factory 子集；viewer_only | [x] |
+| Web `#mw-hud` 点击收起 | `shell.html` + `MW_SET_HUD`；`localStorage` 记忆 | [x] |
 
 ---
 

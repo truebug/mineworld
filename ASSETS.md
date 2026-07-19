@@ -24,3 +24,5 @@
 | KayKit City Builder Bits 1.0（子集） | [itch](https://kaylousberg.itch.io/city-builder-bits) · [GitHub](https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0) | CC0 | `demo_city` 默认关城市皮；`godot/spike/assets/kaykit_city/`（gltf+atlas；见目录 ASSETS.md） | 无（可署名 Kay Lousberg） | 2026-07-19 |
 | planar_cart URDF/MJCF | 本仓库自研 F2 试点 | MIT（仓库许可） | `mujoco/models/mechs/planar_cart.urdf` → `planar_cart.xml`（fallback） | 无 | 2026-07-19 |
 | DiffBot URDF skin（F5） | [ros2_control_demos](https://github.com/ros-controls/ros2_control_demos) `@1c5c439` `ros2_control_demo_description/diffbot/` | Apache-2.0 | `mujoco/models/mechs/third_party/diffbot/` → `diffbot_planar.xml`（默认 world） | 保留 `LICENSE` | 2026-07-19 |
+| DiffBot+臂+爪 MJCF（V2a） | 本仓库自研（底盘几何对齐 DiffBot 皮） | MIT（仓库许可） | `mujoco/models/mechs/diffbot_arm_gripper.xml`；`demo_workshop` 默认机体 | 无 | 2026-07-19 |
+| Factory Kit 3.0（子集） | [kenney.nl/assets/factory-kit](https://kenney.nl/assets/factory-kit) | CC0 | `demo_workshop` viewer_only 皮；`godot/spike/assets/kenney_factory/`（见目录 ASSETS.md） | 无 | 2026-07-19 |

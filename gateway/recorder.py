@@ -25,6 +25,40 @@ def contract_hash(contract: dict[str, Any]) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+def _il_fields_from_contract(contract: dict[str, Any]) -> dict[str, Any]:
+    """Derive IL labeling fields from scene contract (V4a)."""
+    ext_root = contract.get("extensions") or {}
+    mw_il = ext_root.get("mw.il") if isinstance(ext_root, dict) else {}
+    if not isinstance(mw_il, dict):
+        mw_il = {}
+    task_id = mw_il.get("task_id")
+    if not task_id:
+        objectives = contract.get("objectives") or []
+        if objectives and isinstance(objectives[0], dict):
+            task_id = objectives[0].get("id")
+    difficulty = mw_il.get("difficulty") or "poc"
+    modes: list[str] = []
+    for spawn in contract.get("mech_spawns") or []:
+        if not isinstance(spawn, dict):
+            continue
+        mode = spawn.get("control_mode")
+        if mode and mode not in modes:
+            modes.append(str(mode))
+    tags = [str(t) for t in (contract.get("tags") or [])]
+    primary = None
+    if len(modes) == 1:
+        primary = modes[0]
+    elif modes:
+        primary = modes[0]
+    return {
+        "task_id": task_id,
+        "difficulty": str(difficulty),
+        "control_mode": primary,
+        "control_modes": modes,
+        "tags": tags,
+    }
+
+
 class SessionRecorder:
     """Write one session directory: header.json + frames.jsonl."""
 
@@ -57,6 +91,7 @@ class SessionRecorder:
 
         spawns = contract.get("mech_spawns") or []
         mech_refs = [s["model_ref"] for s in spawns if s.get("model_ref")]
+        il = _il_fields_from_contract(contract)
 
         self._header: dict[str, Any] = {
             "recording_version": RECORDING_VERSION,
@@ -66,6 +101,11 @@ class SessionRecorder:
             "contract_hash": contract_hash(contract),
             "level_id": contract.get("level_id"),
             "seed": contract.get("seed"),
+            "task_id": il["task_id"],
+            "difficulty": il["difficulty"],
+            "control_mode": il["control_mode"],
+            "control_modes": il["control_modes"],
+            "tags": il["tags"],
             "frame": contract.get("frame", "mineworld_zup_m"),
             "dt": dt,
             "sim_hz": sim_hz,

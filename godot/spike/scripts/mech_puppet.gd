@@ -25,6 +25,8 @@ const WHEEL_COLOR := Color(0.0, 0.0, 0.0)
 const CASTER_COLOR := Color(1.0, 1.0, 1.0)
 const FRONT_ARROW_SCENE := preload("res://assets/platformer/arrow.glb")
 const FRONT_ARROW_POS := Vector3(0.55, 0.55, 0.0)
+const ARM_COLOR := Color(0.45, 0.52, 0.58)
+const GRIPPER_COLOR := Color(0.7, 0.75, 0.8)
 
 var _prev_pos := Vector3.ZERO
 var _prev_yaw := 0.0
@@ -40,11 +42,18 @@ var last_mw_x := 0.0
 var last_mw_y := 0.0
 var last_mw_yaw := 0.0
 var _cart_built := false
+var _arm_built := false
 var _wheel_joint_names: PackedStringArray = PackedStringArray()
+var _arm_yaw: Node3D
+var _arm_shoulder: Node3D
+var _arm_elbow: Node3D
+var _finger_l: Node3D
+var _finger_r: Node3D
 
 
 func _ready() -> void:
 	ensure_planar_cart_visual()
+	_ensure_arm_visual()
 	_ensure_front_arrow()
 	apply_team_look()
 
@@ -161,6 +170,116 @@ func ensure_planar_cart_visual() -> void:
 		i += 1
 
 	_cart_built = true
+	_arm_built = false
+	_ensure_arm_visual()
+
+
+func _ensure_arm_visual() -> void:
+	"""V2b: simple geometric arm under Body, matching diffbot_arm_gripper joint names."""
+	ensure_planar_cart_visual()
+	var body := get_node_or_null("Body") as Node3D
+	if body == null:
+		return
+	if _arm_built and body.get_node_or_null("ArmMount") != null:
+		return
+	var old := body.get_node_or_null("ArmMount")
+	if old != null:
+		body.remove_child(old)
+		old.free()
+
+	var mount := Node3D.new()
+	mount.name = "ArmMount"
+	# MJCF arm_base at chassis (0.15, 0, 0.25) → Godot (x, z, -y)
+	mount.position = Vector3(0.15, 0.25, 0.0)
+	body.add_child(mount)
+
+	_arm_yaw = Node3D.new()
+	_arm_yaw.name = "ArmYaw"
+	mount.add_child(_arm_yaw)
+	var yaw_mesh := MeshInstance3D.new()
+	yaw_mesh.name = "YawLink"
+	var yaw_box := BoxMesh.new()
+	yaw_box.size = Vector3(0.1, 0.24, 0.1)
+	yaw_mesh.mesh = yaw_box
+	yaw_mesh.position = Vector3(0.0, 0.12, 0.0)
+	_tint_mesh(yaw_mesh, ARM_COLOR)
+	_arm_yaw.add_child(yaw_mesh)
+
+	_arm_shoulder = Node3D.new()
+	_arm_shoulder.name = "ArmShoulder"
+	_arm_shoulder.position = Vector3(0.0, 0.24, 0.0)
+	_arm_yaw.add_child(_arm_shoulder)
+	var upper := MeshInstance3D.new()
+	upper.name = "UpperArm"
+	var upper_box := BoxMesh.new()
+	upper_box.size = Vector3(0.36, 0.08, 0.08)
+	upper.mesh = upper_box
+	upper.position = Vector3(0.18, 0.0, 0.0)
+	_tint_mesh(upper, ARM_COLOR)
+	_arm_shoulder.add_child(upper)
+
+	_arm_elbow = Node3D.new()
+	_arm_elbow.name = "ArmElbow"
+	_arm_elbow.position = Vector3(0.36, 0.0, 0.0)
+	_arm_shoulder.add_child(_arm_elbow)
+	var fore := MeshInstance3D.new()
+	fore.name = "ForeArm"
+	var fore_box := BoxMesh.new()
+	fore_box.size = Vector3(0.28, 0.07, 0.07)
+	fore.mesh = fore_box
+	fore.position = Vector3(0.14, 0.0, 0.0)
+	_tint_mesh(fore, ARM_COLOR)
+	_arm_elbow.add_child(fore)
+
+	var palm := MeshInstance3D.new()
+	palm.name = "Palm"
+	var palm_box := BoxMesh.new()
+	palm_box.size = Vector3(0.08, 0.06, 0.12)
+	palm.mesh = palm_box
+	palm.position = Vector3(0.28, 0.0, 0.0)
+	_tint_mesh(palm, GRIPPER_COLOR)
+	_arm_elbow.add_child(palm)
+
+	_finger_l = MeshInstance3D.new()
+	_finger_l.name = "FingerL"
+	var fl := BoxMesh.new()
+	fl.size = Vector3(0.08, 0.025, 0.024)
+	(_finger_l as MeshInstance3D).mesh = fl
+	_finger_l.position = Vector3(0.34, 0.0, 0.05)
+	_tint_mesh(_finger_l as MeshInstance3D, GRIPPER_COLOR)
+	_arm_elbow.add_child(_finger_l)
+
+	_finger_r = MeshInstance3D.new()
+	_finger_r.name = "FingerR"
+	var fr := BoxMesh.new()
+	fr.size = Vector3(0.08, 0.025, 0.024)
+	(_finger_r as MeshInstance3D).mesh = fr
+	_finger_r.position = Vector3(0.34, 0.0, -0.05)
+	_tint_mesh(_finger_r as MeshInstance3D, GRIPPER_COLOR)
+	_arm_elbow.add_child(_finger_r)
+
+	_arm_built = true
+
+
+func _apply_arm_joints(joints: Variant) -> void:
+	"""Drive arm Node3Ds from state.joints (MW hinge Z→Godot Y; MW Y→Godot -Z)."""
+	if typeof(joints) != TYPE_DICTIONARY:
+		return
+	_ensure_arm_visual()
+	if _arm_yaw == null:
+		return
+	var j: Dictionary = joints
+	var yaw_q := float(j.get("arm_yaw", 0.0))
+	var sh_q := float(j.get("arm_shoulder", 0.0))
+	var el_q := float(j.get("arm_elbow", 0.0))
+	var grip := float(j.get("gripper", 0.0))
+	_arm_yaw.rotation = Vector3(0.0, yaw_q, 0.0)
+	# MW hinge axis +Y → Godot -Z
+	_arm_shoulder.basis = Basis(Vector3(0.0, 0.0, -1.0), sh_q)
+	_arm_elbow.basis = Basis(Vector3(0.0, 0.0, -1.0), el_q)
+	if _finger_l != null and _finger_r != null:
+		_finger_l.position = Vector3(0.34, 0.0, 0.05 + grip)
+		_finger_r.position = Vector3(0.34, 0.0, -0.05 - grip)
 
 
 func apply_team_look() -> void:
@@ -228,6 +347,7 @@ func apply_state(entity: Dictionary, t_sim: float) -> void:
 		position = _next_pos
 		rotation.y = _next_yaw
 	_apply_wheel_spin(entity.get("joints", {}))
+	_apply_arm_joints(entity.get("joints", {}))
 
 
 func _apply_wheel_spin(joints: Variant) -> void:

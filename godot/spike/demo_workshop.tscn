@@ -1,0 +1,179 @@
+[gd_scene load_steps=17 format=3 uid="uid://b0mineworldworkshop"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/ws_client.gd" id="2_ws"]
+[ext_resource type="Script" path="res://scripts/mech_puppet.gd" id="3_puppet"]
+[ext_resource type="PackedScene" path="res://assets/platformer/arrow.glb" id="4_arrow"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="5_camrig"]
+[ext_resource type="Script" path="res://scripts/workshop_dress.gd" id="6_dress"]
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
+sky_top_color = Color(0.42, 0.48, 0.55, 1)
+sky_horizon_color = Color(0.62, 0.64, 0.66, 1)
+ground_bottom_color = Color(0.28, 0.28, 0.3, 1)
+ground_horizon_color = Color(0.45, 0.45, 0.48, 1)
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.82, 0.84, 0.88, 1)
+ambient_light_energy = 0.55
+
+[sub_resource type="StandardMaterial3D" id="mat_ground"]
+albedo_color = Color(0.4, 0.41, 0.43, 1)
+roughness = 0.95
+
+[sub_resource type="PlaneMesh" id="mesh_ground"]
+material = SubResource("mat_ground")
+size = Vector2(30, 24)
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.52, 0.54, 0.58, 1)
+roughness = 0.88
+
+[sub_resource type="BoxMesh" id="mesh_wall_ns"]
+material = SubResource("mat_wall")
+size = Vector3(30, 4, 0.5)
+
+[sub_resource type="BoxMesh" id="mesh_wall_ew"]
+material = SubResource("mat_wall")
+size = Vector3(0.5, 4, 24)
+
+[sub_resource type="BoxMesh" id="mesh_bench"]
+material = SubResource("mat_wall")
+size = Vector3(4, 1, 2)
+
+[sub_resource type="StandardMaterial3D" id="mat_zone"]
+albedo_color = Color(0.2, 0.75, 0.45, 0.35)
+transparency = 1
+
+[sub_resource type="BoxMesh" id="mesh_zone"]
+material = SubResource("mat_zone")
+size = Vector3(4, 2, 4)
+
+[node name="DemoWorkshop" type="Node3D"]
+script = ExtResource("1_main")
+level_id = "demo_workshop"
+room_id = "demo"
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.353553, 0.612372, 0, 0.866025, 0.5, -0.707107, -0.353553, 0.612372, 15, 16, 0)
+shadow_enabled = true
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("5_camrig")
+target_path = NodePath("../MechPlayer")
+distance = 18.0
+min_distance = 4.0
+max_distance = 40.0
+pitch = -0.55
+yaw = 0.35
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 0)
+mesh = SubResource("mesh_ground")
+
+[node name="Authority" type="Node3D" parent="."]
+
+[node name="WallN" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 2, 12)
+mesh = SubResource("mesh_wall_ns")
+metadata/mujoco_entity_id = "wall_n"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="WallS" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 2, -12)
+mesh = SubResource("mesh_wall_ns")
+metadata/mujoco_entity_id = "wall_s"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="WallW" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+mesh = SubResource("mesh_wall_ew")
+metadata/mujoco_entity_id = "wall_w"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="WallE" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 2, 0)
+mesh = SubResource("mesh_wall_ew")
+metadata/mujoco_entity_id = "wall_e"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="Workbench" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.5, 8)
+mesh = SubResource("mesh_bench")
+metadata/mujoco_entity_id = "workbench"
+metadata/contract_kind = "static_obstacle"
+metadata/physics_role = "mujoco_authoritative"
+
+[node name="BinZone" type="MeshInstance3D" parent="Authority"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 1, 0)
+mesh = SubResource("mesh_zone")
+metadata/mujoco_entity_id = "trigger_bin"
+metadata/contract_kind = "trigger_aabb"
+
+[node name="Decor" type="Node3D" parent="."]
+script = ExtResource("6_dress")
+metadata/physics_role = "viewer_only"
+
+[node name="MechPlayer" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 0)
+script = ExtResource("3_puppet")
+entity_id = "mech_player"
+interp_delay = 0.05
+metadata/mujoco_entity_id = "mech_player"
+metadata/contract_kind = "mech_spawn"
+metadata/player_slot = 0
+metadata/model_ref = "mechs/diffbot_arm_gripper.xml"
+metadata/spawn_z = 0.5
+
+[node name="FrontArrow" parent="MechPlayer" instance=ExtResource("4_arrow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.55, 0)
+
+[node name="WsClient" type="Node" parent="."]
+script = ExtResource("2_ws")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+layer = 10
+visible = false
+
+[node name="Margin" type="MarginContainer" parent="Hud"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+
+[node name="PanelContainer" type="PanelContainer" parent="Hud/Margin"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+custom_minimum_size = Vector2(480, 0)
+
+[node name="MarginContainer" type="MarginContainer" parent="Hud/Margin/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Label" type="Label" parent="Hud/Margin/PanelContainer/MarginContainer"]
+layout_mode = 2
+text = "MineWorld · demo_workshop
+WASD · QE · arm sliders · push crate → green bin"

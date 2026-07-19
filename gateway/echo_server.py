@@ -47,7 +47,7 @@ STATE_EVERY_N_TICKS = max(1, SIM_HZ // STATE_HZ)
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONTRACT = REPO_ROOT / "examples" / "contracts" / "demo_city.json"
+DEFAULT_CONTRACT = REPO_ROOT / "examples" / "contracts" / "demo_workshop.json"
 DEFAULT_RECORD_DIR = REPO_ROOT / "recordings" / "sessions"
 OBSTACLE_FRICTION = (0.8, 0.02, 0.01)  # aligned with ground/chassis defaults
 DEMO_ROOM_ID = "demo"
@@ -58,6 +58,15 @@ def _yaw_to_quat(yaw: float) -> dict[str, float]:
     """Z-up yaw (radians) → wxyz quaternion."""
     half = 0.5 * yaw
     return {"qw": math.cos(half), "qx": 0.0, "qy": 0.0, "qz": math.sin(half)}
+
+
+class CmdRejected(Exception):
+    """Client cmd rejected with a protocol error code."""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
 
 
 @dataclass
@@ -71,12 +80,24 @@ class MechState:
     vy: float = 0.0
     yaw_rate: float = 0.0
     controlled: bool = False
+    joint_targets: dict[str, float] = field(default_factory=dict)
 
     def reset_pose(self, pose: dict[str, Any]) -> None:
         self.x = float(pose.get("x", 0.0))
         self.y = float(pose.get("y", 0.0))
         self.z = float(pose.get("z", 0.5))
         self.yaw = float(pose.get("yaw", 0.0))
+
+    def _apply_joint_targets(self, targets: Any) -> None:
+        """Validate and merge joint_targets; base class rejects all names."""
+        if not isinstance(targets, dict):
+            raise CmdRejected("BAD_JOINT_TARGETS", "joint_targets must be an object")
+        unknown = [str(k) for k in targets]
+        if unknown:
+            raise CmdRejected(
+                "UNKNOWN_JOINT",
+                f"unknown joint_targets: {', '.join(unknown)}",
+            )
 
     def apply_cmd(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
         """Apply cmd payload; return events to emit."""
@@ -104,11 +125,15 @@ class MechState:
             )
             return events
 
+        if not self.controlled:
+            return events
         mode = payload.get("control_mode", "velocity")
-        if mode == "velocity" and self.controlled:
+        if mode == "velocity":
             self.vx = float(payload.get("vx", 0.0))
             self.vy = float(payload.get("vy", 0.0))
             self.yaw_rate = float(payload.get("yaw_rate", 0.0))
+        if "joint_targets" in payload:
+            self._apply_joint_targets(payload.get("joint_targets"))
         return events
 
     def step(self, dt: float) -> None:
@@ -187,9 +212,51 @@ class MujocoMech(MechState):
         self._wheel_r = 0.15
         self._wheel_angle_l = 0.0
         self._wheel_angle_r = 0.0
+        self._pos_acts: dict[str, int] = {}
+        self._pos_qadr: dict[str, int] = {}
+        self._pos_dadr: dict[str, int] = {}
         self._resolve_diff_drive()
+        self._resolve_position_actuators()
         self._substeps = max(1, int(round(DT / model.opt.timestep)))
         self.reset_pose({})
+
+    def _resolve_position_actuators(self) -> None:
+        """Map non-chassis actuators (arm/gripper) for joint_targets (V1b)."""
+        chassis = {"vx", "vy", "yaw_rate"}
+        model = self._model
+        for aid in range(model.nu):
+            aname = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_ACTUATOR, aid) or ""
+            if self._prefix and not aname.startswith(self._prefix):
+                continue
+            short = aname[len(self._prefix) :] if self._prefix else aname
+            if short in chassis:
+                continue
+            jid = int(model.actuator_trnid[aid, 0])
+            if jid < 0:
+                continue
+            self._pos_acts[short] = aid
+            self._pos_qadr[short] = int(model.jnt_qposadr[jid])
+            self._pos_dadr[short] = int(model.jnt_dofadr[jid])
+            self.joint_targets[short] = float(self._data.qpos[self._pos_qadr[short]])
+        if self._pos_acts:
+            LOG.info(
+                "V1b position acts entity=%s joints=%s",
+                self.entity_id,
+                sorted(self._pos_acts),
+            )
+
+    def _apply_joint_targets(self, targets: Any) -> None:
+        """Merge validated joint_targets into held position setpoints."""
+        if not isinstance(targets, dict):
+            raise CmdRejected("BAD_JOINT_TARGETS", "joint_targets must be an object")
+        unknown = [str(k) for k in targets if str(k) not in self._pos_acts]
+        if unknown:
+            raise CmdRejected(
+                "UNKNOWN_JOINT",
+                f"unknown joint_targets: {', '.join(unknown)}",
+            )
+        for key, val in targets.items():
+            self.joint_targets[str(key)] = float(val)
 
     def _resolve_diff_drive(self) -> None:
         """Pick left/right wheel hinge joints for this mech prefix."""
@@ -254,17 +321,22 @@ class MujocoMech(MechState):
         mujoco.mj_forward(self._model, self._data)
 
     def apply_ctrl(self) -> None:
-        """Write this mech's planar velocity actuators (shared MjData)."""
+        """Write chassis velocity + held arm/gripper position actuators."""
         if not self.controlled:
             self._data.ctrl[self._act_vx] = 0.0
             self._data.ctrl[self._act_vy] = 0.0
             self._data.ctrl[self._act_yaw] = 0.0
-            return
-        yaw = float(self._data.qpos[self._qyaw])
-        c, s = math.cos(yaw), math.sin(yaw)
-        self._data.ctrl[self._act_vx] = c * self.vx - s * self.vy
-        self._data.ctrl[self._act_vy] = s * self.vx + c * self.vy
-        self._data.ctrl[self._act_yaw] = self.yaw_rate
+        else:
+            yaw = float(self._data.qpos[self._qyaw])
+            c, s = math.cos(yaw), math.sin(yaw)
+            self._data.ctrl[self._act_vx] = c * self.vx - s * self.vy
+            self._data.ctrl[self._act_vy] = s * self.vx + c * self.vy
+            self._data.ctrl[self._act_yaw] = self.yaw_rate
+        for name, aid in self._pos_acts.items():
+            q = self.joint_targets.get(name)
+            if q is None:
+                q = float(self._data.qpos[self._pos_qadr[name]])
+            self._data.ctrl[aid] = q
 
     def _sync_wheels(self, dt: float) -> None:
         """Overwrite wheel qpos/qvel from body vx / yaw_rate (kinematic DiffBot)."""
@@ -319,6 +391,9 @@ class MujocoMech(MechState):
                 short = jname[len(self._prefix) :] if self._prefix else jname
                 joints[short] = float(d.qpos[qadr])
                 joint_vels[short] = float(d.qvel[dadr])
+        for name, qadr in self._pos_qadr.items():
+            joints[name] = float(d.qpos[qadr])
+            joint_vels[name] = float(d.qvel[self._pos_dadr[name]])
         return {
             "entity_id": self.entity_id,
             "base_pose": {"x": self.x, "y": self.y, "z": self.z, "yaw": self.yaw, **q},
@@ -617,16 +692,19 @@ class EchoGateway:
         session.recorder = None
 
     def _applied_cmd(self, mech: MechState) -> dict[str, Any] | None:
-        """Control applied this tick (velocity setpoints), or None if idle."""
+        """Control applied this tick (velocity + joint_targets), or None if idle."""
         if not mech.controlled:
             return None
-        return {
+        out: dict[str, Any] = {
             "entity_id": mech.entity_id,
             "control_mode": "velocity",
             "vx": mech.vx,
             "vy": mech.vy,
             "yaw_rate": mech.yaw_rate,
         }
+        if mech.joint_targets:
+            out["joint_targets"] = dict(mech.joint_targets)
+        return out
 
     def _build_mujoco_world(self, model_path: Path) -> "mujoco.MjModel":
         """Build multi-mech world: ground + one attached chassis per spawn (F7).
@@ -887,7 +965,18 @@ class EchoGateway:
                 ),
             )
             return
-        events = mech.apply_cmd(payload)
+        try:
+            events = mech.apply_cmd(payload)
+        except CmdRejected as err:
+            await send_json(
+                session.ws,
+                envelope(
+                    "error",
+                    session_id=session.session_id,
+                    payload={"code": err.code, "message": err.message},
+                ),
+            )
+            return
         session.pending_events.extend(events)
 
     async def _handle_join(self, session: Session, payload: dict[str, Any]) -> None:

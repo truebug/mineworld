@@ -1,7 +1,7 @@
 {
   "contract_version": "0.1",
   "level_id": "demo_city",
-  "seed": 42,
+  "seed": 152596,
   "frame": "mineworld_zup_m",
   "sim": {
     "dt": 0.02
@@ -273,6 +273,38 @@
       ],
       "pose": {
         "x": 11.0,
+        "y": 5.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_2_2",
+      "shape": "box",
+      "size": [
+        4.0,
+        4.0,
+        3.5
+      ],
+      "pose": {
+        "x": 19.5,
+        "y": 5.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_3_2",
+      "shape": "box",
+      "size": [
+        4.0,
+        4.0,
+        3.5
+      ],
+      "pose": {
+        "x": 28.0,
         "y": 5.5,
         "z": 1.75,
         "yaw": 0.0
