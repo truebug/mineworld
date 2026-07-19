@@ -60,7 +60,8 @@ case "$TARGET" in
     echo "  .venv/bin/python scripts/serve_web_demo.py"
     echo "Gateway:"
     echo "  .venv/bin/python gateway/echo_server.py --host 127.0.0.1"
-    echo "Expect console: [MW] key bridge installed on document"
+    echo "Expect console: [MW] key bridge: document listeners registered"
+    echo "Hard-refresh browser (Cmd+Shift+R) after re-export."
     ;;
   macos|macOS|osx)
     PRESET="macOS"

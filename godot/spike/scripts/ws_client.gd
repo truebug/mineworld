@@ -51,7 +51,9 @@ func _process(_delta: float) -> void:
 func send_msg(msg: Dictionary) -> void:
 	if _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
 		return
-	_ws.send_text(JSON.stringify(msg))
+	var err := _ws.send_text(JSON.stringify(msg))
+	if err != OK:
+		push_warning("[MW] ws send failed: %s" % error_string(err))
 
 
 func send_cmd(payload: Dictionary) -> void:

@@ -29,7 +29,7 @@
 |------|------|------------|
 | 单机可玩闭环 M4 | ✅ Godot + Gateway + 录制 + 终点 | — |
 | macOS 导出 | ✅ preset + `export_godot.sh macos` | 非主交付 |
-| **Web 导出** | 🚧 preset `Web` + `export_godot.sh web` + `serve_web_demo.py` | 需本机 Web 模板；尚未在 CI 验证出包 |
+| **Web 导出** | ✅ preset + 单线程导出 + `serve_web_demo.py`；浏览器键盘桥已通 | CI 出包可选；手感 T2.7 仍暂缓 |
 | Gateway 绑定 | 默认 `127.0.0.1`（安全默认） | 公网需反代 `wss` + 显式 `--host` |
 | 浏览器连 Gateway | 客户端可读 `window.MINEWORLD_GATEWAY` | 生产必须 `wss://` 同源/CORS 策略 |
 | 多连接 | WS 可多连，但 **共用一个 `MjData`** | **不能**当真多人同仿真 |
@@ -37,7 +37,7 @@
 | TLS / 域名 / CDN | 无 | 线上硬前置 |
 | 水平扩展 | 无 Worker 池 | T4.1 |
 
-**结论**：本地 Web 单人 Demo（W1）可在 1–2 日内落地；**公网多人**必须先做 **一会话一仿真**（W2），再谈同世界多人（W3）。不可把「能开两个浏览器标签」误当成多人已完成。
+**结论**：W1 本地 Web 单人已通。**公网多人**必须先做 **一会话一仿真**（W2.3），再谈同世界多人（W3）。不可把「能开两个浏览器标签」误当成多人已完成。
 
 ---
 
@@ -50,14 +50,14 @@ W3  同关多人最小      →  多机甲或观战；控制权；简单大厅
 W4  线上 Demo 加固    →  限流、录制分区、监控、短链分享
 ```
 
-### W1 — 本地 Web 单人（Now）
+### W1 — 本地 Web 单人（Done · 2026-07-19）
 
-| ID | 任务 | 验收 |
-|----|------|------|
-| W1.1 | 安装 Godot **Web** 导出模板（与编辑器同版本） | 管理器「已安装模板」含 Web |
-| W1.2 | `bash scripts/export_godot.sh web` | `dist/web/index.html` 存在 |
-| W1.3 | `python scripts/serve_web_demo.py`（COOP/COEP） | 浏览器打开可进场景 |
-| W1.4 | Gateway `echo_server.py` + 页面内遥操到终点 | `objective_complete` / HUD SUCCESS |
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| W1.1 | 安装 Godot **Web** 导出模板（与编辑器同版本） | 管理器「已安装模板」含 Web | [x] |
+| W1.2 | `bash scripts/export_godot.sh web` | `dist/web/index.html` 存在 | [x] |
+| W1.3 | `python scripts/serve_web_demo.py`（COOP/COEP） | 浏览器打开可进场景 | [x] |
+| W1.4 | Gateway + 页面内遥操（含键盘桥 / entity_id） | 位姿跟 state；可到终点 | [x] |
 
 **命令摘要**：
 
