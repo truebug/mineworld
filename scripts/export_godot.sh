@@ -55,7 +55,20 @@ case "$TARGET" in
       sed -i.bak 's#</head>#<script src="mw_key_bridge.js"></script></head>#' "$OUT_FILE"
       rm -f "$OUT_FILE.bak"
     fi
-    echo "OK: $OUT_DIR (single-thread Web + mw_key_bridge.js)"
+    if ! grep -q 'id="mw-hud"' "$OUT_FILE"; then
+      echo "ERROR: custom shell missing #mw-hud (check html/custom_html_shell)" >&2
+      exit 1
+    fi
+    # Guard: #mw-hud must be in <body>, not <head> (invalid HTML → left-clip bugs).
+    python3 - "$OUT_FILE" <<'PY'
+import pathlib, sys
+html = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+parts = html.lower().split("<body", 1)
+if len(parts) < 2 or 'id="mw-hud"' not in parts[1]:
+    raise SystemExit("ERROR: #mw-hud is not inside <body>")
+print("OK: #mw-hud is inside <body>")
+PY
+    echo "OK: $OUT_DIR (single-thread Web + mw_key_bridge.js + body HUD)"
     echo "Serve:"
     echo "  .venv/bin/python scripts/serve_web_demo.py"
     echo "Gateway:"

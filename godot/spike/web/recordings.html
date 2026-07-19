@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MineWorld · Recordings</title>
+  <style>
+    :root {
+      --bg: #12141a;
+      --panel: #1c2028;
+      --line: #2e3440;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #5dff8a;
+      --fail: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 20px 24px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 16px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    header a { color: var(--accent); text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    main {
+      display: grid;
+      grid-template-columns: minmax(280px, 420px) 1fr;
+      gap: 0;
+      min-height: calc(100vh - 64px);
+    }
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+    }
+    #list {
+      border-right: 1px solid var(--line);
+      overflow: auto;
+      max-height: calc(100vh - 64px);
+      padding: 12px;
+    }
+    .session {
+      width: 100%;
+      text-align: left;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: inherit;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .session:hover, .session.active { border-color: #5a6578; }
+    .session.active { outline: 1px solid var(--accent); }
+    .session .id {
+      font: 12px/1.3 ui-monospace, Menlo, Consolas, monospace;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .session .meta { margin-top: 4px; font-size: 13px; }
+    .badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: 6px;
+    }
+    .badge.ok { background: rgba(93,255,138,0.15); color: var(--accent); }
+    .badge.bad { background: rgba(255,107,107,0.15); color: var(--fail); }
+    .badge.neutral { background: rgba(154,160,166,0.15); color: var(--muted); }
+    #detail {
+      padding: 16px 20px 24px;
+      overflow: auto;
+    }
+    #detail h2 { margin: 0 0 8px; font-size: 18px; }
+    #detail .empty { color: var(--muted); margin-top: 40px; }
+    #plot {
+      width: 100%;
+      max-width: 720px;
+      height: 420px;
+      background: #0b0d11;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+    .actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .actions a, .actions button {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font: inherit;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .actions a:hover, .actions button:hover { border-color: #6a7588; }
+    #status { color: var(--muted); margin-top: 8px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MineWorld · Recordings</h1>
+    <a href="/">← 回游戏</a>
+    <span id="count" style="color:var(--muted)"></span>
+  </header>
+  <main>
+    <aside id="list"></aside>
+    <section id="detail">
+      <p class="empty">选择左侧一条会话查看轨迹预览（本地 recordings/sessions）。</p>
+    </section>
+  </main>
+  <script>
+(function () {
+  const listEl = document.getElementById("list");
+  const detailEl = document.getElementById("detail");
+  const countEl = document.getElementById("count");
+  let selected = null;
+
+  function badgeClass(outcome) {
+    if (outcome === "success") return "ok";
+    if (outcome === "fail" || outcome === "abort") return "bad";
+    return "neutral";
+  }
+
+  function fmtDur(s) {
+    if (s == null || s === "") return "—";
+    const n = Number(s);
+    if (!Number.isFinite(n)) return String(s);
+    return n.toFixed(1) + "s";
+  }
+
+  async function loadList() {
+    const res = await fetch("/api/recordings");
+    const data = await res.json();
+    const sessions = data.sessions || [];
+    countEl.textContent = sessions.length + " sessions";
+    listEl.innerHTML = "";
+    if (!sessions.length) {
+      listEl.innerHTML = "<p style='color:var(--muted);padding:8px'>暂无录制。跑一局游戏后会写入 recordings/sessions/。</p>";
+      return;
+    }
+    sessions.forEach((s) => {
+      const btn = document.createElement("button");
+      btn.className = "session";
+      btn.type = "button";
+      btn.innerHTML =
+        "<div class='id'>" + s.session_id + "</div>" +
+        "<div class='meta'>" +
+        "<span class='badge " + badgeClass(s.outcome) + "'>" + (s.outcome || "?") + "</span>" +
+        (s.level_id || "?") + " · " + fmtDur(s.duration_sim_s) +
+        " · " + (s.num_frames ?? "?") + " frames" +
+        "</div>";
+      btn.addEventListener("click", () => selectSession(s, btn));
+      listEl.appendChild(btn);
+    });
+  }
+
+  function extractTracks(frames) {
+    const tracks = {};
+    for (const frame of frames) {
+      const t = frame.t_sim ?? 0;
+      const state = frame.state || {};
+      for (const ent of state.entities || []) {
+        const id = ent.entity_id;
+        if (!id) continue;
+        const pose = ent.base_pose || {};
+        if (!tracks[id]) tracks[id] = [];
+        tracks[id].push({ t, x: Number(pose.x) || 0, y: Number(pose.y) || 0 });
+      }
+    }
+    return tracks;
+  }
+
+  function drawPlot(canvas, tracks) {
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth;
+    const cssH = canvas.clientHeight;
+    canvas.width = Math.floor(cssW * dpr);
+    canvas.height = Math.floor(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+    ctx.fillStyle = "#0b0d11";
+    ctx.fillRect(0, 0, cssW, cssH);
+
+    const pts = [];
+    Object.values(tracks).forEach((arr) => pts.push(...arr));
+    if (!pts.length) {
+      ctx.fillStyle = "#9aa0a6";
+      ctx.fillText("no entity poses in frames", 16, 28);
+      return;
+    }
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of pts) {
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    }
+    const pad = 28;
+    const spanX = Math.max(0.5, maxX - minX);
+    const spanY = Math.max(0.5, maxY - minY);
+    const scale = Math.min((cssW - pad * 2) / spanX, (cssH - pad * 2) / spanY);
+    const midX = (minX + maxX) / 2;
+    const midY = (minY + maxY) / 2;
+    const toScreen = (x, y) => [
+      cssW / 2 + (x - midX) * scale,
+      cssH / 2 - (y - midY) * scale,
+    ];
+
+    ctx.strokeStyle = "#2e3440";
+    ctx.beginPath();
+    ctx.moveTo(pad, cssH / 2); ctx.lineTo(cssW - pad, cssH / 2);
+    ctx.moveTo(cssW / 2, pad); ctx.lineTo(cssW / 2, cssH - pad);
+    ctx.stroke();
+
+    const colors = ["#5dff8a", "#6cb6ff", "#ffd166", "#c77dff", "#ff6b6b"];
+    let i = 0;
+    for (const [eid, arr] of Object.entries(tracks)) {
+      const color = colors[i++ % colors.length];
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      arr.forEach((p, idx) => {
+        const [sx, sy] = toScreen(p.x, p.y);
+        if (idx === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      });
+      ctx.stroke();
+      if (arr.length) {
+        const [ex, ey] = toScreen(arr[arr.length - 1].x, arr[arr.length - 1].y);
+        ctx.beginPath();
+        ctx.arc(ex, ey, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = "12px ui-monospace, monospace";
+        ctx.fillText(eid, ex + 8, ey - 8);
+      }
+    }
+  }
+
+  async function selectSession(s, btn) {
+    selected = s.session_id;
+    listEl.querySelectorAll(".session").forEach((el) => el.classList.remove("active"));
+    btn.classList.add("active");
+    detailEl.innerHTML =
+      "<h2>" + s.session_id + "</h2>" +
+      "<div id='status'>加载 frames…</div>" +
+      "<canvas id='plot'></canvas>" +
+      "<div class='actions'>" +
+      "<a href='/api/recordings/" + encodeURIComponent(s.session_id) + "' target='_blank'>header.json</a>" +
+      "<a href='/api/recordings/" + encodeURIComponent(s.session_id) + "/frames' target='_blank'>frames.jsonl</a>" +
+      "</div>";
+    const status = document.getElementById("status");
+    const canvas = document.getElementById("plot");
+    try {
+      const res = await fetch("/api/recordings/" + encodeURIComponent(s.session_id) + "/frames");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const text = await res.text();
+      const frames = text.split("\n").filter(Boolean).map((line) => JSON.parse(line));
+      const tracks = extractTracks(frames);
+      status.textContent =
+        (s.level_id || "?") + " · outcome=" + (s.outcome || "?") +
+        " · " + frames.length + " frames · entities: " +
+        (Object.keys(tracks).join(", ") || "(none)");
+      drawPlot(canvas, tracks);
+    } catch (err) {
+      status.textContent = "加载失败: " + err;
+    }
+  }
+
+  loadList().catch((err) => {
+    listEl.innerHTML = "<p style='color:var(--fail);padding:8px'>API 失败: " + err + "</p>";
+  });
+})();
+  </script>
+</body>
+</html>

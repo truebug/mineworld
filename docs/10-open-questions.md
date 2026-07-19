@@ -45,9 +45,10 @@
 
 | ID | 问题 | 备注 | 状态 |
 |----|------|------|------|
-| D1 | 录制存储位置 | 本地目录 / S3 / 时序库 | Open（**不阻塞 M4**；POC 本地 `recordings/` 已够） |
+| D1 | 录制存储位置 | 本地目录 / S3 / 时序库 | **Partial**：POC 已本地 `recordings/sessions/<id>/`（单人/多人 join 即录，`--no-record` 可关）。D5 已用 `serve_web_demo` 列会话；存储抽象 `RecordingStore`（FS → SQLite → RDS/S3）不改 `header.json`+`frames.jsonl` 语义 |
 | D2 | 玩家标识脱敏 | UUID 映射表 | Open |
 | D3 | 数据许可法律模板 | 商业前必备 | Open |
+| L1 | 成品 Godot 地图包作默认关 | Kenney/CC0 场景包 vs 自建；视觉与权威障碍分离 | Open（见 [09](09-todo.md) D6） |
 
 ---
 

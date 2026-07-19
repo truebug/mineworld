@@ -50,7 +50,16 @@
 ## 4. 坐标系映射（D1 已冻结）
 
 契约/协议为 **米 · 右手系 · Z-up**；Godot 为 **右手系 · Y-up**。映射集中在傀儡脚本一处（`godot/spike/scripts/mech_puppet.gd`）：
-相机由 `scripts/camera_rig.gd` 提供：每帧跟随机甲位置、世界系 yaw/pitch（机甲自转不甩镜头）、右键/中键拖动环绕、滚轮 3–30m 缩放。纯表现层，不上行任何协议数据。
+相机由 `scripts/camera_rig.gd` 提供：每帧跟随机甲位置、世界系 yaw/pitch（机甲自转不甩镜头）。纯表现层，不上行任何协议数据。
+
+| 操作 | 效果 |
+|------|------|
+| 右键 / 中键拖动 | 环绕（orbit） |
+| 方向键 ↑↓←→ | 地面平移视角（`look_offset`） |
+| 滚轮 | 缩放（场景可配 3–48m） |
+| C | 视角中心回到机甲 |
+
+机甲遥操仍为 **WASD 移动 / QE 转向 / T 接管 / R 释放**（方向键已留给相机，不再开车）。
 
 ```gdscript
 godot_pos = Vector3(mw.x, mw.z, -mw.y)
@@ -76,9 +85,12 @@ rotation.y = yaw          # Z-up yaw（弧度）→ Godot 绕 Y 轴
 
 ```bash
 bash scripts/export_godot.sh web
+bash scripts/serve_web.sh restart    # 推荐：自动杀掉旧 :8080
+# 或：.venv/bin/python scripts/serve_web_demo.py
 bash scripts/export_godot.sh macos
-.venv/bin/python scripts/serve_web_demo.py
 ```
+
+录制历史（D5）：同进程 HTTP `GET /api/recordings*`，页面 `/recordings.html`（游戏内右上角 Recordings）。
 
 ### 5.3 无头自动化（CI）
 
@@ -117,7 +129,7 @@ godot/
 - [x] `WebSocketPeer` 连接 Gateway 成功（`hello` 解析、`session_id` 存储）
 - [x] 无头 smoke 通过（M1）
 - [x] 键盘 cmd 驱动 state 回显（WASD/QE）
-- [x] 跟随环绕相机（CameraRig：RMB/MMB 环绕、滚轮缩放）
+- [x] 跟随环绕相机（CameraRig：RMB/MMB 环绕、滚轮缩放、方向键平移、C 回中）
 - [x] tutorial_02 城市关人工验收（6 实体、Kenney 资产）
 - [x] 原生导出管线（T3.4：`export_presets.cfg` + `scripts/export_godot.sh`；本机需导出模板）
 - [ ] 契约导出编辑器插件（P1）

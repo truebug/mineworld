@@ -50,6 +50,10 @@ var _web_key_logged := false
 var _puppets: Dictionary = {}
 var _controlled_entity_id := "mech_player"
 var _joined_room_id := ""
+var _banner_layer: CanvasLayer
+var _banner_title: Label
+var _banner_sub: Label
+var _sfx: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -65,6 +69,7 @@ func _ready() -> void:
 	var mech_b := get_node_or_null("MechPlayerB")
 	if mech_b != null:
 		_puppets["mech_player_b"] = mech_b
+	_ensure_mission_banner()
 	_ensure_hud_layout()
 	call_deferred("_ensure_hud_layout")
 	if not get_viewport().size_changed.is_connected(_ensure_hud_layout):
@@ -89,12 +94,15 @@ func _resolve_hud_label() -> Label:
 
 
 func _ensure_hud_layout() -> void:
-	"""Desktop: top-left shrink panel. Web: hide Godot HUD (DOM overlay instead)."""
+	"""Desktop: top-left shrink panel. Web: remove Godot Hud (DOM #mw-hud only)."""
+	var hud := get_node_or_null("Hud") as CanvasLayer
 	if _is_web:
-		var hud := get_node_or_null("Hud") as CanvasLayer
+		# Free Godot Control HUD entirely — visible=false still left a clipped panel on Web.
 		if hud != null:
-			hud.visible = false
+			hud.queue_free()
 		return
+	if hud != null:
+		hud.visible = true
 	var margin := get_node_or_null("Hud/Margin") as MarginContainer
 	if margin != null:
 		margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -111,14 +119,130 @@ func _ensure_hud_layout() -> void:
 	panel.custom_minimum_size = Vector2(480, 0)
 
 
+func _ensure_mission_banner() -> void:
+	"""Build a centered SUCCESS/FAIL banner (desktop CanvasLayer; web uses DOM)."""
+	if _banner_layer != null:
+		return
+	_banner_layer = CanvasLayer.new()
+	_banner_layer.name = "MissionBanner"
+	_banner_layer.layer = 100
+	_banner_layer.visible = false
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0, 0, 0, 0.35)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var col := VBoxContainer.new()
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner_title = Label.new()
+	_banner_title.text = "SUCCESS"
+	_banner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner_title.add_theme_font_size_override("font_size", 96)
+	_banner_title.add_theme_color_override("font_color", Color(0.36, 1.0, 0.54))
+	_banner_sub = Label.new()
+	_banner_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner_sub.add_theme_font_size_override("font_size", 20)
+	_banner_sub.add_theme_color_override("font_color", Color(0.95, 0.96, 0.97))
+	col.add_child(_banner_title)
+	col.add_child(_banner_sub)
+	center.add_child(col)
+	root.add_child(dim)
+	root.add_child(center)
+	_banner_layer.add_child(root)
+	add_child(_banner_layer)
+	_sfx = AudioStreamPlayer.new()
+	_sfx.name = "MissionSfx"
+	add_child(_sfx)
+
+
 func _push_web_hud(text: String) -> void:
-	"""Web-only: update static #mw-hud in index.html (avoids Godot Control clip)."""
+	"""Web-only: ensure #mw-hud is last child of body with inline styles (no clip)."""
 	var payload := JSON.stringify(text)
 	JavaScriptBridge.eval(
-		"(function(t){var el=document.getElementById('mw-hud');"
-		+ "if(el){el.textContent=t;}})(%s);" % payload,
+		"(function(t){"
+		+ "var el=document.getElementById('mw-hud');"
+		+ "if(!el){el=document.createElement('pre');el.id='mw-hud';}"
+		+ "if(el.parentElement!==document.body){document.body.appendChild(el);}"
+		+ "else{document.body.appendChild(el);}"
+		+ "el.textContent=t;"
+		+ "el.setAttribute('style',"
+		+ "'position:fixed!important;left:16px!important;top:16px!important;"
+		+ "right:auto!important;bottom:auto!important;transform:none!important;"
+		+ "z-index:2147483646!important;margin:0!important;padding:12px 14px!important;"
+		+ "max-width:min(520px,calc(100vw - 32px))!important;width:auto!important;"
+		+ "height:auto!important;overflow:visible!important;clip:auto!important;"
+		+ "clip-path:none!important;background:rgba(20,22,28,0.92)!important;"
+		+ "color:#e8eaed!important;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace!important;"
+		+ "white-space:pre-wrap!important;word-break:break-word!important;"
+		+ "border-radius:8px!important;pointer-events:none!important;"
+		+ "box-shadow:0 2px 12px rgba(0,0,0,0.45)!important;border:1px solid #3d4450!important');"
+		+ "})(%s);" % payload,
 		true
 	)
+
+
+func _show_mission_result(ok: bool, detail: String) -> void:
+	"""Show big SUCCESS/FAIL + short beep (desktop Label / web DOM)."""
+	var title := "SUCCESS" if ok else "FAIL"
+	var sub := detail if detail != "" else ("reach zone OK" if ok else "objective failed")
+	if _is_web:
+		var payload := JSON.stringify({"ok": ok, "title": title, "sub": sub})
+		JavaScriptBridge.eval(
+			"(function(p){var el=document.getElementById('mw-success');"
+			+ "if(!el){return;}el.classList.toggle('fail',!p.ok);"
+			+ "el.classList.add('show');"
+			+ "var t=el.querySelector('.mw-title');if(t){t.textContent=p.title;}"
+			+ "var s=el.querySelector('.mw-sub');if(s){s.textContent=p.sub;}"
+			+ "try{var Ctx=window.AudioContext||window.webkitAudioContext;var c=new Ctx();"
+			+ "var o=c.createOscillator();var g=c.createGain();"
+			+ "o.type='sine';o.frequency.value=p.ok?880:220;"
+			+ "g.gain.setValueAtTime(0.18,c.currentTime);"
+			+ "g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.45);"
+			+ "o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+0.45);}"
+			+ "catch(e){}})(%s);" % payload,
+			true
+		)
+		return
+	if _banner_title != null:
+		_banner_title.text = title
+		_banner_title.add_theme_color_override(
+			"font_color",
+			Color(0.36, 1.0, 0.54) if ok else Color(1.0, 0.42, 0.42),
+		)
+	if _banner_sub != null:
+		_banner_sub.text = sub
+	if _banner_layer != null:
+		_banner_layer.visible = true
+	_play_mission_beep(ok)
+
+
+func _play_mission_beep(ok: bool) -> void:
+	"""Play a short generated beep without shipping audio assets."""
+	if _sfx == null:
+		return
+	var sample_hz := 22050
+	var duration := 0.4
+	var n := int(sample_hz * duration)
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	var freq := 880.0 if ok else 220.0
+	for i in n:
+		var t := float(i) / float(sample_hz)
+		var env := maxf(0.0, 1.0 - t / duration)
+		var sample := int(sin(t * TAU * freq) * 0.28 * env * 32767.0)
+		data.encode_s16(i * 2, sample)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = sample_hz
+	stream.data = data
+	_sfx.stream = stream
+	_sfx.play()
 
 
 func _install_web_keyboard_bridge() -> void:
@@ -147,6 +271,8 @@ func _on_dom_key_event(args: Array) -> void:
 	if not _web_key_logged and down:
 		_web_key_logged = true
 		print("[MW] first key from document: ", code)
+	if down and code == "KeyC" and camera_rig != null and camera_rig.has_method("reset_look_offset"):
+		camera_rig.reset_look_offset()
 	if _WEB_BLOCK_CODES.has(code):
 		event.preventDefault()
 	if down and not bool(event.repeat):
@@ -294,11 +420,13 @@ func _on_event(payload: Dictionary) -> void:
 		"objective_complete":
 			_mission_done = true
 			_status_line = "SUCCESS · %s" % payload.get("objective_id", "?")
+			_show_mission_result(true, str(payload.get("objective_id", "reach_finish")))
 			if _controlled:
 				ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
 		"objective_failed":
 			_mission_done = true
 			_status_line = "FAIL · %s" % payload.get("objective_id", "?")
+			_show_mission_result(false, str(payload.get("objective_id", "objective")))
 			if _controlled:
 				ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
 	_update_hud()
@@ -341,6 +469,19 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	# Web: arrow keys pan camera (document bridge). Desktop: camera_rig reads Input.
+	if _is_web and camera_rig != null and camera_rig.has_method("pan_axes"):
+		var pan_r := 0.0
+		var pan_f := 0.0
+		if _web_key("ArrowRight"):
+			pan_r += 1.0
+		if _web_key("ArrowLeft"):
+			pan_r -= 1.0
+		if _web_key("ArrowUp"):
+			pan_f += 1.0
+		if _web_key("ArrowDown"):
+			pan_f -= 1.0
+		camera_rig.pan_axes(pan_r, pan_f, delta)
 	if ws.session_id == "":
 		return
 	if not _controlled or _mission_done:
@@ -383,30 +524,30 @@ func _send_velocity_cmd() -> void:
 	var vy := 0.0
 	var yaw_rate := 0.0
 	if _is_web:
-		if _web_key("KeyW") or _web_key("ArrowUp"):
+		if _web_key("KeyW"):
 			vx += MOVE_SPEED
-		if _web_key("KeyS") or _web_key("ArrowDown"):
+		if _web_key("KeyS"):
 			vx -= MOVE_SPEED
 		if _web_key("KeyQ"):
 			vy += MOVE_SPEED
 		if _web_key("KeyE"):
 			vy -= MOVE_SPEED
-		if _web_key("KeyA") or _web_key("ArrowLeft"):
+		if _web_key("KeyA"):
 			yaw_rate += TURN_SPEED
-		if _web_key("KeyD") or _web_key("ArrowRight"):
+		if _web_key("KeyD"):
 			yaw_rate -= TURN_SPEED
 	else:
-		if _key_down(KEY_W) or _key_down(KEY_UP):
+		if _key_down(KEY_W):
 			vx += MOVE_SPEED
-		if _key_down(KEY_S) or _key_down(KEY_DOWN):
+		if _key_down(KEY_S):
 			vx -= MOVE_SPEED
 		if _key_down(KEY_Q):
 			vy += MOVE_SPEED
 		if _key_down(KEY_E):
 			vy -= MOVE_SPEED
-		if _key_down(KEY_A) or _key_down(KEY_LEFT):
+		if _key_down(KEY_A):
 			yaw_rate += TURN_SPEED
-		if _key_down(KEY_D) or _key_down(KEY_RIGHT):
+		if _key_down(KEY_D):
 			yaw_rate -= TURN_SPEED
 		if vx == 0.0 and vy == 0.0 and yaw_rate == 0.0:
 			vx = Input.get_axis("move_back", "move_forward") * MOVE_SPEED
@@ -458,7 +599,11 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
 	text += "\nWASD move | QE turn | T take | R release | goal: green finish"
-	text += "\nRMB/MMB orbit | wheel zoom"
+	text += "\nRMB/MMB orbit | wheel zoom | arrows pan | C center"
+	if _is_web:
+		text += "\nRecordings → top-right link"
+	if _is_web:
+		text += "\nhistory: /recordings.html"
 	if _is_web:
 		_push_web_hud(text)
 	elif hud_label != null:
