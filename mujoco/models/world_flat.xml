@@ -1,6 +1,6 @@
 <mujoco model="world_flat">
-  <!-- Flat ground + planar_cart (F2 URDF→MJCF pilot). -->
-  <include file="mechs/planar_cart.xml"/>
+  <!-- Flat ground + DiffBot planar wrapper (F5 third-party URDF skin). -->
+  <include file="mechs/diffbot_planar.xml"/>
 
   <worldbody>
     <geom name="ground" type="plane" size="30 30 0.1"

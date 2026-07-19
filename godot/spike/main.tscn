@@ -115,8 +115,8 @@ interp_delay = 0.05
 metadata/mujoco_entity_id = "mech_player"
 metadata/contract_kind = "mech_spawn"
 metadata/player_slot = 0
-metadata/model_ref = "mechs/planar_cart.xml"
-metadata/spawn_z = 0.5
+metadata/model_ref = "mechs/diffbot_planar.xml"
+metadata/spawn_z = 0.12
 
 [node name="Body" type="Node3D" parent="MechPlayer"]
 

@@ -1,12 +1,14 @@
-"""Compile MineWorld planar_cart.urdf → planar_cart.xml (MJCF).
+"""Compile a mech URDF → planar MJCF (MineWorld velocity control wrapper).
 
-F2 pilot: URDF holds visual/collision geometry; MJCF adds POC planar joints
+URDF supplies visual/collision geometry (F2/F5). MJCF adds POC planar joints
 (slide_x / slide_y / yaw_z) + velocity actuators so Gateway MujocoMech works
-unchanged. Regenerates the checked-in MJCF next to the URDF.
+unchanged. Wheels/casters are visual-only (no differential actuators).
 
 Usage (repo root):
-  .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py
-  .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py --check  # load with mujoco
+  .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py --check
+  .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py \\
+      --urdf mujoco/models/mechs/planar_cart.urdf \\
+      --out mujoco/models/mechs/planar_cart.xml --check
 """
 
 from __future__ import annotations
@@ -16,8 +18,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 MECHS = Path(__file__).resolve().parents[1] / "models" / "mechs"
-DEFAULT_URDF = MECHS / "planar_cart.urdf"
-DEFAULT_MJCF = MECHS / "planar_cart.xml"
+DEFAULT_URDF = MECHS / "third_party" / "diffbot" / "diffbot.urdf"
+DEFAULT_MJCF = MECHS / "diffbot_planar.xml"
 
 
 def _parse_rgba(visual: ET.Element) -> str:
@@ -69,9 +71,31 @@ def _parse_cylinder(visual: ET.Element) -> tuple[float, float] | None:
     return float(cyl.get("radius", "0.08")), float(cyl.get("length", "0.06"))
 
 
+def _parse_sphere(visual: ET.Element) -> float | None:
+    """Return sphere radius from URDF visual, or None."""
+    geom = visual.find("geometry")
+    if geom is None:
+        return None
+    sphere = geom.find("sphere")
+    if sphere is None:
+        return None
+    return float(sphere.get("radius", "0.03"))
+
+
+def _find_parent_joint(root: ET.Element, link_name: str) -> ET.Element | None:
+    """Return the joint whose child is link_name."""
+    for j in root.findall("joint"):
+        child = j.find("child")
+        if child is not None and child.get("link") == link_name:
+            return j
+    return None
+
+
 def compile_urdf(urdf_path: Path) -> str:
-    """Build MJCF XML string from planar_cart URDF + POC planar actuators."""
+    """Build MJCF XML string from URDF + POC planar actuators."""
     root = ET.parse(urdf_path).getroot()
+    robot_name = root.get("name") or urdf_path.stem
+    model_name = f"{robot_name}_planar"
     base = root.find("./link[@name='base_link']")
     if base is None:
         raise SystemExit("URDF missing link base_link")
@@ -83,62 +107,59 @@ def compile_urdf(urdf_path: Path) -> str:
         raise SystemExit("URDF base_link visual must be a box")
     hx, hy, hz = box[0] / 2.0, box[1] / 2.0, box[2] / 2.0
     rgba = _parse_rgba(visual)
-    # Match box_mech: body pos z = full edge so bottom sits at half-extent above ground.
+    mass_el = base.find("./inertial/mass")
+    mass = float(mass_el.get("value", "10")) if mass_el is not None else 10.0
+    # Chassis center height = full Z so wheel bottoms near z=0 for DiffBot layout.
     z0 = box[2]
 
-    wheel_geoms: list[str] = []
+    extra_geoms: list[str] = []
     for link in root.findall("link"):
         name = link.get("name", "")
-        if not name.startswith("wheel_"):
+        if name == "base_link":
             continue
-        joint = None
-        for j in root.findall("joint"):
-            child = j.find("child")
-            if child is not None and child.get("link") == name:
-                joint = j
-                break
+        joint = _find_parent_joint(root, name)
         if joint is None:
             continue
         ox, oy, oz = _parse_origin(joint)
         wv = link.find("visual")
-        cyl = _parse_cylinder(wv) if wv is not None else None
-        if cyl is None:
+        if wv is None:
             continue
-        radius, length = cyl
-        # URDF wheel visual uses rpy pitch=pi/2; MJCF cylinder axis is Z — rotate via quat.
-        wheel_geoms.append(
-            f'      <geom name="{name}" type="cylinder" size="{radius} {length * 0.5}" '
-            f'pos="{ox} {oy} {oz}" quat="0.7071 0.7071 0 0" '
-            f'mass="0" contype="0" conaffinity="0" rgba="0.15 0.15 0.18 1"/>'
-        )
-
-    nose_geom = ""
-    nose_link = root.find("./link[@name='nose']")
-    if nose_link is not None:
-        jn = None
-        for j in root.findall("joint"):
-            child = j.find("child")
-            if child is not None and child.get("link") == "nose":
-                jn = j
-                break
-        ox, oy, oz = _parse_origin(jn)
-        nv = nose_link.find("visual")
-        nb = _parse_box(nv) if nv is not None else None
+        rgba_v = _parse_rgba(wv)
+        if "wheel" in name:
+            cyl = _parse_cylinder(wv)
+            if cyl is None:
+                continue
+            radius, length = cyl
+            extra_geoms.append(
+                f'      <geom name="{name}" type="cylinder" size="{radius} {length * 0.5}" '
+                f'pos="{ox} {oy} {oz}" quat="0.7071 0.7071 0 0" '
+                f'mass="0" contype="0" conaffinity="0" rgba="{rgba_v}"/>'
+            )
+            continue
+        sphere_r = _parse_sphere(wv)
+        if sphere_r is not None:
+            extra_geoms.append(
+                f'      <geom name="{name}" type="sphere" size="{sphere_r}" '
+                f'pos="{ox} {oy} {oz}" mass="0" contype="0" conaffinity="0" '
+                f'rgba="{rgba_v}"/>'
+            )
+            continue
+        nb = _parse_box(wv)
         if nb is not None:
             nx, ny, nz = nb[0] / 2.0, nb[1] / 2.0, nb[2] / 2.0
-            nose_rgba = _parse_rgba(nv) if nv is not None else "0.85 0.2 0.15 1"
-            nose_geom = (
-                f'      <geom name="nose" type="box" size="{nx} {ny} {nz}" '
+            extra_geoms.append(
+                f'      <geom name="{name}" type="box" size="{nx} {ny} {nz}" '
                 f'pos="{ox} {oy} {oz}" mass="0" contype="0" conaffinity="0" '
-                f'rgba="{nose_rgba}"/>'
+                f'rgba="{rgba_v}"/>'
             )
 
-    wheels_block = "\n".join(wheel_geoms)
-    return f"""<mujoco model="planar_cart">
+    extras_block = "\n".join(extra_geoms)
+    src = urdf_path.name
+    return f"""<mujoco model="{model_name}">
   <!--
-    AUTO-GENERATED from planar_cart.urdf by urdf_to_mjcf_planar.py — do not
-    hand-edit; re-run the script. Planar free-plane joints + velocity servos
-    are MineWorld POC control (same contract as box_mech).
+    AUTO-GENERATED from {src} by urdf_to_mjcf_planar.py — do not hand-edit;
+    re-run the script. Planar free-plane joints + velocity servos are MineWorld
+    POC control (same contract as box_mech / planar_cart).
   -->
   <option timestep="0.002" integrator="RK4" gravity="0 0 -9.81"/>
 
@@ -152,9 +173,8 @@ def compile_urdf(urdf_path: Path) -> str:
       <joint name="slide_y" type="slide" axis="0 1 0" damping="0.2"/>
       <joint name="yaw_z" type="hinge" axis="0 0 1" damping="0.05"/>
       <geom name="chassis_box" type="box" size="{hx} {hy} {hz}"
-            mass="10" rgba="{rgba}"/>
-{nose_geom}
-{wheels_block}
+            mass="{mass}" rgba="{rgba}"/>
+{extras_block}
     </body>
   </worldbody>
 
@@ -168,7 +188,7 @@ def compile_urdf(urdf_path: Path) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="URDF → MJCF for planar_cart")
+    parser = argparse.ArgumentParser(description="URDF → planar MJCF wrapper")
     parser.add_argument("--urdf", type=Path, default=DEFAULT_URDF)
     parser.add_argument("--out", type=Path, default=DEFAULT_MJCF)
     parser.add_argument(
@@ -178,12 +198,12 @@ def main() -> int:
     )
     args = parser.parse_args()
     xml = compile_urdf(args.urdf)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(xml, encoding="utf-8")
     print(f"wrote {args.out}")
     if args.check:
         import sys
 
-        # Repo folder `mujoco/` is a namespace package and shadows pip mujoco.
         repo_root = Path(__file__).resolve().parents[2]
         sys.path = [p for p in sys.path if Path(p).resolve() != repo_root]
         import mujoco

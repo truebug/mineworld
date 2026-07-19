@@ -9,11 +9,11 @@
   "mech_spawns": [
     {
       "id": "mech_player",
-      "model_ref": "mechs/planar_cart.xml",
+      "model_ref": "mechs/diffbot_planar.xml",
       "pose": {
         "x": 0.0,
         "y": -0.0,
-        "z": 0.5,
+        "z": 0.12,
         "yaw": 0.0
       },
       "player_slot": 0,
@@ -22,11 +22,11 @@
     },
     {
       "id": "mech_player_b",
-      "model_ref": "mechs/planar_cart.xml",
+      "model_ref": "mechs/diffbot_planar.xml",
       "pose": {
         "x": 0,
         "y": 2,
-        "z": 0.5,
+        "z": 0.12,
         "yaw": 0
       },
       "player_slot": 1,

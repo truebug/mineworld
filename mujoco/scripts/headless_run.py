@@ -54,6 +54,8 @@ def main() -> int:
     dy = model.jnt_dofadr[jnt("slide_y")]
     dyaw = model.jnt_dofadr[jnt("yaw_z")]
     chassis = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "chassis")
+    mujoco.mj_forward(model, data)
+    z0 = float(data.xpos[chassis][2])  # planar models keep constant height
 
     settle_ticks = int(0.5 / DT_TICK)  # ignore servo spin-up transient
     max_vel_err = 0.0
@@ -109,13 +111,13 @@ def main() -> int:
     print(f"end pos: ({data.qpos[ax]:.3f}, {data.qpos[ay]:.3f})  "
           f"expected ({exp_x:.3f}, {exp_y:.3f})  err {pos_err:.3f} (tol {args.pos_tol})")
     print(f"yaw: {data.qpos[ayaw]:.3f}  expected {theta:.3f}  err {yaw_err:.3f}")
-    print(f"distance traveled: {distance:.3f} m  chassis z: {z:.3f}")
+    print(f"distance traveled: {distance:.3f} m  chassis z: {z:.3f} (z0={z0:.3f})")
 
     ok = (
         max_vel_err < args.vel_tol
         and pos_err < args.pos_tol
         and yaw_err < 0.05
-        and abs(z - 0.5) < 0.01
+        and abs(z - z0) < 0.01
     )
     print("T2.1 PASS" if ok else "T2.1 FAIL")
     return 0 if ok else 1

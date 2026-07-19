@@ -21,4 +21,5 @@
 |------|------|------|----------------|----------|----------|
 | Platformer Kit 4.1 | [kenney.nl/assets/platformer-kit](https://kenney.nl/assets/platformer-kit) | CC0 | `tutorial_02` 平台跳跃素材；`godot/spike/assets/platformer/`（含 License）；**F1** 亦用于 `main.tscn` / tutorial_01 装饰 | 无 | 2026-07-18 |
 | City Kit (Commercial) 2.1 | [kenney.nl/assets/city-kit-commercial](https://kenney.nl/assets/city-kit-commercial) | CC0 | 城市/建筑环境素材；`godot/spike/assets/city/` | 无 | 2026-07-18 |
-| planar_cart URDF/MJCF | 本仓库自研 F2 试点 | MIT（仓库许可） | `mujoco/models/mechs/planar_cart.urdf` → `planar_cart.xml`（`urdf_to_mjcf_planar.py`） | 无 | 2026-07-19 |
+| planar_cart URDF/MJCF | 本仓库自研 F2 试点 | MIT（仓库许可） | `mujoco/models/mechs/planar_cart.urdf` → `planar_cart.xml`（fallback） | 无 | 2026-07-19 |
+| DiffBot URDF skin（F5） | 几何对齐 [ros2_control DiffBot](https://github.com/ros-controls/ros2_control_demos) 惯例 | Apache-2.0 | `mujoco/models/mechs/third_party/diffbot/` → `diffbot_planar.xml`（默认 world） | 保留 LICENSE/NOTICE | 2026-07-19 |

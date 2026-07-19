@@ -88,6 +88,7 @@
 | **F2** | 自研 `planar_cart.urdf` → MJCF + `model_ref` | headless + smoke 能控 | Done |
 | **F3** | Godot 视觉与 URDF 几何对齐（底盘/轮/鼻） | 位姿仍跟 state | Done |
 | **F4** | 契约导出：从 `.tscn` 抽取障碍/trigger/spawn（T4.2） | `scripts/export_scene_contract.py --check` | Done |
+| **F5** | 第三方 DiffBot URDF → planar MJCF 换皮 | headless + mujoco smoke；协议仍 velocity | Done |
 
 **非目标（本阶段）**：在 Godot 内嵌 MuJoCo；自动从任意 URDF 一键生成完整可玩关；人形全身遥操手感（T2.7）。
 
@@ -124,19 +125,20 @@
 2. URDF→MJCF 工具链：仓库脚本 vs 外部预编译产物入库？  
 3. 关节控制是否从 `velocity` 基座扩展到 `joint_targets`（协议加字段，v0 兼容）？
 
-未拍板前：**F0–F4 已落地**；下一步可选：第三方真机 URDF、Godot 编辑器内一键导出插件、公网 W2。
+未拍板前：**F0–F5 已落地**；下一步可选：真差速轮动、更复杂真机 URDF、互撞、公网 W2。
 
-### F2 / F4 命令
+### F2 / F4 / F5 命令
 
 ```bash
+# F5 default skin (DiffBot → diffbot_planar.xml)
 .venv/bin/python mujoco/scripts/urdf_to_mjcf_planar.py --check
 .venv/bin/python mujoco/scripts/headless_run.py
-.venv/bin/python scripts/export_scene_contract.py --check   # F4: tscn ↔ contract
-.venv/bin/python scripts/export_scene_contract.py           # rewrite contract from main.tscn
+.venv/bin/python scripts/export_scene_contract.py --check
 .venv/bin/python gateway/echo_server.py --physics mujoco
 .venv/bin/python scripts/ws_smoke_test.py
 ```
 
-源文件：`mujoco/models/mechs/planar_cart.urdf` → 生成 `planar_cart.xml`；`world_flat.xml` include 该机甲。  
-Godot：`mech_puppet.gd` 按同一 URDF 尺寸生成底盘/轮/鼻（F3）；`main.tscn` 节点 `metadata/contract_kind` 供 F4 导出。  
+默认机甲：`mechs/diffbot_planar.xml`（源 URDF：`third_party/diffbot/diffbot.urdf`，Apache-2.0）。  
+`planar_cart` 仍可 `--urdf/--out` 重新生成作 fallback。  
+Godot `mech_puppet.gd` 尺寸与 DiffBot URDF 对齐；队伍色只染底盘。  
 注意：仓库目录名 `mujoco/` 会遮蔽 pip 包，脚本内已把 repo root 从 `sys.path` 去掉再 `import mujoco`。

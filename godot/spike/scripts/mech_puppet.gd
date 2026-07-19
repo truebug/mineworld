@@ -1,7 +1,7 @@
 ## Visual puppet for a gateway-driven entity.
 ## Buffers the last two base_pose samples and interpolates between them,
 ## delayed by one state interval (standard entity interpolation).
-## F3: Body mesh matches planar_cart.urdf (chassis + wheels + nose).
+## F3/F5: Body mesh matches active mech URDF (DiffBot planar skin).
 ## Team look: tint chassis + billboard tag by entity_id (A/B).
 class_name MWMechPuppet
 extends Node3D
@@ -20,20 +20,21 @@ const TEAM_TAGS := {
 	"mech_player_b": "B",
 }
 
-## planar_cart.urdf geometry (MW Z-up meters). Keep in sync with URDF.
-const URDF_CHASSIS := Vector3(0.5, 0.5, 0.5)
-const URDF_NOSE := Vector3(0.16, 0.04, 0.04)
-const URDF_NOSE_POS := Vector3(0.3, 0.0, 0.1)
+## third_party/diffbot/diffbot.urdf geometry (MW Z-up meters). Keep in sync.
+const URDF_CHASSIS := Vector3(0.40, 0.28, 0.12)
+const URDF_NOSE := Vector3(0.06, 0.08, 0.03)
+const URDF_NOSE_POS := Vector3(0.22, 0.0, 0.02)
 const URDF_WHEEL_R := 0.08
-const URDF_WHEEL_LEN := 0.06
+const URDF_WHEEL_LEN := 0.04
 const URDF_WHEEL_POS := [
-	Vector3(0.18, 0.22, -0.18),
-	Vector3(0.18, -0.22, -0.18),
-	Vector3(-0.18, 0.22, -0.18),
-	Vector3(-0.18, -0.22, -0.18),
+	Vector3(0.0, 0.16, -0.04),
+	Vector3(0.0, -0.16, -0.04),
 ]
-const WHEEL_COLOR := Color(0.15, 0.15, 0.18)
-const NOSE_COLOR := Color(0.85, 0.2, 0.15)
+const URDF_CASTER_R := 0.035
+const URDF_CASTER_POS := Vector3(-0.16, 0.0, -0.055)
+const WHEEL_COLOR := Color(0.12, 0.12, 0.14)
+const NOSE_COLOR := Color(0.95, 0.75, 0.15)
+const CASTER_COLOR := Color(0.35, 0.35, 0.38)
 
 var _prev_pos := Vector3.ZERO
 var _prev_yaw := 0.0
@@ -94,6 +95,16 @@ func ensure_planar_cart_visual() -> void:
 	nose.position = _mw_to_local(URDF_NOSE_POS)
 	_tint_mesh(nose, NOSE_COLOR)
 	body.add_child(nose)
+
+	var caster := MeshInstance3D.new()
+	caster.name = "Caster"
+	var sphere := SphereMesh.new()
+	sphere.radius = URDF_CASTER_R
+	sphere.height = URDF_CASTER_R * 2.0
+	caster.mesh = sphere
+	caster.position = _mw_to_local(URDF_CASTER_POS)
+	_tint_mesh(caster, CASTER_COLOR)
+	body.add_child(caster)
 
 	var i := 0
 	for wp in URDF_WHEEL_POS:

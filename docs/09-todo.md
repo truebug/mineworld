@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | 多人本机 Demo 已通；**Godot↔MuJoCo 融合 F0–F4 已完成** |
+| **目标** | 多人本机 Demo 已通；**Godot↔MuJoCo 融合 F0–F5 已完成** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -27,8 +27,9 @@
 | F2 | 试点真实 URDF/MJCF → 转 MJCF + `model_ref` | headless + smoke 可控 | [x] |
 | F3 | Godot 加载同款视觉 mesh（换胶囊） | 位姿仍跟 state | [x] |
 | F4 | `.tscn` → 契约导出（T4.2） | `export_scene_contract.py --check` | [x] |
+| F5 | 第三方 DiffBot URDF 换皮（planar 包装） | headless + mujoco smoke | [x] |
 
-`main` 已含 W2.3 / W3 / T2.6 与 F0–F4。
+`main` 已含 W2.3 / W3 / T2.6 与 F0–F5。
 
 ---
 
