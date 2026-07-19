@@ -5,16 +5,17 @@
 ## 阅读顺序（首次）
 
 1. [00-vision.md](00-vision.md) — 为什么做、做什么
-2. [01-architecture.md](01-architecture.md) — 怎么拆
-3. [02-scene-contract.md](02-scene-contract.md) — 世界如何进仿真
-4. [03-websocket-protocol.md](03-websocket-protocol.md) — 怎么连
-5. [04-data-collection.md](04-data-collection.md) — 采什么
-6. [08-modes-roadmap.md](08-modes-roadmap.md) — MVP 与路线
-7. [09-todo.md](09-todo.md) — **可执行待办（当前执行入口）**
-8. [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) — **POC 规格 + MVP 薄架构（讨论入口）**
-9. [12-status-review.md](12-status-review.md) — 阶段回顾与方案评审（2026-07-19）
-10. [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) — Web / 多人 Demo 路线（W1–W3 本机已通）
-11. [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) — **Godot 场景 ↔ MuJoCo 融合 + URDF/视觉（当前主线）**
+2. **[15-course-correction.md](15-course-correction.md)** — **跑偏纪要与纠偏计划（当前战略必读）**
+3. [01-architecture.md](01-architecture.md) — 怎么拆
+4. [02-scene-contract.md](02-scene-contract.md) — 世界如何进仿真
+5. [03-websocket-protocol.md](03-websocket-protocol.md) — 怎么连
+6. [04-data-collection.md](04-data-collection.md) — 采什么
+7. [08-modes-roadmap.md](08-modes-roadmap.md) — MVP 与路线
+8. [09-todo.md](09-todo.md) — **可执行待办（当前执行入口）**
+9. [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) — POC 规格 + MVP 薄架构
+10. [12-status-review.md](12-status-review.md) — 阶段回顾与方案评审
+11. [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) — Web / 多人 Demo（W1–W3 本机已通）
+12. [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) — Godot ↔ MuJoCo 融合 + URDF/视觉
 
 ## 实施参考
 
@@ -34,3 +35,4 @@
 - [12-status-review.md](12-status-review.md)
 - [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md)
 - [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md)
+- **[15-course-correction.md](15-course-correction.md)** — 跑偏与纠偏 SSOT

@@ -2,8 +2,9 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Draft |
-| **日期** | 2026-07-17 |
+| **状态** | Living |
+| **日期** | 2026-07-17 · 续记 2026-07-19 |
+| **纠偏主线** | [15-course-correction.md](15-course-correction.md) |
 
 ---
 
@@ -102,15 +103,18 @@
 
 ### Phase 3 — 可玩与数据（预计 4–8 周）
 
-- [ ] 任务成功/失败判定
-- [ ] 回放脚本
-- [ ] 第二关卡验证编辑器工作流
+- [x] 任务成功/失败判定（`demo_city` reach zone）
+- [x] 回放：Recordings 2D/3D + CSV 导出
+- [x] 第二关卡工作流验证（tutorial_02 / demo_city）
+- [ ] **纠偏 V1–V4**：控制升维 / 机体 / 接触任务 / 数据分层 — 见 [15](15-course-correction.md)
 
 ### Phase 4 — 扩展
 
 - [ ] 多副本 Gateway
 - [ ] 学习/评测 API
 - [ ] 资产管线（Blender → Godot + 契约）
+
+> **2026-07-19**：M1–M4 管道形态已基本达成；下一阶段优先级从「扩壳」转为「加深遥操数据价值」，详见 [15-course-correction.md](15-course-correction.md)。
 
 ---
 

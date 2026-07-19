@@ -4,7 +4,7 @@
 |------|-----|
 | **状态** | Living |
 | **日期** | 2026-07-19 |
-| **关联** | 阶段评审见 [12-status-review.md](12-status-review.md) |
+| **关联** | 阶段评审见 [12-status-review.md](12-status-review.md) · 纠偏见 [15-course-correction.md](15-course-correction.md) |
 
 ---
 
@@ -14,7 +14,7 @@
 |----|------|-------------|--------|------|
 | P1 | 对外产品名是否使用「头号玩家」类比 | 建议内部愿景，对外用「MineWorld」或独立品牌 | — | Open（**不阻塞 M4**） |
 | P2 | MVP 机甲形态 | **Closed**：POC/MVP 自建盒子机甲；真人形/g1 后置 | — | Closed |
-| P3 | 默认控制模式 | **Closed**：`velocity`（见 `11` §3/§9.1） | — | Closed |
+| P3 | 默认控制模式 | **POC Closed**：`velocity`；**纠偏期重开讨论**是否升 `joint_targets`（见 [15](15-course-correction.md) V1） | — | Partial |
 | P4 | 是否需要账号与进度存档 | MVP 可匿名会话 | — | Open（**不阻塞 M4**） |
 
 ---

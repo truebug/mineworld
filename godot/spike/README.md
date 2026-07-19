@@ -1,22 +1,22 @@
-# Godot Spike（POC-A 客户端镜像 / M1 验收）
+# Godot Spike（POC 客户端基线）
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Accepted 基线（选型已定案，见 [`docs/adr/003-client-engine-godot.md`](../../docs/adr/003-client-engine-godot.md)） |
-
-| **日期** | 2026-07-17 |
-| **对应验收** | `docs/11-poc-mvp-architecture.md` §7.1（M1） |
+| **状态** | Accepted 基线（选型见 [`docs/adr/003`](../../docs/adr/003-client-engine-godot.md)）；主场景 `demo_city` |
+| **日期** | 2026-07-17 · 续记 2026-07-19 |
+| **对应验收** | M1 + Web Demo + 录制回放；战略见 [`docs/15-course-correction.md`](../../docs/15-course-correction.md) |
 
 ---
 
 ## 1. 这是什么
 
-用 Godot 4 复刻 GDevelop demo0 的 M1 验收场景：
+用 Godot 4 做 Viewer + 输入（权威在 Gateway/MuJoCo）：
 
-- 内置 `WebSocketPeer` 连 `ws://127.0.0.1:8765`（POC-A Python Gateway）
-- 协议形状与 `schemas/ws-messages.v0.json` 完全一致：hello → join → cmd → state
-- 机甲是**视觉傀儡**：位置/朝向全部来自 gateway 20Hz `state`，本地只做插值（ADR-002）
-- 本地**无任何物理仿真**；WASD/QE 只产生 `velocity` cmd 上行
+- 内置 `WebSocketPeer` 连 `ws://127.0.0.1:8765`
+- 协议形状与 `schemas/ws-messages.v0.json` 一致：hello → join → cmd → state
+- 机甲是**视觉傀儡**：位置/朝向来自 gateway `state`，本地插值（ADR-002）
+- 本地**无物理权威**；当前 POC 控制为平面 `velocity`（**数据价值纠偏见 docs/15**，后续可能升 `joint_targets`）
+- Web：`?replay=<session_id>` 可离线回放录制帧（不连网关）
 
 坐标映射（D1：米 · 右手 · Z-up → Godot Y-up）：`godot = (x, z, -y)`，`rotation.y = yaw`。
 `base_pose` 同时提供 `yaw` 与四元数，spike 用 `yaw`；后续姿态更丰富时切 `qw/qx/qy/qz`。

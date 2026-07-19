@@ -5,11 +5,12 @@
 | **状态** | Living |
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | 多人本机 Demo 已通；F0–F8 融合完成；主演示关 `demo_city` |
+| **目标** | 演示/管道已收口；**下一阶段：纠偏提高数据价值（讨论后开 V\*）** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
 | **阶段评审** | [12-status-review.md](12-status-review.md) |
+| **跑偏与纠偏** | **[15-course-correction.md](15-course-correction.md)**（战略 SSOT） |
 
 勾选约定：`[ ]` 未做 · `[x]` 完成 · `[-]` 取消 · `[~]` 暂缓
 
@@ -53,6 +54,23 @@
 | D11 | KayKit 街道小品 | layout `props`（灯/椅/灌木/消防栓） | [x] |
 | D12 | demo_city 终点开环 smoke | `--expect-objective` 直道东行至绿区 | [x] |
 | D13 | 录制索引 SQLite + 批量轨迹导出 | `recording_store` + `export_trajectories.py` + API | [x] |
+
+> **D 线已收口。** 城市皮/seed/路面不再作为主投入；见 [15](15-course-correction.md) V5。
+
+---
+
+## Next（V · 数据价值纠偏 · 待讨论后开干）
+
+> 诊断与优先级见 **[15-course-correction.md](15-course-correction.md)**。  
+> **本表在讨论前不落具体实现勾选**——只占位，避免又开新的观感专题。
+
+| ID | 主题 | 状态 |
+|----|------|------|
+| V1 | 控制升维（`joint_targets` / 成对录制） | [ ] 待讨论 |
+| V2 | 机体升维（多关节 / 非纯 planar） | [ ] 待讨论 |
+| V3 | 接触任务加深（堆叠 / 门 / 抓取） | [ ] 待讨论 |
+| V4 | 数据分层（标签 / 难度 / 导出过滤） | [ ] 待讨论 |
+| V5 | 演示克制（观感项默认暂缓） | [ ] 待讨论 |
 
 ---
 

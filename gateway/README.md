@@ -1,11 +1,13 @@
-# Gateway（POC-A）
+# Gateway（POC）
 
-假物理 WebSocket 网关：协议形状与真仿真相同，积分在进程内完成（无 MuJoCo）。
+WebSocket 网关：假物理（进程内积分）或 MuJoCo 真物理；协议形状与录制旁路一致。
+
+战略背景：管道已通；控制深度纠偏见 [`docs/15-course-correction.md`](../docs/15-course-correction.md)。
 
 ## 要求
 
 - Python 3.11+（已在 3.12 验证）
-- 依赖：`websockets`
+- 依赖：`websockets`；`--physics mujoco` 另需 `mujoco`
 
 ## 启动
 
@@ -26,6 +28,7 @@ python gateway/echo_server.py
 python gateway/echo_server.py --physics mujoco
 # 或显式: --contract examples/contracts/demo_city.json
 # hello.features 将包含 "mujoco"；契约 static_obstacles(box) 会作为静态 geom 加入仿真
+# 契约文件 mtime 变化时，新房间会热重建 MuJoCo 世界（D9）
 ```
 
 默认在 `recordings/sessions/<session_id>/` 落盘 `header.json` + `frames.jsonl`（join 后开始；断开时收尾）。可用 `--no-record` 关闭，或 `--record-dir` 改路径。
@@ -76,3 +79,11 @@ godot --headless --path godot/spike --script res://headless/smoke_client.gd   # 
 
 Legacy：GDevelop `gdevelop/demo0`（存档，见 `docs/adr/003-client-engine-godot.md`）。  
 （客户端与本机 Gateway 同机时用 `127.0.0.1`；勿用 `localhost` 若解析异常。）
+
+## 录制索引与导出
+
+会话默认写在 `recordings/sessions/<id>/`（`header.json` + `frames.jsonl`）。辅助模块：
+
+- `gateway/recording_store.py` — FS 扫描、`rebuild_sqlite` → `recordings/index.sqlite`
+- `scripts/export_trajectories.py` — 批量导出 CSV/JSONL
+- Web：`POST /api/recordings/reindex` · `GET /api/recordings/export.csv`（经 `serve_web_demo.py`）

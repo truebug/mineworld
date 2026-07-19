@@ -6,7 +6,7 @@
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
 | **性质** | 对原始设计、迭代过程、既有产出与后续计划的综合审核 |
-| **关联** | [00](00-vision.md) · [09](09-todo.md) · [11](11-poc-mvp-architecture.md) · [adr/001](adr/001-dual-engine-split.md) · [adr/003](adr/003-client-engine-godot.md) |
+| **关联** | [00](00-vision.md) · [09](09-todo.md) · [11](11-poc-mvp-architecture.md) · [15](15-course-correction.md) · [adr/001](adr/001-dual-engine-split.md) · [adr/003](adr/003-client-engine-godot.md) |
 
 > 本文是「站在 POC-B 中后期」的一次回看：肯定已验证的主线，指出偏差与风险，并给出可执行的优先级建议。不替代 `09-todo` 的日常勾选。
 
@@ -49,6 +49,9 @@
 | **避免的偏航** | 不要做成车道保持/规划 benchmark；价值在**人控真动力学**，不在 AD 感知 |
 
 铁律不变：Godot 不权威、MuJoCo 不叙事。下一阶段优先 **控制深度**，不是再扩城市皮。
+
+> **完整跑偏时间线、假偏航澄清与 V1–V5 纠偏计划**已抽成专项文档，避免与本文早期评审段落分叉：  
+> → **[15-course-correction.md](15-course-correction.md)**（战略 SSOT；与仓库根 [README](../README.md) 摘要互链）
 
 
 ## 1. 一句话结论

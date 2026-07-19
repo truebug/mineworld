@@ -2,9 +2,9 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Draft |
-| **日期** | 2026-07-17 |
-| **关联** | [01-architecture.md](01-architecture.md) · [08-modes-roadmap.md](08-modes-roadmap.md) |
+| **状态** | Living（2026-07-19 起：管道已通；主线见纠偏文档） |
+| **日期** | 2026-07-17 · 续记 2026-07-19 |
+| **关联** | [01-architecture.md](01-architecture.md) · [08-modes-roadmap.md](08-modes-roadmap.md) · **[15-course-correction.md](15-course-correction.md)** |
 
 ---
 
@@ -84,3 +84,10 @@
 | `pms-system/platform/viser-gateway/examples/mujoco_g1/` | MuJoCo + 可视化网关参考实现 |
 
 MineWorld 本仓为**产品级文档与工程聚合点**；具体镜像与 CI 可引用 monorepo 既有资产。
+
+---
+
+## 6. 阶段备注（2026-07-19）
+
+POC 已验证双引擎 + 录制管道；当前体感偏「平面车到点」，与 §1–2 的「关节级遥操档案」尚有差距。  
+**诊断与纠偏计划**以 [15-course-correction.md](15-course-correction.md) 为 SSOT，勿在愿景文档内另开分叉叙事。

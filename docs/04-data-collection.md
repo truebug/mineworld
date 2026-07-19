@@ -2,10 +2,11 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Draft v0（Schema SSOT 已落盘） |
-| **日期** | 2026-07-17 |
+| **状态** | Draft v0（Schema SSOT 已落盘）；管道可用，**内容深度待纠偏** |
+| **日期** | 2026-07-17 · 续记 2026-07-19 |
 | **定位** | 产品核心资产管道，与娱乐壳同等优先级 |
 | **SSOT** | [`schemas/recording-session.v0.json`](../schemas/recording-session.v0.json) |
+| **纠偏** | [15-course-correction.md](15-course-correction.md)（V1/V4：控制成对录制 + 任务分层） |
 
 ---
 
@@ -128,3 +129,8 @@ Schema：[`schemas/recording-session.v0.json`](../schemas/recording-session.v0.j
 - [x] 单次会话完整落盘（header + 至少 10s 帧数据）
 - [x] 可用脚本读取 JSONL 并绘制基座轨迹
 - [x] `session_id` 与 WS 日志可关联排错
+- [x] 本机 Recordings 列表 + 2D/3D 回放 + CSV 批量导出（D5/D8/D13）
+- [ ] 关节级 `cmd`/`joints` 成对密度足够支撑 IL（见纠偏 V1）
+- [ ] 任务标签 / 难度分层进 header（见纠偏 V4）
+
+POC 阶段「能录能导出」已达成；**提高单条轨迹信息密度**见 [15-course-correction.md](15-course-correction.md)。
