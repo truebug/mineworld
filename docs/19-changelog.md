@@ -4,9 +4,36 @@
 |------|-----|
 | **状态** | Living |
 | **日期** | 2026-07-20 |
-| **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) |
+| **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) |
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
+
+---
+
+## 2026-07-20 · 生态对接叙事冻结（21）
+
+- 新增 **[21-ecosystem-federation.md](21-ecosystem-federation.md)**：MineWorld = 3D 传送门前台；本仓 MuJoCo 玩法/采数；展厅/教室等 → PMS Space（对接不搬迁）。
+- [00-vision.md](00-vision.md) / [AGENTS.md](../AGENTS.md) / [docs/README.md](README.md) / [09](09-todo.md) Now 改为 **E1/E4/W1** 建议。
+
+---
+
+## 2026-07-20 · C 线产品闭环收口
+
+### 方向
+
+- **C1–C4 Done**；H8 / R3 / 公网仍顺延。
+- 验收主路径：登录 → Hub → 通关 → +N pts → 排行 / 我的 → 2D 回放。
+
+### 实现摘要
+
+- **C1**：`main.gd` 玩法关 `join` 传入 `extensions.mw.profile`（对齐 Hub）。
+- **C2**：`objective_complete.detail.points` + 通关即时幂等记账；SUCCESS UI 显示 +N pts / My record 链。
+- **C3**：`scripts/journey_smoke.py`（platform API + MuJoCo；`demo_city` 开环到点验收积分链）。
+- **C4**：UX2b 薄做（门色过场 · 桌面 Tween · 可跳过）。
+
+```bash
+.venv/bin/python scripts/journey_smoke.py
+```
 
 ---
 
@@ -54,18 +81,16 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 ---
 
-## 后续方向（已记入 Todo，未实现）
+## 后续方向（已记入 Todo）
 
 | 线 | 摘要 | Todo ID |
 |----|------|---------|
-| UX | 首屏/加载动画（替换 Godot 默认 logo） | UX1 **[x] v0** |
-| UX | 关卡过场（替代瞬间 `change_scene`） | UX2 **[x] v0** 淡入淡出 |
-| 平台 | 可配置持久化库 + 消息中间件的独立 API 服务 | PL1 |
-| 平台 | Web 控制台（后台管理） | PL2 |
-| Hub | 可乘电梯 / 可上 L2；门 C–E 占位打磨 | H8 / H7 |
-| 物理/IL | 真摩擦抓取、最小 BC 离线检查 | P1a / P1b |
+| **C 闭环** | profile join · 通关积分 · journey smoke · UX2b 薄 | C1–C4（见上） |
+| UX | 过场增强 | UX2b / C4 |
+| Hub | 可乘电梯 / 可上 L2（顺延） | H8 |
+| 回放 | 修复 `/?replay=` 3D | R3（Next） |
 
-完整条目与验收见 [09 § Next](09-todo.md#next平台与体验·规划)。
+完整条目与验收见 [09 § Now / Next](09-todo.md)。
 
 ---
 

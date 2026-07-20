@@ -22,6 +22,7 @@ import asyncio
 import json
 import logging
 import math
+import sys
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -37,6 +38,11 @@ try:  # optional: only --physics mujoco needs it
     import mujoco
 except ImportError:  # pragma: no cover
     mujoco = None
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+from mw_platform.scoring import compute_points  # noqa: E402
 
 LOG = logging.getLogger("mineworld.gateway")
 
@@ -1613,6 +1619,25 @@ class EchoGateway:
                     session.pending_events.clear()
                     objective_events = evaluate_objectives(session)
                     if objective_events:
+                        duration = float(room.tick) * DT
+                        level_id = str(
+                            session.level_id or session.contract.get("level_id") or ""
+                        )
+                        for ev in objective_events:
+                            if ev.get("event_type") != "objective_complete":
+                                continue
+                            pts = compute_points(
+                                level_id=level_id,
+                                outcome="success",
+                                duration_sim_s=duration,
+                            )
+                            detail = ev.get("detail")
+                            if not isinstance(detail, dict):
+                                detail = {}
+                                ev["detail"] = detail
+                            detail["points"] = pts
+                            detail["level_id"] = level_id
+                            self._report_score(session, duration)
                         tick_events.extend(objective_events)
                         if session.recorder is not None and session.outcome:
                             session.recorder.set_outcome(session.outcome)

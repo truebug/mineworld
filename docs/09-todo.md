@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | Hub H7/UX3 已收口；**Now：H8 或 UX2b** |
+| **目标** | C1–C4 Done；**Now：E1/E4 或 W1**（见 [21](21-ecosystem-federation.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -16,29 +16,49 @@
 | **地下城 Hub** | **[18-hub-dungeon.md](18-hub-dungeon.md)**（默认主场景） |
 | **变更记录** | **[19-changelog.md](19-changelog.md)** |
 | **平台门户规划** | **[20-platform-portal.md](20-platform-portal.md)**（身份 / 积分 / Admin） |
+| **生态对接** | **[21-ecosystem-federation.md](21-ecosystem-federation.md)**（Hub↔PMS/Spaces；统一身份） |
 
 勾选约定：`[ ]` 未做 · `[x]` 完成 · `[-]` 取消 · `[~]` 暂缓
 
 ---
 
-## Now（数据价值续 · 2026-07-20）
+## Now（E · 生态对接起步 · 建议）
+
+> SSOT：[21-ecosystem-federation.md](21-ecosystem-federation.md)。C 线已收口。  
+> **建议下一刀：E1 Landing，或 E4 展柜→外部 URL stub，或 W1 工坊 smoke 修复（三选一开干）。**
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| P1a | 真摩擦抓取（替换 sticky） | grasp_lift 不靠 kinematic weld | [x] v0 可夹小料块 |
-| H7 | Hub UI / 门 C–E 占位打磨 | 左栏 lore、右栏地图、名片可读；C–E 门有 stub 文案 | [x] v0 |
-| P1b | 最小 BC 离线检查 | `scripts/bc_offline_check.py` 读 success CSV 关节列 | [x] v0 |
+| E1 | Portal Landing → Profile/榜 → 进大厅 CTA | 未登录见品牌页；登录后可进 Hub | [ ] |
+| E2 | `player_id` ↔ 平台 user 映射草案 | 文档表 + 可选 stub；不阻塞 E4 | [ ] |
+| E4 | Hub 展柜 stub → 打开 PMS/Space URL | F 键新标签或壳；能回 Hub | [ ] |
+| E5 | 展柜元数据契约 v0 | examples JSON：id/title/url/kind | [ ] |
+| W1 | 工坊推箱/抓取 smoke 恢复 | `stow_crate_smoke` 或等价 PASS（P1a 小块碾过） | [ ] |
 
-> Hub 展示壳（半层二楼 + 静态电梯）已入库，见 [18](18-hub-dungeon.md) · [19](19-changelog.md)。  
-> **UX1 / UX2-v0** 已入库。  
-> **平台产品线**见 **[20](20-platform-portal.md)**。Phase A v0（登录 + SQLite API）已入库。  
-> **建议下一步：H8 可乘电梯，或 UX2b 过场增强。**
+---
+
+## Done（C · 产品闭环收口 · 2026-07-20）
+
+> 方向约束：修计分身份链与通关反馈，不堆 H8 电梯 / city 皮。
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| C1 | 玩法关 join 传 platform profile | `main.gd` 对齐 Hub；header 含 `player_id` | [x] |
+| C2 | 通关即时积分 | `objective_complete.detail.points` + 幂等记账；SUCCESS 显示 +N pts | [x] |
+| C3 | 旅程 smoke | `scripts/journey_smoke.py`：login → city 通关 → me/lb | [x] |
+| C4 | UX2b 薄做 | 门色过场 + 桌面 Tween + 可跳过 | [x] |
+
+```bash
+.venv/bin/python scripts/journey_smoke.py   # 需 MuJoCo
+.venv/bin/python scripts/platform_smoke.py
+.venv/bin/python scripts/ws_smoke_test.py
+```
 
 ---
 
 ## Next（平台与体验 · 规划）
 
-> 规格 SSOT：[20-platform-portal.md](20-platform-portal.md)。Gateway WS 只管仿真；身份/积分/运营走独立 API。
+> 规格 SSOT：[20-platform-portal.md](20-platform-portal.md) · 生态 [21](21-ecosystem-federation.md)。Gateway WS 只管仿真；身份/积分/运营走独立 API。
 
 ### UX · 首屏与过场
 
@@ -46,7 +66,7 @@
 |----|------|------|------|
 | UX1 | 加载动画 / 首屏画面 | Web 品牌字标 + 进度；隐藏 Godot 默认 splash | [x] v0 |
 | UX2 | 关卡过场动画 | `MWTransition` / `MW_TRANSITION` 淡入淡出 ~280ms；Hub 门 / Esc / 菜单 | [x] v0 |
-| UX2b | 过场增强（可选） | 按门色/路线标签；可跳过；桌面缓动与 Web 对齐 | [ ] |
+| UX2b | 过场增强（薄 · C4） | 按门色/路线标签；可跳过；桌面缓动与 Web 对齐 | [x] v0 |
 | UX3 | Hub 加载与重连提示 | 断线/重连有明确文案，避免静默白屏 | [x] v0 |
 
 ### Phase A · 平台底座（Portal / API / 身份）
@@ -79,18 +99,20 @@
 | EXP1 | 批量导出轨迹 | 对齐现有 IL 导出语义 | [x] v0 |
 | PL2 | Admin 运维增强 | 在线房只读、契约/level 开关等 | [ ] |
 
-### Hub 后续（降优先于 Phase A/B）
+### Hub / 生态空间（慢扩）
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| H8 | 可乘电梯 + 可上 L2 | 轿厢或瞬移；栏杆碰撞；小地图层 | [ ] |
-| H9 | Hub 交互台玩法雏形 | Party board / Vendor 真 UI；可与 LB1 合并 | [ ] |
+| H8 | 可乘电梯 + 可上 L2 | 轿厢或瞬移；栏杆碰撞；小地图层 | [ ] 观感，非对接阻塞 |
+| H9 | Hub 交互台玩法雏形 | Party board / Vendor 真 UI | [ ] |
+| H10 | 房间壳占位（展厅/教室 lore） | 走廊+文案；无真实 URL 亦可 | [ ] |
+| H11 | 竞技场门占位 | 1v1 / 多人叙事；权威另案 | [ ] |
 
 ### 运维 / 公网（原暂缓）
 
 | ID | 任务 | 状态 |
 |----|------|------|
-| W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] 跟 Phase A 反代一起做 |
+| W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] 跟统一身份反代一起做 |
 | T2.7 | 输入延迟补偿 v0 | [~] |
 
 ---

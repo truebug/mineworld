@@ -774,10 +774,13 @@ func _enter_level(scene_path: String) -> void:
 		return
 	_entering_door = true
 	var label := "Entering…"
+	var accent := ""
 	if scene_path.find("workshop") >= 0:
 		label = "Workshop"
+		accent = "#e8873a"
 	elif scene_path.find("city") >= 0:
 		label = "Training"
+		accent = "#4aa3ff"
 	_refresh_tips("Entering route…")
 	ws.close_link()
-	MWTransition.go(scene_path, label)
+	MWTransition.go(scene_path, label, accent)

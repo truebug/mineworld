@@ -2,9 +2,9 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Living（2026-07-19 起：管道已通；主线见纠偏文档） |
-| **日期** | 2026-07-17 · 续记 2026-07-19 |
-| **关联** | [01-architecture.md](01-architecture.md) · [08-modes-roadmap.md](08-modes-roadmap.md) · **[15-course-correction.md](15-course-correction.md)** |
+| **状态** | Living（2026-07-20：管道已通；C 闭环收口；生态对接见 21） |
+| **日期** | 2026-07-17 · 续记 2026-07-20 |
+| **关联** | [01-architecture.md](01-architecture.md) · [08-modes-roadmap.md](08-modes-roadmap.md) · **[15-course-correction.md](15-course-correction.md)** · **[21-ecosystem-federation.md](21-ecosystem-federation.md)** |
 
 ---
 
@@ -24,6 +24,7 @@
 3. **玩家可接管 MuJoCo 侧机甲的人工遥操**，遥操数据被采集记录。
 4. **成品可在娱乐（玩游戏）环境下**完成：遥操数据采集、与可变交互世界交互结果的数据采集。
 5. 在此基础上延伸多种**学习模式、娱乐模式、商业模式**。
+6. **作为数聚球仿真生态的 3D 传送门前台**：本仓关卡跑真动力学；展厅/教室/实验室等经 Hub 通道进入 PMS 既有 Space/卡片（见 [21](21-ecosystem-federation.md)）。
 
 ---
 
@@ -34,25 +35,28 @@
 - 不是复刻《头号玩家》全感官虚拟人生或大规模元宇宙社交。
 - 不是用游戏引擎内置物理硬扛机器人动力学。
 - 不是让策划去手写 MJCF 搭完整开放世界。
+- **不是**把 PMS / Gazebo / 高保真场景编排搬进本仓 Gateway（对接，不搬迁）。
 
 ### 2.2 是什么
 
-**「头号玩家」的机甲层初始底座**：
+**「头号玩家」的机甲层初始底座**，并作为数聚球 **统一前台里的传送门主体**：
 
-- 可编辑的共享仿真游乐场（Godot）
-- 真物理机体（MuJoCo 权威）
+- 可编辑的共享仿真游乐场（Godot Hub + 本仓关卡）
+- 真物理机体（MuJoCo 权威 · 本仓玩法）
 - 可回放的人类行为档案（录制管道）
+- **外部卡片通道**：展柜/课件 → PMS Space（mjviser / GZWeb / WebIDE 等既有能力）
 
-对外叙事建议收窄为：**真机体、真任务、真遥操数据**；世界变大、皮肤变多后挂，不抢跑。
+对外叙事建议：**真机体、真任务、真遥操数据** + **可发现的仿真宇宙入口**；世界房间与展柜慢慢挂，不抢跑。
 
 ### 2.3 价值飞轮
 
 ```
 好玩 → 更多人玩 → 更多有任务约束的遥操数据
   → 更好的策略/演示 → 更好玩 / 更好卖数据或算力
+生态发现（Hub/Spaces）→ 更多进入 PMS Space / 本仓关卡 → 同一身份下的会话与资产
 ```
 
-娱乐是获客入口；仿真与数据是核心资产。
+娱乐与 3D 导览是获客入口；本仓仿真与数据是核心资产；PMS 是执行农场。
 
 ---
 
@@ -81,13 +85,15 @@
 | 路径 | 用途 |
 |------|------|
 | `mujoco-base/` | MuJoCo 3.6.0 基础镜像，无头运行依赖 |
-| `pms-system/platform/viser-gateway/examples/mujoco_g1/` | MuJoCo + 可视化网关参考实现 |
+| `pms-system/` | Space/卡片编排、viser-gateway、gzweb、edge（**对接目标**，见 [21](21-ecosystem-federation.md)） |
+| `robohub_server/` · `roboweb_frontend/` | 平台 API / WebPortal（统一身份远期对齐） |
+| `spaces.databall.tech/` | Mini Portal：发现与 Try Space |
 
-MineWorld 本仓为**产品级文档与工程聚合点**；具体镜像与 CI 可引用 monorepo 既有资产。
+MineWorld 本仓为**传送门主体 + 采数管道 + 文档聚合点**；高保真场景执行仍在 PMS，不迁入 Gateway。
 
 ---
 
-## 6. 阶段备注（2026-07-19）
+## 6. 阶段备注
 
-POC 已验证双引擎 + 录制管道；当前体感偏「平面车到点」，与 §1–2 的「关节级遥操档案」尚有差距。  
-**诊断与纠偏**以 [15](15-course-correction.md) 为准；**当前冲刺规格**以 [16](16-value-sprint.md) 为准（`demo_workshop` · 臂/爪 · IL）。
+- **2026-07-19**：POC 管道已通；纠偏见 [15](15-course-correction.md)；V 线 [16](16-value-sprint.md) Done。  
+- **2026-07-20**：C 线产品闭环收口 Done；生态对接叙事冻结于 **[21](21-ecosystem-federation.md)**；后续 Now 见 [09](09-todo.md)。

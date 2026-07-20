@@ -4,22 +4,25 @@
 |------|-----|
 | **状态** | Active · Phase A v0 + **Phase B SC1/SC2/LB1** 已落地 |
 | **日期** | 2026-07-20 |
-| **关联** | [09](09-todo.md) · [18](18-hub-dungeon.md) · [19](19-changelog.md) · [04](04-data-collection.md) · [13](13-web-multiplayer-demo.md) |
+| **关联** | [09](09-todo.md) · [18](18-hub-dungeon.md) · [19](19-changelog.md) · [04](04-data-collection.md) · [13](13-web-multiplayer-demo.md) · **[21](21-ecosystem-federation.md)** |
 | **原则** | Gateway WS 仍只管仿真权威位姿；身份 / 积分 / 排行 / 运营走独立 HTTP API + DB |
 
 > **结论**：现在就把这条产品线写进计划是合适的——POC 管道与 3D Hub 已够用；再堆大厅观感收益递减。  
-> **但**必须分期：先「身份 + API + 最小后台」，再「积分/排行」，再「玩家页与回放统一」，避免一次做完账号 SaaS。
+> **但**必须分期：先「身份 + API + 最小后台」，再「积分/排行」，再「玩家页与回放统一」，避免一次做完账号 SaaS。  
+> **生态下一步**：Portal Landing + `player_id` 对齐平台账号（E1/E2），见 [21](21-ecosystem-federation.md)。
 
 ---
 
 ## 1. 目标用户旅程（冻结方向）
 
 ```text
-Portal 登录（唯一 player_id）
+Landing / Portal 登录（唯一 player_id；远期对齐平台 SSO）
+  → Profile + 榜单
   → 进入 3D Hub（多人互见，不录 IL）
-  → 大门分流
-       ├─ A 工坊（单人 · 臂爪 · 准确率/任务 outcome → 积分）
-       └─ B 训练场/竞速（多人 · 速度/名次 → 积分）
+  → 大门 / 展柜分流
+       ├─ A 工坊（本仓 MuJoCo · IL）
+       ├─ B 训练场（本仓）
+       └─ 展柜 → PMS Space（外部卡片 · 不进 Gateway）
   → 回 Hub；大厅可见排行榜
   → Portal「我的」：战绩 / 积分明细 / 回放自己的会话
   → Admin：玩家、会话、回放与导出（IL 轨迹）

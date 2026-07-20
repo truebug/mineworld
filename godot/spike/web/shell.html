@@ -159,6 +159,17 @@ body {
 	min-height: 1.3em;
 }
 
+#mw-transition .mw-tr-hint {
+	font: 12px/1.3 ui-sans-serif, system-ui, sans-serif;
+	color: #6a7380;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+
+#mw-transition.show .mw-tr-hint {
+	opacity: 1;
+}
+
 /* MineWorld overlays — must live in <body>, never in <head>. */
 #mw-hud {
 	position: fixed;
@@ -497,6 +508,7 @@ body.mw-play #mw-joints {
 		</div>
 		<div id="mw-transition" aria-hidden="true">
 			<div class="mw-tr-label" id="mw-tr-label"></div>
+			<div class="mw-tr-hint">Enter / click to skip</div>
 		</div>
 
 		<pre id="mw-hud" title="Click to collapse">MineWorld · connecting…</pre>
@@ -521,6 +533,7 @@ body.mw-play #mw-joints {
 		<div id="mw-success" aria-live="polite">
 			<div class="mw-title">SUCCESS</div>
 			<div class="mw-sub"></div>
+			<a class="mw-me" href="/portal/me.html" style="display:none;margin-top:10px;color:#7ec8ff;font:14px/1.3 ui-sans-serif,system-ui,sans-serif;">My record →</a>
 		</div>
 		<a id="mw-rec-link" href="/recordings.html" title="Recording history"
 			style="display:none;position:fixed;right:16px;top:16px;z-index:2147483646;padding:8px 12px;border-radius:8px;background:rgba(20,22,28,0.88);color:#5dff8a;font:13px/1.2 ui-sans-serif,system-ui,sans-serif;text-decoration:none;border:1px solid #3d4450;">Recordings</a>
@@ -559,18 +572,27 @@ const engine = new Engine(GODOT_CONFIG);
 		}
 	};
 
-	/* UX2-v0: fade overlay between Godot scenes. */
+	/* UX2 / UX2b: fade overlay between Godot scenes (accent + skip hint). */
 	(function setupTransition() {
 		const el = document.getElementById('mw-transition');
 		const lab = document.getElementById('mw-tr-label');
 		if (!el) {
 			return;
 		}
+		const baseBg = '#05070c';
+		window._MW_SKIP_TRANSITION = false;
 		window.MW_TRANSITION = {
 			start: function (opts) {
 				const label = opts && opts.label ? String(opts.label) : '';
+				const accent = opts && opts.accent ? String(opts.accent) : '';
+				window._MW_SKIP_TRANSITION = false;
 				if (lab) {
 					lab.textContent = label;
+				}
+				if (accent && accent.charAt(0) === '#') {
+					el.style.background = 'linear-gradient(160deg, ' + accent + '55 0%, ' + baseBg + ' 55%)';
+				} else {
+					el.style.background = baseBg;
 				}
 				el.classList.add('show');
 				el.setAttribute('aria-hidden', 'false');
@@ -578,11 +600,26 @@ const engine = new Engine(GODOT_CONFIG);
 			end: function () {
 				el.classList.remove('show');
 				el.setAttribute('aria-hidden', 'true');
+				el.style.background = baseBg;
+				window._MW_SKIP_TRANSITION = false;
 				if (lab) {
 					lab.textContent = '';
 				}
 			},
 		};
+		el.addEventListener('click', function () {
+			if (el.classList.contains('show')) {
+				window._MW_SKIP_TRANSITION = true;
+			}
+		});
+		document.addEventListener('keydown', function (ev) {
+			if (!el.classList.contains('show')) {
+				return;
+			}
+			if (ev.key === 'Enter' || ev.key === ' ') {
+				window._MW_SKIP_TRANSITION = true;
+			}
+		});
 	})();
 
 	/* Platform auth (Phase A) — login before Hub; SQLite API on same origin. */

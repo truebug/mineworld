@@ -1,10 +1,10 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + Portal + P1a/P1b done. **Now：H8 / UX2b** — see `docs/09-todo.md`. Changelog: `docs/19-changelog.md`. Platform: `docs/20-platform-portal.md`, `mw_platform/`.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + Portal + C-line closed loop done. **Role：数聚球 3D 传送门前台**（本仓关卡 + 对接 PMS Spaces）— see `docs/21-ecosystem-federation.md`. **Now：E1/E4 或 W1** — `docs/09-todo.md`. Changelog: `docs/19-changelog.md`. Platform: `docs/20-platform-portal.md`, `mw_platform/`.
 
 ## Project Structure & Module Organization
 
-- `docs/` — design docs (`00` … `20-platform-portal.md`); `09-todo.md` execution; **`16` V-sprint**; **`18` Hub**; **`19` changelog**; **`20` platform portal plan**.
+- `docs/` — design docs (`00` … `21-ecosystem-federation.md`); `09-todo.md` execution; **`16` V-sprint**; **`18` Hub**; **`19` changelog**; **`20` portal**; **`21` 生态对接**.
 - `mw_platform/` — identity HTTP API (SQLite; swap via `MW_PLATFORM_DB_URL`).
 - `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, `--physics fake|mujoco`; Hub rooms force FakeMech; `recording_store.py`.
 - `godot/` — spike baseline; default main scene **`demo_hub`**; doors → `demo_workshop` / `demo_city`; autoload `MWTransition`; `?menu=1` text lobby.
@@ -12,7 +12,7 @@ MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authorit
 - `mujoco/` — MJCF + headless scripts; DiffBot + arm/gripper for workshop.
 - `schemas/` — JSON Schema SSOT (`*.v0.json`).
 - `examples/` — contracts / WS / recordings samples (incl. `demo_hub`).
-- `scripts/` — smoke, web serve, city-block gen, trajectory export, hub presence.
+- `scripts/` — smoke, web serve, city-block gen, trajectory export, hub presence, `journey_smoke.py`.
 
 ## Build, Test, and Development Commands
 
@@ -24,6 +24,7 @@ python scripts/ws_smoke_test.py            # end-to-end check, expect "smoke OK"
 python scripts/platform_smoke.py         # platform identity API
 python scripts/grasp_lift_smoke.py       # P1a friction grasp (MuJoCo)
 python scripts/bc_offline_check.py --csv examples/il/bc_sample.csv  # P1b
+python scripts/journey_smoke.py          # C3: login → city success → score/me/lb
 python mw_platform/api_server.py         # standalone :8090 (optional)
 ajv validate -s schemas/ws-messages.v0.json -d examples/ws/hello.json
 ```

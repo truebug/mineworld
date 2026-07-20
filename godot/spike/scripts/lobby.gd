@@ -19,14 +19,14 @@ func _ready() -> void:
 
 func _on_workshop_pressed() -> void:
 	"""Enter closed workshop (default Gateway contract)."""
-	MWTransition.go(WORKSHOP_SCENE, "Workshop")
+	MWTransition.go(WORKSHOP_SCENE, "Workshop", "#e8873a")
 
 
 func _on_city_pressed() -> void:
 	"""Enter city demo; Gateway resolves demo_city via join.level_id (docs/17)."""
-	MWTransition.go(CITY_SCENE, "Training")
+	MWTransition.go(CITY_SCENE, "Training", "#4aa3ff")
 
 
 func _on_hub_pressed() -> void:
 	"""Return to 3D dungeon-gate Hub."""
-	MWTransition.go(HUB_SCENE, "Hub")
+	MWTransition.go(HUB_SCENE, "Hub", "#8a93a3")

@@ -71,6 +71,8 @@ var _joint_targets: Dictionary = {
 	"gripper": 0.0,
 }
 var _joint_panel: CanvasLayer
+## Platform / local profile for score wiring (align hub.gd).
+var _profile: Dictionary = {}
 const _JOINT_SPECS := [
 	{"id": "arm_yaw", "label": "yaw", "min": -2.8, "max": 2.8, "step": 0.02},
 	{"id": "arm_shoulder", "label": "shoulder", "min": -1.4, "max": 1.6, "step": 0.02},
@@ -81,6 +83,7 @@ const _JOINT_SPECS := [
 
 func _ready() -> void:
 	_is_web = OS.has_feature("web")
+	_profile = _load_profile()
 	MWTransition.notify_arrived()
 	_replay_session = _resolve_replay_id()
 	ws.hello_received.connect(_on_hello)
@@ -377,18 +380,29 @@ func _push_web_hud(text: String) -> void:
 	)
 
 
-func _show_mission_result(ok: bool, detail: String) -> void:
+func _show_mission_result(ok: bool, detail: String, points: int = 0) -> void:
 	"""Show big SUCCESS/FAIL + short beep (desktop Label / web DOM)."""
 	var title := "SUCCESS" if ok else "FAIL"
 	var sub := detail if detail != "" else ("reach zone OK" if ok else "objective failed")
+	if ok and points > 0:
+		sub = "%s · +%d pts" % [sub, points]
 	if _is_web:
-		var payload := JSON.stringify({"ok": ok, "title": title, "sub": sub})
+		var payload := JSON.stringify({
+			"ok": ok,
+			"title": title,
+			"sub": sub,
+			"points": points,
+			"me_href": "/portal/me.html",
+		})
 		JavaScriptBridge.eval(
 			"(function(p){var el=document.getElementById('mw-success');"
 			+ "if(!el){return;}el.classList.toggle('fail',!p.ok);"
 			+ "el.classList.add('show');"
 			+ "var t=el.querySelector('.mw-title');if(t){t.textContent=p.title;}"
 			+ "var s=el.querySelector('.mw-sub');if(s){s.textContent=p.sub;}"
+			+ "var a=el.querySelector('.mw-me');if(a){"
+			+ "if(p.ok&&p.points>0){a.style.display='inline';a.href=p.me_href||'/portal/me.html';}"
+			+ "else{a.style.display='none';}}"
 			+ "try{var Ctx=window.AudioContext||window.webkitAudioContext;var c=new Ctx();"
 			+ "var o=c.createOscillator();var g=c.createGain();"
 			+ "o.type='sine';o.frequency.value=p.ok?880:220;"
@@ -477,7 +491,7 @@ func _on_dom_key_event(args: Array) -> void:
 				if _replay_session != "":
 					_toggle_replay_pause()
 			"Escape":
-				MWTransition.go("res://demo_hub.tscn", "Hub")
+				MWTransition.go("res://demo_hub.tscn", "Hub", "#8a93a3")
 
 
 func _on_camera_view_changed(label: String) -> void:
@@ -545,12 +559,47 @@ func _own_mech() -> Node3D:
 	return mech
 
 
+func _load_profile() -> Dictionary:
+	"""Load platform/local profile for join + score (same sources as hub)."""
+	if OS.has_feature("web"):
+		var raw := str(JavaScriptBridge.eval(
+			"(function(){try{return JSON.stringify(window.MW_GET_PROFILE?window.MW_GET_PROFILE():null)}catch(e){return 'null'}})()",
+			true
+		))
+		var parsed: Variant = JSON.parse_string(raw)
+		if typeof(parsed) == TYPE_DICTIONARY:
+			return parsed
+	var path := "user://mw_profile.json"
+	if FileAccess.file_exists(path):
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f != null:
+			var parsed2: Variant = JSON.parse_string(f.get_as_text())
+			if typeof(parsed2) == TYPE_DICTIONARY:
+				return parsed2
+	return {
+		"id": "local-%s" % str(Time.get_unix_time_from_system()).replace(".", ""),
+		"nickname": "Guest",
+		"accent": "#4aa3ff",
+	}
+
+
 func _on_hello(payload: Dictionary) -> void:
 	_hello = payload
 	_session_id = ws.session_id
 	_joined_room_id = _resolve_room_id()
 	print("[MW] hello session=%s room=%s payload=%s" % [_session_id, _joined_room_id, payload])
-	ws.join(level_id, "godot_spike", _joined_room_id)
+	var nick := str(_profile.get("nickname", "godot_spike"))
+	if nick == "":
+		nick = "godot_spike"
+	ws.join(level_id, nick, _joined_room_id, {
+		"mw": {
+			"profile": {
+				"id": str(_profile.get("id", "")),
+				"nickname": nick,
+				"accent": str(_profile.get("accent", "#4aa3ff")),
+			}
+		}
+	})
 	_update_hud()
 
 
@@ -634,7 +683,13 @@ func _on_event(payload: Dictionary) -> void:
 		"objective_complete":
 			_mission_done = true
 			_status_line = "SUCCESS · %s" % payload.get("objective_id", "?")
-			_show_mission_result(true, str(payload.get("objective_id", "reach_finish")))
+			var pts := 0
+			var detail_v: Variant = payload.get("detail", {})
+			if typeof(detail_v) == TYPE_DICTIONARY:
+				pts = int(detail_v.get("points", 0))
+			if pts <= 0:
+				pts = int(payload.get("points", 0))
+			_show_mission_result(true, str(payload.get("objective_id", "reach_finish")), pts)
 			if _controlled:
 				ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
 		"objective_failed":
@@ -736,7 +791,7 @@ func _input(event: InputEvent) -> void:
 		if event.pressed and not event.echo:
 			var code: int = event.keycode if event.keycode != KEY_NONE else event.physical_keycode
 			if code == KEY_ESCAPE:
-				MWTransition.go("res://demo_hub.tscn", "Hub")
+				MWTransition.go("res://demo_hub.tscn", "Hub", "#8a93a3")
 				return
 			if code == KEY_SPACE and _replay_session != "":
 				_toggle_replay_pause()

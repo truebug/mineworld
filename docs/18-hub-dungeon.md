@@ -2,14 +2,15 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Active · H4–H6 / H6b 已落地；H7–H9 · UX/PL 见 [09](09-todo.md) |
+| **状态** | Active · H4–H6 / H6b 已落地；生态通道见 [21](21-ecosystem-federation.md)；H7–H11 · E/UX/PL 见 [09](09-todo.md) |
 | **日期** | 2026-07-20 |
-| **关联** | [00](00-vision.md) · [15](15-course-correction.md) · [17](17-lobby-testfield.md) · [09](09-todo.md) · [19](19-changelog.md) |
+| **关联** | [00](00-vision.md) · [15](15-course-correction.md) · [17](17-lobby-testfield.md) · [09](09-todo.md) · [19](19-changelog.md) · **[21](21-ecosystem-federation.md)** |
 | **主场景** | `godot/spike/demo_hub.tscn`（工程 `main_scene`） |
 | **调试菜单** | `/?menu=1` → `demo_lobby.tscn`（文本选关，保留） |
 
 > **Hub** = 默认起始关：地下城入口大厅。Godot 负责走动与叙事 UI；Gateway **Hub 房不接 MuJoCo**，只做多人在场同步（假物理位姿）。  
-> **真数据价值**仍在进门之后的 MuJoCo 遥操关（车间 / 街区等）。
+> **真数据价值**仍在进门之后的本仓 MuJoCo 遥操关（车间 / 街区等）。  
+> **展厅/教室等**不在本仓仿真：经展柜通道进入 PMS Space（对接，见 [21](21-ecosystem-federation.md)）。
 
 ---
 
@@ -30,13 +31,14 @@
 
 | 门 | 路线 | 本期 | 备注 |
 |----|------|------|------|
-| **A · 仿真工坊** | 单人精细操作 / 自定义关节 · IL | ✅ 可进 | → `demo_workshop` + MuJoCo |
-| **B · 机甲训练场** | 多人联网巡航 / 推箱 | ✅ 可进 | → `demo_city`；`?room=demo` |
+| **A · 仿真工坊** | 单人精细操作 / 自定义关节 · IL | ✅ 可进 | → `demo_workshop` + MuJoCo（本仓） |
+| **B · 机甲训练场** | 多人联网巡航 / 推箱 | ✅ 可进 | → `demo_city`；`?room=demo`（本仓） |
 | **C · 设计室** | 自定义空间 / 契约导出 | 后置 | 编辑器 + T4.2 |
 | **D · 雇佣兵任务中心** | 任务闯关包 | 后置 | 任务卡 + outcome |
-| **E · 竞技场** | 组队排名 | 后置 | 匹配 / 结算 |
+| **E · 竞技场** | 组队排名 | 后置 | 匹配 / 结算（本仓权威另案） |
+| **展柜 / 房间通道** | PMS Space 卡片 | 规划 | → 外部 URL / WebIDE（[21](21-ecosystem-federation.md) E4） |
 
-铁律：换门 = 换场景 +（若玩法关）换 `join.level_id` 权威世界；Hub 不录 IL 轨迹。
+铁律：换门 = 换场景 +（若本仓玩法关）换 `join.level_id` 权威世界；Hub 不录 IL 轨迹。外部卡片通道不进入 Hub MjData。
 
 ---
 
