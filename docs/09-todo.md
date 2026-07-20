@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | Phase A v0 已落地；**Now：P1 · Phase B 计分/排行** |
+| **目标** | Phase A/B 平台底座已落地；**Now：P1 · Phase C（我的/Admin）** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -32,7 +32,7 @@
 > Hub 展示壳（半层二楼 + 静态电梯）已入库，见 [18](18-hub-dungeon.md) · [19](19-changelog.md)。  
 > **UX1 / UX2-v0** 已入库。  
 > **平台产品线**见 **[20](20-platform-portal.md)**。Phase A v0（登录 + SQLite API）已入库。  
-> **建议下一步：SC1 → SC2 → LB1**（积分公式 → 通关写分 → Hub 排行榜）。P1 可并行。
+> **建议下一步：Phase C（ME1/AD1）或 P1a**。SC1/SC2/LB1/PL3 已完成。
 
 ---
 
@@ -55,7 +55,7 @@
 |----|------|------|------|
 | PL1 | 独立 API + 可配置 DB | 健康检查；players CRUD；与 Gateway 并存 | [x] v0 SQLite |
 | PL4 | 配置 SSOT | env 切 SQLite→Postgres；本地默认零依赖 | [x] v0 URL |
-| PL3 | API ↔ Gateway 边界文档 | WS vs HTTP；禁止双写位姿 | [ ] |
+| PL3 | API ↔ Gateway 边界文档 | WS vs HTTP；禁止双写位姿 | [x] |
 | ID1 | Portal 登录页 | 未登录不可进游戏壳；token 进 Hub | [x] v0 |
 | ID2 | Admin 创建/导入玩家 | 表单或 CSV；唯一 `player_id` | [~] POST API |
 | AD1 | Admin 壳 v0 | 鉴权、玩家列表、健康检查 | [~] API only |
@@ -64,9 +64,9 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| SC1 | 积分模型 v0 | 工坊 outcome + 城市时间/名次 → 公式文档化 | [ ] |
-| SC2 | 通关记账 | 会话结束写 score（幂等）；挂 API | [ ] |
-| LB1 | Hub 排行榜 | 大厅 Top N（DOM 或 3D 板） | [ ] |
+| SC1 | 积分模型 v0 | 工坊 outcome + 城市时间/名次 → 公式文档化 | [x] |
+| SC2 | 通关记账 | 会话结束写 score（幂等）；挂 API | [x] |
+| LB1 | Hub 排行榜 | 大厅 Top N（DOM 或 3D 板） | [x] DOM |
 
 ### Phase C · 玩家页与运营回放
 

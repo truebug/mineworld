@@ -31,6 +31,7 @@ import websockets
 from websockets.asyncio.server import ServerConnection, serve
 
 from recorder import SessionRecorder
+from score_client import build_and_post
 
 try:  # optional: only --physics mujoco needs it
     import mujoco
@@ -914,14 +915,38 @@ class EchoGateway:
         return ["fake_kinematics" if self.physics == "fake" else "mujoco"]
 
     def _close_recorder(self, session: Session, outcome: str) -> None:
-        """Finalize session recording if one is open."""
-        if session.recorder is None:
-            return
-        try:
-            session.recorder.close(outcome=outcome)
-        except Exception:
-            LOG.exception("recorder close failed session=%s", session.session_id)
-        session.recorder = None
+        """Finalize session recording if one is open; report score on success."""
+        duration = 0.0
+        if session.recorder is not None:
+            duration = float(session.recorder.duration_sim_s)
+            try:
+                session.recorder.close(outcome=outcome)
+            except Exception:
+                LOG.exception("recorder close failed session=%s", session.session_id)
+            session.recorder = None
+        elif session.room is not None:
+            duration = float(session.room.tick) * DT
+        if outcome == "success":
+            self._report_score(session, duration)
+
+    def _report_score(self, session: Session, duration_sim_s: float) -> None:
+        """SC2: post points to platform API (idempotent by session_id)."""
+        pid = str((session.profile or {}).get("id") or "").strip()
+        level_id = str(session.level_id or session.contract.get("level_id") or "")
+        task_id = session.contract.get("task_id")
+        if not task_id:
+            tags = (session.contract.get("extensions") or {}).get("mw") or {}
+            if isinstance(tags, dict):
+                task_id = tags.get("task_id")
+        build_and_post(
+            session_id=session.session_id,
+            player_id=pid,
+            level_id=level_id,
+            outcome="success",
+            duration_sim_s=duration_sim_s,
+            task_id=str(task_id) if task_id else None,
+            display_name=session.player_name,
+        )
 
     def _applied_cmd(self, mech: MechState) -> dict[str, Any] | None:
         """Control applied this tick (velocity + joint_targets), or None if idle."""

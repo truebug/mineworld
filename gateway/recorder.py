@@ -194,3 +194,8 @@ class SessionRecorder:
             outcome,
         )
         return self.dir
+
+    @property
+    def duration_sim_s(self) -> float:
+        """Sim time covered by last recorded tick (0 if empty)."""
+        return round(self._last_tick * self.dt, 6)

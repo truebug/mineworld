@@ -69,6 +69,14 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 ---
 
+## 2026-07-20 · Phase B · SC1/SC2/LB1 + PL3
+
+- 积分公式 `mw_platform/scoring.py`；`scores` 表幂等记账；Gateway `score_client` 在 success close 时 POST。
+- Hub DOM `#mw-hub-lb` 轮询 `/api/platform/leaderboard`。
+- PL3：`docs/20` §4.1 WS vs HTTP 边界表。
+
+---
+
 ## 2026-07-20 · Phase A v0（Portal + SQLite API）
 
 - `mw_platform/`：可换 URL 的 SQLite 玩家库 + Bearer token。

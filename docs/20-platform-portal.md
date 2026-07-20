@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Planning · **Phase A v0 已落地**（SQLite + Portal 登录） |
+| **状态** | Active · Phase A v0 + **Phase B SC1/SC2/LB1** 已落地 |
 | **日期** | 2026-07-20 |
 | **关联** | [09](09-todo.md) · [18](18-hub-dungeon.md) · [19](19-changelog.md) · [04](04-data-collection.md) · [13](13-web-multiplayer-demo.md) |
 | **原则** | Gateway WS 仍只管仿真权威位姿；身份 / 积分 / 排行 / 运营走独立 HTTP API + DB |
@@ -65,6 +65,31 @@ Portal 登录（唯一 player_id）
 
 本地默认：**SQLite + 无 MQ（进程内队列）**；生产可切 Postgres + Redis/NATS（PL4）。  
 v0 实现：`mw_platform/` + `/api/platform/*`（同端口 8080 或独立 `:8090`）；`MW_PLATFORM_DB_URL` 换库。
+
+### 4.1 PL3 · API ↔ Gateway 边界（冻结）
+
+| 能力 | 通道 | 说明 |
+|------|------|------|
+| 仿真步进 / cmd / state / event | **Gateway WS** | 唯一权威位姿；禁止 HTTP 写位姿 |
+| join / bye / Room | **Gateway WS** | Hub 与玩法关 |
+| 录制 frames 落盘 | **Gateway → FS** | `recordings/sessions/<id>/` |
+| 登录 / token / me | **HTTP `/api/platform/*`** | Portal；Bearer |
+| 通关积分写入 | **HTTP POST `/api/platform/scores`** | Gateway 用 `X-Gateway-Key`；幂等 `session_id` |
+| 排行榜查询 | **HTTP GET `/api/platform/leaderboard`** | Hub DOM 轮询；公开只读 |
+| 玩家 CRUD | **HTTP admin** | `X-Admin-Key` |
+
+铁律：**禁止双写权威位姿**；积分只读 outcome + duration，不参与物理。
+
+### 4.2 SC1 · 积分公式 v0
+
+| level_id | 条件 | 分数 |
+|----------|------|------|
+| `demo_workshop` / `tutorial*` | outcome=success | **100** |
+| `demo_city` | outcome=success | **max(10, 200 − ⌊duration_sim_s × 2⌋)** |
+| `demo_hub` / 非 success | — | **0** |
+| 其他可玩关 | success | **50** |
+
+实现：`mw_platform/scoring.py` · Gateway `score_client.build_and_post` 在 recorder close(success) 时调用。
 
 ### Phase A v0（2026-07-20 已落地）
 
@@ -137,7 +162,7 @@ curl -X POST http://127.0.0.1:8080/api/platform/admin/players \
 | **Hub 观感 H7/H8** | 降优先；排行榜比电梯更有产品意义 |
 | **公网 W2** | 跟 Phase A 的 HTTPS/反向代理一起做 |
 
-推荐节奏：**Phase A v0 已落地** → 下一步 **SC1→SC2→LB1**（计分模型 → 通关记账 → Hub 排行）；P1 可并行、不阻塞。
+推荐节奏：**Phase B 计分/排行已落地** → 下一步 Phase C（我的页 / Admin）或 P1；PL3 边界见 §4.1。
 
 ---
 
@@ -146,3 +171,4 @@ curl -X POST http://127.0.0.1:8080/api/platform/admin/players \
 | 日期 | 说明 |
 |------|------|
 | 2026-07-20 | 初版：门户/身份/积分/排行/玩家页/Admin 五块能力与分期 |
+| 2026-07-20 | Phase A v0；SC1 公式 · SC2 Gateway 记账 · LB1 Hub DOM；PL3 边界表 |

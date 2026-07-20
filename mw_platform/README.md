@@ -21,4 +21,7 @@ Env:
 | `MW_PLATFORM_SECRET` | dev default | Token pepper (future) |
 | `MW_PLATFORM_PORT` | `8090` | Standalone api_server only |
 
+| `GET /api/platform/leaderboard` | Top N totals |
+| `POST /api/platform/scores` | Gateway score write (`X-Gateway-Key`) |
+
 Smoke: `.venv/bin/python scripts/platform_smoke.py`

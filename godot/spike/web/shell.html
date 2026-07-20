@@ -285,6 +285,45 @@ body.mw-hub #mw-hub-map {
 	margin-top: 4px;
 }
 
+#mw-hub-lb {
+	display: none;
+	position: fixed;
+	z-index: 2147483646;
+	box-sizing: border-box;
+	left: 16px;
+	bottom: 16px;
+	width: min(220px, calc(100vw - 32px));
+	padding: 8px 10px 10px;
+	background: rgba(20, 22, 28, 0.9);
+	color: #e8eaed;
+	font: 12px/1.35 ui-sans-serif, system-ui, sans-serif;
+	border-radius: 8px;
+	border: 1px solid #3d4450;
+	border-color: #c9a227;
+	pointer-events: none;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.mw-hub #mw-hub-lb {
+	display: block;
+}
+
+#mw-hub-lb .mw-lb-title {
+	font-size: 11px;
+	color: #e8d48a;
+	margin-bottom: 4px;
+}
+
+#mw-hub-lb ol {
+	margin: 0;
+	padding-left: 1.2em;
+}
+
+#mw-hub-lb li {
+	margin: 2px 0;
+	font: 12px/1.35 ui-monospace, Menlo, Consolas, monospace;
+}
+
 #mw-success {
 	position: fixed;
 	inset: 0;
@@ -454,6 +493,10 @@ body.mw-play #mw-joints {
 			<div class="mw-map-title">Hub map</div>
 			<canvas id="mw-hub-map-canvas" width="220" height="132"></canvas>
 			<div class="mw-map-coords" id="mw-hub-map-coords">pos --</div>
+		</div>
+		<div id="mw-hub-lb" aria-label="Leaderboard">
+			<div class="mw-lb-title">Leaderboard</div>
+			<ol id="mw-hub-lb-list"><li>…</li></ol>
 		</div>
 		<div id="mw-success" aria-live="polite">
 			<div class="mw-title">SUCCESS</div>
@@ -751,11 +794,42 @@ const engine = new Engine(GODOT_CONFIG);
 
 		window.MW_SET_HUB_PROFILE(window.MW_GET_PROFILE());
 
+		async function refreshLeaderboard() {
+			const list = document.getElementById('mw-hub-lb-list');
+			if (!list) {
+				return;
+			}
+			try {
+				const r = await fetch('/api/platform/leaderboard');
+				const data = await r.json();
+				const entries = (data && data.entries) || [];
+				list.innerHTML = '';
+				if (!entries.length) {
+					const li = document.createElement('li');
+					li.textContent = 'No scores yet';
+					list.appendChild(li);
+					return;
+				}
+				entries.slice(0, 8).forEach(function (e) {
+					const li = document.createElement('li');
+					const name = String(e.display_name || e.player_id || '?').slice(0, 14);
+					li.textContent = name + ' · ' + String(e.total_points || 0);
+					list.appendChild(li);
+				});
+			} catch (err) {
+				list.innerHTML = '<li>—</li>';
+			}
+		}
+		window.MW_REFRESH_LEADERBOARD = refreshLeaderboard;
+		refreshLeaderboard();
+		setInterval(refreshLeaderboard, 15000);
+
 		function layoutHubChrome() {
 			const canvas = document.getElementById('canvas');
 			const hud = document.getElementById('mw-hud');
 			const profile = document.getElementById('mw-hub-profile');
 			const map = document.getElementById('mw-hub-map');
+			const lb = document.getElementById('mw-hub-lb');
 			if (!canvas || !document.body.classList.contains('mw-hub')) {
 				return;
 			}
@@ -785,6 +859,16 @@ const engine = new Engine(GODOT_CONFIG);
 				map.style.bottom = 'auto';
 				const mh = map.offsetHeight || 160;
 				map.style.top = Math.max(pad, r.bottom - pad - mh) + 'px';
+			}
+			if (lb) {
+				const lw = Math.min(220, Math.max(140, r.width * 0.28));
+				lb.style.width = lw + 'px';
+				lb.style.left = Math.max(pad, r.left + pad) + 'px';
+				lb.style.right = 'auto';
+				lb.style.top = 'auto';
+				lb.style.bottom = 'auto';
+				const lh = lb.offsetHeight || 120;
+				lb.style.top = Math.max(pad, r.bottom - pad - lh) + 'px';
 			}
 		}
 		window.MW_LAYOUT_HUB_CHROME = layoutHubChrome;

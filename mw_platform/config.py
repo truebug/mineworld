@@ -40,6 +40,23 @@ def admin_key() -> str | None:
     return os.environ.get("MW_PLATFORM_ADMIN_KEY")
 
 
+def gateway_key() -> str | None:
+    """Key for Gateway score posts; falls back to admin key, then dev default."""
+    return (
+        os.environ.get("MW_PLATFORM_GATEWAY_KEY")
+        or os.environ.get("MW_PLATFORM_ADMIN_KEY")
+        or "mineworld-gateway-dev"
+    )
+
+
+def score_url() -> str:
+    """Where Gateway POSTs scores (same-origin web server by default)."""
+    return os.environ.get(
+        "MW_PLATFORM_SCORE_URL",
+        "http://127.0.0.1:8080/api/platform/scores",
+    )
+
+
 def bind_host() -> str:
     return os.environ.get("MW_PLATFORM_HOST", "127.0.0.1")
 

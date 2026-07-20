@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + UX splash/fade done. **Platform track**: Portal login + SQLite API (`docs/20-platform-portal.md`, `mw_platform/`). Execution: `docs/09-todo.md` (Now P1 · Phase B next). Changelog: `docs/19-changelog.md`.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + UX splash/fade done. **Platform track**: Portal login + SQLite API + scores/leaderboard (`docs/20-platform-portal.md`, `mw_platform/`). Execution: `docs/09-todo.md` (Now P1 · Phase C next). Changelog: `docs/19-changelog.md`.
 
 ## Project Structure & Module Organization
 

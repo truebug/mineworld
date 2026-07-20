@@ -103,8 +103,109 @@ class SQLitePlayerStore(PlayerStore):
                 );
                 CREATE INDEX IF NOT EXISTS idx_auth_tokens_player
                     ON auth_tokens(player_id);
+                CREATE TABLE IF NOT EXISTS scores (
+                    session_id TEXT PRIMARY KEY,
+                    player_id TEXT NOT NULL,
+                    display_name TEXT NOT NULL DEFAULT '',
+                    level_id TEXT NOT NULL,
+                    task_id TEXT,
+                    outcome TEXT NOT NULL,
+                    duration_sim_s REAL NOT NULL DEFAULT 0,
+                    points INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_scores_player
+                    ON scores(player_id);
+                CREATE INDEX IF NOT EXISTS idx_scores_points
+                    ON scores(points DESC);
                 """
             )
+
+    def record_score(
+        self,
+        *,
+        session_id: str,
+        player_id: str,
+        level_id: str,
+        outcome: str,
+        points: int,
+        duration_sim_s: float = 0.0,
+        task_id: str | None = None,
+        display_name: str | None = None,
+    ) -> dict[str, Any]:
+        """Idempotent upsert by session_id. Returns {created, row}."""
+        sid = session_id.strip()
+        pid = player_id.strip()
+        if not sid or not pid:
+            raise ValueError("session_id and player_id required")
+        name = (display_name or "").strip()
+        if not name:
+            p = self.get_player(pid)
+            name = p.display_name if p else pid
+        now = _iso(_utc_now())
+        with self._conn() as conn:
+            existing = conn.execute(
+                "SELECT session_id, points FROM scores WHERE session_id = ?",
+                (sid,),
+            ).fetchone()
+            if existing is not None:
+                row = conn.execute(
+                    """
+                    SELECT session_id, player_id, display_name, level_id, task_id,
+                           outcome, duration_sim_s, points, created_at
+                    FROM scores WHERE session_id = ?
+                    """,
+                    (sid,),
+                ).fetchone()
+                return {"created": False, "row": dict(row) if row else {}}
+            conn.execute(
+                """
+                INSERT INTO scores (
+                    session_id, player_id, display_name, level_id, task_id,
+                    outcome, duration_sim_s, points, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    sid,
+                    pid,
+                    name,
+                    level_id,
+                    task_id,
+                    outcome,
+                    float(duration_sim_s),
+                    int(points),
+                    now,
+                ),
+            )
+            row = conn.execute(
+                """
+                SELECT session_id, player_id, display_name, level_id, task_id,
+                       outcome, duration_sim_s, points, created_at
+                FROM scores WHERE session_id = ?
+                """,
+                (sid,),
+            ).fetchone()
+        return {"created": True, "row": dict(row) if row else {}}
+
+    def leaderboard(self, *, limit: int = 10) -> list[dict[str, Any]]:
+        """Aggregate total points per player (Top N)."""
+        lim = max(1, min(50, int(limit)))
+        with self._conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT player_id,
+                       MAX(display_name) AS display_name,
+                       SUM(points) AS total_points,
+                       COUNT(*) AS runs
+                FROM scores
+                WHERE points > 0
+                GROUP BY player_id
+                ORDER BY total_points DESC, runs ASC
+                LIMIT ?
+                """,
+                (lim,),
+            ).fetchall()
+        return [dict(r) for r in rows]
 
     def _row_to_player(self, row: sqlite3.Row | None) -> Player | None:
         if row is None:
@@ -262,6 +363,12 @@ class PostgresPlayerStore(PlayerStore):
         raise NotImplementedError
 
     def list_players(self) -> list[Player]:
+        raise NotImplementedError
+
+    def record_score(self, **kwargs: Any) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def leaderboard(self, *, limit: int = 10) -> list[dict[str, Any]]:
         raise NotImplementedError
 
 

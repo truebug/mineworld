@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-"""Smoke test platform API (Phase A · PL1 / ID1)."""
+"""Smoke test platform API (Phase A + B · identity / scores)."""
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 import tempfile
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -16,40 +13,19 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from mw_platform.handlers import init_platform_data  # noqa: E402
+from mw_platform.scoring import compute_points  # noqa: E402
 from mw_platform.store import get_store  # noqa: E402
-
-
-def _post(base: str, path: str, body: dict, headers: dict | None = None) -> tuple[int, dict]:
-    data = json.dumps(body).encode("utf-8")
-    hdrs = {"Content-Type": "application/json", **(headers or {})}
-    req = urllib.request.Request(base + path, data=data, headers=hdrs, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            return resp.status, json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        return exc.code, json.loads(exc.read().decode("utf-8"))
-
-
-def _get(base: str, path: str, headers: dict | None = None) -> tuple[int, dict]:
-    req = urllib.request.Request(base + path, headers=headers or {}, method="GET")
-    try:
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            return resp.status, json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        return exc.code, json.loads(exc.read().decode("utf-8"))
 
 
 def main() -> int:
     tmp = tempfile.mkdtemp(prefix="mw_platform_smoke_")
     db_path = Path(tmp) / "test.sqlite"
     os.environ["MW_PLATFORM_DB_URL"] = f"sqlite:///{db_path}"
-    # Reset singleton
     import mw_platform.store as store_mod
 
     store_mod._STORE = None  # noqa: SLF001
     init_platform_data()
 
-    # In-process handler smoke (no server)
     store = get_store()
     player = store.verify_password("demo", "demo")
     if player is None:
@@ -59,6 +35,36 @@ def main() -> int:
     resolved = store.resolve_token(token)
     if resolved is None or resolved.player_id != "demo":
         print("FAIL: token resolve", file=sys.stderr)
+        return 1
+
+    if compute_points(level_id="demo_workshop", outcome="success") != 100:
+        print("FAIL: workshop points", file=sys.stderr)
+        return 1
+    if compute_points(level_id="demo_city", outcome="success", duration_sim_s=50) != 100:
+        print("FAIL: city points", file=sys.stderr)
+        return 1
+
+    r1 = store.record_score(
+        session_id="sess-a",
+        player_id="demo",
+        level_id="demo_workshop",
+        outcome="success",
+        points=100,
+        display_name="Demo Pilot",
+    )
+    r2 = store.record_score(
+        session_id="sess-a",
+        player_id="demo",
+        level_id="demo_workshop",
+        outcome="success",
+        points=100,
+    )
+    if not r1.get("created") or r2.get("created"):
+        print("FAIL: score idempotent", file=sys.stderr)
+        return 1
+    lb = store.leaderboard(limit=5)
+    if not lb or lb[0]["player_id"] != "demo" or int(lb[0]["total_points"]) != 100:
+        print("FAIL: leaderboard", lb, file=sys.stderr)
         return 1
 
     print("platform smoke OK")
