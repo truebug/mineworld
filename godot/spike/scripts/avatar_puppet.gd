@@ -21,6 +21,8 @@ var _wall_at_last_state := 0.0
 var last_mw_x := 0.0
 var last_mw_y := 0.0
 var last_mw_yaw := 0.0
+## Hub mezzanine: Godot Y offset (MW Z-up maps to Godot Y; FakeMech stays z≈0).
+var height_offset := 0.0
 
 var _wheels: Array = [] ## MeshInstance3D
 var _last_render_pos := Vector3.ZERO
@@ -143,7 +145,7 @@ func push_state(entity: Dictionary, t_sim: float) -> void:
 	last_mw_x = mw_x
 	last_mw_y = mw_y
 	last_mw_yaw = yaw
-	var godot_pos := Vector3(mw_x, 0.0, -mw_y)
+	var godot_pos := Vector3(mw_x, height_offset, -mw_y)
 	_sim_now = t_sim
 	_wall_at_last_state = Time.get_ticks_msec() / 1000.0
 	if not _has_state:

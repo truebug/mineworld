@@ -340,8 +340,7 @@
       "<div class='actions'>" +
       "<button type='button' id='btn-play'>▶ Play 2D</button>" +
       "<button type='button' id='btn-pause'>Pause</button>" +
-      // TODO(R3): re-enable when /?replay= offline puppet is reliable
-      "<button type='button' disabled title='TODO R3: 3D offline replay unreliable — use Play 2D'>▶ 3D Replay</button>" +
+      "<button type='button' id='btn-3d'>▶ 3D Replay</button>" +
       "<a href='/api/recordings/" + encodeURIComponent(s.session_id) + "' target='_blank'>header.json</a>" +
       "<a href='/api/recordings/" + encodeURIComponent(s.session_id) + "/frames' target='_blank'>frames.jsonl</a>" +
       "</div>";
@@ -371,6 +370,10 @@
       status.textContent = "加载失败: " + err;
       return;
     }
+
+    document.getElementById("btn-3d").onclick = function () {
+      location.href = "/?replay=" + encodeURIComponent(s.session_id);
+    };
 
     function stopPlay() {
       if (playTimer) {

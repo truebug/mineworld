@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>MineWorld · Space stub</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--void: #03050a;
+			--ink: #e6edf5;
+			--muted: #7d8fa3;
+			--accent: #d4a24c;
+			--link: #6ec0ff;
+		}
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			min-height: 100vh;
+			display: grid;
+			place-items: center;
+			padding: 24px;
+			background:
+				radial-gradient(ellipse at 40% 20%, #1a3048 0%, transparent 55%),
+				linear-gradient(180deg, #0a1018 0%, var(--void) 100%);
+			color: var(--ink);
+			font: 16px/1.5 "IBM Plex Sans", system-ui, sans-serif;
+		}
+		.card {
+			max-width: 420px;
+			width: 100%;
+		}
+		.brand {
+			margin: 0 0 8px;
+			font-family: Syne, sans-serif;
+			font-weight: 800;
+			font-size: 13px;
+			letter-spacing: 0.14em;
+			text-transform: uppercase;
+			color: var(--accent);
+		}
+		h1 {
+			margin: 0 0 12px;
+			font-family: Syne, sans-serif;
+			font-weight: 800;
+			font-size: clamp(1.6rem, 4vw, 2rem);
+			letter-spacing: -0.02em;
+			line-height: 1.15;
+		}
+		p { margin: 0 0 10px; color: var(--muted); }
+		.meta {
+			margin: 18px 0 28px;
+			font-size: 13px;
+			color: var(--muted);
+			font-family: ui-monospace, monospace;
+		}
+		.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+		a.btn {
+			display: inline-block;
+			padding: 12px 18px;
+			border-radius: 2px;
+			text-decoration: none;
+			font-weight: 600;
+			font-size: 14px;
+		}
+		a.primary {
+			background: var(--accent);
+			color: #1a1208;
+		}
+		a.ghost {
+			border: 1px solid #3d4450;
+			color: var(--link);
+		}
+	</style>
+</head>
+<body>
+	<main class="card">
+		<p class="brand">MineWorld · external card</p>
+		<h1 id="title">Space stub</h1>
+		<p>This tab stands in for a PMS / Space enter URL. Physics stays outside the Hub gateway.</p>
+		<p class="meta" id="meta"></p>
+		<div class="actions">
+			<a class="btn primary" href="/">Back to hangar</a>
+			<a class="btn ghost" href="/portal/me.html">My profile</a>
+		</div>
+	</main>
+	<script>
+		(function () {
+			var q = new URLSearchParams(location.search);
+			var id = q.get("id") || "unknown";
+			var title = q.get("title") || "Space stub";
+			document.getElementById("title").textContent = title;
+			document.getElementById("meta").textContent =
+				"kind=pms_space · id=" + id + " · E4 stub";
+			document.title = "MineWorld · " + title;
+		})();
+	</script>
+</body>
+</html>

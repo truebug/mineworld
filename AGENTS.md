@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + Portal + C-line + E1 Landing + W1 dual-prop Done. **Role：数聚球 3D 传送门前台** — `docs/21-ecosystem-federation.md`. **Now：E4 或 E2** — `docs/09-todo.md`. Changelog: `docs/19-changelog.md`. Platform: `docs/20-platform-portal.md`, `mw_platform/`.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + Portal + C-line + E1 Landing + W1 dual-prop + R3 replay + H8 elevator + IL place + E4 exhibit Done. **Role：数聚球 3D 传送门前台** — `docs/21-ecosystem-federation.md`. **Now：E2** — `docs/09-todo.md`. Changelog: `docs/19-changelog.md`. Platform: `docs/20-platform-portal.md`, `mw_platform/`.
 
 ## Project Structure & Module Organization
 

@@ -1,0 +1,23 @@
+{
+  "contract_version": "0.1",
+  "kind": "hub_exhibits",
+  "description": "E5: Hub 展柜元数据 v0 — Hub 只存卡片指针，不进 MuJoCo（docs/21 E4/E5）",
+  "exhibits": [
+    {
+      "id": "exhibit_gallery",
+      "title": "Demo Gallery",
+      "kind": "pms_space",
+      "url": "/portal/space_stub.html?id=exhibit_gallery&title=Demo%20Gallery",
+      "tags": ["stub", "pms"],
+      "lore": "PMS Space card — opens outside the hangar sim."
+    },
+    {
+      "id": "exhibit_classroom",
+      "title": "Classroom Lab",
+      "kind": "pms_space",
+      "url": "/portal/space_stub.html?id=exhibit_classroom&title=Classroom%20Lab",
+      "tags": ["stub", "classroom"],
+      "lore": "Courseware / WebIDE placeholder — return via Back to hangar."
+    }
+  ]
+}

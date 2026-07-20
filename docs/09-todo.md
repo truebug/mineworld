@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | C / E1 / W1 Done；**Now：E4 或 E2**（见 [21](21-ecosystem-federation.md)） |
+| **目标** | C / E1 / W1 / R3 / H8 / IL-place / **E4** Done；**Now：E2**（见 [21](21-ecosystem-federation.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -24,16 +24,17 @@
 
 ## Now（E · 生态对接起步 · 建议）
 
-> SSOT：[21-ecosystem-federation.md](21-ecosystem-federation.md)。C / E1 / W1 已收口。  
-> **建议下一刀：E4 展柜→外部 URL stub，或 E2 身份映射草案。**
+> SSOT：[21-ecosystem-federation.md](21-ecosystem-federation.md)。C / E1 / W1 / E4 已收口。  
+> **建议下一刀：E2 身份映射草案。**
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | E1 | Portal Landing → Profile/榜 → 进大厅 CTA | 未登录见品牌页；登录后可进 Hub | [x] v0 |
 | E2 | `player_id` ↔ 平台 user 映射草案 | 文档表 + 可选 stub；不阻塞 E4 | [ ] |
-| E4 | Hub 展柜 stub → 打开 PMS/Space URL | F 键新标签或壳；能回 Hub | [ ] |
-| E5 | 展柜元数据契约 v0 | examples JSON：id/title/url/kind | [ ] |
+| E4 | Hub 展柜 stub → 打开 PMS/Space URL | F 键新标签或壳；能回 Hub | [x] |
+| E5 | 展柜元数据契约 v0 | examples JSON：id/title/url/kind | [x] 薄 |
 | W1 | 工坊推箱/抓取 smoke 恢复 | `stow_crate_smoke` + `grasp_lift_smoke` PASS（双 prop） | [x] |
+| W1b | 夹→放台面示范链路 | `grasp_place_smoke` PASS；`obj_place_block` 为 IL 主 task | [x] |
 
 ---
 
@@ -93,8 +94,8 @@
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | ME1 | Portal「我的」 | 积分、战绩、会话列表 | [x] v0 |
-| ME2 | 自助回放 | 复用 recordings 2D（3D 链暂禁，见 R3） | [x] v0 |
-| R3 | 修复 `/?replay=` 3D 离线回放 | Recordings / My record 重新启用 3D 入口 | [ ] |
+| ME2 | 自助回放 | 复用 recordings 2D（3D 见 R3） | [x] v0 |
+| R3 | 修复 `/?replay=` 3D 离线回放 | Recordings / My record 重新启用 3D 入口 | [x] |
 | AD2 | Admin 玩家/会话钻取 | 按 player 筛录制 | [x] v0 |
 | EXP1 | 批量导出轨迹 | 对齐现有 IL 导出语义 | [x] v0 |
 | PL2 | Admin 运维增强 | 在线房只读、契约/level 开关等 | [ ] |
@@ -103,7 +104,7 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| H8 | 可乘电梯 + 可上 L2 | 轿厢或瞬移；栏杆碰撞；小地图层 | [ ] 观感，非对接阻塞 |
+| H8 | 可乘电梯 + 可上 L2 | 轿厢或瞬移；栏杆碰撞；小地图层 | [x] 薄乘（Y offset） |
 | H9 | Hub 交互台玩法雏形 | Party board / Vendor 真 UI | [ ] |
 | H10 | 房间壳占位（展厅/教室 lore） | 走廊+文案；无真实 URL 亦可 | [ ] |
 | H11 | 竞技场门占位 | 1v1 / 多人叙事；权威另案 | [ ] |
@@ -170,7 +171,7 @@
 | D7 | 随机街区 + 楼宇占地空气墙 | `gen_demo_city_block.py` + `city_block_dress.gd`；棕墙隐藏 | [x] |
 | D9 | Web 选 seed / 一键重生街区 | `POST /api/city-block` + shell 控件；Gateway 契约 mtime 热加载 | [x] |
 | D10 | 路面贴花 / 更密路网观感（仍空气墙权威） | 楼宇间深色沥青带 + 浅灰人行底（无 KayKit 标线砖） | [x] |
-| D8 | 客户端内帧回放 | Recordings 2D Play ✅；`/?replay=` 3D 暂不可靠 → R3 | [~] 2D |
+| D8 | 客户端内帧回放 | Recordings 2D Play ✅；`/?replay=` 3D ✅（R3） | [x] |
 | D11 | KayKit 街道小品 | layout `props`（灯/椅/灌木/消防栓） | [x] |
 | D12 | demo_city 终点开环 smoke | `--expect-objective` 直道东行至绿区 | [x] |
 | D13 | 录制索引 SQLite + 批量轨迹导出 | `recording_store` + `export_trajectories.py` + API | [x] |

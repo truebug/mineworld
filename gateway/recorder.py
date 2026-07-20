@@ -148,6 +148,16 @@ class SessionRecorder:
         self._header["outcome"] = outcome
         self._flush_header()
 
+    def set_task_id(self, task_id: str) -> None:
+        """Update header task_id when a terminal objective completes (IL label)."""
+        if self._closed:
+            return
+        tid = (task_id or "").strip()
+        if not tid:
+            return
+        self._header["task_id"] = tid
+        self._flush_header()
+
     def write_frame(
         self,
         *,

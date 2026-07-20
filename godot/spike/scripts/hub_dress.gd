@@ -7,7 +7,7 @@ const HALL_HALF_X := 20.0
 const HALL_HALF_Z := 16.0
 const CEILING_Y := 14.0
 const WALL_T := 0.6
-## Showcase mezzanine (display-only; elevator not rideable yet).
+## Showcase mezzanine; H8 thin elevator ride (viewer Y offset in hub.gd).
 const FLOOR2_Y := 5.2
 const ELEV_X := 13.5
 const ELEV_Z := 12.5
@@ -255,7 +255,7 @@ func _place_mezzanine(root: Node3D) -> void:
 	_box(root, "L2Seat", Vector3(-6, FLOOR2_Y + 0.35, 8.6), Vector3(2.4, 0.35, 0.7), _mat(Color(0.4, 0.3, 0.22), 0.8, 0.0))
 	_box(root, "L2Plant", Vector3(6, FLOOR2_Y + 0.4, 10), Vector3(0.6, 0.7, 0.6), _mat(Color(0.3, 0.5, 0.32), 0.85, 0.0))
 	var tag := Label3D.new()
-	tag.text = "L2 · Lounge (preview)"
+	tag.text = "L2 · Lounge"
 	tag.font_size = 48
 	tag.outline_size = 8
 	tag.pixel_size = 0.012
@@ -267,7 +267,7 @@ func _place_mezzanine(root: Node3D) -> void:
 
 
 func _place_elevator(root: Node3D) -> void:
-	"""Static glass elevator shaft + cab; display-only."""
+	"""Glass elevator shaft + cab; ride via Hub F (thin teleport / Y offset)."""
 	var frame := _mat(Color(0.22, 0.26, 0.32), 0.55, 0.35)
 	var glass := StandardMaterial3D.new()
 	glass.albedo_color = Color(0.45, 0.7, 0.95, 0.22)
@@ -302,7 +302,7 @@ func _place_elevator(root: Node3D) -> void:
 	led.emission_energy_multiplier = 1.2
 	_box(root, "ElevLed", Vector3(ELEV_X, 3.55, ELEV_Z - w * 0.5 - 0.05), Vector3(1.8, 0.08, 0.08), led)
 	var label := Label3D.new()
-	label.text = "Elevator · soon"
+	label.text = "Elevator · F to ride"
 	label.font_size = 40
 	label.outline_size = 6
 	label.pixel_size = 0.01

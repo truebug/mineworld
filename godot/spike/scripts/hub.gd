@@ -57,14 +57,25 @@ var _link_banner := "Connecting to gateway…"
 var _last_door_key := ""
 const DOOR_ENTER_DIST := 2.4
 const DOOR_STUB_DIST := 3.2
+## Matches hub_dress FLOOR2_Y — thin elevator ride (viewer offset).
+const FLOOR2_Y := 5.2
+
+var _hub_floor := 1
 
 
 func _ready() -> void:
-	"""Boot Hub or divert to text menu when ?menu=1."""
+	"""Boot Hub, divert ?menu=1, or route ?replay= to playable scene (R3)."""
 	_is_web = OS.has_feature("web")
 	if _wants_text_menu():
 		MWTransition.go(LOBBY_SCENE, "Debug menu")
 		return
+	if _try_route_replay():
+		return
+	_start_hub_session()
+
+
+func _start_hub_session() -> void:
+	"""Normal Hub presence boot (WS FakeMech + chrome)."""
 	MWTransition.notify_arrived()
 	_profile = _load_profile()
 	_apply_profile_ui()
@@ -112,9 +123,6 @@ func _ready() -> void:
 
 func _wants_text_menu() -> bool:
 	"""True when URL has ?menu=1 (debug text lobby)."""
-	if not _is_web and not OS.has_feature("web"):
-		# Desktop: honor --menu=1 style via env is overkill; only Web query.
-		pass
 	if OS.has_feature("web"):
 		var q := str(JavaScriptBridge.eval(
 			"(function(){try{return new URLSearchParams(location.search).get('menu')||''}catch(e){return ''}})()",
@@ -122,6 +130,71 @@ func _wants_text_menu() -> bool:
 		))
 		return q == "1" or q.to_lower() == "true"
 	return false
+
+
+func _try_route_replay() -> bool:
+	"""R3: main_scene is Hub; fetch header.level_id and load workshop/city (keep ?replay=)."""
+	if not _is_web:
+		return false
+	var rid := str(JavaScriptBridge.eval(
+		"(function(){try{return new URLSearchParams(location.search).get('replay')||''}catch(e){return ''}})()",
+		true
+	)).strip_edges()
+	if rid == "":
+		return false
+	_refresh_tips("Loading 3D replay…")
+	var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
+	if origin == "":
+		_refresh_tips("Replay: no origin")
+		return false
+	var http := HTTPRequest.new()
+	http.name = "ReplayRouteHttp"
+	add_child(http)
+	http.request_completed.connect(_on_replay_route_header.bind(http, rid))
+	var err := http.request("%s/api/recordings/%s" % [origin, rid.uri_encode()])
+	if err != OK:
+		_refresh_tips("Replay route HTTP err %s" % err)
+		http.queue_free()
+		return false
+	return true
+
+
+func _on_replay_route_header(
+	result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	body: PackedByteArray,
+	http: HTTPRequest,
+	_rid: String,
+) -> void:
+	"""Map recording level_id → playable scene; URL query stays for main.gd."""
+	http.queue_free()
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		_refresh_tips("Replay: header load fail — opening Hub")
+		JavaScriptBridge.eval(
+			"(function(){try{var u=new URL(location.href);u.searchParams.delete('replay');"
+			+ "history.replaceState({},'',u.pathname+u.search+u.hash);}catch(e){}})()",
+			true
+		)
+		_start_hub_session()
+		return
+	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		_refresh_tips("Replay: bad header — opening Hub")
+		_start_hub_session()
+		return
+	var level_id := str((parsed as Dictionary).get("level_id", "")).strip_edges()
+	var scene := WORKSHOP_SCENE
+	var label := "Replay · Workshop"
+	var accent := "#e8873a"
+	if level_id == "demo_city":
+		scene = CITY_SCENE
+		label = "Replay · Training"
+		accent = "#4aa3ff"
+	elif level_id == "demo_hub" or level_id == "":
+		# Hub recordings are presence-only; fall back to workshop puppet stage.
+		scene = WORKSHOP_SCENE
+	MWTransition.go(scene, label, accent)
 
 
 func _load_profile() -> Dictionary:
@@ -306,6 +379,8 @@ func _ensure_puppets(entities: Array) -> void:
 			node.set("display_name", str(_profile.get("nickname", "Guest")))
 		add_child(node)
 		_puppets[eid] = node
+		if eid == _controlled_entity_id:
+			_apply_hub_floor()
 
 
 func _own_avatar() -> Node3D:
@@ -640,6 +715,8 @@ func _send_velocity_cmd() -> void:
 
 func _check_doors() -> void:
 	"""Enter a route when own avatar is close to an open door (A/B only)."""
+	if _hub_floor != 1:
+		return
 	var own := _own_avatar()
 	if own == null or not own.visible:
 		return
@@ -697,7 +774,7 @@ func _update_interact_prompt() -> void:
 
 
 func _try_interact() -> void:
-	"""F: talk to NPC / use nearby station."""
+	"""F: talk / elevator / E4 exhibit (open Space URL)."""
 	var own := _own_avatar()
 	if own == null or hub_life == null or not hub_life.has_method("nearest_interact"):
 		return
@@ -705,7 +782,65 @@ func _try_interact() -> void:
 	if hit.is_empty():
 		_refresh_tips("Nothing to use here — approach a glowing kiosk or NPC.")
 		return
+	if str(hit.get("id", "")) == "elevator":
+		_toggle_elevator()
+		return
+	var url := str(hit.get("url", "")).strip_edges()
+	if url != "":
+		_open_exhibit_url(url, str(hit.get("title", hit.get("id", "Space"))))
+		return
 	_refresh_tips(str(hit.get("line", "...")))
+
+
+func _open_exhibit_url(url: String, title: String) -> void:
+	"""E4: open PMS/Space card in new tab (web) or system browser (desktop)."""
+	var resolved := url
+	if resolved.begins_with("/") and _is_web:
+		var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
+		if origin != "":
+			resolved = origin + resolved
+	if _is_web:
+		var payload := JSON.stringify({"url": resolved})
+		JavaScriptBridge.eval(
+			"(function(){try{var p=%s;window.open(p.url,'_blank','noopener,noreferrer');}catch(e){}})()" % payload,
+			true
+		)
+		_refresh_tips(
+			"Opened «%s» in a new tab.\nSwitch back here for the hangar · stub has Back to hangar." % title
+		)
+	else:
+		var err := OS.shell_open(resolved)
+		if err != OK:
+			_refresh_tips("Could not open exhibit URL (err %s): %s" % [err, resolved])
+		else:
+			_refresh_tips("Opened «%s» in your browser.\nReturn to this window for the hangar." % title)
+
+
+func _toggle_elevator() -> void:
+	"""H8 thin ride: snap viewer to L2 mezzanine or back to hangar floor."""
+	_hub_floor = 2 if _hub_floor == 1 else 1
+	_apply_hub_floor()
+	if _hub_floor == 2:
+		_refresh_tips("L2 Lounge — walk the mezzanine. F at elevator to return.")
+		_door_context = "Floor: L2"
+	else:
+		_refresh_tips("Hangar floor — F at elevator for L2 lounge.")
+		_door_context = "Floor: L1"
+	_compose_and_push_tips()
+
+
+func _apply_hub_floor() -> void:
+	"""Raise own avatar onto L2 deck (FakeMech stays planar; visual Y only)."""
+	var own := _own_avatar()
+	if own == null:
+		return
+	if "height_offset" in own:
+		own.set("height_offset", FLOOR2_Y if _hub_floor == 2 else 0.0)
+	# Nudge buffers so the jump is immediate (don't wait for next state).
+	if _hub_floor == 2:
+		own.global_position.y = FLOOR2_Y
+	else:
+		own.global_position.y = 0.0
 
 
 func _on_camera_view_changed(label: String) -> void:

@@ -660,6 +660,17 @@ def _gripper_command_closed(mech: MechState, closed_max: float) -> bool:
     return gq is not None and gq <= closed_max
 
 
+def _gripper_command_open(mech: MechState, open_min: float) -> bool:
+    """Return True if gripper is commanded open and/or measured open (place)."""
+    if not isinstance(mech, MujocoMech):
+        return False
+    target = mech.joint_targets.get("gripper")
+    if target is not None and float(target) >= open_min:
+        return True
+    gq = _gripper_q(mech)
+    return gq is not None and gq >= open_min
+
+
 def _prop_touches_gripper(model: Any, data: Any, mech_id: str, prop_id: str) -> bool:
     """Return True if prop contacts any gripper/finger body of mech."""
     prefix = f"{mech_id}/"
@@ -724,6 +735,10 @@ def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
     trigger AABB instead (workshop stow-crate).
 
     ``grasp_lift`` requires closed gripper + contact friction + prop ``min_z`` (P1a).
+    Milestone only — does not set session ``outcome`` (terminal place/stow does).
+
+    ``reach_region`` may set ``params.gripper_open_min`` so the subject must be
+    released (place on bench/bin), not held closed over the AABB.
     """
     events: list[dict[str, Any]] = []
     if session.room is None:
@@ -739,7 +754,6 @@ def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
             if not ok or subject_id is None:
                 continue
             session.completed_objectives.add(obj_id)
-            session.outcome = "success"
             events.append(
                 {
                     "event_type": "objective_complete",
@@ -782,6 +796,11 @@ def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
 
         if not point_in_aabb(px, py, pz, mn, mx):
             continue
+        open_min = params.get("gripper_open_min")
+        if open_min is not None:
+            mech = session.mech
+            if mech is None or not _gripper_command_open(mech, float(open_min)):
+                continue
         session.completed_objectives.add(obj_id)
         session.outcome = "success"
         events.append(
@@ -1626,17 +1645,24 @@ class EchoGateway:
                         for ev in objective_events:
                             if ev.get("event_type") != "objective_complete":
                                 continue
+                            detail = ev.get("detail")
+                            if not isinstance(detail, dict):
+                                detail = {}
+                                ev["detail"] = detail
+                            detail["level_id"] = level_id
+                            # Terminal place/stow only (grasp_lift is milestone).
+                            if detail.get("kind") == "grasp_lift" or not session.outcome:
+                                continue
+                            if session.recorder is not None:
+                                oid = str(ev.get("objective_id") or "")
+                                if oid:
+                                    session.recorder.set_task_id(oid)
                             pts = compute_points(
                                 level_id=level_id,
                                 outcome="success",
                                 duration_sim_s=duration,
                             )
-                            detail = ev.get("detail")
-                            if not isinstance(detail, dict):
-                                detail = {}
-                                ev["detail"] = detail
                             detail["points"] = pts
-                            detail["level_id"] = level_id
                             self._report_score(session, duration)
                         tick_events.extend(objective_events)
                         if session.recorder is not None and session.outcome:

@@ -223,7 +223,7 @@
 								}
 								cell.innerHTML =
 									'<a href="/recordings.html?session=' + encodeURIComponent(sid) + '">2D</a>' +
-									'<span class="muted" title="TODO R3: 3D offline replay">3D soon</span>';
+									'<a href="/?replay=' + encodeURIComponent(sid) + '">3D</a>';
 							})
 							.catch(function () {
 								cell.innerHTML = '<span class="muted">—</span>';

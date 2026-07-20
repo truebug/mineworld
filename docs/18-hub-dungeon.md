@@ -36,7 +36,7 @@
 | **C · 设计室** | 自定义空间 / 契约导出 | 后置 | 编辑器 + T4.2 |
 | **D · 雇佣兵任务中心** | 任务闯关包 | 后置 | 任务卡 + outcome |
 | **E · 竞技场** | 组队排名 | 后置 | 匹配 / 结算（本仓权威另案） |
-| **展柜 / 房间通道** | PMS Space 卡片 | 规划 | → 外部 URL / WebIDE（[21](21-ecosystem-federation.md) E4） |
+| **展柜 / 房间通道** | PMS Space 卡片 | **E4 stub** | F → 新标签 URL；元数据 `examples/hub/exhibits.v0.json` |
 
 铁律：换门 = 换场景 +（若本仓玩法关）换 `join.level_id` 权威世界；Hub 不录 IL 轨迹。外部卡片通道不进入 Hub MjData。
 

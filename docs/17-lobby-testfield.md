@@ -65,7 +65,7 @@ demo_lobby（无 WS）
 
 | 入口动作 | 数据侧 |
 |----------|--------|
-| 选车间 | `level_id=demo_workshop`，任务 `obj_stow_crate`（大箱）/ `obj_lift_block`（小块） |
+| 选车间 | `level_id=demo_workshop`，任务 `obj_stow_crate`（大箱）/ `obj_lift_block`→`obj_place_block`（小块夹放） |
 | 选街区 | `level_id=demo_city`，巡航 / 推箱 |
 | Recordings | 仍走 `/recordings.html`；过滤 `level_id` / `outcome`（见回放验收） |
 

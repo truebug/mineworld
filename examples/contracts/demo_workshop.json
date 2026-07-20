@@ -102,11 +102,21 @@
     {
       "id": "obj_lift_block",
       "type": "grasp_lift",
-      "description": "P1a：摩擦夹取并抬起小料块 prop_block（不靠 kinematic weld）",
+      "description": "P1a：摩擦夹取并抬起小料块 prop_block（里程碑，不写 outcome）",
       "params": {
         "entity_id": "prop_block",
         "gripper_closed_max": 0.02,
         "min_z": 0.12
+      }
+    },
+    {
+      "id": "obj_place_block",
+      "type": "reach_region",
+      "target": "trigger_place",
+      "description": "IL：夹起 prop_block 后放到工作台面（张开夹爪）",
+      "params": {
+        "entity_id": "prop_block",
+        "gripper_open_min": 0.03
       }
     }
   ],
@@ -116,18 +126,24 @@
       "type": "aabb",
       "min": [24.0, -2.0, 0.0],
       "max": [28.0, 2.0, 2.0]
+    },
+    {
+      "id": "trigger_place",
+      "type": "aabb",
+      "min": [13.2, -8.8, 0.98],
+      "max": [16.8, -7.2, 1.35]
     }
   ],
   "tags": ["poc", "workshop", "il", "arm_gripper"],
   "extensions": {
     "mw.il": {
-      "task_id": "obj_stow_crate",
+      "task_id": "obj_place_block",
       "difficulty": "poc",
       "control_modes": ["velocity", "joint_targets"]
     },
     "mw.editor": {
       "client_scene": "res://demo_workshop.tscn",
-      "notes": "Enclosed workshop; prop_crate (0.5m) for stow push; prop_block (6cm) for friction grasp."
+      "notes": "prop_crate stow; prop_block grasp→place on workbench (IL primary)."
     }
   }
 }

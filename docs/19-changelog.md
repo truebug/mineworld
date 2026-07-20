@@ -10,6 +10,27 @@
 
 ---
 
+## 2026-07-21 · E4 展柜 → 外部 Space stub
+
+- Hub 两侧展柜：走近 F → 新标签打开配置 URL（不进 MuJoCo）。
+- E5 薄做：`examples/hub/exhibits.v0.json`（与 `godot/spike/data/exhibits.v0.json` 同步）；`/portal/space_stub.html` 可 **Back to hangar**。
+
+---
+
+## 2026-07-20 · R3 / IL place / H8
+
+- **R3**：Hub `main_scene` 下 `/?replay=` 按 recording `level_id` 路由到 workshop/city；Recordings / My record 恢复 3D 入口；Esc 清 `replay` 防回环。
+- **IL**：`obj_place_block`（工作台 AABB + 张开夹爪）；`grasp_lift` 仅里程碑不写 outcome；`grasp_place_smoke.py`；默认 `mw.il.task_id=obj_place_block`；录制终局写回 `task_id`。
+- **H8**：电梯 F 薄乘 L1↔L2（avatar `height_offset`）；L2 呼叫台；门在 L2 不触发。
+
+```bash
+.venv/bin/python scripts/grasp_place_smoke.py
+.venv/bin/python scripts/grasp_lift_smoke.py
+.venv/bin/python scripts/stow_crate_smoke.py
+```
+
+---
+
 ## 2026-07-20 · W1 工坊双 prop（推箱 + 抓取）
 
 - `prop_crate` 恢复 0.5 m 供 `obj_stow_crate`；新增 `prop_block` 6 cm 供 `obj_lift_block`。

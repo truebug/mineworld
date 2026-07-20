@@ -188,14 +188,17 @@
 		const params = new URLSearchParams(location.search);
 		const nextRaw = params.get('next') || '/';
 		const nextSafe = nextRaw.startsWith('/') ? nextRaw : '/';
+		const gameNext =
+			nextSafe === '/' ||
+			nextSafe.indexOf('/?') === 0 ||
+			(nextSafe.charAt(0) === '/' && nextSafe.indexOf('/portal') !== 0);
+		const afterLogin = gameNext ? nextSafe : '/portal/me.html';
 
 		document.getElementById('signin').href =
-			'/portal/login.html?next=' + encodeURIComponent('/portal/me.html');
+			'/portal/login.html?next=' + encodeURIComponent(afterLogin);
 
 		const enter = document.getElementById('enter-hub');
-		enter.href = nextSafe === '/portal/' || nextSafe.indexOf('/portal/') === 0
-			? '/'
-			: nextSafe;
+		enter.href = gameNext ? nextSafe : '/';
 
 		async function boot() {
 			const token = localStorage.getItem(TOKEN_KEY);

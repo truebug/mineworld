@@ -491,7 +491,18 @@ func _on_dom_key_event(args: Array) -> void:
 				if _replay_session != "":
 					_toggle_replay_pause()
 			"Escape":
-				MWTransition.go("res://demo_hub.tscn", "Hub", "#8a93a3")
+				_leave_to_hub()
+
+
+func _leave_to_hub() -> void:
+	"""Esc → Hub; strip ?replay= so Hub does not re-route (R3)."""
+	if _is_web:
+		JavaScriptBridge.eval(
+			"(function(){try{var u=new URL(location.href);u.searchParams.delete('replay');"
+			+ "history.replaceState({},'',u.pathname+u.search+u.hash);}catch(e){}})()",
+			true
+		)
+	MWTransition.go("res://demo_hub.tscn", "Hub", "#8a93a3")
 
 
 func _on_camera_view_changed(label: String) -> void:
@@ -791,7 +802,7 @@ func _input(event: InputEvent) -> void:
 		if event.pressed and not event.echo:
 			var code: int = event.keycode if event.keycode != KEY_NONE else event.physical_keycode
 			if code == KEY_ESCAPE:
-				MWTransition.go("res://demo_hub.tscn", "Hub", "#8a93a3")
+				_leave_to_hub()
 				return
 			if code == KEY_SPACE and _replay_session != "":
 				_toggle_replay_pause()

@@ -99,8 +99,8 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 
 | 建议 ID | 内容 | 验收 |
 |---------|------|------|
-| E4 | Hub 展柜 stub：走近 + F → 打开配置的 Space/卡片 URL（新标签或 iframe 壳） | 不进 MuJoCo；能回到 Hub/Portal |
-| E5 | 展柜元数据契约 v0（JSON：id、title、url、kind=pms_space） | 可手写 examples，不必自动同步 PMS |
+| E4 | Hub 展柜 stub：走近 + F → 打开配置的 Space/卡片 URL（新标签或 iframe 壳） | **Done** — stub 页可回 Hub |
+| E5 | 展柜元数据契约 v0（JSON：id、title、url、kind=pms_space） | **Done** 薄 — `examples/hub/exhibits.v0.json` |
 
 ### P2 · 本仓传送门主体加深（飞轮）
 

@@ -27,16 +27,18 @@ func _build() -> void:
 
 
 func nearest_interact(player_pos: Vector3) -> Dictionary:
-	"""Return closest interactable within range, or {}."""
+	"""Return closest interactable within range (XZ planar), or {}."""
 	var best: Dictionary = {}
 	var best_d := INTERACT_DIST
+	var p := Vector2(player_pos.x, player_pos.z)
 	for item in interactables:
 		if typeof(item) != TYPE_DICTIONARY:
 			continue
 		var n: Node3D = item.get("node") as Node3D
 		if n == null:
 			continue
-		var d := player_pos.distance_to(n.global_position)
+		var gp := n.global_position
+		var d := p.distance_to(Vector2(gp.x, gp.z))
 		if d < best_d:
 			best_d = d
 			best = item
@@ -100,7 +102,7 @@ func _planter(pos: Vector3, pot: Material, leaf: Material) -> void:
 
 
 func _place_stations() -> void:
-	"""Kiosks flush to walls."""
+	"""Kiosks flush to walls + E4 exhibit cabinets."""
 	_station(
 		"kiosk_welcome",
 		Vector3(0, 0, WALL_Z - 1.0),
@@ -133,26 +135,92 @@ func _place_stations() -> void:
 		"Photo pad online.\nSmile for the (future) highlight reel!",
 		Color(0.5, 0.9, 0.6),
 	)
+	_place_exhibits()
 	_spawn_factory("screen-panel-wide.glb", 0.0, WALL_Z - 0.6, 180.0, 1.1)
 	_spawn_factory("machine.glb", WALL_X - 1.2, 9.0, -90.0, 1.0)
 	_spawn_factory("structure-medium.glb", -WALL_X + 1.2, 9.0, 90.0, 1.0)
 	_spawn_factory("hopper-round.glb", WALL_X - 1.3, -9.0, 0.0, 1.0)
 	_spawn_factory("warning-orange.glb", -WALL_X + 1.3, -9.0, 0.0, 1.0)
-	# Elevator call panel (display-only; matches hub_dress ELEV_X/Z)
+	# Elevator call panel (H8 ride; matches hub_dress ELEV_X/Z)
 	_station(
 		"elevator",
 		Vector3(12.0, 0, 10.8),
 		180.0,
 		"F - Elevator",
-		"Elevator offline — mezzanine is display-only for now.\nL2 lounge will open in a later drop.",
+		"Elevator online — press F to ride between hangar and L2 lounge.",
+		Color(0.4, 0.85, 1.0),
+	)
+	# L2 call pad (same id) so F works on the mezzanine landing.
+	_station(
+		"elevator",
+		Vector3(13.5, 5.2, 10.2),
+		180.0,
+		"F - Elevator",
+		"Elevator online — press F to return to hangar floor.",
 		Color(0.4, 0.85, 1.0),
 	)
 
 
+func _place_exhibits() -> void:
+	"""E4: cabinets from exhibits.v0.json — F opens external Space URL."""
+	var exhibits := _load_exhibits()
+	# Fixed hall slots (east / west, south of vendor / party).
+	var slots: Array = [
+		{"pos": Vector3(WALL_X - 1.0, 0, -5.5), "yaw": -90.0},
+		{"pos": Vector3(-WALL_X + 1.0, 0, -5.5), "yaw": 90.0},
+	]
+	var i := 0
+	for ex in exhibits:
+		if typeof(ex) != TYPE_DICTIONARY:
+			continue
+		if i >= slots.size():
+			break
+		var slot: Dictionary = slots[i]
+		i += 1
+		var eid := str(ex.get("id", "exhibit_%d" % i))
+		var title := str(ex.get("title", "Exhibit"))
+		var url := str(ex.get("url", "")).strip_edges()
+		var lore := str(ex.get("lore", "External Space card."))
+		var line := "%s\n%s\n(F opens in a new tab — Back to hangar anytime.)" % [title, lore]
+		_station(
+			eid,
+			slot["pos"],
+			float(slot["yaw"]),
+			"F - %s" % title,
+			line,
+			Color(0.55, 0.85, 0.65),
+			url,
+			title,
+		)
+
+
+func _load_exhibits() -> Array:
+	"""Load E5 exhibit list from packed JSON (fallback: empty)."""
+	var path := "res://data/exhibits.v0.json"
+	if not FileAccess.file_exists(path):
+		push_warning("[MW] exhibits: missing %s" % path)
+		return []
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return []
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return []
+	var arr: Variant = (parsed as Dictionary).get("exhibits", [])
+	return arr if typeof(arr) == TYPE_ARRAY else []
+
+
 func _station(
-	id: String, pos: Vector3, yaw_deg: float, prompt: String, line: String, accent: Color
+	id: String,
+	pos: Vector3,
+	yaw_deg: float,
+	prompt: String,
+	line: String,
+	accent: Color,
+	url: String = "",
+	title: String = "",
 ) -> void:
-	"""Pedestal + glowing panel + prompt label."""
+	"""Pedestal + glowing panel + prompt label; optional external url (E4)."""
 	var root := Node3D.new()
 	root.name = "Station_%s" % id
 	add_child(root)
@@ -179,6 +247,8 @@ func _station(
 		"id": id,
 		"prompt": prompt,
 		"line": line,
+		"url": url,
+		"title": title,
 	})
 
 
