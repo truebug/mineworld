@@ -32,7 +32,7 @@
 > Hub 展示壳（半层二楼 + 静态电梯）已入库，见 [18](18-hub-dungeon.md) · [19](19-changelog.md)。  
 > **UX1 / UX2-v0** 已入库。  
 > **平台产品线**见 **[20](20-platform-portal.md)**。Phase A v0（登录 + SQLite API）已入库。  
-> **建议下一步：P1a 真摩擦抓取，或 ME2 自助回放挂 recordings。**
+> **建议下一步：P1a 真摩擦抓取，或 AD2/EXP1 Admin 下钻与导出。**
 
 ---
 
