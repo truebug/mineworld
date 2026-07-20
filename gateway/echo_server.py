@@ -53,6 +53,8 @@ DEFAULT_RECORD_DIR = REPO_ROOT / "recordings" / "sessions"
 OBSTACLE_FRICTION = (0.8, 0.02, 0.01)  # aligned with ground/chassis defaults
 DEMO_ROOM_ID = "demo"
 DEMO_ROOM_MAX = 2
+HUB_ROOM_ID = "hub"
+HUB_ROOM_MAX = 8
 
 
 def _yaw_to_quat(yaw: float) -> dict[str, float]:
@@ -518,6 +520,32 @@ class Room:
             return
         for mech in self.mechs.values():
             mech.step(dt)
+        self._clamp_hub_bounds()
+
+    def _clamp_hub_bounds(self) -> None:
+        """Keep hub avatars inside the hall (no wall clipping)."""
+        if not is_hub_contract(self.contract):
+            return
+        mw = contract_mw(self.contract)
+        bounds = mw.get("bounds") if isinstance(mw.get("bounds"), dict) else {}
+        try:
+            half_x = float(bounds.get("half_x", 18.5))
+            half_y = float(bounds.get("half_y", 14.5))
+        except (TypeError, ValueError):
+            half_x, half_y = 18.5, 14.5
+        for mech in self.mechs.values():
+            if mech.x < -half_x:
+                mech.x = -half_x
+                mech.vx = 0.0
+            elif mech.x > half_x:
+                mech.x = half_x
+                mech.vx = 0.0
+            if mech.y < -half_y:
+                mech.y = -half_y
+                mech.vy = 0.0
+            elif mech.y > half_y:
+                mech.y = half_y
+                mech.vy = 0.0
 
 
 @dataclass
@@ -534,6 +562,9 @@ class Session:
     recorder: SessionRecorder | None = None
     completed_objectives: set[str] = field(default_factory=set)
     outcome: str | None = None
+    ## Hub / join display (no account); see docs/18-hub-dungeon.md.
+    player_name: str = "guest"
+    profile: dict[str, Any] = field(default_factory=dict)
 
     @property
     def mech(self) -> MechState | None:
@@ -546,6 +577,31 @@ class Session:
 def load_contract(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as f:
         return json.load(f)
+
+
+def contract_mw(contract: dict[str, Any]) -> dict[str, Any]:
+    """Return extensions.mw bag (empty dict if missing)."""
+    ext = contract.get("extensions")
+    if not isinstance(ext, dict):
+        return {}
+    mw = ext.get("mw")
+    return mw if isinstance(mw, dict) else {}
+
+
+def is_hub_contract(contract: dict[str, Any]) -> bool:
+    """True for dungeon-gate hub: no MuJoCo, presence-only rooms."""
+    if contract_mw(contract).get("mode") == "hub":
+        return True
+    return str(contract.get("level_id") or "") == "demo_hub"
+
+
+def hub_max_members(contract: dict[str, Any]) -> int:
+    """Max concurrent avatars in a hub room."""
+    raw = contract_mw(contract).get("max_members", HUB_ROOM_MAX)
+    try:
+        return max(1, int(raw))
+    except (TypeError, ValueError):
+        return HUB_ROOM_MAX
 
 
 def catalog_contracts(contracts_dir: Path = CONTRACTS_DIR) -> dict[str, Path]:
@@ -1137,6 +1193,33 @@ class EchoGateway:
             self.rooms.pop(room.room_id, None)
             LOG.info("room=%s empty, removed", room.room_id)
 
+    def _attach_occupant_profiles(
+        self, room: Room, entities: list[dict[str, Any]]
+    ) -> None:
+        """Stamp display_name / accent onto occupied avatar entity_states (Hub)."""
+        by_eid: dict[str, Session] = {}
+        for member in room.members.values():
+            if (
+                member.joined
+                and not member.closed
+                and member.controlled_entity_id
+            ):
+                by_eid[member.controlled_entity_id] = member
+        for ent in entities:
+            eid = str(ent.get("entity_id") or "")
+            occupant = by_eid.get(eid)
+            if occupant is None:
+                continue
+            mw = ent.setdefault("extensions", {}).setdefault("mw", {})
+            mw["display_name"] = occupant.player_name
+            mw["occupied"] = True
+            accent = occupant.profile.get("accent")
+            if accent:
+                mw["accent"] = str(accent)
+            pid = occupant.profile.get("id")
+            if pid:
+                mw["profile_id"] = str(pid)
+
     async def handler(self, ws: ServerConnection) -> None:
         session_id = str(uuid.uuid4())
         session = Session(session_id=session_id, ws=ws, contract=self.contract)
@@ -1283,7 +1366,25 @@ class EchoGateway:
 
         # Private room when omitted (= W2.3 isolation).
         room_id = str(payload.get("room_id") or session.session_id)
-        max_members = DEMO_ROOM_MAX if room_id == DEMO_ROOM_ID else 1
+        hub = is_hub_contract(contract)
+        if hub:
+            max_members = hub_max_members(contract)
+            if not payload.get("room_id"):
+                room_id = str(contract_mw(contract).get("default_room_id") or HUB_ROOM_ID)
+        elif room_id == DEMO_ROOM_ID:
+            max_members = DEMO_ROOM_MAX
+        else:
+            max_members = 1
+
+        player_name = str(payload.get("player_name") or "guest").strip() or "guest"
+        profile: dict[str, Any] = {}
+        join_ext = payload.get("extensions")
+        if isinstance(join_ext, dict):
+            join_mw = join_ext.get("mw")
+            if isinstance(join_mw, dict) and isinstance(join_mw.get("profile"), dict):
+                profile = dict(join_mw["profile"])
+        if profile.get("nickname"):
+            player_name = str(profile["nickname"]).strip() or player_name
 
         self._leave_room(session)
 
@@ -1318,8 +1419,9 @@ class EchoGateway:
                 )
                 return
         else:
+            # Hub is presence-only: never compile MuJoCo even if process uses --physics mujoco.
             mj_model = None
-            if self.physics == "mujoco":
+            if self.physics == "mujoco" and not hub:
                 mj_model = self._ensure_mj_model(contract)
             mechs, props, mj_data, mj_substeps, grasp_eq = self._make_room_mechs(
                 contract, mj_model
@@ -1337,13 +1439,14 @@ class EchoGateway:
             )
             self.rooms[room_id] = room
             LOG.info(
-                "room=%s level=%s max_members=%d mechs=%s props=%s shared_mj=%s",
+                "room=%s level=%s max_members=%d mechs=%s props=%s shared_mj=%s hub=%s",
                 room_id,
                 level_id,
                 max_members,
                 list(room.mechs),
                 list(room.props),
                 mj_data is not None,
+                hub,
             )
 
         entity_id = room.free_spawn_id()
@@ -1362,8 +1465,9 @@ class EchoGateway:
             return
 
         # First member into an existing empty room already reset via _make_room_mechs.
-        # Re-join private room: reset that mech to spawn pose.
-        if room_id != DEMO_ROOM_ID or len([s for s in room.members.values() if s.joined]) == 0:
+        # Public rooms (demo / hub): only reset when the room was empty.
+        public_room = hub or room_id in (DEMO_ROOM_ID, HUB_ROOM_ID)
+        if (not public_room) or len([s for s in room.members.values() if s.joined]) == 0:
             spawn = next(
                 (s for s in (room.contract.get("mech_spawns") or []) if s.get("id") == entity_id),
                 None,
@@ -1372,7 +1476,7 @@ class EchoGateway:
             room.mechs[entity_id].reset_pose(pose)
             room.mechs[entity_id].controlled = False
             room.mechs[entity_id].vx = room.mechs[entity_id].vy = room.mechs[entity_id].yaw_rate = 0.0
-            if room_id != DEMO_ROOM_ID:
+            if not public_room:
                 room.tick = 0
 
         session.contract = room.contract
@@ -1380,13 +1484,16 @@ class EchoGateway:
         session.joined = True
         session.room = room
         session.controlled_entity_id = entity_id
+        session.player_name = player_name
+        session.profile = profile
         session.completed_objectives.clear()
         session.outcome = None
         session.pending_events.clear()
         room.members[session.session_id] = session
 
         self._close_recorder(session, outcome="abort")
-        if self.record_dir is not None:
+        # Hub presence is not teleop capture — skip recordings.
+        if self.record_dir is not None and not hub:
             software: dict[str, Any] = {"gateway_version": PROTOCOL_VERSION}
             if self.physics == "mujoco" and mujoco is not None:
                 software["mujoco_version"] = getattr(mujoco, "__version__", "unknown")
@@ -1471,10 +1578,13 @@ class EchoGateway:
                 room.step_physics(DT)
                 self._update_sticky_grasps(room)
                 room.tick += 1
+                entities = [m.to_entity_state() for m in room.mechs.values()] + [
+                    p.to_entity_state() for p in room.props.values()
+                ]
+                self._attach_occupant_profiles(room, entities)
                 state_payload = {
                     "kind": "full",
-                    "entities": [m.to_entity_state() for m in room.mechs.values()]
-                    + [p.to_entity_state() for p in room.props.values()],
+                    "entities": entities,
                 }
                 for session in members:
                     tick_events = list(session.pending_events)

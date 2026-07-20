@@ -2,12 +2,12 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Active · H0–H2 已落地；H3 待做 |
+| **状态** | Active · H0–H2 已落地；文本菜单降级为 `?menu=1` |
 | **日期** | 2026-07-20 |
-| **关联** | [09](09-todo.md) · [13](13-web-multiplayer-demo.md) · [16](16-value-sprint.md) |
-| **场景** | `godot/spike/demo_lobby.tscn`（工程主场景） |
+| **关联** | [09](09-todo.md) · [13](13-web-multiplayer-demo.md) · [16](16-value-sprint.md) · **[18-hub-dungeon.md](18-hub-dungeon.md)** |
+| **场景** | `demo_lobby.tscn`（调试菜单）；默认入口见 [18](18-hub-dungeon.md) `demo_hub.tscn` |
 
-> **试验场入口** = Godot 内一个**公共关卡壳**：不连仿真权威，只做关卡选择与说明。  
+> **试验场文本菜单** = 调试用选关壳（`/?menu=1`）。玩家默认走 **3D 地下城 Hub**（[18](18-hub-dungeon.md)）。  
 > 选关后 `change_scene` 进入真实玩法关（车间 / 街区），再 `join` Gateway。
 
 ---
@@ -77,3 +77,4 @@ demo_lobby（无 WS）
 |------|------|
 | 2026-07-20 | 初版：H0–H3；落地 `demo_lobby` 为主场景 |
 | 2026-07-20 | H1 多契约 join + H2 Esc 回入口 |
+| 2026-07-20 | 默认入口迁至 3D Hub（[18](18-hub-dungeon.md)）；本页菜单保留为 `?menu=1` |

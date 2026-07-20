@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="MineWorld Spike"
-run/main_scene="res://demo_lobby.tscn"
+run/main_scene="res://demo_hub.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [display]

@@ -101,6 +101,10 @@ func _ready() -> void:
 	if _is_web:
 		_install_web_keyboard_bridge()
 		_sync_web_city_seed_ui()
+		JavaScriptBridge.eval(
+			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(true);}",
+			true
+		)
 	if _replay_session != "":
 		_start_replay_mode()
 		return
@@ -467,7 +471,7 @@ func _on_dom_key_event(args: Array) -> void:
 				if _replay_session != "":
 					_toggle_replay_pause()
 			"Escape":
-				get_tree().change_scene_to_file("res://demo_lobby.tscn")
+				get_tree().change_scene_to_file("res://demo_hub.tscn")
 
 
 func _on_dom_blur(_args: Array) -> void:
@@ -687,7 +691,7 @@ func _input(event: InputEvent) -> void:
 		if event.pressed and not event.echo:
 			var code: int = event.keycode if event.keycode != KEY_NONE else event.physical_keycode
 			if code == KEY_ESCAPE:
-				get_tree().change_scene_to_file("res://demo_lobby.tscn")
+				get_tree().change_scene_to_file("res://demo_hub.tscn")
 				return
 			if code == KEY_SPACE and _replay_session != "":
 				_toggle_replay_pause()

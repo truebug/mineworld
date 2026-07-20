@@ -6,12 +6,14 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | POC 管道已通；**主线：V 线纠偏执行中**（车间 + 臂/爪 + IL） |
+| **状态** | POC + V 线已收口；**默认入口：3D Hub**；Now：P1 接触/IL · Next：平台 API / 控制台 / UX |
 | **创建日期** | 2026-07-17 |
 | **定位** | 「头号玩家」式初始底座：可编辑共享世界 + 真物理机体 + 可回放的人类行为档案 |
+| **地下城 Hub** | [docs/18-hub-dungeon.md](docs/18-hub-dungeon.md) |
+| **变更记录** | [docs/19-changelog.md](docs/19-changelog.md) |
 | **跑偏与纠偏** | [docs/15-course-correction.md](docs/15-course-correction.md) |
 | **V 线规格（冻结）** | [docs/16-value-sprint.md](docs/16-value-sprint.md) |
-| **执行待办** | [docs/09-todo.md](docs/09-todo.md) `Now（V）` |
+| **执行待办** | [docs/09-todo.md](docs/09-todo.md) `Now` / `Next` |
 | **Web / 多人** | [docs/13-web-multiplayer-demo.md](docs/13-web-multiplayer-demo.md) |
 
 ---

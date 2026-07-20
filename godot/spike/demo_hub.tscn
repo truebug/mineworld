@@ -1,0 +1,279 @@
+[gd_scene load_steps=17 format=3 uid="uid://b0mwhubdungeon"]
+
+[ext_resource type="Script" path="res://scripts/hub.gd" id="1_hub"]
+[ext_resource type="Script" path="res://scripts/ws_client.gd" id="2_ws"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="3_cam"]
+[ext_resource type="Script" path="res://scripts/hub_dress.gd" id="4_dress"]
+[ext_resource type="Script" path="res://scripts/hub_minimap.gd" id="5_minimap"]
+[ext_resource type="Script" path="res://scripts/hub_life.gd" id="6_life"]
+
+[sub_resource type="StyleBoxFlat" id="style_profile"]
+bg_color = Color(0.08, 0.09, 0.12, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.95, 0.62, 0.28, 0.95)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 4
+
+[sub_resource type="StyleBoxFlat" id="style_map"]
+bg_color = Color(0.06, 0.1, 0.14, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.35, 0.72, 0.95, 0.95)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+shadow_color = Color(0, 0, 0, 0.4)
+shadow_size = 4
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
+sky_top_color = Color(0.05, 0.04, 0.07, 1)
+sky_horizon_color = Color(0.22, 0.14, 0.1, 1)
+ground_bottom_color = Color(0.04, 0.03, 0.03, 1)
+ground_horizon_color = Color(0.12, 0.08, 0.06, 1)
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.55, 0.42, 0.32, 1)
+ambient_light_energy = 0.35
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.35
+glow_strength = 0.8
+
+[sub_resource type="StandardMaterial3D" id="mat_floor"]
+albedo_color = Color(0.28, 0.24, 0.2, 1)
+roughness = 0.95
+
+[sub_resource type="BoxMesh" id="mesh_floor"]
+material = SubResource("mat_floor")
+size = Vector3(24, 0.3, 16)
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.38, 0.34, 0.3, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="mesh_wall_long"]
+material = SubResource("mat_wall")
+size = Vector3(24, 4, 0.4)
+
+[sub_resource type="BoxMesh" id="mesh_wall_short"]
+material = SubResource("mat_wall")
+size = Vector3(0.4, 4, 16)
+
+[sub_resource type="StandardMaterial3D" id="mat_door_a"]
+albedo_color = Color(0.95, 0.55, 0.15, 0.85)
+transparency = 1
+emission_enabled = true
+emission = Color(0.95, 0.45, 0.1, 1)
+emission_energy_multiplier = 1.4
+
+[sub_resource type="BoxMesh" id="mesh_door"]
+size = Vector3(2.4, 3.2, 0.35)
+
+[sub_resource type="StandardMaterial3D" id="mat_door_b"]
+albedo_color = Color(0.2, 0.65, 0.95, 0.85)
+transparency = 1
+emission_enabled = true
+emission = Color(0.15, 0.5, 0.95, 1)
+emission_energy_multiplier = 1.4
+
+[node name="DemoHub" type="Node3D"]
+script = ExtResource("1_hub")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.82, -0.4, 0.4, 0, 0.7, 0.71, -0.57, -0.58, 0.58, 4, 12, 2)
+light_energy = 1.1
+shadow_enabled = true
+
+[node name="Fill" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+light_color = Color(1, 0.85, 0.65, 1)
+light_energy = 1.8
+omni_range = 18.0
+
+[node name="World" type="Node3D" parent="."]
+
+[node name="Decor" type="Node3D" parent="."]
+script = ExtResource("4_dress")
+
+[node name="HubLife" type="Node3D" parent="."]
+script = ExtResource("6_life")
+
+[node name="Floor" type="MeshInstance3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.15, 0)
+mesh = SubResource("mesh_floor")
+
+[node name="WallN" type="MeshInstance3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -8)
+mesh = SubResource("mesh_wall_long")
+
+[node name="WallS" type="MeshInstance3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 8)
+mesh = SubResource("mesh_wall_long")
+
+[node name="WallW" type="MeshInstance3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2, 0)
+mesh = SubResource("mesh_wall_short")
+
+[node name="WallE" type="MeshInstance3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 0)
+mesh = SubResource("mesh_wall_short")
+
+[node name="DoorWorkshop" type="MeshInstance3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 1.6, 0)
+mesh = SubResource("mesh_door")
+surface_material_override/0 = SubResource("mat_door_a")
+
+[node name="DoorLabelA" type="Label3D" parent="World/DoorWorkshop"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0.3)
+pixel_size = 0.01
+billboard = 1
+text = "A · Workshop"
+font_size = 64
+outline_size = 6
+
+[node name="DoorCity" type="MeshInstance3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 1.6, 0)
+mesh = SubResource("mesh_door")
+surface_material_override/0 = SubResource("mat_door_b")
+
+[node name="DoorLabelB" type="Label3D" parent="World/DoorCity"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0.3)
+pixel_size = 0.01
+billboard = 1
+text = "B · Training"
+font_size = 64
+outline_size = 6
+
+[node name="DoorStubC" type="MeshInstance3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -7.2)
+mesh = SubResource("mesh_door")
+
+[node name="DoorLabelC" type="Label3D" parent="World/DoorStubC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0.3)
+pixel_size = 0.008
+billboard = 1
+text = "C · Design (soon)"
+font_size = 48
+modulate = Color(0.7, 0.7, 0.7, 1)
+
+[node name="WsClient" type="Node" parent="."]
+script = ExtResource("2_ws")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("3_cam")
+distance = 9.0
+pitch = -0.55
+yaw = 0.3
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+current = true
+
+[node name="HUD" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="LeftTips" type="Label" parent="HUD"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 340.0
+offset_bottom = 300.0
+mouse_filter = 0
+theme_override_colors/font_color = Color(0.95, 0.92, 0.86, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.75)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 14
+text = "Dungeon Gate - tips > (click)"
+autowrap_mode = 3
+
+[node name="MapPanel" type="PanelContainer" parent="HUD"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -276.0
+offset_top = -216.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_styles/panel = SubResource("style_map")
+
+[node name="MapVBox" type="VBoxContainer" parent="HUD/MapPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="MapTitle" type="Label" parent="HUD/MapPanel/MapVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.92, 1.0, 1)
+theme_override_font_sizes/font_size = 12
+text = "Hub map"
+horizontal_alignment = 2
+
+[node name="MiniMap" type="Control" parent="HUD/MapPanel/MapVBox"]
+custom_minimum_size = Vector2(250, 150)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("5_minimap")
+
+[node name="MapCoords" type="Label" parent="HUD/MapPanel/MapVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 11
+text = "pos --"
+horizontal_alignment = 2
+
+[node name="ProfileCard" type="PanelContainer" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -268.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 100.0
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("style_profile")
+
+[node name="VBox" type="VBoxContainer" parent="HUD/ProfileCard"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ProfileText" type="Label" parent="HUD/ProfileCard/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Profile"
+
+[node name="NickEdit" type="LineEdit" parent="HUD/ProfileCard/VBox"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+placeholder_text = "Nickname"
+max_length = 24
+
+[connection signal="text_submitted" from="HUD/ProfileCard/VBox/NickEdit" to="." method="_on_nick_submitted"]

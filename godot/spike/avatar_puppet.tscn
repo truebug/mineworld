@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0mwavatarpuppet"]
+
+[ext_resource type="Script" path="res://scripts/avatar_puppet.gd" id="1_avatar"]
+
+[node name="AvatarPuppet" type="Node3D"]
+script = ExtResource("1_avatar")
+
+[node name="NameTag" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.15, 0)
+pixel_size = 0.012
+billboard = 1
+text = "Guest"
+font_size = 48
+outline_size = 8

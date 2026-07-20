@@ -1,0 +1,18 @@
+{
+  "type": "join",
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "payload": {
+    "level_id": "demo_hub",
+    "player_name": "Guest",
+    "room_id": "hub",
+    "extensions": {
+      "mw": {
+        "profile": {
+          "id": "local-demo-id",
+          "nickname": "Guest",
+          "accent": "#4aa3ff"
+        }
+      }
+    }
+  }
+}

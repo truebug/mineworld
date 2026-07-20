@@ -1,17 +1,17 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC pipeline is done; **current focus is the value sprint** (`docs/16-value-sprint.md`): indoor `demo_workshop`, planar base + arm/gripper, `joint_targets` + slider UX, IL/behavior-cloning samples. Drift diagnosis: `docs/15-course-correction.md`. Execution checklist: `docs/09-todo.md` Now (V). Public HTTPS/wss and T2.7 remain deferred.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + V-sprint freeze are done; **default entry is 3D Hub** (`docs/18-hub-dungeon.md`, `demo_hub.tscn`). Value path remains workshop IL (`docs/16-value-sprint.md`). Execution: `docs/09-todo.md` (Now P1 · Next UX/PL). Changelog: `docs/19-changelog.md`. Public HTTPS/wss and T2.7 remain deferred.
 
 ## Project Structure & Module Organization
 
-- `docs/` — design docs (`00` … `16-value-sprint.md`); `docs/09-todo.md` execution; **`16` is the frozen V-sprint spec**; `15` is drift diagnosis.
-- `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, `--physics fake|mujoco`; `recording_store.py`.
-- `godot/` — spike baseline; default main scene `demo_workshop` (L3); `demo_city` via scene + `--contract`.
+- `docs/` — design docs (`00` … `19-changelog.md`); `09-todo.md` execution; **`16` V-sprint frozen**; **`18` Hub**; **`19` changelog**.
+- `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, `--physics fake|mujoco`; Hub rooms force FakeMech; `recording_store.py`.
+- `godot/` — spike baseline; default main scene **`demo_hub`**; doors → `demo_workshop` / `demo_city`; `?menu=1` text lobby.
 - `gdevelop/` — archived legacy.
-- `mujoco/` — MJCF + headless scripts; upcoming arm/gripper on planar base (V2a).
+- `mujoco/` — MJCF + headless scripts; DiffBot + arm/gripper for workshop.
 - `schemas/` — JSON Schema SSOT (`*.v0.json`).
-- `examples/` — contracts / WS / recordings samples.
-- `scripts/` — smoke, web serve, city-block gen, trajectory export.
+- `examples/` — contracts / WS / recordings samples (incl. `demo_hub`).
+- `scripts/` — smoke, web serve, city-block gen, trajectory export, hub presence.
 
 ## Build, Test, and Development Commands
 

@@ -3,34 +3,85 @@
 | 字段 | 值 |
 |------|-----|
 | **状态** | Living |
-| **日期** | 2026-07-19 |
+| **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | V 线冻结项已收口；**Now：回放验收 · P1 接触/IL · 试验场入口 H*** |
+| **目标** | Hub H4–H6 已落地；**Now：P1 接触/IL · Next：平台 API / 控制台 / UX 过场** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
 | **阶段评审** | [12-status-review.md](12-status-review.md) |
 | **跑偏与纠偏** | [15-course-correction.md](15-course-correction.md) |
 | **V 线规格** | [16-value-sprint.md](16-value-sprint.md)（冻结项 Done） |
-| **试验场入口** | **[17-lobby-testfield.md](17-lobby-testfield.md)** |
+| **试验场入口** | [17-lobby-testfield.md](17-lobby-testfield.md)（`?menu=1`） |
+| **地下城 Hub** | **[18-hub-dungeon.md](18-hub-dungeon.md)**（默认主场景） |
+| **变更记录** | **[19-changelog.md](19-changelog.md)** |
 
 勾选约定：`[ ]` 未做 · `[x]` 完成 · `[-]` 取消 · `[~]` 暂缓
 
 ---
 
-## Now（收口后主线 · 2026-07-20）
+## Now（数据价值续 · 2026-07-20）
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| P1a | 真摩擦抓取（替换 sticky） | grasp_lift 不靠 kinematic weld | [ ] |
+| P1b | 最小 BC 离线检查 | notebook/脚本读 success CSV 关节列 | [ ] |
+| H7 | Hub UI / 门 C–E 占位打磨 | 左栏 lore、右栏地图、名片可读；C–E 门有 stub 文案 | [ ] |
+
+> Hub 展示壳（半层二楼 + 静态电梯）已入库，见 [18](18-hub-dungeon.md) · [19](19-changelog.md)。
+
+---
+
+## Next（平台与体验 · 规划）
+
+> 与当前 POC Gateway（单进程 WS + 本地 FS）**解耦**；先定配置与边界，再独立仓/目录落地。不阻塞 P1。
+
+### UX · 首屏与过场
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| UX1 | 加载动画 / 首屏画面 | 替换 Godot Web 默认 logo/splash；品牌首屏 + 进度（壳 HTML 或自定义 boot splash） | [ ] |
+| UX2 | 关卡过场动画 | Hub ↔ 工坊/训练场不再瞬间切景；淡入淡出或门洞过场 ≥300ms；可跳过 | [ ] |
+| UX3 | Hub 加载与重连提示 | 断线/重连有明确文案，避免静默白屏 | [ ] |
+
+### PL · 独立 API 与后台
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| PL1 | 可配置持久化 + 消息中间件的 **API 服务**（独立进程） | 配置切换 DB（如 SQLite→Postgres）与 MQ（如内存/Redis/NATS）；REST/HTTP API 与现网 Gateway WS **并存**；会话/录制索引/房间元数据可查 | [ ] |
+| PL2 | Web 控制台（后台管理） | 只读/运维：在线房、录制列表、契约/level 开关、基础健康检查；鉴权最小可用（token/本地） | [ ] |
+| PL3 | API 与 Gateway 契约 | 文档化：哪些能力仍走 WS Gateway，哪些走 HTTP API；禁止双写权威位姿 | [ ] |
+| PL4 | 配置 SSOT | `config`/`env` 驱动 DB/MQ/存储根路径；本地默认零依赖可跑 | [ ] |
+
+### Hub 后续
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| H8 | 可乘电梯 + 可上 L2 | 轿厢运动或瞬移上二楼；栏杆碰撞；小地图层切换 | [ ] |
+| H9 | Hub 交互台玩法雏形 | Party board / Vendor 至少一个有真实 UI 面板（非仅 Label3D） | [ ] |
+
+### 运维 / 公网（原暂缓，仍排后）
+
+| ID | 任务 | 状态 |
+|----|------|------|
+| W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] 可与 PL2 合并规划 |
+| T2.7 | 输入延迟补偿 v0 | [~] |
+
+---
+
+## Done（H · 3D Hub · 2026-07-20）
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | R1 | 录制列表过滤 + joints 覆盖提示 | `recordings.html` level/outcome；详情显示 joints keys | [x] |
 | R2 | 回放验收 smoke | `scripts/replay_verify_smoke.py`（需 serve_web） | [x] |
-| H0 | 试验场入口场景 | `demo_lobby.tscn` 为主场景 | [x] |
+| H0 | 试验场入口场景 | `demo_lobby.tscn`（现为 `?menu=1`） | [x] |
 | H1 | Gateway 多契约 `join.level_id` | workshop / city 同进程可进 | [x] |
-| H2 | Esc 回试验场 | 玩法关 Esc → lobby | [x] |
-| P1a | 真摩擦抓取（替换 sticky） | grasp_lift 不靠 kinematic weld | [ ] |
-| P1b | 最小 BC 离线检查 | notebook/脚本读 success CSV 关节列 | [ ] |
-
-> 观感 POC：柔和补光 + 路径灯带 + 车间橙底盘（无 A/箭头）已落地。
+| H2 | Esc 回入口 | 玩法关 Esc → Hub | [x] |
+| H4 | 3D Hub 外壳 + 门 A/B | `demo_hub` 为主场景；`?menu=1` 文本菜单 | [x] |
+| H5 | Hub 互见（无 MuJoCo） | `room=hub` 两浏览器可见纸片人 | [x] |
+| H6 | 本地 Profile 昵称/简卡 | localStorage；头顶显示 | [x] |
+| H6b | Hub 观感打磨 | 实心机库 + 星空；靠墙摆设；NPC 静站缩小；DOM HUD 贴 canvas；展示电梯+半层二楼 | [x] |
 
 ---
 
@@ -182,11 +233,11 @@
 
 | ID | 任务 | 状态 |
 |----|------|------|
-| W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] |
+| W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] 见 Next PL2 |
 | T2.7 | 输入延迟补偿 v0 | [~] |
 | — | `demo` 房录制双实体抽检 | [ ] 可选 |
-| F7 | 机甲互撞（共享 MjData） | 见 Now F7 | [x] |
-| F4 / T4.2 | `.tscn` → 契约导出 | 见 Now F4 | [x] |
+| F7 | 机甲互撞（共享 MjData） | 见 Done F7 | [x] |
+| F4 / T4.2 | `.tscn` → 契约导出 | 见 Done F4 | [x] |
 
 ---
 
@@ -196,6 +247,7 @@
 |--------|------|
 | M1–M4 · T3.4 macOS · W1 Web · T2.3 障碍 | [x] |
 | W2.3 隔离 · W3 同关两人 · T2.6 joints | [x] |
+| V 线冻结 · D 线演示 · H4–H6 Hub | [x] |
 
 ---
 
@@ -205,14 +257,14 @@
 |----|------|------|------|
 | T3.2 | 开环重放增强 | `replay_xy` 已覆盖轨迹 | [ ] |
 | T4.1 | Worker 池 | 与 W2.3 对齐 | [ ] |
-| T4.4 / T4.5 | 评测 API / AI 同通道 | [ ] |
+| T4.4 / T4.5 | 评测 API / AI 同通道 | 可与 PL1 API 合并设计 | [ ] |
 | T4.6 | 动态可交互物（推箱 L2 / D2） | `dynamic_props` + `push_box_smoke.py` | [x] |
 
 ---
 
 ## 明确不做（近期）
 
-- 账号 / 计费 / 编辑器 SaaS  
+- 完整账号体系 / 计费 / 编辑器 SaaS（PL2 仅最小运维鉴权，不等于账号产品）
 - Godot 内嵌 MuJoCo / 引擎 Multiplayer 同步位姿  
 - 未选许可证清晰模型前批量接入「任意 URDF」  
-- 公网 Demo 优先于 F0–F2（除非明确要对外）
+- 公网 Demo 优先于 P1 / PL1（除非明确要对外）

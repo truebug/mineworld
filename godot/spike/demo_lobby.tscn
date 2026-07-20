@@ -27,10 +27,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -220.0
-offset_top = -140.0
-offset_right = 220.0
-offset_bottom = 140.0
+offset_left = -240.0
+offset_top = -180.0
+offset_right = 240.0
+offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 16
@@ -38,32 +38,38 @@ theme_override_constants/separation = 16
 [node name="Title" type="Label" parent="Center"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "MineWorld · 试验场"
+text = "MineWorld · Debug Menu"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="Center"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.72, 0.76, 1)
-text = "选择关卡进入遥操 / IL 采集"
+text = "Default entry is 3D Hub — this page is ?menu=1 only"
 horizontal_alignment = 1
+
+[node name="BtnHub" type="Button" parent="Center"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "3D Hub (dungeon gate)"
 
 [node name="BtnWorkshop" type="Button" parent="Center"]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-text = "车间 Workshop（默认 · 臂爪 IL）"
+text = "Workshop (arm + gripper · IL)"
 
 [node name="BtnCity" type="Button" parent="Center"]
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-text = "街区 City（巡航 / 推箱）"
+text = "City (cruise / push box)"
 
 [node name="Hint" type="Label" parent="Center"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.58, 0.62, 1)
 theme_override_font_sizes/font_size = 12
-text = "Gateway 需与关卡契约一致；多关卡见 docs/17-lobby-testfield.md"
+text = "Esc in a level returns to Hub · see docs/18-hub-dungeon.md"
 horizontal_alignment = 1
 autowrap_mode = 2
 
+[connection signal="pressed" from="BtnHub" to="." method="_on_hub_pressed"]
 [connection signal="pressed" from="BtnWorkshop" to="." method="_on_workshop_pressed"]
 [connection signal="pressed" from="BtnCity" to="." method="_on_city_pressed"]

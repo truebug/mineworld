@@ -47,10 +47,12 @@
 
 | ID | 问题 | 备注 | 状态 |
 |----|------|------|------|
-| D1 | 录制存储位置 | 本地目录 / S3 / 时序库 | **Partial**：POC 已本地 `recordings/sessions/<id>/`（单人/多人 join 即录，`--no-record` 可关）。D5 已用 `serve_web_demo` 列会话；存储抽象 `RecordingStore`（FS → SQLite → RDS/S3）不改 `header.json`+`frames.jsonl` 语义 |
+| D1 | 录制存储位置 | 本地目录 / S3 / 时序库 | **Partial**：POC 已本地 `recordings/sessions/<id>/`；索引 SQLite。**Next PL1** 将抽象为可配置 DB + 独立 API |
 | D2 | 玩家标识脱敏 | UUID 映射表 | Open |
 | D3 | 数据许可法律模板 | 商业前必备 | Open |
 | L1 | 成品 Godot 地图包作默认关 | KayKit 楼宇 + `gen_demo_city_block.py` 随机街区空气墙 | **Closed（v0）**（D6/D7；整张第三方成品地图仍可再换） |
+| P7 | 独立 API / 管理控制台边界 | 与 Gateway WS 权威分离；见 [09](09-todo.md) PL1–PL4 | Open |
+| P8 | 首屏与关卡过场 | 替换 Godot 默认 splash；切景动画；见 UX1/UX2 | Open |
 
 ---
 

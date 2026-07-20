@@ -26,3 +26,5 @@
 | DiffBot URDF skin（F5） | [ros2_control_demos](https://github.com/ros-controls/ros2_control_demos) `@1c5c439` `ros2_control_demo_description/diffbot/` | Apache-2.0 | `mujoco/models/mechs/third_party/diffbot/` → `diffbot_planar.xml`（默认 world） | 保留 `LICENSE` | 2026-07-19 |
 | DiffBot+臂+爪 MJCF（V2a） | 本仓库自研（底盘几何对齐 DiffBot 皮） | MIT（仓库许可） | `mujoco/models/mechs/diffbot_arm_gripper.xml`；`demo_workshop` 默认机体 | 无 | 2026-07-19 |
 | Factory Kit 3.0（子集） | [kenney.nl/assets/factory-kit](https://kenney.nl/assets/factory-kit) | CC0 | `demo_workshop` viewer_only 皮；`godot/spike/assets/kenney_factory/`（见目录 ASSETS.md） | 无 | 2026-07-19 |
+| KayKit Dungeon Remastered 1.0（子集） | [itch](https://kaylousberg.itch.io/kaykit-dungeon-remastered) · [GitHub](https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0) | CC0 | `demo_hub` 地下城入口厅皮；`godot/spike/assets/kaykit_dungeon/` | 无（可署名 Kay Lousberg） | 2026-07-20 |
+| Blocky Characters 2.0（子集） | [kenney.nl/assets/blocky-characters](https://kenney.nl/assets/blocky-characters) | CC0 | Hub 人形纸片人；`godot/spike/assets/kenney_blocky/` | 无 | 2026-07-20 |

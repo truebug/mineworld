@@ -1,0 +1,375 @@
+## Hub life: furniture, humanoid NPCs, interactive props (viewer-only).
+## Props hug the walls; center stays clear for player traffic.
+extends Node3D
+
+const BLOCKY_DIR := "res://assets/kenney_blocky/"
+const FACTORY_DIR := "res://assets/kenney_factory/"
+const WALL_X := 17.5
+const WALL_Z := 13.5
+const INTERACT_DIST := 2.8
+const NPC_SCALE := 0.36
+
+## [{node, id, prompt, line}]
+var interactables: Array = []
+
+
+func _ready() -> void:
+	"""Spawn lounge furniture + NPCs + interactive stations."""
+	call_deferred("_build")
+
+
+func _build() -> void:
+	"""Assemble hub life dressing along walls."""
+	_place_furniture()
+	_place_stations()
+	_place_npcs()
+	print("[MW] hub life: wall props + %d interactables" % interactables.size())
+
+
+func nearest_interact(player_pos: Vector3) -> Dictionary:
+	"""Return closest interactable within range, or {}."""
+	var best: Dictionary = {}
+	var best_d := INTERACT_DIST
+	for item in interactables:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var n: Node3D = item.get("node") as Node3D
+		if n == null:
+			continue
+		var d := player_pos.distance_to(n.global_position)
+		if d < best_d:
+			best_d = d
+			best = item
+	return best
+
+
+func _place_furniture() -> void:
+	"""Benches / planters flush to walls (center clear)."""
+	var wood := _mat(Color(0.45, 0.32, 0.22), 0.8, 0.0)
+	var cushion := _mat(Color(0.25, 0.45, 0.55), 0.7, 0.0)
+	var plant_pot := _mat(Color(0.35, 0.38, 0.4), 0.75, 0.05)
+	var leaf := _mat(Color(0.28, 0.55, 0.32), 0.85, 0.0)
+	var rug := _mat(Color(0.35, 0.28, 0.4), 0.9, 0.0)
+	# South wall (+Z)
+	_box(Vector3(-7, 0.02, WALL_Z - 1.2), Vector3(4.5, 0.04, 2.2), rug)
+	_box(Vector3(7, 0.02, WALL_Z - 1.2), Vector3(4.5, 0.04, 2.2), rug)
+	_bench(Vector3(-7, 0, WALL_Z - 0.9), 0.0, wood, cushion)
+	_bench(Vector3(7, 0, WALL_Z - 0.9), 0.0, wood, cushion)
+	_planter(Vector3(-11.5, 0, WALL_Z - 0.8), plant_pot, leaf)
+	_planter(Vector3(11.5, 0, WALL_Z - 0.8), plant_pot, leaf)
+	# North wall (−Z), leave door bay at x≈0
+	_bench(Vector3(-12, 0, -WALL_Z + 0.9), 180.0, wood, cushion)
+	_bench(Vector3(12, 0, -WALL_Z + 0.9), 180.0, wood, cushion)
+	_planter(Vector3(-15, 0, -WALL_Z + 0.8), plant_pot, leaf)
+	_planter(Vector3(15, 0, -WALL_Z + 0.8), plant_pot, leaf)
+	# West / East walls, clear of door z≈0
+	_bench(Vector3(-WALL_X + 0.9, 0, 8), 90.0, wood, cushion)
+	_bench(Vector3(WALL_X - 0.9, 0, 8), -90.0, wood, cushion)
+	_bench(Vector3(-WALL_X + 0.9, 0, -8), 90.0, wood, cushion)
+	_bench(Vector3(WALL_X - 0.9, 0, -8), -90.0, wood, cushion)
+	_planter(Vector3(-WALL_X + 0.8, 0, 11), plant_pot, leaf)
+	_planter(Vector3(WALL_X - 0.8, 0, 11), plant_pot, leaf)
+	# Corner crates
+	_spawn_factory("box-small.glb", -WALL_X + 1.2, -WALL_Z + 1.2, 15.0, 1.0)
+	_spawn_factory("box-large.glb", WALL_X - 1.5, -WALL_Z + 1.5, -20.0, 1.0)
+	_spawn_factory("cone.glb", -WALL_X + 1.0, WALL_Z - 2.5, 0.0, 1.0)
+	# SE reserved for elevator — cone on SW instead
+	_spawn_factory("cone.glb", -WALL_X + 3.0, WALL_Z - 1.2, 0.0, 1.0)
+
+
+func _bench(pos: Vector3, yaw_deg: float, wood: Material, cushion: Material) -> void:
+	"""Simple seat: board + back + cushions."""
+	var root := Node3D.new()
+	add_child(root)
+	root.position = pos
+	root.rotation_degrees.y = yaw_deg
+	_box_child(root, Vector3(0, 0.28, 0), Vector3(2.2, 0.12, 0.7), wood)
+	_box_child(root, Vector3(0, 0.7, -0.28), Vector3(2.2, 0.7, 0.12), wood)
+	_box_child(root, Vector3(-0.55, 0.38, 0.05), Vector3(0.9, 0.1, 0.55), cushion)
+	_box_child(root, Vector3(0.55, 0.38, 0.05), Vector3(0.9, 0.1, 0.55), cushion)
+
+
+func _planter(pos: Vector3, pot: Material, leaf: Material) -> void:
+	"""Box planter with leafy blob."""
+	var root := Node3D.new()
+	add_child(root)
+	root.position = pos
+	_box_child(root, Vector3(0, 0.25, 0), Vector3(0.7, 0.5, 0.7), pot)
+	_box_child(root, Vector3(0, 0.7, 0), Vector3(0.55, 0.45, 0.55), leaf)
+	_box_child(root, Vector3(0.15, 0.95, 0.1), Vector3(0.35, 0.35, 0.35), leaf)
+
+
+func _place_stations() -> void:
+	"""Kiosks flush to walls."""
+	_station(
+		"kiosk_welcome",
+		Vector3(0, 0, WALL_Z - 1.0),
+		180.0,
+		"F - Info kiosk",
+		"Welcome to Dungeon Gate.\nOrange door = Workshop · Blue door = Training.\nPress V to change camera.",
+		Color(0.3, 0.7, 1.0),
+	)
+	_station(
+		"board_party",
+		Vector3(-WALL_X + 1.0, 0, 5.5),
+		90.0,
+		"F - Party board",
+		"Party board: looking for crew...\n(Matchmaking UI arrives later.)",
+		Color(1.0, 0.7, 0.3),
+	)
+	_station(
+		"vendor",
+		Vector3(WALL_X - 1.0, 0, 5.5),
+		-90.0,
+		"F - Vendor stall",
+		"Vendor: cosmetics & skins — coming soon.\nFor now, change your nickname on the profile card.",
+		Color(0.9, 0.45, 0.85),
+	)
+	_station(
+		"pad_photo",
+		Vector3(0, 0, -WALL_Z + 1.2),
+		0.0,
+		"F - Photo pad",
+		"Photo pad online.\nSmile for the (future) highlight reel!",
+		Color(0.5, 0.9, 0.6),
+	)
+	_spawn_factory("screen-panel-wide.glb", 0.0, WALL_Z - 0.6, 180.0, 1.1)
+	_spawn_factory("machine.glb", WALL_X - 1.2, 9.0, -90.0, 1.0)
+	_spawn_factory("structure-medium.glb", -WALL_X + 1.2, 9.0, 90.0, 1.0)
+	_spawn_factory("hopper-round.glb", WALL_X - 1.3, -9.0, 0.0, 1.0)
+	_spawn_factory("warning-orange.glb", -WALL_X + 1.3, -9.0, 0.0, 1.0)
+	# Elevator call panel (display-only; matches hub_dress ELEV_X/Z)
+	_station(
+		"elevator",
+		Vector3(12.0, 0, 10.8),
+		180.0,
+		"F - Elevator",
+		"Elevator offline — mezzanine is display-only for now.\nL2 lounge will open in a later drop.",
+		Color(0.4, 0.85, 1.0),
+	)
+
+
+func _station(
+	id: String, pos: Vector3, yaw_deg: float, prompt: String, line: String, accent: Color
+) -> void:
+	"""Pedestal + glowing panel + prompt label."""
+	var root := Node3D.new()
+	root.name = "Station_%s" % id
+	add_child(root)
+	root.position = pos
+	root.rotation_degrees.y = yaw_deg
+	var body := _mat(Color(0.22, 0.26, 0.32), 0.55, 0.25)
+	var glow := _mat(accent, 0.4, 0.1)
+	glow.emission_enabled = true
+	glow.emission = accent
+	glow.emission_energy_multiplier = 1.4
+	_box_child(root, Vector3(0, 0.5, 0), Vector3(1.1, 1.0, 0.7), body)
+	_box_child(root, Vector3(0, 1.35, 0.2), Vector3(0.9, 0.7, 0.08), glow)
+	var label := Label3D.new()
+	label.text = prompt
+	label.font_size = 36
+	label.outline_size = 6
+	label.pixel_size = 0.01
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.modulate = accent.lightened(0.2)
+	root.add_child(label)
+	label.position = Vector3(0, 2.0, 0)
+	interactables.append({
+		"node": root,
+		"id": id,
+		"prompt": prompt,
+		"line": line,
+	})
+
+
+func _place_npcs() -> void:
+	"""Small standing greeters at walls near doors (no wander)."""
+	_npc(
+		"Maya", "character-a.glb", Vector3(-4.5, 0, WALL_Z - 1.3), 180.0, Color(1.0, 0.85, 0.4),
+		"F - Talk to Maya",
+		"Maya: Need a route? Orange door Workshop, blue door Training.\nPress V for camera modes.",
+	)
+	_npc(
+		"Rex", "character-b.glb", Vector3(WALL_X - 1.3, 0, 2.2), -90.0, Color(1.0, 0.55, 0.25),
+		"F - Talk to Rex",
+		"Rex: Workshop's through the orange gate.\nBring the cart back in one piece!",
+	)
+	_npc(
+		"Jin", "character-c.glb", Vector3(-WALL_X + 1.3, 0, -2.2), 90.0, Color(0.45, 0.8, 1.0),
+		"F - Talk to Jin",
+		"Jin: Training yard's that blue door.\nWarm up before you race the city block.",
+	)
+	_npc(
+		"Pip", "character-d.glb", Vector3(4.5, 0, -WALL_Z + 1.3), 0.0, Color(0.7, 0.9, 0.5),
+		"F - Talk to Pip",
+		"Pip: I'm just people-watching.\nSay hi when friends join the hub!",
+	)
+
+
+func _npc(
+	display: String,
+	asset: String,
+	pos: Vector3,
+	face_yaw_deg: float,
+	accent: Color,
+	prompt: String,
+	line: String,
+) -> void:
+	"""Spawn a scaled blocky character planted on the floor."""
+	var root := Node3D.new()
+	root.name = "NPC_%s" % display
+	add_child(root)
+	root.position = pos
+	root.rotation_degrees.y = face_yaw_deg
+	var mesh_ok := _spawn_blocky(root, asset)
+	if not mesh_ok:
+		_fallback_figure(root, accent)
+	else:
+		call_deferred("_plant_feet", root)
+	var tag := Label3D.new()
+	tag.text = display
+	tag.font_size = 36
+	tag.outline_size = 6
+	tag.pixel_size = 0.01
+	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	tag.modulate = accent
+	root.add_child(tag)
+	tag.position = Vector3(0, 1.55, 0)
+	var hint := Label3D.new()
+	hint.text = prompt
+	hint.font_size = 24
+	hint.outline_size = 4
+	hint.pixel_size = 0.009
+	hint.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	hint.modulate = Color(0.9, 0.9, 0.95, 0.85)
+	root.add_child(hint)
+	hint.position = Vector3(0, 1.3, 0)
+	interactables.append({
+		"node": root,
+		"id": "npc_%s" % display.to_lower(),
+		"prompt": prompt,
+		"line": line,
+	})
+
+
+func _spawn_blocky(parent: Node3D, asset: String) -> bool:
+	"""Instance Kenney Blocky character if available."""
+	var path := BLOCKY_DIR + asset
+	if not ResourceLoader.exists(path):
+		return false
+	var packed := load(path) as PackedScene
+	if packed == null:
+		return false
+	var node := packed.instantiate() as Node3D
+	parent.add_child(node)
+	node.name = "Mesh"
+	node.scale = Vector3(NPC_SCALE, NPC_SCALE, NPC_SCALE)
+	_freeze_anims(node)
+	return true
+
+
+func _freeze_anims(n: Node) -> void:
+	"""Stop any autoplay idle so greeters stand still."""
+	if n is AnimationPlayer:
+		var ap := n as AnimationPlayer
+		ap.active = false
+		ap.stop()
+	for c in n.get_children():
+		_freeze_anims(c)
+
+
+func _plant_feet(root: Node3D) -> void:
+	"""Shift mesh so the lowest vertex sits on y=0 (fixes floating pivots)."""
+	var mesh := root.get_node_or_null("Mesh") as Node3D
+	if mesh == null:
+		return
+	var min_y := 1e9
+	for mi in _all_meshes(mesh):
+		var aabb: AABB = mi.get_aabb()
+		var p := aabb.position
+		var e := aabb.end
+		var corners := [
+			Vector3(p.x, p.y, p.z), Vector3(p.x, p.y, e.z),
+			Vector3(e.x, p.y, p.z), Vector3(e.x, p.y, e.z),
+			Vector3(p.x, e.y, p.z), Vector3(p.x, e.y, e.z),
+			Vector3(e.x, e.y, p.z), Vector3(e.x, e.y, e.z),
+		]
+		for c in corners:
+			var w: Vector3 = mi.global_transform * c
+			min_y = minf(min_y, w.y)
+	if min_y < 1e8:
+		mesh.global_position.y -= min_y
+	# Name tags sit just above scaled head (~1.1m after plant).
+	for child in root.get_children():
+		if child is Label3D:
+			var lbl := child as Label3D
+			if lbl.text.begins_with("F -"):
+				lbl.position.y = 1.15
+			else:
+				lbl.position.y = 1.35
+
+
+func _all_meshes(n: Node) -> Array:
+	"""Collect MeshInstance3D descendants."""
+	var out: Array = []
+	if n is MeshInstance3D:
+		out.append(n)
+	for c in n.get_children():
+		out.append_array(_all_meshes(c))
+	return out
+
+
+func _fallback_figure(parent: Node3D, accent: Color) -> void:
+	"""Procedural stand-in if GLB missing on Web."""
+	var dark := accent.darkened(0.35)
+	_box_child(parent, Vector3(0, 0.45, 0), Vector3(0.35, 0.55, 0.22), _mat(accent, 0.5, 0.2))
+	_box_child(parent, Vector3(0, 0.9, 0), Vector3(0.26, 0.26, 0.26), _mat(accent.lightened(0.15), 0.45, 0.15))
+	_box_child(parent, Vector3(0.1, 0.2, 0), Vector3(0.12, 0.35, 0.12), _mat(dark, 0.6, 0.1))
+	_box_child(parent, Vector3(-0.1, 0.2, 0), Vector3(0.12, 0.35, 0.12), _mat(dark, 0.6, 0.1))
+
+
+func _spawn_factory(asset: String, x: float, z: float, yaw_deg: float, s: float) -> void:
+	"""Optional Kenney Factory prop."""
+	var path := FACTORY_DIR + asset
+	if not ResourceLoader.exists(path):
+		return
+	var packed := load(path) as PackedScene
+	if packed == null:
+		return
+	var node := packed.instantiate() as Node3D
+	add_child(node)
+	node.position = Vector3(x, 0.0, z)
+	node.rotation_degrees.y = yaw_deg
+	if s != 1.0:
+		node.scale = Vector3(s, s, s)
+
+
+func _box(pos: Vector3, size: Vector3, mat: Material) -> void:
+	"""World-space box."""
+	var mi := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	mi.mesh = mesh
+	mi.material_override = mat
+	add_child(mi)
+	mi.position = pos
+
+
+func _box_child(parent: Node3D, pos: Vector3, size: Vector3, mat: Material) -> void:
+	"""Local-space box under parent."""
+	var mi := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	mi.mesh = mesh
+	mi.material_override = mat
+	parent.add_child(mi)
+	mi.position = pos
+
+
+func _mat(albedo: Color, roughness: float, metallic: float) -> StandardMaterial3D:
+	"""Shared material helper."""
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = albedo
+	mat.roughness = roughness
+	mat.metallic = metallic
+	return mat

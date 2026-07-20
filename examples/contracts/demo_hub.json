@@ -1,0 +1,91 @@
+{
+  "contract_version": "0.1",
+  "level_id": "demo_hub",
+  "seed": 1,
+  "frame": "mineworld_zup_m",
+  "sim": {
+    "dt": 0.02
+  },
+  "mech_spawns": [
+    {
+      "id": "avatar_0",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 0.0, "y": 0.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 0,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_1",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 1.5, "y": 0.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 1,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_2",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": -1.5, "y": 0.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 2,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_3",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 0.0, "y": 1.5, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 3,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_4",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 0.0, "y": -1.5, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 4,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_5",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 3.0, "y": 1.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 5,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_6",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 3.0, "y": -1.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 6,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_7",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": -3.0, "y": 0.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 7,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    }
+  ],
+  "dynamic_props": [],
+  "static_obstacles": [],
+  "objectives": [],
+  "triggers": [],
+  "extensions": {
+    "mw": {
+      "mode": "hub",
+      "max_members": 8,
+      "default_room_id": "hub",
+      "story": "dungeon_gate",
+      "bounds": {
+        "half_x": 18.5,
+        "half_y": 14.5
+      }
+    }
+  }
+}

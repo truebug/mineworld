@@ -97,12 +97,15 @@ body {
 /* MineWorld overlays — must live in <body>, never in <head>. */
 #mw-hud {
 	position: fixed;
-	left: max(16px, env(safe-area-inset-left, 0px));
-	top: max(16px, env(safe-area-inset-top, 0px));
+	left: 16px;
+	top: 16px;
 	z-index: 2147483646;
 	margin: 0;
 	padding: 10px 12px;
-	max-width: min(520px, calc(100vw - 32px));
+	max-width: min(360px, calc(100vw - 32px));
+	max-height: min(36vh, calc(100vh - 32px));
+	overflow: auto;
+	box-sizing: border-box;
 	background: rgba(20, 22, 28, 0.88);
 	color: #e8eaed;
 	font: 13px/1.35 ui-monospace, Menlo, Consolas, monospace;
@@ -114,13 +117,107 @@ body {
 	cursor: pointer;
 	user-select: none;
 	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+	display: none; /* play: body.mw-play · hub: body.mw-hub */
+}
+
+body.mw-play #mw-hud,
+body.mw-hub #mw-hud {
+	display: block;
 }
 
 #mw-hud.collapsed {
 	padding: 8px 12px;
 	max-width: none;
+	max-height: none;
+	overflow: hidden;
 	white-space: nowrap;
 	opacity: 0.92;
+	min-width: 160px;
+}
+
+/* Hub-only DOM chrome (Godot CanvasLayer clips on Web). */
+#mw-hub-profile,
+#mw-hub-map {
+	display: none;
+	position: fixed;
+	z-index: 2147483646;
+	box-sizing: border-box;
+	background: rgba(20, 22, 28, 0.9);
+	color: #e8eaed;
+	font: 12px/1.35 ui-sans-serif, system-ui, sans-serif;
+	border-radius: 8px;
+	border: 1px solid #3d4450;
+	pointer-events: auto;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.mw-hub #mw-hub-profile,
+body.mw-hub #mw-hub-map {
+	display: block;
+}
+
+#mw-hub-profile {
+	/* JS layoutHubChrome pins to #canvas; CSS is fallback only. */
+	right: 16px;
+	top: 16px;
+	left: auto;
+	bottom: auto;
+	width: min(220px, calc(100vw - 32px));
+	padding: 10px 12px;
+	border-color: #f29b47;
+}
+
+#mw-hub-profile .mw-id {
+	opacity: 0.75;
+	font: 11px/1.3 ui-monospace, Menlo, Consolas, monospace;
+	margin-bottom: 4px;
+	word-break: break-all;
+}
+
+#mw-hub-profile input {
+	width: 100%;
+	margin-top: 6px;
+	box-sizing: border-box;
+	padding: 6px 8px;
+	border-radius: 4px;
+	border: 1px solid #5a6270;
+	background: #12151a;
+	color: #e8eaed;
+	font: inherit;
+}
+
+#mw-hub-map {
+	/* JS layoutHubChrome pins to #canvas; CSS is fallback only. */
+	right: 16px;
+	bottom: 16px;
+	left: auto;
+	top: auto;
+	width: min(220px, calc(100vw - 32px));
+	padding: 8px 10px 10px;
+	border-color: #4aa3ff;
+}
+
+#mw-hub-map .mw-map-title {
+	text-align: right;
+	font-size: 11px;
+	color: #b8d4ef;
+	margin-bottom: 4px;
+}
+
+#mw-hub-map canvas {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 5 / 3;
+	background: #0f1720;
+	border-radius: 4px;
+}
+
+#mw-hub-map .mw-map-coords {
+	text-align: right;
+	font: 11px/1.3 ui-monospace, Menlo, Consolas, monospace;
+	color: #9bb4c9;
+	margin-top: 4px;
 }
 
 #mw-success {
@@ -216,7 +313,7 @@ body {
 	left: max(16px, env(safe-area-inset-left, 0px));
 	bottom: max(16px, env(safe-area-inset-bottom, 0px));
 	z-index: 2147483646;
-	display: flex;
+	display: none; /* lobby: hidden until play */
 	flex-direction: column;
 	gap: 4px;
 	padding: 8px 10px;
@@ -228,6 +325,10 @@ body {
 	border-radius: 8px;
 	border: 1px solid #3d4450;
 	pointer-events: auto;
+}
+
+body.mw-play #mw-joints {
+	display: flex;
 }
 
 #mw-joints .mw-j-title {
@@ -271,12 +372,22 @@ body {
 		</div>
 
 		<pre id="mw-hud" title="Click to collapse">MineWorld · connecting…</pre>
+		<div id="mw-hub-profile">
+			<div class="mw-id" id="mw-hub-id">ID --</div>
+			<div id="mw-hub-nick-label">Guest</div>
+			<input id="mw-hub-nick" type="text" maxlength="24" placeholder="Nickname" autocomplete="off">
+		</div>
+		<div id="mw-hub-map">
+			<div class="mw-map-title">Hub map</div>
+			<canvas id="mw-hub-map-canvas" width="220" height="132"></canvas>
+			<div class="mw-map-coords" id="mw-hub-map-coords">pos --</div>
+		</div>
 		<div id="mw-success" aria-live="polite">
 			<div class="mw-title">SUCCESS</div>
 			<div class="mw-sub"></div>
 		</div>
 		<a id="mw-rec-link" href="/recordings.html" title="Recording history"
-			style="position:fixed;right:16px;top:16px;z-index:2147483646;padding:8px 12px;border-radius:8px;background:rgba(20,22,28,0.88);color:#5dff8a;font:13px/1.2 ui-sans-serif,system-ui,sans-serif;text-decoration:none;border:1px solid #3d4450;">Recordings</a>
+			style="display:none;position:fixed;right:16px;top:16px;z-index:2147483646;padding:8px 12px;border-radius:8px;background:rgba(20,22,28,0.88);color:#5dff8a;font:13px/1.2 ui-sans-serif,system-ui,sans-serif;text-decoration:none;border:1px solid #3d4450;">Recordings</a>
 		<div id="mw-seed">
 			<label for="mw-seed-input">seed</label>
 			<input id="mw-seed-input" type="number" min="0" step="1" value="42">
@@ -299,6 +410,225 @@ const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
 const engine = new Engine(GODOT_CONFIG);
 
 (function () {
+	/* Lobby vs play vs hub: chrome visibility. */
+	window.MW_SET_SHELL_UI = function (play, hub) {
+		document.body.classList.toggle('mw-play', !!play);
+		document.body.classList.toggle('mw-hub', !!hub && !play);
+		const rec = document.getElementById('mw-rec-link');
+		if (rec) {
+			rec.style.display = play ? 'block' : 'none';
+		}
+		if (typeof window.MW_LAYOUT_HUB_CHROME === 'function') {
+			window.MW_LAYOUT_HUB_CHROME();
+		}
+	};
+
+	/* Local profile card (no login) — docs/18 H6. */
+	window.MW_GET_PROFILE = function () {
+		try {
+			const raw = localStorage.getItem('mw_profile');
+			if (raw) {
+				const p = JSON.parse(raw);
+				if (p && typeof p === 'object') {
+					return p;
+				}
+			}
+		} catch (err) { /* ignore */ }
+		const fresh = {
+			id: 'local-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36),
+			nickname: 'Guest',
+			accent: '#4aa3ff',
+		};
+		try {
+			localStorage.setItem('mw_profile', JSON.stringify(fresh));
+		} catch (err2) { /* ignore */ }
+		return fresh;
+	};
+	window.MW_SET_PROFILE = function (p) {
+		if (!p || typeof p !== 'object') {
+			return;
+		}
+		const next = {
+			id: String(p.id || ''),
+			nickname: String(p.nickname || 'Guest').slice(0, 24),
+			accent: String(p.accent || '#4aa3ff'),
+		};
+		if (!next.id) {
+			next.id = window.MW_GET_PROFILE().id;
+		}
+		try {
+			localStorage.setItem('mw_profile', JSON.stringify(next));
+		} catch (err) { /* ignore */ }
+		window.MW_PROFILE = next;
+		return next;
+	};
+	window.MW_PROFILE = window.MW_GET_PROFILE();
+
+	/* Hub DOM profile + minimap (Web only; Godot HUD clips). */
+	(function setupHubChrome() {
+		const nickInput = document.getElementById('mw-hub-nick');
+		const idEl = document.getElementById('mw-hub-id');
+		const nickLabel = document.getElementById('mw-hub-nick-label');
+		const canvas = document.getElementById('mw-hub-map-canvas');
+		const coordsEl = document.getElementById('mw-hub-map-coords');
+		const HALF_X = 18.5;
+		const HALF_Y = 14.5;
+
+		window.MW_SET_HUB_PROFILE = function (p) {
+			if (!p || typeof p !== 'object') {
+				return;
+			}
+			const id = String(p.id || '?');
+			const nick = String(p.nickname || 'Guest').slice(0, 24);
+			if (idEl) {
+				idEl.textContent = 'ID ' + id.slice(0, 14);
+			}
+			if (nickLabel) {
+				nickLabel.textContent = nick;
+			}
+			if (nickInput && document.activeElement !== nickInput) {
+				nickInput.value = nick;
+			}
+		};
+
+		if (nickInput) {
+			nickInput.addEventListener('keydown', function (e) {
+				e.stopPropagation();
+				if (e.code === 'Enter' || e.key === 'Enter') {
+					e.preventDefault();
+					const nick = (nickInput.value || 'Guest').trim().slice(0, 24) || 'Guest';
+					window.MW_HUB_NICK_PENDING = nick;
+					nickInput.blur();
+				}
+			});
+			nickInput.addEventListener('focus', function () {
+				/* Keep game keys from fighting the input. */
+			});
+		}
+
+		window.MW_SET_HUB_MAP = function (payload) {
+			if (!canvas || !payload) {
+				return;
+			}
+			const actors = Array.isArray(payload.actors) ? payload.actors : [];
+			const selfTxt = payload.self || 'alone';
+			if (coordsEl) {
+				coordsEl.textContent = selfTxt + ' · n=' + actors.length;
+			}
+			const w = canvas.width;
+			const h = canvas.height;
+			const ctx = canvas.getContext('2d');
+			if (!ctx) {
+				return;
+			}
+			ctx.clearRect(0, 0, w, h);
+			ctx.fillStyle = '#0f1720';
+			ctx.fillRect(0, 0, w, h);
+			const pad = 10;
+			const iw = w - pad * 2;
+			const ih = h - pad * 2;
+			ctx.strokeStyle = 'rgba(74,163,255,0.9)';
+			ctx.lineWidth = 2;
+			ctx.strokeRect(pad, pad, iw, ih);
+			ctx.strokeStyle = 'rgba(100,130,160,0.45)';
+			ctx.beginPath();
+			ctx.moveTo(pad + iw * 0.5 - 6, pad + ih * 0.5);
+			ctx.lineTo(pad + iw * 0.5 + 6, pad + ih * 0.5);
+			ctx.moveTo(pad + iw * 0.5, pad + ih * 0.5 - 6);
+			ctx.lineTo(pad + iw * 0.5, pad + ih * 0.5 + 6);
+			ctx.stroke();
+			const sx = iw / (HALF_X * 2);
+			const sy = ih / (HALF_Y * 2);
+			function toLocal(mx, my) {
+				return {
+					x: pad + (mx + HALF_X) * sx,
+					y: pad + (HALF_Y - my) * sy,
+				};
+			}
+			function door(mx, my, color) {
+				const p = toLocal(mx, my);
+				ctx.fillStyle = color;
+				ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
+			}
+			door(HALF_X, 0, '#ff8c28');
+			door(-HALF_X, 0, '#4db3ff');
+			door(0, -HALF_Y, '#d8d88a');
+			/* Mezzanine (south half) + elevator — display-only. */
+			(function () {
+				const a = toLocal(-HALF_X + 1, 1.2);
+				const b = toLocal(HALF_X - 1, HALF_Y - 0.8);
+				const x = Math.min(a.x, b.x);
+				const y = Math.min(a.y, b.y);
+				const rw = Math.abs(b.x - a.x);
+				const rh = Math.abs(b.y - a.y);
+				ctx.fillStyle = 'rgba(90,140,190,0.18)';
+				ctx.fillRect(x, y, rw, rh);
+				ctx.strokeStyle = 'rgba(120,180,230,0.45)';
+				ctx.lineWidth = 1;
+				ctx.strokeRect(x, y, rw, rh);
+			})();
+			door(13.5, 12.5, '#66e0ff');
+			actors.forEach(function (a) {
+				const p = toLocal(Number(a.x) || 0, Number(a.y) || 0);
+				const isSelf = !!a.is_self;
+				ctx.beginPath();
+				ctx.fillStyle = isSelf ? '#ffd84a' : '#73d7ff';
+				ctx.arc(p.x, p.y, isSelf ? 5 : 4, 0, Math.PI * 2);
+				ctx.fill();
+				if (isSelf) {
+					ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+					ctx.lineWidth = 1.2;
+					ctx.beginPath();
+					ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+					ctx.stroke();
+				}
+			});
+		};
+
+		window.MW_SET_HUB_PROFILE(window.MW_PROFILE);
+
+		function layoutHubChrome() {
+			const canvas = document.getElementById('canvas');
+			const hud = document.getElementById('mw-hud');
+			const profile = document.getElementById('mw-hub-profile');
+			const map = document.getElementById('mw-hub-map');
+			if (!canvas || !document.body.classList.contains('mw-hub')) {
+				return;
+			}
+			const r = canvas.getBoundingClientRect();
+			const pad = 12;
+			if (hud) {
+				hud.style.left = Math.max(pad, r.left + pad) + 'px';
+				hud.style.top = Math.max(pad, r.top + pad) + 'px';
+				hud.style.right = 'auto';
+				hud.style.bottom = 'auto';
+				hud.style.maxWidth = Math.min(360, Math.max(120, r.width - pad * 2)) + 'px';
+			}
+			if (profile) {
+				const pw = Math.min(220, Math.max(140, r.width * 0.28));
+				profile.style.width = pw + 'px';
+				profile.style.left = (r.right - pad - pw) + 'px';
+				profile.style.top = Math.max(pad, r.top + pad) + 'px';
+				profile.style.right = 'auto';
+				profile.style.bottom = 'auto';
+			}
+			if (map) {
+				const mw = Math.min(220, Math.max(140, r.width * 0.28));
+				map.style.width = mw + 'px';
+				map.style.left = (r.right - pad - mw) + 'px';
+				map.style.top = 'auto';
+				map.style.right = 'auto';
+				map.style.bottom = 'auto';
+				const mh = map.offsetHeight || 160;
+				map.style.top = Math.max(pad, r.bottom - pad - mh) + 'px';
+			}
+		}
+		window.MW_LAYOUT_HUB_CHROME = layoutHubChrome;
+		window.addEventListener('resize', layoutHubChrome);
+		setInterval(layoutHubChrome, 500);
+		layoutHubChrome();
+	})();
+
 	/* Click #mw-hud to collapse / expand; Godot calls MW_SET_HUD each frame. */
 	(function setupHudCollapse() {
 		const el = document.getElementById('mw-hud');
@@ -313,7 +643,7 @@ const engine = new Engine(GODOT_CONFIG);
 
 		function render() {
 			if (collapsed) {
-				el.textContent = 'MineWorld · HUD ▸';
+				el.textContent = el.dataset.collapsedLabel || 'Dungeon Gate - tips > (click)';
 				el.classList.add('collapsed');
 				el.title = 'Click to expand';
 			} else {
@@ -323,7 +653,10 @@ const engine = new Engine(GODOT_CONFIG);
 			}
 		}
 
-		window.MW_SET_HUD = function (t) {
+		window.MW_SET_HUD = function (t, collapsedLabel) {
+			if (collapsedLabel != null && collapsedLabel !== '') {
+				el.dataset.collapsedLabel = String(collapsedLabel);
+			}
 			fullText = t == null ? '' : String(t);
 			render();
 		};
