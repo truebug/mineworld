@@ -48,6 +48,7 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTRACT = REPO_ROOT / "examples" / "contracts" / "demo_workshop.json"
+CONTRACTS_DIR = REPO_ROOT / "examples" / "contracts"
 DEFAULT_RECORD_DIR = REPO_ROOT / "recordings" / "sessions"
 OBSTACLE_FRICTION = (0.8, 0.02, 0.01)  # aligned with ground/chassis defaults
 DEMO_ROOM_ID = "demo"
@@ -486,6 +487,8 @@ class Room:
     mj_substeps: int = 1
     ## V3c: (mech_id, prop_id) → equality id for sticky grasp weld.
     grasp_eq: dict[tuple[str, str], int] = field(default_factory=dict)
+    ## H1: compiled MjModel for this room's contract (may differ per level).
+    mj_model: Any = None
 
     def free_spawn_id(self) -> str | None:
         """Return first mech spawn id not claimed by a joined member."""
@@ -543,6 +546,25 @@ class Session:
 def load_contract(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as f:
         return json.load(f)
+
+
+def catalog_contracts(contracts_dir: Path = CONTRACTS_DIR) -> dict[str, Path]:
+    """Map level_id → contract JSON path under examples/contracts (H1 lobby)."""
+    out: dict[str, Path] = {}
+    if not contracts_dir.is_dir():
+        return out
+    for path in sorted(contracts_dir.glob("*.json")):
+        try:
+            data = load_contract(path)
+        except (OSError, json.JSONDecodeError):
+            LOG.warning("skip unreadable contract %s", path)
+            continue
+        level_id = str(data.get("level_id") or path.stem)
+        if level_id in out:
+            LOG.warning("duplicate level_id %s: %s vs %s", level_id, out[level_id], path)
+            continue
+        out[level_id] = path
+    return out
 
 
 def point_in_aabb(x: float, y: float, z: float, mn: list[float], mx: list[float]) -> bool:
@@ -779,13 +801,21 @@ class EchoGateway:
         self.record_dir = record_dir
         self.record_every_n_ticks = record_every_n_ticks
         self.model_path = model_path
+        self.level_contracts = catalog_contracts()
+        self._mj_models: dict[str, Any] = {}
         self.mj_model = None
         if physics == "mujoco":
             if mujoco is None:
                 raise SystemExit("mujoco not installed: pip install mujoco==3.6.0")
             if model_path is None:
                 raise SystemExit("--physics mujoco requires --model")
-            self.mj_model = self._build_mujoco_world(model_path)
+            default_level = str(contract.get("level_id") or "demo_workshop")
+            self.mj_model = self._ensure_mj_model(contract)
+            LOG.info(
+                "mujoco levels registered=%s default=%s",
+                sorted(self.level_contracts),
+                default_level,
+            )
 
     def _maybe_reload_contract(self) -> None:
         """Hot-reload contract (+ rebuild MuJoCo world) when the file changes (D9).
@@ -805,7 +835,9 @@ class EchoGateway:
         self.contract = load_contract(self.contract_path)
         self._contract_mtime = mtime
         if self.physics == "mujoco" and self.model_path is not None:
-            self.mj_model = self._build_mujoco_world(self.model_path)
+            level = str(self.contract.get("level_id") or "")
+            self._mj_models.pop(level, None)
+            self.mj_model = self._ensure_mj_model(self.contract)
         # Drop empty rooms so the next join recreates with the new contract.
         dead = [
             rid
@@ -850,7 +882,21 @@ class EchoGateway:
             out["joint_targets"] = dict(mech.joint_targets)
         return out
 
-    def _build_mujoco_world(self, model_path: Path) -> "mujoco.MjModel":
+    def _ensure_mj_model(self, contract: dict[str, Any]) -> Any:
+        """Compile (or reuse) MjModel for contract.level_id."""
+        level = str(contract.get("level_id") or "unknown")
+        cached = self._mj_models.get(level)
+        if cached is not None:
+            return cached
+        if self.model_path is None:
+            raise SystemExit("mujoco model_path missing")
+        model = self._build_mujoco_world(self.model_path, contract)
+        self._mj_models[level] = model
+        return model
+
+    def _build_mujoco_world(
+        self, model_path: Path, contract: dict[str, Any] | None = None
+    ) -> "mujoco.MjModel":
         """Build multi-mech world: ground + one attached chassis per spawn (F7).
 
         Starts from ``world_flat.xml`` (ground), strips the single included
@@ -858,6 +904,7 @@ class EchoGateway:
         prefix ``{entity_id}/``. Contract static_obstacles are appended as
         static box geoms (T2.3).
         """
+        contract = contract if contract is not None else self.contract
         models_dir = model_path.parent
         spec = mujoco.MjSpec.from_file(str(model_path))
         # Drop the single-mech include so we can attach N prefixed copies.
@@ -865,7 +912,7 @@ class EchoGateway:
         if chassis is not None and (chassis.name or "") == "chassis":
             spec.delete(chassis)
 
-        spawns = list(self.contract.get("mech_spawns") or [])
+        spawns = list(contract.get("mech_spawns") or [])
         if not spawns:
             spawns = [{"id": "mech_player", "model_ref": "mechs/diffbot_planar.xml", "pose": {}}]
 
@@ -879,7 +926,7 @@ class EchoGateway:
             frame = spec.worldbody.add_frame(name=f"frame_{eid}", pos=[0.0, 0.0, 0.0])
             spec.attach(child, prefix=f"{eid}/", frame=frame)
 
-        obstacles = self.contract.get("static_obstacles") or []
+        obstacles = contract.get("static_obstacles") or []
         appended = 0
         for ob in obstacles:
             if ob.get("physics_role", "mujoco_authoritative") != "mujoco_authoritative":
@@ -901,9 +948,9 @@ class EchoGateway:
             geom.friction = list(OBSTACLE_FRICTION)
             appended += 1
 
-        props = self.contract.get("dynamic_props") or []
+        props = contract.get("dynamic_props") or []
         prop_n = self._append_dynamic_props(spec, props)
-        self._append_grasp_welds(spec, props)
+        self._append_grasp_welds(spec, contract, props)
         LOG.info(
             "mujoco world F7: %d mechs attached, %d/%d static_obstacles, %d/%d dynamic_props, level=%s",
             len(spawns),
@@ -911,7 +958,7 @@ class EchoGateway:
             len(obstacles),
             prop_n,
             len(props),
-            self.contract.get("level_id"),
+            contract.get("level_id"),
         )
         return spec.compile()
 
@@ -943,10 +990,14 @@ class EchoGateway:
             added += 1
         return added
 
-    def _append_grasp_welds(self, spec: Any, props: list) -> None:
+    def _append_grasp_welds(self, spec: Any, contract: dict[str, Any], props: list) -> None:
         """Add inactive weld equalities mech gripper_base ↔ each prop (V3c sticky grasp)."""
-        for spawn in self.contract.get("mech_spawns") or []:
+        for spawn in contract.get("mech_spawns") or []:
             eid = str(spawn.get("id", "mech_player"))
+            model_ref = str(spawn.get("model_ref") or "")
+            # City DiffBot has no gripper_base; only arm_gripper (etc.) get welds.
+            if "gripper" not in model_ref and "arm" not in model_ref:
+                continue
             for prop in props:
                 if prop.get("physics_role", "mujoco_authoritative") != "mujoco_authoritative":
                     continue
@@ -963,12 +1014,14 @@ class EchoGateway:
                 eq.name2 = pid
                 eq.active = False
 
-    def _grasp_eq_map(self, model: Any) -> dict[tuple[str, str], int]:
+    def _grasp_eq_map(
+        self, model: Any, contract: dict[str, Any]
+    ) -> dict[tuple[str, str], int]:
         """Resolve compiled equality ids for sticky grasp welds."""
         out: dict[tuple[str, str], int] = {}
-        for spawn in self.contract.get("mech_spawns") or []:
+        for spawn in contract.get("mech_spawns") or []:
             eid = str(spawn.get("id", "mech_player"))
-            for prop in self.contract.get("dynamic_props") or []:
+            for prop in contract.get("dynamic_props") or []:
                 pid = str(prop.get("id") or "")
                 if not pid:
                     continue
@@ -980,10 +1033,10 @@ class EchoGateway:
 
     def _update_sticky_grasps(self, room: Room) -> None:
         """Enable weld when gripper closed + near prop; kinematically attach while held."""
-        if room.mj_data is None or self.mj_model is None or not room.grasp_eq:
+        if room.mj_data is None or room.mj_model is None or not room.grasp_eq:
             return
         data = room.mj_data
-        model = self.mj_model
+        model = room.mj_model
         for (eid, pid), eq_id in room.grasp_eq.items():
             mech = room.mechs.get(eid)
             prop = room.props.get(pid)
@@ -1016,22 +1069,25 @@ class EchoGateway:
             else:
                 data.eq_active[eq_id] = 0
 
-    def _make_room_mechs(self) -> tuple[dict[str, MechState], dict[str, DynamicProp], Any, int, dict[tuple[str, str], int]]:
+    def _make_room_mechs(
+        self, contract: dict[str, Any], mj_model: Any | None = None
+    ) -> tuple[dict[str, MechState], dict[str, DynamicProp], Any, int, dict[tuple[str, str], int]]:
         """Instantiate contract mechs + props; MuJoCo uses one shared MjData (F7)."""
         mechs: dict[str, MechState] = {}
         props: dict[str, DynamicProp] = {}
         shared = None
         substeps = 1
         grasp_eq: dict[tuple[str, str], int] = {}
-        if self.mj_model is not None:
-            shared = mujoco.MjData(self.mj_model)
-            substeps = max(1, int(round(DT / self.mj_model.opt.timestep)))
-            grasp_eq = self._grasp_eq_map(self.mj_model)
-        for spawn in self.contract.get("mech_spawns") or []:
+        model = mj_model
+        if model is not None:
+            shared = mujoco.MjData(model)
+            substeps = max(1, int(round(DT / model.opt.timestep)))
+            grasp_eq = self._grasp_eq_map(model, contract)
+        for spawn in contract.get("mech_spawns") or []:
             eid = str(spawn.get("id", "mech_player"))
             pose = spawn.get("pose") or {}
-            if shared is not None:
-                mech = MujocoMech(eid, self.mj_model, shared, prefix=f"{eid}/")
+            if shared is not None and model is not None:
+                mech = MujocoMech(eid, model, shared, prefix=f"{eid}/")
             else:
                 mech = MechState(eid)
             mech.reset_pose(pose)
@@ -1039,14 +1095,14 @@ class EchoGateway:
             mech.vx = mech.vy = mech.yaw_rate = 0.0
             mechs[eid] = mech
         if not mechs:
-            if shared is not None:
-                mech = MujocoMech("mech_player", self.mj_model, shared, prefix="mech_player/")
+            if shared is not None and model is not None:
+                mech = MujocoMech("mech_player", model, shared, prefix="mech_player/")
             else:
                 mech = MechState("mech_player")
             mech.reset_pose({})
             mechs["mech_player"] = mech
-        if shared is not None:
-            for prop in self.contract.get("dynamic_props") or []:
+        if shared is not None and model is not None:
+            for prop in contract.get("dynamic_props") or []:
                 if prop.get("physics_role", "mujoco_authoritative") != "mujoco_authoritative":
                     continue
                 if prop.get("shape", "box") != "box":
@@ -1054,7 +1110,7 @@ class EchoGateway:
                 pid = str(prop["id"])
                 dp = DynamicProp(
                     pid,
-                    self.mj_model,
+                    model,
                     shared,
                     body_name=pid,
                     joint_prefix=f"{pid}_",
@@ -1193,9 +1249,10 @@ class EchoGateway:
 
     async def _handle_join(self, session: Session, payload: dict[str, Any]) -> None:
         self._maybe_reload_contract()
-        level_id = payload.get("level_id") or self.contract.get("level_id")
-        expected = self.contract.get("level_id")
-        if level_id != expected:
+        level_id = str(payload.get("level_id") or self.contract.get("level_id") or "")
+        contract_path = self.level_contracts.get(level_id)
+        if contract_path is None:
+            known = ", ".join(sorted(self.level_contracts)) or "(none)"
             await send_json(
                 session.ws,
                 envelope(
@@ -1203,7 +1260,22 @@ class EchoGateway:
                     session_id=session.session_id,
                     payload={
                         "code": "UNKNOWN_LEVEL",
-                        "message": f"POC only supports {expected}, got {level_id}",
+                        "message": f"unknown level_id={level_id}; known=[{known}]",
+                    },
+                ),
+            )
+            return
+        try:
+            contract = load_contract(contract_path)
+        except (OSError, json.JSONDecodeError) as exc:
+            await send_json(
+                session.ws,
+                envelope(
+                    "error",
+                    session_id=session.session_id,
+                    payload={
+                        "code": "CONTRACT_LOAD",
+                        "message": f"failed to load {contract_path}: {exc}",
                     },
                 ),
             )
@@ -1216,28 +1288,21 @@ class EchoGateway:
         self._leave_room(session)
 
         room = self.rooms.get(room_id)
-        if room is None:
-            mechs, props, mj_data, mj_substeps, grasp_eq = self._make_room_mechs()
-            room = Room(
-                room_id=room_id,
-                contract=self.contract,
-                mechs=mechs,
-                props=props,
-                max_members=max_members,
-                mj_data=mj_data,
-                mj_substeps=mj_substeps,
-                grasp_eq=grasp_eq,
-            )
-            self.rooms[room_id] = room
-            LOG.info(
-                "room=%s created max_members=%d mechs=%s props=%s shared_mj=%s",
-                room_id,
-                max_members,
-                list(room.mechs),
-                list(room.props),
-                mj_data is not None,
-            )
-        else:
+        if room is not None:
+            room_level = str(room.contract.get("level_id") or "")
+            if room_level != level_id:
+                await send_json(
+                    session.ws,
+                    envelope(
+                        "error",
+                        session_id=session.session_id,
+                        payload={
+                            "code": "LEVEL_MISMATCH",
+                            "message": f"room {room_id} is level={room_level}, got {level_id}",
+                        },
+                    ),
+                )
+                return
             active = [s for s in room.members.values() if s.joined and not s.closed]
             if len(active) >= room.max_members:
                 await send_json(
@@ -1252,6 +1317,34 @@ class EchoGateway:
                     ),
                 )
                 return
+        else:
+            mj_model = None
+            if self.physics == "mujoco":
+                mj_model = self._ensure_mj_model(contract)
+            mechs, props, mj_data, mj_substeps, grasp_eq = self._make_room_mechs(
+                contract, mj_model
+            )
+            room = Room(
+                room_id=room_id,
+                contract=contract,
+                mechs=mechs,
+                props=props,
+                max_members=max_members,
+                mj_data=mj_data,
+                mj_substeps=mj_substeps,
+                grasp_eq=grasp_eq,
+                mj_model=mj_model,
+            )
+            self.rooms[room_id] = room
+            LOG.info(
+                "room=%s level=%s max_members=%d mechs=%s props=%s shared_mj=%s",
+                room_id,
+                level_id,
+                max_members,
+                list(room.mechs),
+                list(room.props),
+                mj_data is not None,
+            )
 
         entity_id = room.free_spawn_id()
         if entity_id is None:
@@ -1272,7 +1365,7 @@ class EchoGateway:
         # Re-join private room: reset that mech to spawn pose.
         if room_id != DEMO_ROOM_ID or len([s for s in room.members.values() if s.joined]) == 0:
             spawn = next(
-                (s for s in (self.contract.get("mech_spawns") or []) if s.get("id") == entity_id),
+                (s for s in (room.contract.get("mech_spawns") or []) if s.get("id") == entity_id),
                 None,
             )
             pose = (spawn or {}).get("pose") or {}
@@ -1282,6 +1375,7 @@ class EchoGateway:
             if room_id != DEMO_ROOM_ID:
                 room.tick = 0
 
+        session.contract = room.contract
         session.level_id = level_id
         session.joined = True
         session.room = room
@@ -1299,7 +1393,7 @@ class EchoGateway:
             session.recorder = SessionRecorder(
                 self.record_dir,
                 session_id=session.session_id,
-                contract=self.contract,
+                contract=room.contract,
                 protocol_version=PROTOCOL_VERSION,
                 dt=DT,
                 sim_hz=SIM_HZ,
@@ -1310,7 +1404,7 @@ class EchoGateway:
             )
 
         entities = []
-        for spawn in self.contract.get("mech_spawns") or []:
+        for spawn in room.contract.get("mech_spawns") or []:
             sid = spawn["id"]
             entities.append(
                 {
@@ -1320,7 +1414,7 @@ class EchoGateway:
                     "controllable": sid == entity_id,
                 }
             )
-        for obs in self.contract.get("static_obstacles") or []:
+        for obs in room.contract.get("static_obstacles") or []:
             entities.append(
                 {
                     "entity_id": obs["id"],
@@ -1328,7 +1422,7 @@ class EchoGateway:
                     "controllable": False,
                 }
             )
-        for prop in self.contract.get("dynamic_props") or []:
+        for prop in room.contract.get("dynamic_props") or []:
             entities.append(
                 {
                     "entity_id": prop["id"],
@@ -1345,10 +1439,10 @@ class EchoGateway:
                 tick=room.tick,
                 payload={
                     "level_id": level_id,
-                    "contract_version": self.contract.get("contract_version", "0.1"),
-                    "seed": self.contract.get("seed"),
+                    "contract_version": room.contract.get("contract_version", "0.1"),
+                    "seed": room.contract.get("seed"),
                     "entities": entities,
-                    "objectives": self.contract.get("objectives") or [],
+                    "objectives": room.contract.get("objectives") or [],
                     "extensions": {
                         "mw": {
                             "room_id": room_id,

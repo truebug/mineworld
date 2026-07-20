@@ -5,22 +5,42 @@
 | **状态** | Living |
 | **日期** | 2026-07-19 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | **V 线纠偏执行中**：车间关 + 臂/爪 + `joint_targets` + IL 样本 |
+| **目标** | V 线冻结项已收口；**Now：回放验收 · P1 接触/IL · 试验场入口 H*** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
 | **阶段评审** | [12-status-review.md](12-status-review.md) |
 | **跑偏与纠偏** | [15-course-correction.md](15-course-correction.md) |
-| **V 线规格** | **[16-value-sprint.md](16-value-sprint.md)**（决策冻结 · 验收 SSOT） |
+| **V 线规格** | [16-value-sprint.md](16-value-sprint.md)（冻结项 Done） |
+| **试验场入口** | **[17-lobby-testfield.md](17-lobby-testfield.md)** |
 
 勾选约定：`[ ]` 未做 · `[x]` 完成 · `[-]` 取消 · `[~]` 暂缓
 
 ---
 
-## Now（F · Godot ↔ MuJoCo 融合）
+## Now（收口后主线 · 2026-07-20）
 
-> 公网 W2.1/2/4、T2.7 **暂缓**。  
-> 详设见 [14](14-godot-mujoco-fusion.md)。铁律不变：Godot 不权威、MuJoCo 不叙事。
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| R1 | 录制列表过滤 + joints 覆盖提示 | `recordings.html` level/outcome；详情显示 joints keys | [x] |
+| R2 | 回放验收 smoke | `scripts/replay_verify_smoke.py`（需 serve_web） | [x] |
+| H0 | 试验场入口场景 | `demo_lobby.tscn` 为主场景 | [x] |
+| H1 | Gateway 多契约 `join.level_id` | workshop / city 同进程可进 | [x] |
+| H2 | Esc 回试验场 | 玩法关 Esc → lobby | [x] |
+| P1a | 真摩擦抓取（替换 sticky） | grasp_lift 不靠 kinematic weld | [ ] |
+| P1b | 最小 BC 离线检查 | notebook/脚本读 success CSV 关节列 | [ ] |
+
+> 观感 POC：柔和补光 + 路径灯带 + 车间橙底盘（无 A/箭头）已落地。
+
+---
+
+## Done（V · 数据价值纠偏 · 冻结项）
+
+> 规格见 [16](16-value-sprint.md)。冻结项均已完成（2026-07-20）。
+
+## Done（F · Godot ↔ MuJoCo 融合）
+
+> 公网 W2.1/2/4、T2.7 **暂缓**。详设见 [14](14-godot-mujoco-fusion.md)。
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
@@ -38,7 +58,7 @@
 
 ---
 
-## Now（D · 演示打磨）
+## Done（D · 演示打磨）
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
@@ -60,11 +80,9 @@
 
 ---
 
-## Now（V · 数据价值纠偏 · 已冻结）
+## Done（V · 数据价值 · 明细）
 
-> 规格 SSOT：[16-value-sprint.md](16-value-sprint.md)。  
-> 决策：臂+爪 · 键鼠滑条 · **`demo_workshop` 室内车间** · 优先 **IL/行为克隆**。  
-> 推荐顺序：`V4a` ∥ `L1` ∥ `V2a` → `V1*` → `V3a/b` → `V4b` → `V-IL`。
+> 规格 SSOT：[16-value-sprint.md](16-value-sprint.md)。
 
 ### 冻结决策（摘要）
 

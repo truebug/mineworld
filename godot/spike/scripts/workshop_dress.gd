@@ -52,16 +52,28 @@ func _ready() -> void:
 
 
 ## Sparse floor pads (keep concrete Ground visible; full Kenney tile wash looks flat/purple).
+## Corridor z≈0 left clear for neon path (spawn → crate → bin).
 const FLOOR_PADS: Array = [
-	{"x": 8.0, "z": 0.0}, {"x": 12.0, "z": 0.0}, {"x": 16.0, "z": 0.0}, {"x": 20.0, "z": 0.0},
 	{"x": 8.0, "z": 4.0}, {"x": 12.0, "z": -4.0}, {"x": 18.0, "z": 4.0}, {"x": 22.0, "z": -4.0},
-	{"x": 26.0, "z": 0.0}, {"x": 26.0, "z": 4.0}, {"x": 26.0, "z": -4.0},
+	{"x": 26.0, "z": 4.0}, {"x": 26.0, "z": -4.0},
 ]
+
+## Fake nav glow path in Godot XZ (MW spawn 4,0 → crate 8,0 → bin 26,0). Viewer-only.
+const PATH_WAYPOINTS: Array = [
+	Vector2(4.0, 0.0),
+	Vector2(8.0, 0.0),
+	Vector2(26.0, 0.0),
+]
+const PATH_Y := 0.03
+const PATH_WIDTH := 0.38
+const PATH_SEG_LEN := 1.15
+const PATH_GAP := 0.28
 
 
 func _place_all() -> void:
-	"""Place floor pads + props; keep concrete Ground as base (viewer_only)."""
+	"""Place floor pads + neon path + props; keep concrete Ground as base (viewer_only)."""
 	var floor_n := _place_floor_pads()
+	var path_n := _place_neon_path()
 	var n := 0
 	for item in PLACEMENTS:
 		if typeof(item) != TYPE_DICTIONARY:
@@ -70,7 +82,102 @@ func _place_all() -> void:
 		var name := str(d.get("asset", ""))
 		if _spawn_asset(name, float(d.get("x", 0.0)), float(d.get("z", 0.0)), float(d.get("yaw", 0.0)), float(d.get("s", 1.0)), n):
 			n += 1
-	print("[MW] workshop dress floor_pads=%d props=%d (viewer_only)" % [floor_n, n])
+	print("[MW] workshop dress floor_pads=%d path_segs=%d props=%d (viewer_only)" % [floor_n, path_n, n])
+
+
+func _place_neon_path() -> int:
+	"""Build dashed emissive floor strips along PATH_WAYPOINTS (fake nav, no physics)."""
+	var mat := _make_neon_mat()
+	var soft := _make_neon_soft_mat()
+	var root := Node3D.new()
+	root.name = "NeonPath"
+	add_child(root)
+	var count := 0
+	for i in range(PATH_WAYPOINTS.size() - 1):
+		var a: Vector2 = PATH_WAYPOINTS[i]
+		var b: Vector2 = PATH_WAYPOINTS[i + 1]
+		count += _place_path_segment(root, a, b, mat, soft, count)
+	# Soft omni markers so Web Compatibility still gets a hint of glow.
+	_place_path_omnis(root)
+	return count
+
+
+func _make_neon_mat() -> StandardMaterial3D:
+	"""Bright orange emissive strip material."""
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.55, 0.12, 0.95)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.45, 0.05)
+	mat.emission_energy_multiplier = 2.4
+	mat.roughness = 0.35
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return mat
+
+
+func _make_neon_soft_mat() -> StandardMaterial3D:
+	"""Wider soft halo under the strip."""
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.4, 0.05, 0.22)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.35, 0.02)
+	mat.emission_energy_multiplier = 1.2
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return mat
+
+
+func _place_path_segment(
+	parent: Node3D, a: Vector2, b: Vector2, mat: StandardMaterial3D, soft: StandardMaterial3D, start_idx: int
+) -> int:
+	"""Lay dashed boxes from a→b on the floor."""
+	var delta := b - a
+	var length := delta.length()
+	if length < 0.05:
+		return 0
+	var dir := delta / length
+	# BoxMesh local +X along path; Godot Yaw = atan2(-z, x) for Vector2(x,z).
+	var yaw := atan2(-dir.y, dir.x)
+	var placed := 0
+	var t := 0.0
+	while t + PATH_SEG_LEN * 0.35 < length:
+		var seg := minf(PATH_SEG_LEN, length - t)
+		var mid := a + dir * (t + seg * 0.5)
+		var mi := MeshInstance3D.new()
+		mi.name = "PathSeg_%d" % (start_idx + placed)
+		var box := BoxMesh.new()
+		box.size = Vector3(seg, 0.02, PATH_WIDTH)
+		box.material = mat
+		mi.mesh = box
+		mi.position = Vector3(mid.x, PATH_Y, mid.y)
+		mi.rotation.y = yaw
+		parent.add_child(mi)
+		var halo := MeshInstance3D.new()
+		halo.name = "PathHalo_%d" % (start_idx + placed)
+		var soft_box := BoxMesh.new()
+		soft_box.size = Vector3(seg * 1.05, 0.01, PATH_WIDTH * 2.2)
+		soft_box.material = soft
+		halo.mesh = soft_box
+		halo.position = Vector3(mid.x, PATH_Y - 0.01, mid.y)
+		halo.rotation.y = yaw
+		parent.add_child(halo)
+		placed += 1
+		t += seg + PATH_GAP
+	return placed
+
+
+func _place_path_omnis(parent: Node3D) -> void:
+	"""Sparse warm omnis along the corridor for Compatibility renderer."""
+	for x in [6.0, 12.0, 18.0, 24.0]:
+		var light := OmniLight3D.new()
+		light.name = "PathOmni_%.0f" % x
+		light.position = Vector3(x, 1.2, 0.0)
+		light.light_color = Color(1.0, 0.55, 0.15)
+		light.light_energy = 0.35
+		light.omni_range = 4.5
+		light.omni_attenuation = 1.5
+		light.shadow_enabled = false
+		parent.add_child(light)
 
 
 func _place_floor_pads() -> int:

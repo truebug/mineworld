@@ -466,6 +466,8 @@ func _on_dom_key_event(args: Array) -> void:
 			"Space":
 				if _replay_session != "":
 					_toggle_replay_pause()
+			"Escape":
+				get_tree().change_scene_to_file("res://demo_lobby.tscn")
 
 
 func _on_dom_blur(_args: Array) -> void:
@@ -684,6 +686,9 @@ func _input(event: InputEvent) -> void:
 		_set_held(event.physical_keycode, event.pressed)
 		if event.pressed and not event.echo:
 			var code: int = event.keycode if event.keycode != KEY_NONE else event.physical_keycode
+			if code == KEY_ESCAPE:
+				get_tree().change_scene_to_file("res://demo_lobby.tscn")
+				return
 			if code == KEY_SPACE and _replay_session != "":
 				_toggle_replay_pause()
 				return

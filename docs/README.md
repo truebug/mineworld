@@ -6,8 +6,9 @@
 
 1. [00-vision.md](00-vision.md) — 为什么做、做什么
 2. [15-course-correction.md](15-course-correction.md) — 跑偏纪要与纠偏诊断
-3. **[16-value-sprint.md](16-value-sprint.md)** — **V 线冻结规格（车间 / 臂爪 / IL）· 当前执行 SSOT**
-4. [01-architecture.md](01-architecture.md) — 怎么拆
+3. **[16-value-sprint.md](16-value-sprint.md)** — V 线冻结规格（车间 / 臂爪 / IL）· **Done**
+4. **[17-lobby-testfield.md](17-lobby-testfield.md)** — **试验场入口（Lobby）**
+5. [01-architecture.md](01-architecture.md) — 怎么拆
 5. [02-scene-contract.md](02-scene-contract.md) — 世界如何进仿真
 6. [03-websocket-protocol.md](03-websocket-protocol.md) — 怎么连
 7. [04-data-collection.md](04-data-collection.md) — 采什么（IL 优先）

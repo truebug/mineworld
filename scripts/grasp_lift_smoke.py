@@ -29,7 +29,7 @@ def main() -> int:
         record_dir=None,
         contract_path=REPO / "examples" / "contracts" / "demo_workshop.json",
     )
-    mechs, props, data, _sub, grasp_eq = gw._make_room_mechs()
+    mechs, props, data, _sub, grasp_eq = gw._make_room_mechs(contract, gw.mj_model)
     mech = mechs["mech_player"]
     prop = props["prop_crate"]
     room = Room(
@@ -39,6 +39,7 @@ def main() -> int:
         props=props,
         mj_data=data,
         grasp_eq=grasp_eq,
+        mj_model=gw.mj_model,
     )
     session = Session(session_id="grasp_smoke", ws=None, contract=contract)  # type: ignore[arg-type]
     session.joined = True
