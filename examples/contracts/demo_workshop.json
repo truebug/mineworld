@@ -79,7 +79,10 @@
       "id": "obj_stow_crate",
       "type": "reach_region",
       "target": "trigger_bin",
-      "description": "车间：将箱子推入料箱区（V3a 可改为夹爪辅助）"
+      "description": "车间：将箱子推入料箱区（允许夹爪辅助推）",
+      "params": {
+        "entity_id": "prop_crate"
+      }
     }
   ],
   "triggers": [
@@ -94,11 +97,12 @@
   "extensions": {
     "mw.il": {
       "task_id": "obj_stow_crate",
-      "difficulty": "poc"
+      "difficulty": "poc",
+      "control_modes": ["velocity", "joint_targets"]
     },
     "mw.editor": {
       "client_scene": "res://demo_workshop.tscn",
-      "notes": "Enclosed indoor workshop; walls authoritative; no street cruise."
+      "notes": "Enclosed indoor workshop; walls authoritative; L2 bin AABB + workbench; V3a prop-in-bin."
     }
   }
 }

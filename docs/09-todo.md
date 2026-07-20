@@ -80,14 +80,14 @@
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | V4a | header/index IL 最小标签 | `task_id` · `difficulty` · `control_mode(s)` · `outcome` · `seed` 入 header + sqlite | [x] |
-| V4b | 导出服务 IL | CSV/JSONL 含关节 `cmd`+`joints`；可按 level/task/outcome 过滤 | [ ] |
+| V4b | 导出服务 IL | CSV/JSONL 含关节 `cmd`+`joints`；可按 level/task/outcome 过滤 | [x] |
 
 ### L · 车间关
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | L1 | `demo_workshop` 契约 + 封闭车间壳 | 契约 JSON + `demo_workshop.tscn`；四面墙权威；无街道巡航叙事 | [x] |
-| L2 | 工作台 / 料箱 trigger | 料箱 AABB + 工作区；`dynamic_props` 可动物 | [ ] |
+| L2 | 工作台 / 料箱 trigger | 料箱 AABB + 工作区；`dynamic_props` 可动物 | [x] |
 | L3 | 默认主演示切车间 | Gateway/Web 默认或文档明确主线为 workshop；city 可选手动 | [x] |
 
 ### V2 · 机体（臂+爪）
@@ -105,14 +105,14 @@
 | V1a | Schema `joint_targets` | ws-messages + examples；可与 velocity 同会话并存 | [x] |
 | V1b | Gateway 执行关节目标 | MuJoCo 伺服；smoke 改角可见 | [x] |
 | V1c | 键鼠关节滑条 UX | Web/桌面：每关节滑条 + 可选快捷键；映射文档化 | [x] |
-| V1d | 成对录制 | frames/export 含关节 cmd↔joints；3D 回放臂动 | [ ] |
+| V1d | 成对录制 | frames/export 含关节 cmd↔joints；3D 回放臂动 | [x] |
 
 ### V3 · IL 任务
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| V3a | 车间主目标 v1 | 箱子进入料箱区 → `objective_complete`（允许夹爪辅助推） | [ ] |
-| V3b | outcome 服务 IL | success/fail/abort 可筛；正样本导出默认 success | [ ] |
+| V3a | 车间主目标 v1 | 箱子进入料箱区 → `objective_complete`（允许夹爪辅助推） | [x] |
+| V3b | outcome 服务 IL | success/fail/abort 可筛；正样本导出默认 success | [x] |
 | V3c | （可选）真夹取抬起 | 闭合+接触+离地；不阻塞 V3a | [ ] |
 | V-IL | IL 冒烟 | 至少 1 条 `demo_workshop` + success 可被 export 滤出 | [ ] |
 

@@ -38,11 +38,14 @@ def _il_fields_from_contract(contract: dict[str, Any]) -> dict[str, Any]:
             task_id = objectives[0].get("id")
     difficulty = mw_il.get("difficulty") or "poc"
     modes: list[str] = []
+    for mode in mw_il.get("control_modes") or []:
+        if mode and str(mode) not in modes:
+            modes.append(str(mode))
     for spawn in contract.get("mech_spawns") or []:
         if not isinstance(spawn, dict):
             continue
         mode = spawn.get("control_mode")
-        if mode and mode not in modes:
+        if mode and str(mode) not in modes:
             modes.append(str(mode))
     tags = [str(t) for t in (contract.get("tags") or [])]
     primary = None

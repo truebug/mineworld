@@ -85,5 +85,6 @@ Legacy：GDevelop `gdevelop/demo0`（存档，见 `docs/adr/003-client-engine-go
 会话默认写在 `recordings/sessions/<id>/`（`header.json` + `frames.jsonl`）。辅助模块：
 
 - `gateway/recording_store.py` — FS 扫描、`rebuild_sqlite` → `recordings/index.sqlite`
-- `scripts/export_trajectories.py` — 批量导出 CSV/JSONL
-- Web：`POST /api/recordings/reindex` · `GET /api/recordings/export.csv`（经 `serve_web_demo.py`）
+- `scripts/export_trajectories.py` — IL 导出（默认 `outcome=success`；`--level-id` / `--task-id` / `--outcome`；含 `cmd_joint_targets`+`joints`）
+- `scripts/stow_crate_smoke.py` — V3a 箱子推入料箱 → `objective_complete`
+- Web：`POST /api/recordings/reindex` · `GET /api/recordings/export.csv?level_id=&task_id=&outcome=`（经 `serve_web_demo.py`）

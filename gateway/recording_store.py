@@ -26,6 +26,13 @@ CSV_COLUMNS = (
     "z",
     "yaw",
     "cmd_vx",
+    "cmd_vy",
+    "cmd_yaw_rate",
+    "cmd_joint_targets",
+    "joints",
+    "level_id",
+    "task_id",
+    "outcome",
 )
 
 
@@ -164,21 +171,52 @@ def rebuild_sqlite(root: Path, db_path: Path) -> int:
         conn.close()
 
 
-def _cmd_vx(cmd: Any) -> float | None:
-    """Extract vx from a recorded cmd object, if present."""
-    if not isinstance(cmd, dict):
-        return None
-    if "vx" not in cmd:
+def _cmd_float(cmd: Any, key: str) -> float | None:
+    """Extract a float field from a recorded cmd object, if present."""
+    if not isinstance(cmd, dict) or key not in cmd:
         return None
     try:
-        return float(cmd["vx"])
+        return float(cmd[key])
     except (TypeError, ValueError):
         return None
 
 
-def _iter_trajectory_rows(session_id: str, frames_path: Path) -> list[dict[str, Any]]:
-    """Parse frames.jsonl into flat entity pose rows; empty on failure."""
+def _json_cell(value: Any) -> str | None:
+    """Serialize dict/list values as compact JSON for CSV cells."""
+    if value is None:
+        return None
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    return str(value)
+
+
+def _header_matches(
+    header: dict[str, Any],
+    *,
+    level_id: str | None,
+    task_id: str | None,
+    outcome: str | None,
+) -> bool:
+    """Return True if header passes optional IL filters (V3b / V4b)."""
+    if level_id and str(header.get("level_id") or "") != level_id:
+        return False
+    if task_id and str(header.get("task_id") or "") != task_id:
+        return False
+    if outcome and outcome != "all":
+        if str(header.get("outcome") or "") != outcome:
+            return False
+    return True
+
+
+def _iter_trajectory_rows(
+    session_id: str,
+    frames_path: Path,
+    *,
+    header: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Parse frames.jsonl into flat entity pose + cmd/joints rows (V1d / V4b)."""
     rows: list[dict[str, Any]] = []
+    meta = header or {}
     try:
         with frames_path.open(encoding="utf-8") as fp:
             for line in fp:
@@ -189,13 +227,19 @@ def _iter_trajectory_rows(session_id: str, frames_path: Path) -> list[dict[str, 
                 tick = frame.get("tick")
                 t_sim = frame.get("t_sim")
                 cmd = frame.get("cmd")
-                cmd_vx = _cmd_vx(cmd)
+                cmd_vx = _cmd_float(cmd, "vx")
+                cmd_vy = _cmd_float(cmd, "vy")
+                cmd_yaw = _cmd_float(cmd, "yaw_rate")
+                cmd_targets = None
+                if isinstance(cmd, dict) and isinstance(cmd.get("joint_targets"), dict):
+                    cmd_targets = cmd.get("joint_targets")
                 state = frame.get("state") or {}
                 for ent in state.get("entities") or []:
                     entity_id = ent.get("entity_id")
                     if not entity_id:
                         continue
                     pose = ent.get("base_pose") or {}
+                    joints = ent.get("joints") if isinstance(ent.get("joints"), dict) else None
                     row: dict[str, Any] = {
                         "session_id": session_id,
                         "tick": tick,
@@ -205,9 +249,20 @@ def _iter_trajectory_rows(session_id: str, frames_path: Path) -> list[dict[str, 
                         "y": pose.get("y"),
                         "z": pose.get("z"),
                         "yaw": pose.get("yaw"),
+                        "level_id": meta.get("level_id"),
+                        "task_id": meta.get("task_id"),
+                        "outcome": meta.get("outcome"),
                     }
                     if cmd_vx is not None:
                         row["cmd_vx"] = cmd_vx
+                    if cmd_vy is not None:
+                        row["cmd_vy"] = cmd_vy
+                    if cmd_yaw is not None:
+                        row["cmd_yaw_rate"] = cmd_yaw
+                    if cmd_targets is not None:
+                        row["cmd_joint_targets"] = _json_cell(cmd_targets)
+                    if joints is not None:
+                        row["joints"] = _json_cell(joints)
                     rows.append(row)
     except (OSError, json.JSONDecodeError) as exc:
         LOG.warning("skip broken session=%s frames: %s", session_id, exc)
@@ -229,8 +284,14 @@ def _write_jsonl(rows: list[dict[str, Any]], out_fp: TextIO) -> None:
         out_fp.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
 
 
-def collect_trajectory_rows(root: Path) -> list[dict[str, Any]]:
-    """Collect entity base_pose rows from all sessions that have frames.jsonl."""
+def collect_trajectory_rows(
+    root: Path,
+    *,
+    level_id: str | None = None,
+    task_id: str | None = None,
+    outcome: str | None = "success",
+) -> list[dict[str, Any]]:
+    """Collect entity rows from sessions matching IL filters (default: success only)."""
     all_rows: list[dict[str, Any]] = []
     for child in sorted(root.iterdir()) if root.is_dir() else []:
         if not child.is_dir():
@@ -238,18 +299,29 @@ def collect_trajectory_rows(root: Path) -> list[dict[str, Any]]:
         frames_path = child / "frames.jsonl"
         if not frames_path.is_file():
             continue
-        header = _read_header(child / "header.json")
-        session_id = (header or {}).get("session_id") or child.name
-        all_rows.extend(_iter_trajectory_rows(session_id, frames_path))
+        header = _read_header(child / "header.json") or {}
+        if not _header_matches(header, level_id=level_id, task_id=task_id, outcome=outcome):
+            continue
+        session_id = header.get("session_id") or child.name
+        all_rows.extend(_iter_trajectory_rows(session_id, frames_path, header=header))
     return all_rows
 
 
-def export_trajectories_text(root: Path, *, format: str = "csv") -> str:
+def export_trajectories_text(
+    root: Path,
+    *,
+    format: str = "csv",
+    level_id: str | None = None,
+    task_id: str | None = None,
+    outcome: str | None = "success",
+) -> str:
     """Build trajectory export as a string (CSV or JSONL)."""
     fmt = format.lower()
     if fmt not in ("csv", "jsonl"):
         raise ValueError(f"unsupported format: {format!r}")
-    rows = collect_trajectory_rows(root)
+    rows = collect_trajectory_rows(
+        root, level_id=level_id, task_id=task_id, outcome=outcome
+    )
     buf = io.StringIO()
     if fmt == "csv":
         _write_csv(rows, buf)
@@ -263,12 +335,18 @@ def export_trajectories(
     out_path: Path,
     *,
     format: str = "csv",
+    level_id: str | None = None,
+    task_id: str | None = None,
+    outcome: str | None = "success",
 ) -> int:
-    """Export base_pose trajectories for all sessions with frames.jsonl.
+    """Export trajectories with optional IL filters.
 
-    Returns the number of entity-frame rows written. Skips broken sessions.
+    Returns the number of entity-frame rows written. Default ``outcome=success``
+    keeps abort/disconnect out of positive IL samples (V3b).
     """
-    rows = collect_trajectory_rows(root)
+    rows = collect_trajectory_rows(
+        root, level_id=level_id, task_id=task_id, outcome=outcome
+    )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", encoding="utf-8", newline="") as out_fp:
         if format.lower() == "jsonl":

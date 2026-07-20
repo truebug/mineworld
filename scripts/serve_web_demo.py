@@ -4,7 +4,7 @@ Also exposes local recording history (D5) and city-block regen (D9):
   GET  /api/recordings              → session list JSON
   GET  /api/recordings/<id>         → header.json
   GET  /api/recordings/<id>/frames  → frames.jsonl
-  GET  /api/recordings/export.csv   → all-session trajectory CSV
+  GET  /api/recordings/export.csv   → trajectory CSV (default outcome=success; ?level_id=&task_id=&outcome=)
   POST /api/recordings/reindex      → rebuild recordings/index.sqlite
   GET  /api/city-block              → current seed summary
   GET  /api/city-block/layout       → live block_layout.json (Godot Web dress)
@@ -24,7 +24,7 @@ Local API (same origin as the demo):
 GET  /api/recordings                 # session list
 GET  /api/recordings/<id>            # header.json
 GET  /api/recordings/<id>/frames     # frames.jsonl
-GET  /api/recordings/export.csv      # trajectory CSV attachment
+GET  /api/recordings/export.csv      # trajectory CSV (?level_id=&task_id=&outcome=success|all)
 POST /api/recordings/reindex         # rebuild index.sqlite
 GET  /api/city-block                 # {seed, buildings, roads, ...}
 GET  /api/city-block/layout          # Godot dress JSON
@@ -46,7 +46,7 @@ import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 REPO = Path(__file__).resolve().parents[1]
 if str(REPO / "gateway") not in sys.path:
@@ -179,9 +179,16 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
             return
 
         if path == "/api/recordings/export.csv":
+            qs = parse_qs(parsed.query)
+            level_id = (qs.get("level_id") or [None])[0]
+            task_id = (qs.get("task_id") or [None])[0]
+            outcome = (qs.get("outcome") or ["success"])[0]
             csv_bytes = export_trajectories_text(
                 self.recordings_root,
                 format="csv",
+                level_id=level_id,
+                task_id=task_id,
+                outcome=outcome,
             ).encode("utf-8")
             self._send_csv_attachment(csv_bytes)
             return

@@ -96,8 +96,8 @@ bash scripts/serve_web.sh restart                          # 终端 2 → http:/
 
 - 通关：沿街道东行至绿色终点；右下角可换 **seed** 重生街区  
 - 录制：右上角 **Recordings** → 2D Play / **3D Replay**（`/?replay=<session_id>`）  
-- 导出：`GET /api/recordings/export.csv` 或  
-  `.venv/bin/python scripts/export_trajectories.py --rebuild-index`
+- 导出：`GET /api/recordings/export.csv?outcome=success`（可加 `level_id`/`task_id`）或
+  `.venv/bin/python scripts/export_trajectories.py --rebuild-index --level-id demo_workshop --outcome success`
 
 可选：`window.MINEWORLD_GATEWAY = "ws://127.0.0.1:8765"`；`?room=demo` 本机双人。  
 托管必须带 COOP/COEP（`serve_web_demo.py` 已加）；勿直接双击 `index.html`。

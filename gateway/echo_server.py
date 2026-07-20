@@ -543,10 +543,14 @@ def point_in_aabb(x: float, y: float, z: float, mn: list[float], mx: list[float]
 
 
 def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
-    """Gateway-authoritative objective checks (T3.1). Emit each objective once."""
+    """Gateway-authoritative objective checks (T3.1 / V3a). Emit each objective once.
+
+    ``reach_region`` defaults to the session mech. Set ``params.entity_id`` (or
+    ``params.subject``) to a ``dynamic_prop`` id to require that prop enter the
+    trigger AABB instead (workshop stow-crate).
+    """
     events: list[dict[str, Any]] = []
-    mech = session.mech
-    if mech is None:
+    if session.room is None:
         return events
     triggers = {t["id"]: t for t in (session.contract.get("triggers") or []) if t.get("id")}
     for obj in session.contract.get("objectives") or []:
@@ -562,7 +566,23 @@ def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
         mx = trig.get("max") or []
         if len(mn) < 3 or len(mx) < 3:
             continue
-        if not point_in_aabb(mech.x, mech.y, mech.z, mn, mx):
+
+        params = obj.get("params") if isinstance(obj.get("params"), dict) else {}
+        subject_id = params.get("entity_id") or params.get("subject")
+        if subject_id:
+            prop = session.room.props.get(str(subject_id))
+            if prop is None:
+                continue
+            px, py, pz = prop.x, prop.y, prop.z
+            entity_id = prop.entity_id
+        else:
+            mech = session.mech
+            if mech is None:
+                continue
+            px, py, pz = mech.x, mech.y, mech.z
+            entity_id = mech.entity_id
+
+        if not point_in_aabb(px, py, pz, mn, mx):
             continue
         session.completed_objectives.add(obj_id)
         session.outcome = "success"
@@ -570,17 +590,21 @@ def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
             {
                 "event_type": "objective_complete",
                 "objective_id": obj_id,
-                "entity_id": mech.entity_id,
-                "detail": {"trigger_id": trig["id"]},
+                "entity_id": entity_id,
+                "detail": {
+                    "trigger_id": trig["id"],
+                    "subject_id": entity_id,
+                },
             }
         )
         LOG.info(
-            "session=%s objective_complete id=%s at (%.2f, %.2f, %.2f)",
+            "session=%s objective_complete id=%s subject=%s at (%.2f, %.2f, %.2f)",
             session.session_id,
             obj_id,
-            mech.x,
-            mech.y,
-            mech.z,
+            entity_id,
+            px,
+            py,
+            pz,
         )
     return events
 
