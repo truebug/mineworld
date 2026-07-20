@@ -51,8 +51,12 @@ from urllib.parse import parse_qs, unquote, urlparse
 REPO = Path(__file__).resolve().parents[1]
 if str(REPO / "gateway") not in sys.path:
     sys.path.insert(0, str(REPO / "gateway"))
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
 
 from recording_store import DB_PATH, export_trajectories_text, list_sessions, rebuild_sqlite  # noqa: E402
+from mw_platform.config import auth_enabled  # noqa: E402
+from mw_platform.handlers import handle_platform_get, handle_platform_post, init_platform_data  # noqa: E402
 LAYOUT_PATH = REPO / "godot" / "spike" / "assets" / "kaykit_city" / "block_layout.json"
 CONTRACT_PATH = REPO / "examples" / "contracts" / "demo_city.json"
 
@@ -160,9 +164,33 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
             return data
         return None
 
+    def _get_header(self, name: str) -> str | None:
+        return self.headers.get(name)
+
+    def _try_platform_get(self, path: str) -> bool:
+        return handle_platform_get(
+            path,
+            send_json=self._send_json,
+            get_header=self._get_header,
+        )
+
+    def _try_platform_post(self, path: str) -> bool:
+        return handle_platform_post(
+            path,
+            send_json=self._send_json,
+            read_body=self._read_json_body,
+            get_header=self._get_header,
+        )
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
+
+        if path.startswith("/api/platform/"):
+            if self._try_platform_get(path):
+                return
+            self._send_json({"error": "not_found"}, 404)
+            return
 
         if path == "/api/city-block":
             self._send_json(_city_block_summary())
@@ -234,6 +262,11 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
+        if path.startswith("/api/platform/"):
+            if self._try_platform_post(path):
+                return
+            self._send_json({"error": "not_found"}, 404)
+            return
         if path == "/api/recordings/reindex":
             count = rebuild_sqlite(self.recordings_root, DB_PATH)
             self._send_json({"ok": True, "count": count})
@@ -292,7 +325,15 @@ def main() -> None:
     recordings_root = args.recordings.resolve()
     recordings_root.mkdir(parents=True, exist_ok=True)
 
-    # Copy history UI next to the export if present in repo.
+    init_platform_data()
+
+    # Portal login + history UI next to export.
+    portal_src = repo / "godot" / "spike" / "web" / "portal" / "login.html"
+    if portal_src.is_file():
+        portal_dst = root / "portal" / "login.html"
+        portal_dst.parent.mkdir(parents=True, exist_ok=True)
+        portal_dst.write_text(portal_src.read_text(encoding="utf-8"), encoding="utf-8")
+
     src_ui = repo / "godot" / "spike" / "web" / "recordings.html"
     if src_ui.is_file():
         (root / "recordings.html").write_text(src_ui.read_text(encoding="utf-8"), encoding="utf-8")
@@ -303,7 +344,9 @@ def main() -> None:
     print(f"serving {root}")
     print(f"recordings {recordings_root}")
     print(f"open http://{args.host}:{args.port}/")
+    print(f"portal http://{args.host}:{args.port}/portal/login.html")
     print(f"history http://{args.host}:{args.port}/recordings.html")
+    print(f"platform auth={'on' if auth_enabled() else 'off'} · demo login demo/demo")
     print("headers: COOP=same-origin COEP=require-corp CORP=same-origin")
     print("gateway expected at ws://127.0.0.1:8765 (override via window.MINEWORLD_GATEWAY)")
     try:

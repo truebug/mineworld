@@ -23,6 +23,8 @@ godot/**/.godot/
 # Local desktop export output (T3.4)
 /dist/
 
-# Dropped asset archives (extract subset into godot/spike/assets/; never commit zips)
+# Platform DB (local dev; production → Postgres via MW_PLATFORM_DB_URL)
+/mw_platform/data/
+
 /*.zip
 /kenney_*.zip

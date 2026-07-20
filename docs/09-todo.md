@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | Hub + UX1/UX2-v0 已落地；**Now：P1 · 启动平台 Phase A（Portal/API）** |
+| **目标** | Phase A v0 已落地；**Now：P1 · Phase B 计分/排行** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -52,12 +52,12 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| PL1 | 独立 API + 可配置 DB | 健康检查；players CRUD；与 Gateway 并存 | [ ] |
-| PL4 | 配置 SSOT | env 切 SQLite→Postgres；本地默认零依赖 | [ ] |
+| PL1 | 独立 API + 可配置 DB | 健康检查；players CRUD；与 Gateway 并存 | [x] v0 SQLite |
+| PL4 | 配置 SSOT | env 切 SQLite→Postgres；本地默认零依赖 | [x] v0 URL |
 | PL3 | API ↔ Gateway 边界文档 | WS vs HTTP；禁止双写位姿 | [ ] |
-| ID1 | Portal 登录页 | 未登录不可进游戏壳；token 进 Hub | [ ] |
-| ID2 | Admin 创建/导入玩家 | 表单或 CSV；唯一 `player_id` | [ ] |
-| AD1 | Admin 壳 v0 | 鉴权、玩家列表、健康检查 | [ ] |
+| ID1 | Portal 登录页 | 未登录不可进游戏壳；token 进 Hub | [x] v0 |
+| ID2 | Admin 创建/导入玩家 | 表单或 CSV；唯一 `player_id` | [~] POST API |
+| AD1 | Admin 壳 v0 | 鉴权、玩家列表、健康检查 | [~] API only |
 
 ### Phase B · 计分与大厅排行
 

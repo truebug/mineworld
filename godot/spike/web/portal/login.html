@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>MineWorld · Sign in</title>
+	<style>
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: radial-gradient(ellipse at 50% 30%, #1a2740 0%, #05070c 55%, #020308 100%);
+			color: #e8eef8;
+			font: 15px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif;
+		}
+		.card {
+			width: min(360px, 92vw);
+			padding: 28px 24px 24px;
+			background: rgba(20, 22, 28, 0.92);
+			border: 1px solid #3d4450;
+			border-radius: 12px;
+			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+		}
+		h1 {
+			margin: 0 0 4px;
+			font-size: 28px;
+			font-weight: 700;
+			letter-spacing: 0.04em;
+		}
+		.sub {
+			margin: 0 0 20px;
+			color: #7a9bb8;
+			font-size: 13px;
+			letter-spacing: 0.12em;
+			text-transform: uppercase;
+		}
+		label {
+			display: block;
+			margin-bottom: 12px;
+			font-size: 12px;
+			color: #9bb4c9;
+		}
+		input {
+			display: block;
+			width: 100%;
+			margin-top: 4px;
+			padding: 10px 12px;
+			border-radius: 6px;
+			border: 1px solid #5a6270;
+			background: #12151a;
+			color: #e8eaed;
+			font: inherit;
+		}
+		button {
+			width: 100%;
+			margin-top: 8px;
+			padding: 11px;
+			border: none;
+			border-radius: 6px;
+			background: linear-gradient(90deg, #3d7eb8, #4aa3ff);
+			color: #fff;
+			font: 600 15px inherit;
+			cursor: pointer;
+		}
+		button:disabled { opacity: 0.6; cursor: wait; }
+		.err {
+			min-height: 1.2em;
+			margin-top: 10px;
+			color: #ff8a8a;
+			font-size: 13px;
+		}
+		.hint {
+			margin-top: 16px;
+			font-size: 12px;
+			color: #6a8499;
+			line-height: 1.45;
+		}
+		code { color: #b8d4ef; }
+	</style>
+</head>
+<body>
+	<div class="card">
+		<h1>MineWorld</h1>
+		<p class="sub">Dungeon Gate · Portal</p>
+		<form id="login-form">
+			<label>Player ID
+				<input id="player_id" name="player_id" autocomplete="username" required placeholder="demo">
+			</label>
+			<label>Password
+				<input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••">
+			</label>
+			<button type="submit" id="submit-btn">Enter Hub</button>
+		</form>
+		<div class="err" id="err"></div>
+		<p class="hint">Local demo: <code>demo</code> / <code>demo</code>. After sign-in you enter the 3D hub.</p>
+	</div>
+	<script>
+	(function () {
+		const TOKEN_KEY = 'mw_auth_token';
+		const params = new URLSearchParams(location.search);
+		const next = params.get('next') || '/';
+
+		async function tryExisting() {
+			const token = localStorage.getItem(TOKEN_KEY);
+			if (!token) return;
+			try {
+				const r = await fetch('/api/platform/me', {
+					headers: { Authorization: 'Bearer ' + token },
+				});
+				if (r.ok) location.replace(next);
+			} catch (e) { /* ignore */ }
+		}
+		tryExisting();
+
+		document.getElementById('login-form').addEventListener('submit', async function (ev) {
+			ev.preventDefault();
+			const errEl = document.getElementById('err');
+			const btn = document.getElementById('submit-btn');
+			errEl.textContent = '';
+			btn.disabled = true;
+			const player_id = document.getElementById('player_id').value.trim();
+			const password = document.getElementById('password').value;
+			try {
+				const r = await fetch('/api/platform/login', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ player_id, password }),
+				});
+				const data = await r.json().catch(function () { return {}; });
+				if (!r.ok) {
+					errEl.textContent = data.error === 'invalid_login'
+						? 'Invalid player ID or password.'
+						: (data.error || 'Login failed');
+					btn.disabled = false;
+					return;
+				}
+				localStorage.setItem(TOKEN_KEY, data.token);
+				if (data.player) {
+					localStorage.setItem('mw_profile', JSON.stringify({
+						id: data.player.player_id,
+						nickname: data.player.display_name,
+						accent: data.player.accent || '#4aa3ff',
+					}));
+				}
+				location.replace(next);
+			} catch (e) {
+				errEl.textContent = String(e);
+				btn.disabled = false;
+			}
+		});
+	})();
+	</script>
+</body>
+</html>

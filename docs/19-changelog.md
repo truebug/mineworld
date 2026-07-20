@@ -69,6 +69,14 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 ---
 
+## 2026-07-20 · Phase A v0（Portal + SQLite API）
+
+- `mw_platform/`：可换 URL 的 SQLite 玩家库 + Bearer token。
+- Portal `/portal/login.html`；未登录访问 `/` 跳转登录（demo/demo）。
+- 独立 API：`python mw_platform/api_server.py`（8090）；Web 同域也挂载 `/api/platform/*`。
+
+---
+
 ## 2026-07-20 · 平台门户产品线写入计划
 
 - 新增 [20-platform-portal.md](20-platform-portal.md)：Portal 登录 → Hub → 计分关 → 排行/我的/Admin。

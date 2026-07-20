@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Planning（未实现） |
+| **状态** | Planning · **Phase A v0 已落地**（SQLite + Portal 登录） |
 | **日期** | 2026-07-20 |
 | **关联** | [09](09-todo.md) · [18](18-hub-dungeon.md) · [19](19-changelog.md) · [04](04-data-collection.md) · [13](13-web-multiplayer-demo.md) |
 | **原则** | Gateway WS 仍只管仿真权威位姿；身份 / 积分 / 排行 / 运营走独立 HTTP API + DB |
@@ -63,7 +63,29 @@ Portal 登录（唯一 player_id）
 | **DB** | players / sessions / scores / recording_index | 存全量 frames（仍 FS/对象存储） |
 | **MQ（可选）** | 异步导出、积分结算事件 | 实时控制通道 |
 
-本地默认：**SQLite + 无 MQ（进程内队列）**；生产可切 Postgres + Redis/NATS（PL4）。
+本地默认：**SQLite + 无 MQ（进程内队列）**；生产可切 Postgres + Redis/NATS（PL4）。  
+v0 实现：`mw_platform/` + `/api/platform/*`（同端口 8080 或独立 `:8090`）；`MW_PLATFORM_DB_URL` 换库。
+
+### Phase A v0（2026-07-20 已落地）
+
+| 项 | 路径 |
+|----|------|
+| API 包 | `mw_platform/`（`PlayerStore` 抽象 + `SQLitePlayerStore`） |
+| 独立进程 | `mw_platform/api_server.py` |
+| 同域挂载 | `scripts/serve_web_demo.py` → `/api/platform/*` |
+| Portal | `godot/spike/web/portal/login.html` → `dist/web/portal/` |
+| 游戏门禁 | `shell.html` · `MW_ENSURE_AUTH`（`?menu=1` 与 `MW_PLATFORM_AUTH=0` 可 bypass） |
+| Demo 账号 | `demo` / `demo`（首次启动自动 seed） |
+| Smoke | `scripts/platform_smoke.py` |
+
+Admin 创建玩家（需 `MW_PLATFORM_ADMIN_KEY`）：
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/platform/admin/players \
+  -H 'Content-Type: application/json' \
+  -H "X-Admin-Key: $MW_PLATFORM_ADMIN_KEY" \
+  -d '{"player_id":"alice","display_name":"Alice","password":"secret"}'
+```
 
 ---
 

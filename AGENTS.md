@@ -1,10 +1,11 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + UX splash/fade done. **Platform track planned**: Portal / identity / scores / admin (`docs/20-platform-portal.md`). Execution: `docs/09-todo.md` (Now P1 · Phase A). Changelog: `docs/19-changelog.md`.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + UX splash/fade done. **Platform track**: Portal login + SQLite API (`docs/20-platform-portal.md`, `mw_platform/`). Execution: `docs/09-todo.md` (Now P1 · Phase B next). Changelog: `docs/19-changelog.md`.
 
 ## Project Structure & Module Organization
 
 - `docs/` — design docs (`00` … `20-platform-portal.md`); `09-todo.md` execution; **`16` V-sprint**; **`18` Hub**; **`19` changelog**; **`20` platform portal plan**.
+- `mw_platform/` — identity HTTP API (SQLite; swap via `MW_PLATFORM_DB_URL`).
 - `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, `--physics fake|mujoco`; Hub rooms force FakeMech; `recording_store.py`.
 - `godot/` — spike baseline; default main scene **`demo_hub`**; doors → `demo_workshop` / `demo_city`; autoload `MWTransition`; `?menu=1` text lobby.
 - `gdevelop/` — archived legacy.
@@ -20,7 +21,17 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r gateway/requirements.txt    # install deps (websockets)
 python gateway/echo_server.py              # serve ws://127.0.0.1:8765
 python scripts/ws_smoke_test.py            # end-to-end check, expect "smoke OK"
+python scripts/platform_smoke.py         # platform identity API
+python mw_platform/api_server.py         # standalone :8090 (optional)
 ajv validate -s schemas/ws-messages.v0.json -d examples/ws/hello.json
+```
+### Local Web + Portal login
+
+```bash
+bash scripts/export_godot.sh web
+bash scripts/serve_web.sh restart
+# http://127.0.0.1:8080/portal/login.html  (demo / demo)
+# MW_PLATFORM_AUTH=0  disables login gate for dev
 ```
 ### MuJoCo acceptance (T2.1–T2.3, run from repo root)
 

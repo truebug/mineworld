@@ -522,12 +522,78 @@ const engine = new Engine(GODOT_CONFIG);
 		};
 	})();
 
-	/* Local profile card (no login) — docs/18 H6. */
+	/* Platform auth (Phase A) — login before Hub; SQLite API on same origin. */
+	window.MW_AUTH_TOKEN_KEY = 'mw_auth_token';
+	window.MW_PLATFORM_AUTH_REQUIRED = true;
+	window.MW_AUTH_PLAYER = null;
+
+	window.MW_FETCH_AUTH_CONFIG = async function () {
+		try {
+			const r = await fetch('/api/platform/health');
+			if (r.ok) {
+				const d = await r.json();
+				window.MW_PLATFORM_AUTH_REQUIRED = !!d.auth_enabled;
+			}
+		} catch (err) { /* offline dev */ }
+	};
+
+	window.MW_ENSURE_AUTH = async function () {
+		await window.MW_FETCH_AUTH_CONFIG();
+		const params = new URLSearchParams(location.search);
+		if (params.get('menu') === '1') {
+			return true;
+		}
+		if (!window.MW_PLATFORM_AUTH_REQUIRED) {
+			return true;
+		}
+		const token = localStorage.getItem(window.MW_AUTH_TOKEN_KEY);
+		if (!token) {
+			return false;
+		}
+		try {
+			const r = await fetch('/api/platform/me', {
+				headers: { Authorization: 'Bearer ' + token },
+			});
+			if (!r.ok) {
+				localStorage.removeItem(window.MW_AUTH_TOKEN_KEY);
+				return false;
+			}
+			const data = await r.json();
+			if (data.player) {
+				window.MW_AUTH_PLAYER = data.player;
+				localStorage.setItem('mw_profile', JSON.stringify({
+					id: data.player.player_id,
+					nickname: data.player.display_name,
+					accent: data.player.accent || '#4aa3ff',
+				}));
+			}
+			return true;
+		} catch (err) {
+			return false;
+		}
+	};
+
+	window.MW_REDIRECT_LOGIN = function () {
+		const next = encodeURIComponent(location.pathname + location.search);
+		location.replace('/portal/login.html?next=' + next);
+	};
+
+	/* Local profile card — synced from platform login when present. */
 	window.MW_GET_PROFILE = function () {
+		if (window.MW_AUTH_PLAYER) {
+			return {
+				id: window.MW_AUTH_PLAYER.player_id,
+				nickname: window.MW_AUTH_PLAYER.display_name,
+				accent: window.MW_AUTH_PLAYER.accent || '#4aa3ff',
+			};
+		}
 		try {
 			const raw = localStorage.getItem('mw_profile');
 			if (raw) {
 				const p = JSON.parse(raw);
+				if (p && typeof p === 'object' && p.id && !String(p.id).startsWith('local-')) {
+					return p;
+				}
 				if (p && typeof p === 'object') {
 					return p;
 				}
@@ -561,7 +627,6 @@ const engine = new Engine(GODOT_CONFIG);
 		window.MW_PROFILE = next;
 		return next;
 	};
-	window.MW_PROFILE = window.MW_GET_PROFILE();
 
 	/* Hub DOM profile + minimap (Web only; Godot HUD clips). */
 	(function setupHubChrome() {
@@ -684,7 +749,7 @@ const engine = new Engine(GODOT_CONFIG);
 			});
 		};
 
-		window.MW_SET_HUB_PROFILE(window.MW_PROFILE);
+		window.MW_SET_HUB_PROFILE(window.MW_GET_PROFILE());
 
 		function layoutHubChrome() {
 			const canvas = document.getElementById('canvas');
@@ -948,20 +1013,28 @@ const engine = new Engine(GODOT_CONFIG);
 			displayFailureNotice(missingMsg + missing.join('\n'));
 		}
 	} else {
-		setStatusMode('progress');
-		engine.startGame({
-			'onProgress': function (current, total) {
-				if (current > 0 && total > 0) {
-					statusProgress.value = current;
-					statusProgress.max = total;
-				} else {
-					statusProgress.removeAttribute('value');
-					statusProgress.removeAttribute('max');
-				}
-			},
-		}).then(() => {
-			setStatusMode('hidden');
-		}, displayFailureNotice);
+		(async function () {
+			const authed = await window.MW_ENSURE_AUTH();
+			if (!authed) {
+				window.MW_REDIRECT_LOGIN();
+				return;
+			}
+			window.MW_PROFILE = window.MW_GET_PROFILE();
+			setStatusMode('progress');
+			engine.startGame({
+				'onProgress': function (current, total) {
+					if (current > 0 && total > 0) {
+						statusProgress.value = current;
+						statusProgress.max = total;
+					} else {
+						statusProgress.removeAttribute('value');
+						statusProgress.removeAttribute('max');
+					}
+				},
+			}).then(() => {
+				setStatusMode('hidden');
+			}, displayFailureNotice);
+		})();
 	}
 }());
 		</script>
