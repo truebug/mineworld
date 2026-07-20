@@ -815,7 +815,8 @@ func _try_interact() -> void:
 		return
 	var url := str(hit.get("url", "")).strip_edges()
 	if url != "":
-		_open_exhibit_url(url, str(hit.get("title", hit.get("id", "Space"))))
+		var space_id := str(hit.get("space_id", "")).strip_edges()
+		_open_exhibit_url(url, str(hit.get("title", hit.get("id", "Space"))), space_id)
 		return
 	_refresh_tips(str(hit.get("line", "...")))
 
@@ -850,21 +851,24 @@ func _use_vendor() -> void:
 	)
 
 
-func _open_exhibit_url(url: String, title: String) -> void:
-	"""E4: open PMS/Space card in new tab (web) or system browser (desktop)."""
+func _open_exhibit_url(url: String, title: String, space_id: String = "") -> void:
+	"""E4: open Space card; stamp hangar ?space_id= for E3 return play."""
 	var resolved := url
 	if resolved.begins_with("/") and _is_web:
 		var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
 		if origin != "":
 			resolved = origin + resolved
 	if _is_web:
-		var payload := JSON.stringify({"url": resolved})
+		var payload := JSON.stringify({"url": resolved, "space_id": space_id})
 		JavaScriptBridge.eval(
-			"(function(){try{var p=%s;window.open(p.url,'_blank','noopener,noreferrer');}catch(e){}})()" % payload,
+			"(function(){try{var p=%s;window.open(p.url,'_blank','noopener,noreferrer');"
+			+ "if(p.space_id){var u=new URL(location.href);u.searchParams.set('space_id',p.space_id);"
+			+ "history.replaceState({},'',u.pathname+u.search+u.hash);}}catch(e){}})()" % payload,
 			true
 		)
 		_refresh_tips(
-			"Opened «%s» in a new tab.\nSwitch back here for the hangar · stub has Back to hangar." % title
+			"Opened «%s» · hangar stamped space_id=%s\nStub: Hangar with space_id → door A for attributed play."
+			% [title, space_id if space_id != "" else "—"]
 		)
 	else:
 		var err := OS.shell_open(resolved)

@@ -1,23 +1,27 @@
 {
   "contract_version": "0.1",
   "kind": "hub_exhibits",
-  "description": "E5: Hub 展柜元数据 v0 — Hub 只存卡片指针，不进 MuJoCo（docs/21 E4/E5）",
+  "description": "E5: Hub 展柜元数据 — PMS enter URL + space_id 归因（docs/21 E4/E3）",
   "exhibits": [
     {
       "id": "exhibit_gallery",
       "title": "Demo Gallery",
       "kind": "pms_space",
-      "url": "/portal/space_stub.html?id=exhibit_gallery&title=Demo%20Gallery",
-      "tags": ["stub", "pms"],
-      "lore": "PMS Space card — opens outside the hangar sim."
+      "space_id": "mw-gallery-demo",
+      "enter_url": "https://spaces.databall.tech/enter/mineworld-gallery",
+      "url": "/portal/space_stub.html?id=exhibit_gallery&space_id=mw-gallery-demo&title=Demo%20Gallery&enter=https%3A%2F%2Fspaces.databall.tech%2Fenter%2Fmineworld-gallery",
+      "tags": ["stub", "pms", "gallery"],
+      "lore": "PMS Space card — open live enter URL or return to hangar with space_id."
     },
     {
       "id": "exhibit_classroom",
       "title": "Classroom Lab",
       "kind": "pms_space",
-      "url": "/portal/space_stub.html?id=exhibit_classroom&title=Classroom%20Lab",
+      "space_id": "mw-classroom-demo",
+      "enter_url": "https://spaces.databall.tech/enter/mineworld-classroom",
+      "url": "/portal/space_stub.html?id=exhibit_classroom&space_id=mw-classroom-demo&title=Classroom%20Lab&enter=https%3A%2F%2Fspaces.databall.tech%2Fenter%2Fmineworld-classroom",
       "tags": ["stub", "classroom"],
-      "lore": "Courseware / WebIDE placeholder — return via Back to hangar."
+      "lore": "Courseware Space — enter URL wired; attribution via space_id on return."
     }
   ]
 }

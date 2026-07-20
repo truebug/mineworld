@@ -41,8 +41,11 @@ from __future__ import annotations
 import argparse
 import json
 import functools
+import os
 import random
 import sys
+import urllib.error
+import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -59,6 +62,7 @@ from mw_platform.config import auth_enabled  # noqa: E402
 from mw_platform.handlers import handle_platform_get, handle_platform_post, init_platform_data  # noqa: E402
 LAYOUT_PATH = REPO / "godot" / "spike" / "assets" / "kaykit_city" / "block_layout.json"
 CONTRACT_PATH = REPO / "examples" / "contracts" / "demo_city.json"
+GATEWAY_ADMIN_URL = os.environ.get("MW_GATEWAY_ADMIN_URL", "http://127.0.0.1:8770").rstrip("/")
 
 
 def _safe_session_id(raw: str) -> str | None:
@@ -69,6 +73,41 @@ def _safe_session_id(raw: str) -> str | None:
         if not (ch.isalnum() or ch in "-_"):
             return None
     return raw
+
+
+def _proxy_gateway_admin(
+    method: str,
+    admin_path: str,
+    *,
+    headers: dict[str, str],
+    body: bytes | None = None,
+) -> tuple[int, dict[str, Any]]:
+    """Forward PL2 admin call to Gateway admin HTTP. Returns (status, json)."""
+    url = f"{GATEWAY_ADMIN_URL}{admin_path}"
+    req = urllib.request.Request(url, data=body, method=method)
+    for k, v in headers.items():
+        if v:
+            req.add_header(k, v)
+    if body is not None:
+        req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=2.0) as resp:
+            raw = resp.read().decode("utf-8")
+            data = json.loads(raw) if raw else {}
+            return int(resp.status), data if isinstance(data, dict) else {"ok": True}
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode("utf-8", errors="replace") if exc.fp else ""
+        try:
+            data = json.loads(raw) if raw else {"error": "http_error"}
+        except json.JSONDecodeError:
+            data = {"error": "http_error", "message": raw[:200]}
+        return int(exc.code), data if isinstance(data, dict) else {"error": "http_error"}
+    except Exception as exc:  # noqa: BLE001
+        return 502, {
+            "error": "gateway_admin_unreachable",
+            "message": str(exc),
+            "hint": f"start gateway with admin on {GATEWAY_ADMIN_URL}",
+        }
 
 
 def _city_block_summary() -> dict[str, Any]:
@@ -192,6 +231,23 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
             self._send_json({"error": "not_found"}, 404)
             return
 
+        if path.startswith("/api/gateway/"):
+            key = self.headers.get("X-Admin-Key") or self.headers.get("x-admin-key") or ""
+            mapping = {
+                "/api/gateway/rooms": "/admin/rooms",
+                "/api/gateway/contracts": "/admin/contracts",
+                "/api/gateway/status": "/admin/status",
+            }
+            admin_path = mapping.get(path)
+            if admin_path is None:
+                self._send_json({"error": "not_found"}, 404)
+                return
+            status, data = _proxy_gateway_admin(
+                "GET", admin_path, headers={"X-Admin-Key": key}
+            )
+            self._send_json(data, status)
+            return
+
         if path == "/api/city-block":
             self._send_json(_city_block_summary())
             return
@@ -270,6 +326,26 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
             if self._try_platform_post(path):
                 return
             self._send_json({"error": "not_found"}, 404)
+            return
+        if path.startswith("/api/gateway/"):
+            key = self.headers.get("X-Admin-Key") or self.headers.get("x-admin-key") or ""
+            mapping = {
+                "/api/gateway/levels/disable": "/admin/levels/disable",
+                "/api/gateway/levels/enable": "/admin/levels/enable",
+            }
+            admin_path = mapping.get(path)
+            if admin_path is None:
+                self._send_json({"error": "not_found"}, 404)
+                return
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(length) if length > 0 else b"{}"
+            status, data = _proxy_gateway_admin(
+                "POST",
+                admin_path,
+                headers={"X-Admin-Key": key},
+                body=raw,
+            )
+            self._send_json(data, status)
             return
         if path == "/api/recordings/reindex":
             count = rebuild_sqlite(self.recordings_root, DB_PATH)

@@ -59,14 +59,33 @@
 </head>
 <body>
 	<div class="wrap">
-		<h1>Admin · players</h1>
-		<p class="muted">Default key <code>dev-admin</code> (override with <code>MW_PLATFORM_ADMIN_KEY</code>). Stored in this browser only.</p>
+		<h1>Admin · ops</h1>
+		<p class="muted">Default key <code>dev-admin</code> (override with <code>MW_PLATFORM_ADMIN_KEY</code>). Stored in this browser only. PL2 rooms need Gateway <code>--admin-port 8770</code>.</p>
 		<div class="card">
 			<label>Admin key
 				<input id="key" type="password" autocomplete="off" placeholder="dev-admin">
 			</label>
 			<button type="button" id="load">Load players</button>
+			<button type="button" id="load-ops">Refresh rooms / levels</button>
 			<button type="button" id="save-key">Remember key</button>
+			<div class="muted" id="gw-status" style="margin-top:8px;"></div>
+		</div>
+		<div class="card">
+			<div style="margin-bottom:8px;color:#9bb4c9;">Live rooms (read-only)</div>
+			<table>
+				<thead><tr><th>Room</th><th>Level</th><th>Members</th><th>Tick</th><th>Hub</th></tr></thead>
+				<tbody id="room-rows"><tr><td colspan="5">Refresh rooms / levels</td></tr></tbody>
+			</table>
+			<div class="err" id="room-err"></div>
+		</div>
+		<div class="card">
+			<div style="margin-bottom:8px;color:#9bb4c9;">Levels (disable blocks new joins)</div>
+			<table>
+				<thead><tr><th>Level</th><th>Status</th><th></th></tr></thead>
+				<tbody id="level-rows"><tr><td colspan="3">Refresh rooms / levels</td></tr></tbody>
+			</table>
+			<div class="muted" style="margin-top:8px;">City seed regen: use in-game shell or <code>POST /api/city-block</code>.</div>
+			<div class="err" id="level-err"></div>
 		</div>
 		<div class="card">
 			<div style="margin-bottom:8px;color:#9bb4c9;">Create player</div>
@@ -190,6 +209,98 @@
 		}
 
 		document.getElementById('load').onclick = function () { loadPlayers(); };
+
+		async function loadOps() {
+			document.getElementById('room-err').textContent = '';
+			document.getElementById('level-err').textContent = '';
+			document.getElementById('gw-status').textContent = '';
+			const hdr = { 'X-Admin-Key': adminKey() };
+			try {
+				const st = await fetch('/api/gateway/status', { headers: hdr });
+				const stData = await st.json().catch(function () { return {}; });
+				if (st.ok) {
+					document.getElementById('gw-status').textContent =
+						'Gateway · physics=' + (stData.physics || '?') +
+						' · rooms=' + (stData.room_count != null ? stData.room_count : '?') +
+						' · sessions=' + (stData.session_count != null ? stData.session_count : '?');
+				} else {
+					document.getElementById('gw-status').textContent =
+						'Gateway admin: ' + (stData.error || ('HTTP ' + st.status));
+				}
+			} catch (e) {
+				document.getElementById('gw-status').textContent = String(e);
+			}
+			try {
+				const r = await fetch('/api/gateway/rooms', { headers: hdr });
+				const data = await r.json().catch(function () { return {}; });
+				const tbody = document.getElementById('room-rows');
+				tbody.innerHTML = '';
+				if (!r.ok) {
+					document.getElementById('room-err').textContent = data.error || ('HTTP ' + r.status);
+					tbody.innerHTML = '<tr><td colspan="5">—</td></tr>';
+				} else {
+					const rooms = data.rooms || [];
+					if (!rooms.length) {
+						tbody.innerHTML = '<tr><td colspan="5">No live rooms</td></tr>';
+					}
+					rooms.forEach(function (room) {
+						const tr = document.createElement('tr');
+						tr.innerHTML =
+							'<td>' + (room.room_id || '') + '</td>' +
+							'<td>' + (room.level_id || '') + '</td>' +
+							'<td>' + (room.member_count != null ? room.member_count : '') +
+								'/' + (room.max_members != null ? room.max_members : '') + '</td>' +
+							'<td>' + (room.tick != null ? room.tick : '') + '</td>' +
+							'<td>' + (room.hub ? 'yes' : '') + '</td>';
+						tbody.appendChild(tr);
+					});
+				}
+			} catch (e) {
+				document.getElementById('room-err').textContent = String(e);
+			}
+			try {
+				const r = await fetch('/api/gateway/contracts', { headers: hdr });
+				const data = await r.json().catch(function () { return {}; });
+				const tbody = document.getElementById('level-rows');
+				tbody.innerHTML = '';
+				if (!r.ok) {
+					document.getElementById('level-err').textContent = data.error || ('HTTP ' + r.status);
+					tbody.innerHTML = '<tr><td colspan="3">—</td></tr>';
+					return;
+				}
+				(data.levels || []).forEach(function (lv) {
+					const tr = document.createElement('tr');
+					const disabled = !!lv.disabled;
+					const btn = document.createElement('button');
+					btn.type = 'button';
+					btn.textContent = disabled ? 'Enable' : 'Disable';
+					btn.onclick = async function () {
+						const path = disabled
+							? '/api/gateway/levels/enable'
+							: '/api/gateway/levels/disable';
+						await fetch(path, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'X-Admin-Key': adminKey(),
+							},
+							body: JSON.stringify({ level_id: lv.level_id }),
+						});
+						loadOps();
+					};
+					tr.innerHTML =
+						'<td>' + (lv.level_id || '') + '</td>' +
+						'<td>' + (disabled ? 'DISABLED' : 'open') + '</td>' +
+						'<td></td>';
+					tr.children[2].appendChild(btn);
+					tbody.appendChild(tr);
+				});
+			} catch (e) {
+				document.getElementById('level-err').textContent = String(e);
+			}
+		}
+
+		document.getElementById('load-ops').onclick = function () { loadOps(); };
 
 		document.getElementById('create').onclick = async function () {
 			document.getElementById('err').textContent = '';

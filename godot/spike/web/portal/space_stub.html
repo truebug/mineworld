@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>MineWorld · Space stub</title>
+	<title>MineWorld · Space card</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -28,10 +28,7 @@
 			color: var(--ink);
 			font: 16px/1.5 "IBM Plex Sans", system-ui, sans-serif;
 		}
-		.card {
-			max-width: 420px;
-			width: 100%;
-		}
+		.card { max-width: 440px; width: 100%; }
 		.brand {
 			margin: 0 0 8px;
 			font-family: Syne, sans-serif;
@@ -55,6 +52,7 @@
 			font-size: 13px;
 			color: var(--muted);
 			font-family: ui-monospace, monospace;
+			word-break: break-all;
 		}
 		.actions { display: flex; flex-wrap: wrap; gap: 12px; }
 		a.btn {
@@ -65,36 +63,48 @@
 			font-weight: 600;
 			font-size: 14px;
 		}
-		a.primary {
-			background: var(--accent);
-			color: #1a1208;
-		}
-		a.ghost {
-			border: 1px solid #3d4450;
-			color: var(--link);
-		}
+		a.primary { background: var(--accent); color: #1a1208; }
+		a.ghost { border: 1px solid #3d4450; color: var(--link); }
 	</style>
 </head>
 <body>
 	<main class="card">
-		<p class="brand">MineWorld · external card</p>
-		<h1 id="title">Space stub</h1>
-		<p>This tab stands in for a PMS / Space enter URL. Physics stays outside the Hub gateway.</p>
+		<p class="brand">MineWorld · PMS Space card</p>
+		<h1 id="title">Space</h1>
+		<p>Open the live Space enter URL (PMS / spaces.databall.tech), or return to the hangar with <code>space_id</code> so workshop recordings attribute correctly (E3).</p>
 		<p class="meta" id="meta"></p>
 		<div class="actions">
-			<a class="btn primary" href="/">Back to hangar</a>
-			<a class="btn ghost" href="/portal/me.html">My profile</a>
+			<a class="btn primary" id="enter" href="#" target="_blank" rel="noopener noreferrer">Open live Space</a>
+			<a class="btn ghost" id="hangar" href="/">Back to hangar</a>
+			<a class="btn ghost" id="play" href="/">Hangar + space_id</a>
 		</div>
 	</main>
 	<script>
 		(function () {
 			var q = new URLSearchParams(location.search);
 			var id = q.get("id") || "unknown";
-			var title = q.get("title") || "Space stub";
+			var title = q.get("title") || "Space card";
+			var spaceId = q.get("space_id") || "";
+			var enter = q.get("enter") || "";
 			document.getElementById("title").textContent = title;
 			document.getElementById("meta").textContent =
-				"kind=pms_space · id=" + id + " · E4 stub";
+				"kind=pms_space · exhibit=" + id +
+				(spaceId ? (" · space_id=" + spaceId) : "") +
+				(enter ? (" · enter=" + enter) : "");
 			document.title = "MineWorld · " + title;
+			var enterBtn = document.getElementById("enter");
+			if (enter) {
+				enterBtn.href = enter;
+			} else {
+				enterBtn.style.display = "none";
+			}
+			var hangar = "/";
+			var attributed = spaceId ? ("/?space_id=" + encodeURIComponent(spaceId)) : "/";
+			document.getElementById("hangar").href = hangar;
+			document.getElementById("play").href = attributed;
+			document.getElementById("play").textContent = spaceId
+				? "Hangar with space_id"
+				: "Back to hangar";
 		})();
 	</script>
 </body>

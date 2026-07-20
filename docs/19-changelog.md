@@ -10,6 +10,20 @@
 
 ---
 
+## 2026-07-21 · PL2 Admin 运维 + E4 真 URL + IL-place 飞轮
+
+- **PL2**：Gateway admin HTTP `:8770`（`GET /admin/rooms|contracts|status`，`POST /admin/levels/disable|enable`）；Portal Admin 在线房表 + level 开关；`serve_web` 代理 `/api/gateway/*`；`admin_ops_smoke`。
+- **E4/E3**：展柜 `enter_url` → `spaces.databall.tech/enter/...`；stub 可开 live Space / 带 `space_id` 回 Hangar。
+- **IL**：`scripts/il_place_smoke.py` — 录 grasp→place → export `obj_place_block` → `bc_offline_check`。
+
+```bash
+.venv/bin/python scripts/admin_ops_smoke.py
+.venv/bin/python scripts/il_place_smoke.py
+.venv/bin/python scripts/ws_smoke_test.py
+```
+
+---
+
 ## 2026-07-21 · E3 会话归因 + H9/H10 Hub 慢扩
 
 - **E3**：`space_id` / `route_kind` 写入 join → recording header → scores；`?space_id=`；样例 `examples/platform/session_attribution.v0.json`。

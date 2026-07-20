@@ -181,8 +181,11 @@ func _place_exhibits() -> void:
 		var eid := str(ex.get("id", "exhibit_%d" % i))
 		var title := str(ex.get("title", "Exhibit"))
 		var url := str(ex.get("url", "")).strip_edges()
+		var space_id := str(ex.get("space_id", "")).strip_edges()
 		var lore := str(ex.get("lore", "External Space card."))
-		var line := "%s\n%s\n(F opens in a new tab — Back to hangar anytime.)" % [title, lore]
+		var line := "%s\n%s\n(F opens card · space_id=%s)" % [
+			title, lore, space_id if space_id != "" else "—"
+		]
 		_station(
 			eid,
 			slot["pos"],
@@ -192,6 +195,7 @@ func _place_exhibits() -> void:
 			Color(0.55, 0.85, 0.65),
 			url,
 			title,
+			space_id,
 		)
 
 
@@ -240,6 +244,7 @@ func _station(
 	accent: Color,
 	url: String = "",
 	title: String = "",
+	space_id: String = "",
 ) -> void:
 	"""Pedestal + glowing panel + prompt label; optional external url (E4)."""
 	var root := Node3D.new()
@@ -270,6 +275,7 @@ func _station(
 		"line": line,
 		"url": url,
 		"title": title,
+		"space_id": space_id,
 	})
 
 

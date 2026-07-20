@@ -882,6 +882,8 @@ class EchoGateway:
         self.level_contracts = catalog_contracts()
         self._mj_models: dict[str, Any] = {}
         self.mj_model = None
+        ## PL2: in-memory level disable set (join rejected until enable / restart).
+        self.disabled_levels: set[str] = set()
         if physics == "mujoco":
             if mujoco is None:
                 raise SystemExit("mujoco not installed: pip install mujoco==3.6.0")
@@ -894,6 +896,80 @@ class EchoGateway:
                 sorted(self.level_contracts),
                 default_level,
             )
+
+    def rooms_snapshot(self) -> list[dict[str, Any]]:
+        """PL2: read-only live room list (no poses)."""
+        out: list[dict[str, Any]] = []
+        for room in self.rooms.values():
+            members = []
+            for sess in room.members.values():
+                if not sess.joined or sess.closed:
+                    continue
+                members.append(
+                    {
+                        "session_id": sess.session_id,
+                        "player_name": sess.player_name,
+                        "entity_id": sess.controlled_entity_id,
+                        "space_id": sess.space_id,
+                    }
+                )
+            level_id = str(room.contract.get("level_id") or "")
+            out.append(
+                {
+                    "room_id": room.room_id,
+                    "level_id": level_id,
+                    "seed": room.contract.get("seed"),
+                    "member_count": len(members),
+                    "max_members": room.max_members,
+                    "tick": room.tick,
+                    "hub": is_hub_contract(room.contract),
+                    "shared_mj": room.mj_data is not None,
+                    "members": members,
+                }
+            )
+        out.sort(key=lambda r: str(r.get("room_id") or ""))
+        return out
+
+    def contracts_snapshot(self) -> dict[str, Any]:
+        """PL2: catalog levels + disabled set."""
+        levels = []
+        for lid in sorted(self.level_contracts):
+            path = self.level_contracts[lid]
+            levels.append(
+                {
+                    "level_id": lid,
+                    "path": str(path),
+                    "disabled": lid in self.disabled_levels,
+                }
+            )
+        return {
+            "levels": levels,
+            "disabled_levels": sorted(self.disabled_levels),
+            "default_level_id": str(self.contract.get("level_id") or ""),
+        }
+
+    def admin_status(self) -> dict[str, Any]:
+        """PL2: compact gateway status."""
+        return {
+            "physics": self.physics,
+            "room_count": len(self.rooms),
+            "session_count": len([s for s in self.sessions.values() if not s.closed]),
+            "recording": self.record_dir is not None,
+            "disabled_levels": sorted(self.disabled_levels),
+        }
+
+    def disable_level(self, level_id: str) -> None:
+        """Reject new joins for level_id until enable_level."""
+        lid = level_id.strip()
+        if lid:
+            self.disabled_levels.add(lid)
+            LOG.info("PL2 disable level_id=%s", lid)
+
+    def enable_level(self, level_id: str) -> None:
+        """Re-allow joins for level_id."""
+        lid = level_id.strip()
+        self.disabled_levels.discard(lid)
+        LOG.info("PL2 enable level_id=%s", lid)
 
     def _maybe_reload_contract(self) -> None:
         """Hot-reload contract (+ rebuild MuJoCo world) when the file changes (D9).
@@ -1381,6 +1457,19 @@ class EchoGateway:
     async def _handle_join(self, session: Session, payload: dict[str, Any]) -> None:
         self._maybe_reload_contract()
         level_id = str(payload.get("level_id") or self.contract.get("level_id") or "")
+        if level_id in self.disabled_levels:
+            await send_json(
+                session.ws,
+                envelope(
+                    "error",
+                    session_id=session.session_id,
+                    payload={
+                        "code": "LEVEL_DISABLED",
+                        "message": f"level_id={level_id} disabled by admin (PL2)",
+                    },
+                ),
+            )
+            return
         contract_path = self.level_contracts.get(level_id)
         if contract_path is None:
             known = ", ".join(sorted(self.level_contracts)) or "(none)"
@@ -1733,6 +1822,8 @@ async def run(
     model_path: Path | None,
     record_dir: Path | None,
     record_every_n_ticks: int,
+    admin_host: str = "127.0.0.1",
+    admin_port: int = 8770,
 ) -> None:
     contract = load_contract(contract_path)
     gateway = EchoGateway(
@@ -1743,16 +1834,24 @@ async def run(
         record_every_n_ticks=record_every_n_ticks,
         contract_path=contract_path,
     )
+    try:
+        from admin_http import start_admin_http
+
+        start_admin_http(gateway, host=admin_host, port=admin_port)
+    except Exception:
+        LOG.exception("admin HTTP failed to start (WS still runs)")
     asyncio.create_task(gateway.sim_loop())
 
     LOG.info(
-        "listening ws://%s:%s contract=%s level=%s physics=%s record_dir=%s",
+        "listening ws://%s:%s contract=%s level=%s physics=%s record_dir=%s admin_http=%s:%s",
         host,
         port,
         contract_path,
         contract.get("level_id"),
         physics,
         record_dir,
+        admin_host,
+        admin_port,
     )
     try:
         async with serve(gateway.handler, host, port):
@@ -1811,6 +1910,17 @@ def main() -> None:
         help="Downsample recording (1 = every sim tick)",
     )
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument(
+        "--admin-host",
+        default="127.0.0.1",
+        help="PL2 admin HTTP bind (rooms/contracts)",
+    )
+    parser.add_argument(
+        "--admin-port",
+        type=int,
+        default=8770,
+        help="PL2 admin HTTP port (0=disable)",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -1828,6 +1938,8 @@ def main() -> None:
                 args.model,
                 record_dir,
                 args.record_every_n_ticks,
+                admin_host=args.admin_host,
+                admin_port=args.admin_port,
             )
         )
     except KeyboardInterrupt:

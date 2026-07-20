@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + Portal + C-line + E1–E5 + W1 + R3 + H8–H10 + IL place Done. **Role：数聚球 3D 传送门前台** — `docs/21-ecosystem-federation.md`. **Now：PL2 或 H11** — `docs/09-todo.md`. Changelog: `docs/19-changelog.md`. Platform: `docs/20-platform-portal.md`, `mw_platform/`. Identity map: `docs/22-identity-mapping.md`.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + Portal + E1–E5 + W1 + R3 + H8–H10 + PL2 + IL-place 飞轮 Done. **Role：数聚球 3D 传送门前台** — `docs/21-ecosystem-federation.md`. **Now：H11 或公网运维** — `docs/09-todo.md`. Changelog: `docs/19-changelog.md`. Platform: `docs/20-platform-portal.md`, `mw_platform/`. Identity map: `docs/22-identity-mapping.md`.
 
 ## Project Structure & Module Organization
 
@@ -24,6 +24,8 @@ python scripts/ws_smoke_test.py            # end-to-end check, expect "smoke OK"
 python scripts/platform_smoke.py         # platform identity API
 python scripts/grasp_lift_smoke.py       # P1a friction grasp (MuJoCo)
 python scripts/bc_offline_check.py --csv examples/il/bc_sample.csv  # P1b
+python scripts/admin_ops_smoke.py        # PL2 admin rooms/level toggle
+python scripts/il_place_smoke.py         # IL: record place → export → BC
 python scripts/journey_smoke.py          # C3: login → city success → score/me/lb
 python mw_platform/api_server.py         # standalone :8090 (optional)
 ajv validate -s schemas/ws-messages.v0.json -d examples/ws/hello.json
