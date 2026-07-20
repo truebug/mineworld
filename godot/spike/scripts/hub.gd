@@ -61,6 +61,14 @@ const DOOR_STUB_DIST := 3.2
 const FLOOR2_Y := 5.2
 
 var _hub_floor := 1
+var _party_looking := false
+var _vendor_accent_i := 0
+const VENDOR_ACCENTS := ["#4aa3ff", "#e8873a", "#6ecf8e", "#d4a24c", "#c46ecf", "#e06c75"]
+const PARTY_POSTS := [
+	"Maya · Workshop IL run · need one more claw",
+	"Rex · City block warm-up · open seat",
+	"Jin · Looking for Gallery tour buddy",
+]
 
 
 func _ready() -> void:
@@ -325,15 +333,28 @@ func _on_hello(_payload: Dictionary) -> void:
 func _send_join() -> void:
 	"""Join demo_hub with local profile extensions."""
 	var nick := str(_profile.get("nickname", "Guest"))
-	ws.join(level_id, nick, _joined_room_id, {
-		"mw": {
-			"profile": {
-				"id": str(_profile.get("id", "")),
-				"nickname": nick,
-				"accent": str(_profile.get("accent", "#4aa3ff")),
-			}
+	var mw := {
+		"profile": {
+			"id": str(_profile.get("id", "")),
+			"nickname": nick,
+			"accent": str(_profile.get("accent", "#4aa3ff")),
 		}
-	})
+	}
+	var space_id := _resolve_space_id()
+	if space_id != "":
+		mw["space_id"] = space_id
+		mw["route_kind"] = "pms_space"
+	ws.join(level_id, nick, _joined_room_id, {"mw": mw})
+
+
+func _resolve_space_id() -> String:
+	"""E3: optional ?space_id= for session attribution (Hub rarely sets it)."""
+	if not _is_web:
+		return ""
+	return str(JavaScriptBridge.eval(
+		"(function(){try{return new URLSearchParams(location.search).get('space_id')||''}catch(e){return ''}})()",
+		true
+	)).strip_edges()
 
 
 func _on_scene(payload: Dictionary) -> void:
@@ -774,7 +795,7 @@ func _update_interact_prompt() -> void:
 
 
 func _try_interact() -> void:
-	"""F: talk / elevator / E4 exhibit (open Space URL)."""
+	"""F: talk / elevator / E4 exhibit / H9 party+vendor."""
 	var own := _own_avatar()
 	if own == null or hub_life == null or not hub_life.has_method("nearest_interact"):
 		return
@@ -782,14 +803,51 @@ func _try_interact() -> void:
 	if hit.is_empty():
 		_refresh_tips("Nothing to use here — approach a glowing kiosk or NPC.")
 		return
-	if str(hit.get("id", "")) == "elevator":
+	var sid := str(hit.get("id", ""))
+	if sid == "elevator":
 		_toggle_elevator()
+		return
+	if sid == "board_party":
+		_use_party_board()
+		return
+	if sid == "vendor":
+		_use_vendor()
 		return
 	var url := str(hit.get("url", "")).strip_edges()
 	if url != "":
 		_open_exhibit_url(url, str(hit.get("title", hit.get("id", "Space"))))
 		return
 	_refresh_tips(str(hit.get("line", "...")))
+
+
+func _use_party_board() -> void:
+	"""H9: toggle Looking-for-crew + show stub LFG posts."""
+	_party_looking = not _party_looking
+	var you := "YOU · Looking for crew ✓" if _party_looking else "YOU · not posting"
+	var lines: PackedStringArray = ["Party board", you, ""]
+	for p in PARTY_POSTS:
+		lines.append("· %s" % str(p))
+	lines.append("")
+	lines.append("F again to toggle your post. (Matchmaking later.)")
+	_refresh_tips("\n".join(lines))
+
+
+func _use_vendor() -> void:
+	"""H9: cycle profile accent and apply to own avatar."""
+	_vendor_accent_i = (_vendor_accent_i + 1) % VENDOR_ACCENTS.size()
+	var hex := str(VENDOR_ACCENTS[_vendor_accent_i])
+	_profile["accent"] = hex
+	_save_profile()
+	_apply_profile_ui()
+	var own := _own_avatar()
+	if own != null and own.has_method("set_display"):
+		own.call("set_display", str(_profile.get("nickname", "Guest")), hex)
+	elif own != null and "accent" in own:
+		own.set("accent", Color(hex))
+	_refresh_tips(
+		"Vendor · suit accent %d/%d\n%s\nSaved to profile. F again for next color."
+		% [_vendor_accent_i + 1, VENDOR_ACCENTS.size(), hex]
+	)
 
 
 func _open_exhibit_url(url: String, title: String) -> void:

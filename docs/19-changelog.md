@@ -10,6 +10,19 @@
 
 ---
 
+## 2026-07-21 · E3 会话归因 + H9/H10 Hub 慢扩
+
+- **E3**：`space_id` / `route_kind` 写入 join → recording header → scores；`?space_id=`；样例 `examples/platform/session_attribution.v0.json`。
+- **H9**：Party board 切换 Looking-for-crew + stub LFG；Vendor F 循环 accent 并写 profile。
+- **H10**：北墙 Gallery / Classroom 走廊壳 + 交互台 lore。
+
+```bash
+.venv/bin/python scripts/platform_smoke.py
+.venv/bin/python scripts/ws_smoke_test.py
+```
+
+---
+
 ## 2026-07-21 · E2 身份映射草案 + federated stub
 
 - SSOT：[22-identity-mapping.md](22-identity-mapping.md)；样例 `examples/platform/identity_link.v0.json`。

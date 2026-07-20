@@ -79,6 +79,8 @@ class SessionRecorder:
         features: list[str] | None = None,
         software: dict[str, Any] | None = None,
         player_id: str | None = None,
+        space_id: str | None = None,
+        route_kind: str | None = None,
     ) -> None:
         self.session_id = session_id
         self.dt = dt
@@ -123,10 +125,14 @@ class SessionRecorder:
             "features": list(features or []),
             "software": software or {},
             "stats": {"num_frames": 0, "duration_sim_s": 0.0},
+            "route_kind": (route_kind or "mineworld_level").strip() or "mineworld_level",
         }
         pid = (player_id or "").strip()
         if pid:
             self._header["player_id"] = pid
+        sid = (space_id or "").strip()
+        if sid:
+            self._header["space_id"] = sid
         self._flush_header()
         LOG.info("recording started session=%s dir=%s", session_id, self.dir)
 

@@ -93,7 +93,7 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 |---------|------|----------|
 | E1 | Portal Landing：未登录品牌页 → 登录 → Profile/榜单 →「进入大厅」（**Done** `/portal/` · `/portal/me.html`） | 统一前台第一印象 |
 | E2 | `player_id` ↔ 平台 user 映射草案（文档 + 可选 stub token） | **Done** — [22](22-identity-mapping.md) + federated stub |
-| E3 | 通关/会话归因字段预留（`space_id` 可空；本仓 `level_id` 已有） | 跨系统战绩不返工 |
+| E3 | 通关/会话归因字段预留（`space_id` 可空；本仓 `level_id` 已有） | **Done** — header/scores/`?space_id=` |
 
 ### P1 · 第一条外部卡片通道（验证「对接」）
 
@@ -114,8 +114,9 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 
 | 建议 ID | 内容 | 备注 |
 |---------|------|------|
-| H8 | 电梯/L2 瞬移薄版 | 观感，非对接阻塞 |
-| H10 | 房间壳：展厅 / 教室走廊占位 + lore | 无真实 URL 前只做叙事 |
+| H8 | 电梯/L2 瞬移薄版 | **Done** |
+| H9 | Party board / Vendor 薄交互 | **Done** |
+| H10 | 房间壳：展厅 / 教室走廊占位 + lore | **Done** |
 | H11 | 竞技场门占位（1v1 / 多人） | 权威模型另案；勿与 PMS 卡片混用 |
 
 ### 明确暂缓

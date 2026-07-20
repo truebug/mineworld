@@ -44,6 +44,8 @@ def build_and_post(
     duration_sim_s: float = 0.0,
     task_id: str | None = None,
     display_name: str | None = None,
+    space_id: str | None = None,
+    route_kind: str | None = None,
 ) -> bool:
     """Compute points and POST; skip when 0 points or missing player_id."""
     pid = (player_id or "").strip()
@@ -58,6 +60,8 @@ def build_and_post(
         duration_sim_s=duration_sim_s,
         task_id=task_id,
         display_name=display_name,
+        space_id=space_id,
+        route_kind=route_kind,
     )
     return post_score(payload)
 

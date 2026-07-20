@@ -28,9 +28,10 @@ func _build() -> void:
 	_place_solid_hall(root)
 	_place_space_windows(root)
 	_place_mezzanine(root)
+	_place_room_shells(root)
 	_place_props(root)
 	_place_door_glows()
-	print("[MW] hub dress: solid hangar %.0fx%.0f roof_y=%.1f + mezzanine + space sky" % [
+	print("[MW] hub dress: solid hangar %.0fx%.0f roof_y=%.1f + mezzanine + room shells + space sky" % [
 		HALL_HALF_X * 2.0, HALL_HALF_Z * 2.0, CEILING_Y,
 	])
 
@@ -310,6 +311,45 @@ func _place_elevator(root: Node3D) -> void:
 	label.modulate = Color(0.55, 0.9, 1.0)
 	root.add_child(label)
 	label.position = Vector3(ELEV_X, 4.0, ELEV_Z - w * 0.5 - 0.4)
+
+
+func _place_room_shells(root: Node3D) -> void:
+	"""H10: north-wall gallery / classroom corridor alcoves (narrative only)."""
+	var frame := _mat(Color(0.28, 0.3, 0.34), 0.65, 0.15)
+	var trim := _mat(Color(0.55, 0.48, 0.32), 0.5, 0.2)
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.55, 0.7, 0.85, 0.18)
+	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass.roughness = 0.15
+	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# Gallery alcove (−X, −Z)
+	_box(root, "GalArchL", Vector3(-9.5, 2.2, -HALL_HALF_Z + 0.35), Vector3(0.25, 4.2, 0.35), frame)
+	_box(root, "GalArchR", Vector3(-6.5, 2.2, -HALL_HALF_Z + 0.35), Vector3(0.25, 4.2, 0.35), frame)
+	_box(root, "GalLint", Vector3(-8.0, 4.2, -HALL_HALF_Z + 0.35), Vector3(3.2, 0.28, 0.4), trim)
+	_box(root, "GalGlass", Vector3(-8.0, 2.0, -HALL_HALF_Z + 0.15), Vector3(2.6, 3.2, 0.06), glass)
+	var gal := Label3D.new()
+	gal.text = "Gallery Wing"
+	gal.font_size = 42
+	gal.outline_size = 6
+	gal.pixel_size = 0.01
+	gal.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	gal.modulate = Color(0.9, 0.8, 0.55)
+	root.add_child(gal)
+	gal.position = Vector3(-8.0, 4.7, -HALL_HALF_Z + 0.8)
+	# Classroom alcove (+X, −Z)
+	_box(root, "ClsArchL", Vector3(6.5, 2.2, -HALL_HALF_Z + 0.35), Vector3(0.25, 4.2, 0.35), frame)
+	_box(root, "ClsArchR", Vector3(9.5, 2.2, -HALL_HALF_Z + 0.35), Vector3(0.25, 4.2, 0.35), frame)
+	_box(root, "ClsLint", Vector3(8.0, 4.2, -HALL_HALF_Z + 0.35), Vector3(3.2, 0.28, 0.4), trim)
+	_box(root, "ClsGlass", Vector3(8.0, 2.0, -HALL_HALF_Z + 0.15), Vector3(2.6, 3.2, 0.06), glass)
+	var cls := Label3D.new()
+	cls.text = "Classroom Wing"
+	cls.font_size = 42
+	cls.outline_size = 6
+	cls.pixel_size = 0.01
+	cls.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	cls.modulate = Color(0.55, 0.85, 1.0)
+	root.add_child(cls)
+	cls.position = Vector3(8.0, 4.7, -HALL_HALF_Z + 0.8)
 
 
 func _place_props(root: Node3D) -> void:

@@ -40,12 +40,14 @@ def score_payload(
     duration_sim_s: float = 0.0,
     task_id: str | None = None,
     display_name: str | None = None,
+    space_id: str | None = None,
+    route_kind: str | None = None,
 ) -> dict[str, Any]:
     """Build API body including computed points."""
     points = compute_points(
         level_id=level_id, outcome=outcome, duration_sim_s=duration_sim_s
     )
-    return {
+    body: dict[str, Any] = {
         "session_id": session_id,
         "player_id": player_id,
         "level_id": level_id,
@@ -54,4 +56,9 @@ def score_payload(
         "task_id": task_id,
         "display_name": display_name,
         "points": points,
+        "route_kind": (route_kind or "mineworld_level").strip() or "mineworld_level",
     }
+    sid = (space_id or "").strip()
+    if sid:
+        body["space_id"] = sid
+    return body

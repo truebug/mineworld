@@ -602,16 +602,29 @@ func _on_hello(payload: Dictionary) -> void:
 	var nick := str(_profile.get("nickname", "godot_spike"))
 	if nick == "":
 		nick = "godot_spike"
-	ws.join(level_id, nick, _joined_room_id, {
-		"mw": {
-			"profile": {
-				"id": str(_profile.get("id", "")),
-				"nickname": nick,
-				"accent": str(_profile.get("accent", "#4aa3ff")),
-			}
+	var mw := {
+		"profile": {
+			"id": str(_profile.get("id", "")),
+			"nickname": nick,
+			"accent": str(_profile.get("accent", "#4aa3ff")),
 		}
-	})
+	}
+	var space_id := _resolve_space_id()
+	if space_id != "":
+		mw["space_id"] = space_id
+		mw["route_kind"] = "pms_space"
+	ws.join(level_id, nick, _joined_room_id, {"mw": mw})
 	_update_hud()
+
+
+func _resolve_space_id() -> String:
+	"""E3: optional ?space_id= attribution for recordings / scores."""
+	if not OS.has_feature("web"):
+		return ""
+	return str(JavaScriptBridge.eval(
+		"(function(){try{return new URLSearchParams(location.search).get('space_id')||''}catch(e){return ''}})()",
+		true
+	)).strip_edges()
 
 
 func _on_scene(payload: Dictionary) -> void:

@@ -572,6 +572,9 @@ class Session:
     ## Hub / join display (no account); see docs/18-hub-dungeon.md.
     player_name: str = "guest"
     profile: dict[str, Any] = field(default_factory=dict)
+    ## E3: optional PMS/Space attribution (empty = native MineWorld level).
+    space_id: str | None = None
+    route_kind: str = "mineworld_level"
 
     @property
     def mech(self) -> MechState | None:
@@ -964,6 +967,8 @@ class EchoGateway:
             duration_sim_s=duration_sim_s,
             task_id=str(task_id) if task_id else None,
             display_name=session.player_name,
+            space_id=session.space_id,
+            route_kind=session.route_kind,
         )
 
     def _applied_cmd(self, mech: MechState) -> dict[str, Any] | None:
@@ -1421,11 +1426,23 @@ class EchoGateway:
 
         player_name = str(payload.get("player_name") or "guest").strip() or "guest"
         profile: dict[str, Any] = {}
+        space_id: str | None = None
+        route_kind = "mineworld_level"
         join_ext = payload.get("extensions")
         if isinstance(join_ext, dict):
             join_mw = join_ext.get("mw")
-            if isinstance(join_mw, dict) and isinstance(join_mw.get("profile"), dict):
-                profile = dict(join_mw["profile"])
+            if isinstance(join_mw, dict):
+                if isinstance(join_mw.get("profile"), dict):
+                    profile = dict(join_mw["profile"])
+                # E3: optional Space attribution from join.
+                raw_sid = join_mw.get("space_id") or profile.get("space_id")
+                if raw_sid is not None and str(raw_sid).strip():
+                    space_id = str(raw_sid).strip()
+                raw_rk = join_mw.get("route_kind")
+                if raw_rk is not None and str(raw_rk).strip():
+                    route_kind = str(raw_rk).strip()
+                elif space_id:
+                    route_kind = "pms_space"
         if profile.get("nickname"):
             player_name = str(profile["nickname"]).strip() or player_name
 
@@ -1529,6 +1546,8 @@ class EchoGateway:
         session.controlled_entity_id = entity_id
         session.player_name = player_name
         session.profile = profile
+        session.space_id = space_id
+        session.route_kind = route_kind
         session.completed_objectives.clear()
         session.outcome = None
         session.pending_events.clear()
@@ -1553,6 +1572,8 @@ class EchoGateway:
                 features=self._feature_flags(),
                 software=software,
                 player_id=pid,
+                space_id=space_id,
+                route_kind=route_kind,
             )
 
         entities = []

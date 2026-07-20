@@ -208,6 +208,10 @@ def handle_platform_post(
         task_id_s = str(task_id).strip() if task_id else None
         display = body.get("display_name")
         display_s = str(display).strip() if display else None
+        space_raw = body.get("space_id")
+        space_s = str(space_raw).strip() if space_raw else None
+        route_raw = body.get("route_kind")
+        route_s = str(route_raw).strip() if route_raw else None
         if "points" in body and body["points"] is not None:
             try:
                 points = int(body["points"])
@@ -228,6 +232,8 @@ def handle_platform_post(
                 duration_sim_s=duration,
                 task_id=task_id_s,
                 display_name=display_s,
+                space_id=space_s,
+                route_kind=route_s,
             )
         except ValueError as exc:
             send_json({"error": str(exc)}, 400)

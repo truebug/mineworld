@@ -116,7 +116,7 @@ func _place_stations() -> void:
 		Vector3(-WALL_X + 1.0, 0, 5.5),
 		90.0,
 		"F - Party board",
-		"Party board: looking for crew...\n(Matchmaking UI arrives later.)",
+		"Party board online — press F to post / clear Looking for crew.",
 		Color(1.0, 0.7, 0.3),
 	)
 	_station(
@@ -124,7 +124,7 @@ func _place_stations() -> void:
 		Vector3(WALL_X - 1.0, 0, 5.5),
 		-90.0,
 		"F - Vendor stall",
-		"Vendor: cosmetics & skins — coming soon.\nFor now, change your nickname on the profile card.",
+		"Vendor: press F to cycle suit accent (saved to profile).",
 		Color(0.9, 0.45, 0.85),
 	)
 	_station(
@@ -136,6 +136,7 @@ func _place_stations() -> void:
 		Color(0.5, 0.9, 0.6),
 	)
 	_place_exhibits()
+	_place_room_shell_stations()
 	_spawn_factory("screen-panel-wide.glb", 0.0, WALL_Z - 0.6, 180.0, 1.1)
 	_spawn_factory("machine.glb", WALL_X - 1.2, 9.0, -90.0, 1.0)
 	_spawn_factory("structure-medium.glb", -WALL_X + 1.2, 9.0, 90.0, 1.0)
@@ -192,6 +193,26 @@ func _place_exhibits() -> void:
 			url,
 			title,
 		)
+
+
+func _place_room_shell_stations() -> void:
+	"""H10: gallery / classroom corridor pads (lore; exhibits hold real URLs)."""
+	_station(
+		"room_gallery",
+		Vector3(-8.0, 0, -WALL_Z + 1.2),
+		0.0,
+		"F - Gallery wing",
+		"Gallery Wing — exhibition corridor.\nPMS Space cards hang on the east/west cabinets.\nNo local MuJoCo; open an exhibit with F.",
+		Color(0.75, 0.65, 0.4),
+	)
+	_station(
+		"room_classroom",
+		Vector3(8.0, 0, -WALL_Z + 1.2),
+		0.0,
+		"F - Classroom wing",
+		"Classroom Wing — courseware corridor.\nStub lore only until a Space URL is linked.\nUse exhibit cabinets for live cards.",
+		Color(0.45, 0.7, 0.85),
+	)
 
 
 func _load_exhibits() -> Array:

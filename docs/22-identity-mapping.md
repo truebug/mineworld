@@ -58,8 +58,22 @@
 
 ---
 
-## 4. 验收
+## 5. E3 · 会话归因（`space_id`）
+
+通关 / 录制可带可选外部 Space 指针，便于跨系统战绩对齐（不改变本仓 `level_id`）：
+
+| 字段 | 写入点 | 说明 |
+|------|--------|------|
+| `level_id` | 既有 | 本仓关卡 SSOT |
+| `space_id` | join `extensions.mw.space_id` 或 `?space_id=` | 可空；PMS Space id |
+| `route_kind` | `mineworld_level` \| `pms_space` | 默认 `mineworld_level` |
+
+落盘：recording `header.json` · `scores.space_id` / `route_kind`。样例：[`examples/platform/session_attribution.v0.json`](../examples/platform/session_attribution.v0.json)。
+
+---
+
+## 6. 验收
 
 ```bash
-.venv/bin/python scripts/platform_smoke.py   # 含 federated + link
+.venv/bin/python scripts/platform_smoke.py   # 含 federated + link + space_id
 ```

@@ -1,0 +1,16 @@
+{
+  "contract_version": "0.1",
+  "kind": "session_attribution",
+  "description": "E3: optional cross-system attribution on play sessions (docs/21)",
+  "fields": {
+    "level_id": "demo_workshop",
+    "task_id": "obj_place_block",
+    "space_id": null,
+    "route_kind": "mineworld_level",
+    "notes": [
+      "space_id null/omit for native MineWorld levels (level_id is enough)",
+      "space_id set when session is attributed to a PMS/Space card",
+      "route_kind: mineworld_level | pms_space | unknown"
+    ]
+  }
+}

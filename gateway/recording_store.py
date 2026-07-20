@@ -64,6 +64,8 @@ def _session_summary(child: Path, header: dict[str, Any], *, has_frames: bool) -
         "features": list(features),
         "has_frames": has_frames,
         "seed": header.get("seed"),
+        "space_id": header.get("space_id"),
+        "route_kind": header.get("route_kind"),
     }
 
 

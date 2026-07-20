@@ -50,7 +50,9 @@
 | **H5** | Hub 互见：`level_id=demo_hub` + `room_id=hub`，无 MuJoCo | 两浏览器可见对方纸片人 |
 | **H6** | 本地 Profile：昵称 + accent，localStorage，无登录 | 头顶显示昵称；刷新仍在 |
 | **H7** | 左栏/右栏/人物菜单打磨 + 门 C–E 占位 | ✅ v0 |
-| **H8** | 可乘电梯 + 可上 L2 | 见 [09](09-todo.md) Next |
+| **H8** | 可乘电梯 + 可上 L2 | ✅ 薄乘（viewer Y） |
+| **H9** | Party board / Vendor | ✅ 薄 UI（LFG 切换 / accent 循环） |
+| **H10** | 展厅/教室走廊壳 | ✅ 北墙 alcove + lore |
 | **H6b** | 观感：机库/星空/NPC/DOM HUD/展示电梯+半层二楼 | 已落地 |
 
 ### 3.1 Gateway
@@ -71,7 +73,7 @@
 ### 3.3 非目标（本期不做）
 
 账号登录、真匹配、商城、换装 RPG、Hub 内 MuJoCo、门 C–E 完整玩法。  
-**电梯 / 二楼** 目前仅为大厅展示壳（不可乘、不可上 L2），供后续扩展。
+**电梯 / 二楼** 已可薄乘（H8）；Gallery / Classroom 仅为走廊叙事壳（H10）。
 
 ---
 

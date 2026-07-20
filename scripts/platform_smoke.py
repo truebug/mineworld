@@ -51,6 +51,8 @@ def main() -> int:
         outcome="success",
         points=100,
         display_name="Demo Pilot",
+        space_id=None,
+        route_kind="mineworld_level",
     )
     r2 = store.record_score(
         session_id="sess-a",
@@ -62,18 +64,36 @@ def main() -> int:
     if not r1.get("created") or r2.get("created"):
         print("FAIL: score idempotent", file=sys.stderr)
         return 1
+    row = r1.get("row") or {}
+    if row.get("route_kind") not in (None, "mineworld_level"):
+        print("FAIL: route_kind", row, file=sys.stderr)
+        return 1
+
+    r3 = store.record_score(
+        session_id="sess-space",
+        player_id="demo",
+        level_id="demo_workshop",
+        outcome="success",
+        points=100,
+        space_id="space-demo-1",
+        route_kind="pms_space",
+    )
+    if not r3.get("created") or (r3.get("row") or {}).get("space_id") != "space-demo-1":
+        print("FAIL: space_id attribution", r3, file=sys.stderr)
+        return 1
     lb = store.leaderboard(limit=5)
-    if not lb or lb[0]["player_id"] != "demo" or int(lb[0]["total_points"]) != 100:
+    if not lb or lb[0]["player_id"] != "demo" or int(lb[0]["total_points"]) != 200:
         print("FAIL: leaderboard", lb, file=sys.stderr)
         return 1
 
     stats = store.player_stats("demo")
-    if int(stats.get("total_points") or 0) != 100:
+    if int(stats.get("total_points") or 0) != 200:
         print("FAIL: player_stats", stats, file=sys.stderr)
         return 1
     hist = store.player_scores("demo", limit=5)
-    if not hist or hist[0].get("session_id") != "sess-a":
-        print("FAIL: player_scores", hist, file=sys.stderr)
+    space_rows = [h for h in hist if h.get("session_id") == "sess-space"]
+    if not space_rows or space_rows[0].get("space_id") != "space-demo-1":
+        print("FAIL: player_scores space_id", hist, file=sys.stderr)
         return 1
 
     # E2: admin link + federated stub login

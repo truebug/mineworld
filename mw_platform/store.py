@@ -112,7 +112,9 @@ class SQLitePlayerStore(PlayerStore):
                     outcome TEXT NOT NULL,
                     duration_sim_s REAL NOT NULL DEFAULT 0,
                     points INTEGER NOT NULL DEFAULT 0,
-                    created_at TEXT NOT NULL
+                    created_at TEXT NOT NULL,
+                    space_id TEXT,
+                    route_kind TEXT NOT NULL DEFAULT 'mineworld_level'
                 );
                 CREATE INDEX IF NOT EXISTS idx_scores_player
                     ON scores(player_id);
@@ -129,6 +131,17 @@ class SQLitePlayerStore(PlayerStore):
                     ON identity_links(player_id);
                 """
             )
+            # E3: optional space_id on existing DBs (CREATE IF NOT EXISTS won't add cols).
+            cols = {
+                str(r[1])
+                for r in conn.execute("PRAGMA table_info(scores)").fetchall()
+            }
+            if "space_id" not in cols:
+                conn.execute("ALTER TABLE scores ADD COLUMN space_id TEXT")
+            if "route_kind" not in cols:
+                conn.execute(
+                    "ALTER TABLE scores ADD COLUMN route_kind TEXT NOT NULL DEFAULT 'mineworld_level'"
+                )
 
     def record_score(
         self,
@@ -141,6 +154,8 @@ class SQLitePlayerStore(PlayerStore):
         duration_sim_s: float = 0.0,
         task_id: str | None = None,
         display_name: str | None = None,
+        space_id: str | None = None,
+        route_kind: str | None = None,
     ) -> dict[str, Any]:
         """Idempotent upsert by session_id. Returns {created, row}."""
         sid = session_id.strip()
@@ -151,6 +166,8 @@ class SQLitePlayerStore(PlayerStore):
         if not name:
             p = self.get_player(pid)
             name = p.display_name if p else pid
+        space = (space_id or "").strip() or None
+        rk = (route_kind or "mineworld_level").strip() or "mineworld_level"
         now = _iso(_utc_now())
         with self._conn() as conn:
             existing = conn.execute(
@@ -161,7 +178,7 @@ class SQLitePlayerStore(PlayerStore):
                 row = conn.execute(
                     """
                     SELECT session_id, player_id, display_name, level_id, task_id,
-                           outcome, duration_sim_s, points, created_at
+                           outcome, duration_sim_s, points, created_at, space_id, route_kind
                     FROM scores WHERE session_id = ?
                     """,
                     (sid,),
@@ -171,8 +188,8 @@ class SQLitePlayerStore(PlayerStore):
                 """
                 INSERT INTO scores (
                     session_id, player_id, display_name, level_id, task_id,
-                    outcome, duration_sim_s, points, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    outcome, duration_sim_s, points, created_at, space_id, route_kind
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     sid,
@@ -184,12 +201,14 @@ class SQLitePlayerStore(PlayerStore):
                     float(duration_sim_s),
                     int(points),
                     now,
+                    space,
+                    rk,
                 ),
             )
             row = conn.execute(
                 """
                 SELECT session_id, player_id, display_name, level_id, task_id,
-                       outcome, duration_sim_s, points, created_at
+                       outcome, duration_sim_s, points, created_at, space_id, route_kind
                 FROM scores WHERE session_id = ?
                 """,
                 (sid,),
@@ -244,7 +263,7 @@ class SQLitePlayerStore(PlayerStore):
             rows = conn.execute(
                 """
                 SELECT session_id, level_id, task_id, outcome, duration_sim_s,
-                       points, created_at
+                       points, created_at, space_id, route_kind
                 FROM scores
                 WHERE player_id = ?
                 ORDER BY created_at DESC

@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | C / E1–E5 / W1 / R3 / H8 / IL-place Done；**Now：E3 或 Hub 慢扩**（见 [21](21-ecosystem-federation.md)） |
+| **目标** | E1–E5 / W1 / R3 / H8–H10 / IL-place Done；**Now：E 线收口或 PL2**（见 [21](21-ecosystem-federation.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -24,17 +24,21 @@
 
 ## Now（E · 生态对接起步 · 建议）
 
-> SSOT：[21-ecosystem-federation.md](21-ecosystem-federation.md)。E1 / E4 / E5 / **E2** 已收口。  
-> **建议下一刀：E3 会话归因字段，或 H9/H10 Hub 慢扩。**
+> SSOT：[21-ecosystem-federation.md](21-ecosystem-federation.md)。E1–E5 / H8–H10 已收口。  
+> **建议下一刀：PL2 Admin 运维，或 H11 竞技场门占位。**
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | E1 | Portal Landing → Profile/榜 → 进大厅 CTA | 未登录见品牌页；登录后可进 Hub | [x] v0 |
 | E2 | `player_id` ↔ 平台 user 映射草案 | 文档表 + federated stub | [x] |
+| E3 | 通关/会话归因字段预留 | `space_id` 可空；header/scores 可写 | [x] |
 | E4 | Hub 展柜 stub → 打开 PMS/Space URL | F 键新标签或壳；能回 Hub | [x] |
 | E5 | 展柜元数据契约 v0 | examples JSON：id/title/url/kind | [x] 薄 |
 | W1 | 工坊推箱/抓取 smoke 恢复 | `stow_crate_smoke` + `grasp_lift_smoke` PASS（双 prop） | [x] |
 | W1b | 夹→放台面示范链路 | `grasp_place_smoke` PASS；`obj_place_block` 为 IL 主 task | [x] |
+| H8 | 可乘电梯 + 可上 L2 | 薄乘（Y offset） | [x] |
+| H9 | Hub 交互台玩法雏形 | Party board / Vendor 真 UI | [x] 薄 |
+| H10 | 房间壳占位（展厅/教室 lore） | 走廊+文案 | [x] |
 
 ---
 
@@ -105,8 +109,8 @@
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | H8 | 可乘电梯 + 可上 L2 | 轿厢或瞬移；栏杆碰撞；小地图层 | [x] 薄乘（Y offset） |
-| H9 | Hub 交互台玩法雏形 | Party board / Vendor 真 UI | [ ] |
-| H10 | 房间壳占位（展厅/教室 lore） | 走廊+文案；无真实 URL 亦可 | [ ] |
+| H9 | Hub 交互台玩法雏形 | Party board / Vendor 真 UI | [x] 薄 |
+| H10 | 房间壳占位（展厅/教室 lore） | 走廊+文案；无真实 URL 亦可 | [x] |
 | H11 | 竞技场门占位 | 1v1 / 多人叙事；权威另案 | [ ] |
 
 ### 运维 / 公网（原暂缓）
