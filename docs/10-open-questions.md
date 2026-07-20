@@ -52,8 +52,8 @@
 | D2 | 玩家标识脱敏 | UUID 映射表 | Open |
 | D3 | 数据许可法律模板 | 商业前必备 | Open |
 | L1 | 成品 Godot 地图包作默认关 | KayKit 楼宇 + `gen_demo_city_block.py` 随机街区空气墙 | **Closed（v0）**（D6/D7；整张第三方成品地图仍可再换） |
-| P7 | 独立 API / 管理控制台边界 | 与 Gateway WS 权威分离；见 [09](09-todo.md) PL1–PL4 | Open |
-| P8 | 首屏与关卡过场 | UX1/UX2-v0 已落地（品牌 splash + 淡入淡出）；UX2b/UX3 仍 Open | Partial |
+| P7 | 独立 API / 管理控制台边界 | 与 Gateway WS 权威分离；见 [09](09-todo.md) Phase A · [20](20-platform-portal.md) | Open |
+| P8 | 首屏与关卡过场 | UX1/UX2-v0 已落地；UX2b/UX3 仍 Open | Partial |
 
 ---
 
