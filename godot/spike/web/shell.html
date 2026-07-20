@@ -675,7 +675,7 @@ const engine = new Engine(GODOT_CONFIG);
 
 	window.MW_REDIRECT_LOGIN = function () {
 		const next = encodeURIComponent(location.pathname + location.search);
-		location.replace('/portal/login.html?next=' + next);
+		location.replace('/portal/?next=' + next);
 	};
 
 	/* Local profile card — synced from platform login when present. */

@@ -16,9 +16,9 @@
 ## 1. 目标用户旅程（冻结方向）
 
 ```text
-Landing / Portal 登录（唯一 player_id；远期对齐平台 SSO）
-  → Profile + 榜单
-  → 进入 3D Hub（多人互见，不录 IL）
+Landing `/portal/`（未登录品牌页）
+  → Sign in → Profile `/portal/me.html`（积分 · 榜单 · Enter hangar）
+  → 进入 3D Hub `/`（多人互见，不录 IL）
   → 大门 / 展柜分流
        ├─ A 工坊（本仓 MuJoCo · IL）
        ├─ B 训练场（本仓）

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """C3: product journey smoke — login → join+profile → success points → me/lb.
 
-Uses demo_city open-loop finish (mech reach) because workshop push is unreliable
-after P1a shrunk prop_crate. Still validates C1 profile + C2 points/score post.
+Uses demo_city open-loop finish (mech reach) for score wiring; workshop
+stow uses prop_crate (0.5m) — see W1 / stow_crate_smoke.
 Requires MuJoCo.
 """
 

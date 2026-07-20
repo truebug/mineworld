@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>MineWorld</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--void: #03050a;
+			--ink: #e6edf5;
+			--muted: #7d8fa3;
+			--line: rgba(180, 200, 220, 0.14);
+			--accent: #d4a24c;
+			--accent-dim: #8a6a2e;
+			--panel: rgba(10, 14, 22, 0.72);
+		}
+		* { box-sizing: border-box; }
+		html, body { height: 100%; }
+		body {
+			margin: 0;
+			min-height: 100vh;
+			color: var(--ink);
+			font-family: "IBM Plex Sans", system-ui, sans-serif;
+			background: var(--void);
+			overflow-x: hidden;
+		}
+		.stage {
+			position: relative;
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+			justify-content: flex-end;
+			padding: clamp(24px, 5vw, 56px);
+			background:
+				radial-gradient(ellipse 90% 60% at 70% 20%, rgba(70, 110, 160, 0.22) 0%, transparent 55%),
+				radial-gradient(ellipse 50% 40% at 15% 80%, rgba(212, 162, 76, 0.08) 0%, transparent 50%),
+				linear-gradient(165deg, #0a1018 0%, var(--void) 45%, #010205 100%);
+		}
+		.stage::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			background-image:
+				radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.55), transparent),
+				radial-gradient(1px 1px at 42% 8%, rgba(255,255,255,0.35), transparent),
+				radial-gradient(1.5px 1.5px at 78% 22%, rgba(255,255,255,0.45), transparent),
+				radial-gradient(1px 1px at 88% 48%, rgba(255,255,255,0.3), transparent),
+				radial-gradient(1px 1px at 28% 62%, rgba(255,255,255,0.25), transparent),
+				radial-gradient(1px 1px at 55% 78%, rgba(255,255,255,0.4), transparent);
+			opacity: 0.7;
+			pointer-events: none;
+			animation: drift 28s linear infinite;
+		}
+		.stage::after {
+			content: "";
+			position: absolute;
+			inset: 0;
+			background:
+				repeating-linear-gradient(
+					90deg,
+					transparent 0,
+					transparent 79px,
+					rgba(255,255,255,0.02) 80px
+				);
+			pointer-events: none;
+			mask-image: linear-gradient(to top, black 0%, transparent 65%);
+		}
+		@keyframes drift {
+			from { transform: translateY(0); }
+			to { transform: translateY(-24px); }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.stage::before { animation: none; }
+			.hero > * { animation: none !important; opacity: 1 !important; transform: none !important; }
+		}
+		.hero {
+			position: relative;
+			z-index: 1;
+			max-width: 42rem;
+		}
+		.brand {
+			margin: 0 0 12px;
+			font-family: Syne, sans-serif;
+			font-weight: 800;
+			font-size: clamp(3.2rem, 12vw, 5.5rem);
+			line-height: 0.92;
+			letter-spacing: -0.03em;
+			text-transform: uppercase;
+			opacity: 0;
+			transform: translateY(18px);
+			animation: rise 0.7s ease 0.05s forwards;
+		}
+		.brand span {
+			display: block;
+			color: var(--accent);
+			font-size: 0.38em;
+			letter-spacing: 0.28em;
+			font-weight: 600;
+			margin-bottom: 0.35em;
+		}
+		.lede {
+			margin: 0 0 28px;
+			max-width: 28rem;
+			font-size: clamp(1rem, 2.4vw, 1.15rem);
+			line-height: 1.45;
+			color: var(--muted);
+			opacity: 0;
+			transform: translateY(14px);
+			animation: rise 0.7s ease 0.18s forwards;
+		}
+		.ctas {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 12px;
+			align-items: center;
+			opacity: 0;
+			transform: translateY(14px);
+			animation: rise 0.7s ease 0.32s forwards;
+		}
+		@keyframes rise {
+			to { opacity: 1; transform: translateY(0); }
+		}
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			padding: 14px 22px;
+			border-radius: 2px;
+			font-family: Syne, sans-serif;
+			font-weight: 700;
+			font-size: 0.95rem;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			text-decoration: none;
+			border: 1px solid transparent;
+			cursor: pointer;
+			transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+		}
+		.btn:hover { transform: translateY(-1px); }
+		.btn-primary {
+			background: var(--accent);
+			color: #140f06;
+		}
+		.btn-primary:hover { background: #e0b35c; }
+		.btn-ghost {
+			background: transparent;
+			color: var(--ink);
+			border-color: var(--line);
+		}
+		.btn-ghost:hover { border-color: rgba(212, 162, 76, 0.45); color: var(--accent); }
+		.foot {
+			position: relative;
+			z-index: 1;
+			margin-top: auto;
+			padding-top: 48px;
+			font-size: 12px;
+			color: #5a6a7a;
+			letter-spacing: 0.04em;
+		}
+		.foot a { color: #8aa0b5; text-decoration: none; }
+		.foot a:hover { color: var(--accent); }
+		#guest, #authed { display: none; }
+		#guest.show, #authed.show { display: flex; }
+	</style>
+</head>
+<body>
+	<main class="stage">
+		<div class="hero">
+			<h1 class="brand"><span>Dungeon Gate</span>MineWorld</h1>
+			<p class="lede">True mechs. Real tasks. Teleop data that trains. Enter the hangar — or open a simulation card beyond the doors.</p>
+			<div class="ctas" id="guest">
+				<a class="btn btn-primary" id="signin" href="/portal/login.html">Sign in</a>
+				<a class="btn btn-ghost" href="/portal/login.html?next=%2Fportal%2Fme.html">Pilot record</a>
+			</div>
+			<div class="ctas" id="authed">
+				<a class="btn btn-primary" id="enter-hub" href="/">Enter hangar</a>
+				<a class="btn btn-ghost" href="/portal/me.html">Profile &amp; board</a>
+			</div>
+		</div>
+		<p class="foot">Databall · simulation portal · <a href="/portal/admin.html">Admin</a></p>
+	</main>
+	<script>
+	(function () {
+		const TOKEN_KEY = 'mw_auth_token';
+		const params = new URLSearchParams(location.search);
+		const nextRaw = params.get('next') || '/';
+		const nextSafe = nextRaw.startsWith('/') ? nextRaw : '/';
+
+		document.getElementById('signin').href =
+			'/portal/login.html?next=' + encodeURIComponent('/portal/me.html');
+
+		const enter = document.getElementById('enter-hub');
+		enter.href = nextSafe === '/portal/' || nextSafe.indexOf('/portal/') === 0
+			? '/'
+			: nextSafe;
+
+		async function boot() {
+			const token = localStorage.getItem(TOKEN_KEY);
+			if (!token) {
+				document.getElementById('guest').classList.add('show');
+				return;
+			}
+			try {
+				const r = await fetch('/api/platform/me', {
+					headers: { Authorization: 'Bearer ' + token },
+				});
+				if (!r.ok) {
+					localStorage.removeItem(TOKEN_KEY);
+					document.getElementById('guest').classList.add('show');
+					return;
+				}
+				document.getElementById('authed').classList.add('show');
+			} catch (e) {
+				document.getElementById('guest').classList.add('show');
+			}
+		}
+		boot();
+	})();
+	</script>
+</body>
+</html>

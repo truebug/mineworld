@@ -10,10 +10,25 @@
 
 ---
 
+## 2026-07-20 · W1 工坊双 prop（推箱 + 抓取）
+
+- `prop_crate` 恢复 0.5 m 供 `obj_stow_crate`；新增 `prop_block` 6 cm 供 `obj_lift_block`。
+- `stow_crate_smoke` / `grasp_lift_smoke` 分目标验收。
+
+---
+
+## 2026-07-20 · E1 Portal Landing → Profile/榜 → 进大厅
+
+- `/portal/` 品牌 Landing（未登录 Sign in；已登录 Enter hangar）。
+- `/portal/me.html`：主 CTA **Enter hangar** + 积分 + Leaderboard + 近期会话。
+- 登录默认 `next=/portal/me.html`；游戏壳未登录 → `/portal/?next=…`（不再直跳 login）。
+
+---
+
 ## 2026-07-20 · 生态对接叙事冻结（21）
 
 - 新增 **[21-ecosystem-federation.md](21-ecosystem-federation.md)**：MineWorld = 3D 传送门前台；本仓 MuJoCo 玩法/采数；展厅/教室等 → PMS Space（对接不搬迁）。
-- [00-vision.md](00-vision.md) / [AGENTS.md](../AGENTS.md) / [docs/README.md](README.md) / [09](09-todo.md) Now 改为 **E1/E4/W1** 建议。
+- [00-vision.md](00-vision.md) / [AGENTS.md](../AGENTS.md) / [docs/README.md](README.md) / [09](09-todo.md) Now：**E4 / E2**（E1·W1 Done）。
 
 ---
 

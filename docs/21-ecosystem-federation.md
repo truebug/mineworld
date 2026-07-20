@@ -91,7 +91,7 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 
 | 建议 ID | 内容 | 为何先做 |
 |---------|------|----------|
-| E1 | Portal Landing：未登录品牌页 → 登录 → Profile/榜单 →「进入大厅」 | 统一前台第一印象 |
+| E1 | Portal Landing：未登录品牌页 → 登录 → Profile/榜单 →「进入大厅」（**Done** `/portal/` · `/portal/me.html`） | 统一前台第一印象 |
 | E2 | `player_id` ↔ 平台 user 映射草案（文档 + 可选 stub token） | 大一统身份的最小契约 |
 | E3 | 通关/会话归因字段预留（`space_id` 可空；本仓 `level_id` 已有） | 跨系统战绩不返工 |
 
@@ -106,7 +106,7 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 
 | 建议 ID | 内容 | 备注 |
 |---------|------|------|
-| W1 | 工坊推箱/抓取 smoke 恢复（P1a 小料块碾过问题） | 训练场数据价值 |
+| W1 | 工坊推箱/抓取 smoke 恢复（双 prop：crate stow + block grasp） | 训练场数据价值 | **Done** |
 | R3 | 3D 离线回放 | 运营与「我的」完整性 |
 | — | 关节/接触任务继续加深 | 服从 [15](15-course-correction.md) / [16](16-value-sprint.md) |
 

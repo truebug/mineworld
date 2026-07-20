@@ -1,4 +1,4 @@
-"""P1a: friction grasp + lift prop_crate above min_z (offline MuJoCo, no weld)."""
+"""P1a: friction grasp + lift prop_block above min_z (offline MuJoCo, no weld)."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from echo_server import (  # noqa: E402
 
 
 def main() -> int:
-    """Pinch small crate between fingers, lift via friction; expect obj_lift_crate."""
+    """Pinch small block between fingers, lift via friction; expect obj_lift_block."""
     contract = load_contract(REPO / "examples" / "contracts" / "demo_workshop.json")
     gw = EchoGateway(
         contract,
@@ -35,7 +35,7 @@ def main() -> int:
         print(f"FAIL: expected no grasp welds, got {grasp_eq}", file=sys.stderr)
         return 1
     mech = mechs["mech_player"]
-    prop = props["prop_crate"]
+    prop = props["prop_block"]
     room = Room(
         room_id="grasp_smoke",
         contract=contract,
@@ -51,7 +51,7 @@ def main() -> int:
     session.controlled_entity_id = mech.entity_id
     mech.controlled = True
 
-    # Open gripper, reach pose with tip near crate height.
+    # Open gripper, reach pose with tip near block height.
     for name, q in (("arm_yaw", 0.0), ("arm_shoulder", 1.4), ("arm_elbow", 0.0), ("gripper", 0.05)):
         mech._data.qpos[mech._pos_qadr[name]] = q
         mech.joint_targets[name] = q
@@ -92,7 +92,7 @@ def main() -> int:
         room.step_physics(0.02)
         prop.pull_state()
         events = evaluate_objectives(session)
-        if any(e.get("objective_id") == "obj_lift_crate" for e in events):
+        if any(e.get("objective_id") == "obj_lift_block" for e in events):
             print(f"grasp-lift OK (friction) z={prop.z:.3f}")
             return 0
 

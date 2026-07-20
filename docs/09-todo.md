@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | C1–C4 Done；**Now：E1/E4 或 W1**（见 [21](21-ecosystem-federation.md)） |
+| **目标** | C / E1 / W1 Done；**Now：E4 或 E2**（见 [21](21-ecosystem-federation.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -24,16 +24,16 @@
 
 ## Now（E · 生态对接起步 · 建议）
 
-> SSOT：[21-ecosystem-federation.md](21-ecosystem-federation.md)。C 线已收口。  
-> **建议下一刀：E1 Landing，或 E4 展柜→外部 URL stub，或 W1 工坊 smoke 修复（三选一开干）。**
+> SSOT：[21-ecosystem-federation.md](21-ecosystem-federation.md)。C / E1 / W1 已收口。  
+> **建议下一刀：E4 展柜→外部 URL stub，或 E2 身份映射草案。**
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| E1 | Portal Landing → Profile/榜 → 进大厅 CTA | 未登录见品牌页；登录后可进 Hub | [ ] |
+| E1 | Portal Landing → Profile/榜 → 进大厅 CTA | 未登录见品牌页；登录后可进 Hub | [x] v0 |
 | E2 | `player_id` ↔ 平台 user 映射草案 | 文档表 + 可选 stub；不阻塞 E4 | [ ] |
 | E4 | Hub 展柜 stub → 打开 PMS/Space URL | F 键新标签或壳；能回 Hub | [ ] |
 | E5 | 展柜元数据契约 v0 | examples JSON：id/title/url/kind | [ ] |
-| W1 | 工坊推箱/抓取 smoke 恢复 | `stow_crate_smoke` 或等价 PASS（P1a 小块碾过） | [ ] |
+| W1 | 工坊推箱/抓取 smoke 恢复 | `stow_crate_smoke` + `grasp_lift_smoke` PASS（双 prop） | [x] |
 
 ---
 

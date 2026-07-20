@@ -92,11 +92,12 @@
 			<label>Password
 				<input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••">
 			</label>
-			<button type="submit" id="submit-btn">Enter Hub</button>
+			<button type="submit" id="submit-btn">Sign in</button>
 		</form>
 		<div class="err" id="err"></div>
-		<p class="hint">Local demo: <code>demo</code> / <code>demo</code>. After sign-in you enter the 3D hub.<br>
-			<a href="/portal/me.html" style="color:#6ec0ff">My record</a>
+		<p class="hint">Local demo: <code>demo</code> / <code>demo</code>. After sign-in → Profile &amp; board, then Enter hangar.<br>
+			<a href="/portal/" style="color:#6ec0ff">Landing</a>
+			· <a href="/portal/me.html" style="color:#6ec0ff">Profile</a>
 			· <a href="/portal/admin.html" style="color:#6ec0ff">Admin</a>
 		</p>
 	</div>
@@ -104,7 +105,7 @@
 	(function () {
 		const TOKEN_KEY = 'mw_auth_token';
 		const params = new URLSearchParams(location.search);
-		const next = params.get('next') || '/';
+		const next = params.get('next') || '/portal/me.html';
 
 		async function tryExisting() {
 			const token = localStorage.getItem(TOKEN_KEY);
