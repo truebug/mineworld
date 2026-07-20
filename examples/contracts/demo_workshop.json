@@ -83,6 +83,16 @@
       "params": {
         "entity_id": "prop_crate"
       }
+    },
+    {
+      "id": "obj_lift_crate",
+      "type": "grasp_lift",
+      "description": "V3c：夹爪闭合接触并抬起箱子",
+      "params": {
+        "entity_id": "prop_crate",
+        "gripper_closed_max": 0.02,
+        "min_z": 0.35
+      }
     }
   ],
   "triggers": [

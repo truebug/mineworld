@@ -408,7 +408,7 @@ class MujocoMech(MechState):
 
 
 class DynamicProp:
-    """Planar pushable box (T4.6): slide_x/y + yaw, no actuators."""
+    """Freejoint pushable/liftable box (T4.6 push + V3c grasp lift)."""
 
     def __init__(
         self,
@@ -425,20 +425,28 @@ class DynamicProp:
         self._body = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body_name)
         if self._body < 0:
             raise SystemExit(f"dynamic prop body missing: {body_name}")
-        jnt = lambda n: mujoco.mj_name2id(
-            model, mujoco.mjtObj.mjOBJ_JOINT, f"{joint_prefix}{n}"
-        )
-        self._qx = int(model.jnt_qposadr[jnt("sx")])
-        self._qy = int(model.jnt_qposadr[jnt("sy")])
-        self._qyaw = int(model.jnt_qposadr[jnt("yaw")])
+        jname = f"{joint_prefix}free"
+        jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jname)
+        if jid < 0:
+            raise SystemExit(f"dynamic prop freejoint missing: {jname}")
+        self._qadr = int(model.jnt_qposadr[jid])
+        self._dadr = int(model.jnt_dofadr[jid])
         self.x = self.y = self.z = self.yaw = 0.0
         self.pull_state()
 
     def reset_pose(self, pose: dict[str, Any]) -> None:
-        """Write spawn XY/yaw into planar joints (body origin at world Z only)."""
-        self._data.qpos[self._qx] = float(pose.get("x", 0.0))
-        self._data.qpos[self._qy] = float(pose.get("y", 0.0))
-        self._data.qpos[self._qyaw] = float(pose.get("yaw", 0.0))
+        """Write spawn XYZ/yaw into freejoint qpos (quat wxyz)."""
+        self._data.qpos[self._qadr + 0] = float(pose.get("x", 0.0))
+        self._data.qpos[self._qadr + 1] = float(pose.get("y", 0.0))
+        self._data.qpos[self._qadr + 2] = float(pose.get("z", 0.25))
+        yaw = float(pose.get("yaw", 0.0))
+        q = _yaw_to_quat(yaw)
+        self._data.qpos[self._qadr + 3] = q["qw"]
+        self._data.qpos[self._qadr + 4] = q["qx"]
+        self._data.qpos[self._qadr + 5] = q["qy"]
+        self._data.qpos[self._qadr + 6] = q["qz"]
+        for i in range(6):
+            self._data.qvel[self._dadr + i] = 0.0
         mujoco.mj_forward(self._model, self._data)
         self.pull_state()
 
@@ -448,7 +456,9 @@ class DynamicProp:
         self.x = float(pos[0])
         self.y = float(pos[1])
         self.z = float(pos[2])
-        self.yaw = float(self._data.qpos[self._qyaw])
+        # yaw from freejoint quat (wxyz)
+        qw, qx, qy, qz = (float(self._data.qpos[self._qadr + i]) for i in range(3, 7))
+        self.yaw = math.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
 
     def to_entity_state(self) -> dict[str, Any]:
         """Serialize prop as entity_state (no joints required)."""
@@ -474,6 +484,8 @@ class Room:
     # F7: shared MuJoCo state so mechs collide; None for fake physics.
     mj_data: Any = None
     mj_substeps: int = 1
+    ## V3c: (mech_id, prop_id) → equality id for sticky grasp weld.
+    grasp_eq: dict[tuple[str, str], int] = field(default_factory=dict)
 
     def free_spawn_id(self) -> str | None:
         """Return first mech spawn id not claimed by a joined member."""
@@ -542,12 +554,98 @@ def point_in_aabb(x: float, y: float, z: float, mn: list[float], mx: list[float]
     )
 
 
+def _gripper_q(mech: MechState) -> float | None:
+    """Return current gripper slide qpos, or None if unavailable."""
+    if not isinstance(mech, MujocoMech):
+        return None
+    qadr = mech._pos_qadr.get("gripper")
+    if qadr is None:
+        return None
+    return float(mech._data.qpos[qadr])
+
+
+def _gripper_command_closed(mech: MechState, closed_max: float) -> bool:
+    """Return True if gripper is commanded closed and/or measured closed."""
+    if not isinstance(mech, MujocoMech):
+        return False
+    target = mech.joint_targets.get("gripper")
+    if target is not None and float(target) <= closed_max:
+        return True
+    gq = _gripper_q(mech)
+    return gq is not None and gq <= closed_max
+
+
+def _prop_touches_gripper(model: Any, data: Any, mech_id: str, prop_id: str) -> bool:
+    """Return True if prop contacts any gripper/finger body of mech."""
+    prefix = f"{mech_id}/"
+
+    def is_grip(name: str) -> bool:
+        return name.startswith(prefix) and ("finger" in name or "gripper" in name)
+
+    for i in range(int(data.ncon)):
+        con = data.contact[i]
+        names: list[str] = []
+        for gid in (int(con.geom1), int(con.geom2)):
+            bid = int(model.geom_bodyid[gid])
+            names.append(mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, bid) or "")
+        a, b = names[0], names[1]
+        if (a == prop_id and is_grip(b)) or (b == prop_id and is_grip(a)):
+            return True
+    return False
+
+
+def _gripper_prop_close(model: Any, data: Any, mech_id: str, prop_id: str, max_dist: float) -> bool:
+    """Return True if gripper_base is within max_dist of prop body."""
+    g_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, f"{mech_id}/gripper_base")
+    p_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, prop_id)
+    if g_id < 0 or p_id < 0:
+        return False
+    delta = data.xpos[g_id] - data.xpos[p_id]
+    return float((delta * delta).sum()) <= max_dist * max_dist
+
+
+def _grasp_lift_ready(session: Session, obj: dict[str, Any]) -> tuple[bool, str | None]:
+    """V3c: gripper closed + contact/weld/proximity + prop height above threshold."""
+    if session.room is None or session.room.mj_data is None:
+        return False, None
+    mech = session.mech
+    if mech is None or not isinstance(mech, MujocoMech):
+        return False, None
+    params = obj.get("params") if isinstance(obj.get("params"), dict) else {}
+    prop_id = str(params.get("entity_id") or params.get("subject") or "")
+    if not prop_id:
+        return False, None
+    prop = session.room.props.get(prop_id)
+    if prop is None:
+        return False, None
+    closed_max = float(params.get("gripper_closed_max", 0.02))
+    min_z = float(params.get("min_z", 0.45))
+    prox = float(params.get("grasp_proximity", 0.18))
+    if not _gripper_command_closed(mech, closed_max):
+        return False, None
+    model = mech._model
+    data = session.room.mj_data
+    contacting = _prop_touches_gripper(model, data, mech.entity_id, prop_id)
+    near = _gripper_prop_close(model, data, mech.entity_id, prop_id, prox)
+    welded = False
+    eq_id = session.room.grasp_eq.get((mech.entity_id, prop_id))
+    if eq_id is not None and int(data.eq_active[eq_id]) == 1:
+        welded = True
+    if not (contacting or near or welded):
+        return False, None
+    if prop.z < min_z:
+        return False, None
+    return True, prop.entity_id
+
+
 def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
-    """Gateway-authoritative objective checks (T3.1 / V3a). Emit each objective once.
+    """Gateway-authoritative objective checks (T3.1 / V3a / V3c). Emit each once.
 
     ``reach_region`` defaults to the session mech. Set ``params.entity_id`` (or
     ``params.subject``) to a ``dynamic_prop`` id to require that prop enter the
     trigger AABB instead (workshop stow-crate).
+
+    ``grasp_lift`` requires closed gripper + contact/weld + prop ``min_z``.
     """
     events: list[dict[str, Any]] = []
     if session.room is None:
@@ -557,7 +655,29 @@ def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
         obj_id = obj.get("id")
         if not obj_id or obj_id in session.completed_objectives:
             continue
-        if obj.get("type") != "reach_region":
+        obj_type = obj.get("type")
+        if obj_type == "grasp_lift":
+            ok, subject_id = _grasp_lift_ready(session, obj)
+            if not ok or subject_id is None:
+                continue
+            session.completed_objectives.add(obj_id)
+            session.outcome = "success"
+            events.append(
+                {
+                    "event_type": "objective_complete",
+                    "objective_id": obj_id,
+                    "entity_id": subject_id,
+                    "detail": {"kind": "grasp_lift", "subject_id": subject_id},
+                }
+            )
+            LOG.info(
+                "session=%s objective_complete id=%s grasp_lift subject=%s",
+                session.session_id,
+                obj_id,
+                subject_id,
+            )
+            continue
+        if obj_type != "reach_region":
             continue
         trig = triggers.get(obj.get("target"))
         if not trig or trig.get("type") != "aabb":
@@ -783,6 +903,7 @@ class EchoGateway:
 
         props = self.contract.get("dynamic_props") or []
         prop_n = self._append_dynamic_props(spec, props)
+        self._append_grasp_welds(spec, props)
         LOG.info(
             "mujoco world F7: %d mechs attached, %d/%d static_obstacles, %d/%d dynamic_props, level=%s",
             len(spawns),
@@ -795,7 +916,7 @@ class EchoGateway:
         return spec.compile()
 
     def _append_dynamic_props(self, spec: Any, props: list) -> int:
-        """Add planar pushable boxes (slide_x/y + yaw) into the MjSpec."""
+        """Add pushable/liftable boxes with freejoint into the MjSpec (V3c)."""
         added = 0
         for prop in props:
             if prop.get("physics_role", "mujoco_authoritative") != "mujoco_authoritative":
@@ -804,18 +925,10 @@ class EchoGateway:
                 LOG.warning("dynamic_prop %s: shape %r skipped", prop.get("id"), prop.get("shape"))
                 continue
             pid = str(prop.get("id", f"prop_{added}"))
-            pose = prop.get("pose") or {}
-            z = float(pose.get("z", 0.25))
             half = [float(s) / 2.0 for s in prop["size"]]
             mass = float(prop.get("mass", 1.2))
-            body = spec.worldbody.add_body(name=pid, pos=[0.0, 0.0, z])
-            for axis, suffix, jtype in (
-                ([1.0, 0.0, 0.0], "sx", mujoco.mjtJoint.mjJNT_SLIDE),
-                ([0.0, 1.0, 0.0], "sy", mujoco.mjtJoint.mjJNT_SLIDE),
-                ([0.0, 0.0, 1.0], "yaw", mujoco.mjtJoint.mjJNT_HINGE),
-            ):
-                j = body.add_joint(name=f"{pid}_{suffix}", type=jtype, axis=axis)
-                j.damping = 0.15 if suffix != "yaw" else 0.08
+            body = spec.worldbody.add_body(name=pid, pos=[0.0, 0.0, 0.0])
+            body.add_freejoint(name=f"{pid}_free")
             geom = body.add_geom(
                 name=f"{pid}_geom",
                 type=mujoco.mjtGeom.mjGEOM_BOX,
@@ -830,15 +943,90 @@ class EchoGateway:
             added += 1
         return added
 
-    def _make_room_mechs(self) -> tuple[dict[str, MechState], dict[str, DynamicProp], Any, int]:
+    def _append_grasp_welds(self, spec: Any, props: list) -> None:
+        """Add inactive weld equalities mech gripper_base ↔ each prop (V3c sticky grasp)."""
+        for spawn in self.contract.get("mech_spawns") or []:
+            eid = str(spawn.get("id", "mech_player"))
+            for prop in props:
+                if prop.get("physics_role", "mujoco_authoritative") != "mujoco_authoritative":
+                    continue
+                if prop.get("shape", "box") != "box":
+                    continue
+                pid = str(prop.get("id") or "")
+                if not pid:
+                    continue
+                eq = spec.add_equality()
+                eq.type = mujoco.mjtEq.mjEQ_WELD
+                eq.objtype = mujoco.mjtObj.mjOBJ_BODY
+                eq.name = f"grasp_{eid}_{pid}"
+                eq.name1 = f"{eid}/gripper_base"
+                eq.name2 = pid
+                eq.active = False
+
+    def _grasp_eq_map(self, model: Any) -> dict[tuple[str, str], int]:
+        """Resolve compiled equality ids for sticky grasp welds."""
+        out: dict[tuple[str, str], int] = {}
+        for spawn in self.contract.get("mech_spawns") or []:
+            eid = str(spawn.get("id", "mech_player"))
+            for prop in self.contract.get("dynamic_props") or []:
+                pid = str(prop.get("id") or "")
+                if not pid:
+                    continue
+                name = f"grasp_{eid}_{pid}"
+                eq_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_EQUALITY, name)
+                if eq_id >= 0:
+                    out[(eid, pid)] = int(eq_id)
+        return out
+
+    def _update_sticky_grasps(self, room: Room) -> None:
+        """Enable weld when gripper closed + near prop; kinematically attach while held."""
+        if room.mj_data is None or self.mj_model is None or not room.grasp_eq:
+            return
+        data = room.mj_data
+        model = self.mj_model
+        for (eid, pid), eq_id in room.grasp_eq.items():
+            mech = room.mechs.get(eid)
+            prop = room.props.get(pid)
+            if mech is None or prop is None or not isinstance(mech, MujocoMech):
+                data.eq_active[eq_id] = 0
+                continue
+            if not _gripper_command_closed(mech, 0.02):
+                data.eq_active[eq_id] = 0
+                continue
+            if (
+                _prop_touches_gripper(model, data, eid, pid)
+                or _gripper_prop_close(model, data, eid, pid, 0.18)
+                or int(data.eq_active[eq_id]) == 1
+            ):
+                data.eq_active[eq_id] = 1
+                # POC kinematic attach: keep prop glued to gripper_base while held.
+                gid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, f"{eid}/gripper_base")
+                if gid >= 0:
+                    data.qpos[prop._qadr + 0] = float(data.xpos[gid][0])
+                    data.qpos[prop._qadr + 1] = float(data.xpos[gid][1])
+                    data.qpos[prop._qadr + 2] = float(data.xpos[gid][2])
+                    data.qpos[prop._qadr + 3] = float(data.xquat[gid][0])
+                    data.qpos[prop._qadr + 4] = float(data.xquat[gid][1])
+                    data.qpos[prop._qadr + 5] = float(data.xquat[gid][2])
+                    data.qpos[prop._qadr + 6] = float(data.xquat[gid][3])
+                    for i in range(6):
+                        data.qvel[prop._dadr + i] = 0.0
+                    mujoco.mj_forward(model, data)
+                    prop.pull_state()
+            else:
+                data.eq_active[eq_id] = 0
+
+    def _make_room_mechs(self) -> tuple[dict[str, MechState], dict[str, DynamicProp], Any, int, dict[tuple[str, str], int]]:
         """Instantiate contract mechs + props; MuJoCo uses one shared MjData (F7)."""
         mechs: dict[str, MechState] = {}
         props: dict[str, DynamicProp] = {}
         shared = None
         substeps = 1
+        grasp_eq: dict[tuple[str, str], int] = {}
         if self.mj_model is not None:
             shared = mujoco.MjData(self.mj_model)
             substeps = max(1, int(round(DT / self.mj_model.opt.timestep)))
+            grasp_eq = self._grasp_eq_map(self.mj_model)
         for spawn in self.contract.get("mech_spawns") or []:
             eid = str(spawn.get("id", "mech_player"))
             pose = spawn.get("pose") or {}
@@ -873,7 +1061,7 @@ class EchoGateway:
                 )
                 dp.reset_pose(prop.get("pose") or {})
                 props[pid] = dp
-        return mechs, props, shared, substeps
+        return mechs, props, shared, substeps, grasp_eq
 
     def _leave_room(self, session: Session) -> None:
         """Detach session from its room; drop empty rooms."""
@@ -1029,7 +1217,7 @@ class EchoGateway:
 
         room = self.rooms.get(room_id)
         if room is None:
-            mechs, props, mj_data, mj_substeps = self._make_room_mechs()
+            mechs, props, mj_data, mj_substeps, grasp_eq = self._make_room_mechs()
             room = Room(
                 room_id=room_id,
                 contract=self.contract,
@@ -1038,6 +1226,7 @@ class EchoGateway:
                 max_members=max_members,
                 mj_data=mj_data,
                 mj_substeps=mj_substeps,
+                grasp_eq=grasp_eq,
             )
             self.rooms[room_id] = room
             LOG.info(
@@ -1186,6 +1375,7 @@ class EchoGateway:
                 if not members:
                     continue
                 room.step_physics(DT)
+                self._update_sticky_grasps(room)
                 room.tick += 1
                 state_payload = {
                     "kind": "full",

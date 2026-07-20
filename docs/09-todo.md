@@ -113,7 +113,7 @@
 |----|------|------|------|
 | V3a | 车间主目标 v1 | 箱子进入料箱区 → `objective_complete`（允许夹爪辅助推） | [x] |
 | V3b | outcome 服务 IL | success/fail/abort 可筛；正样本导出默认 success | [x] |
-| V3c | （可选）真夹取抬起 | 闭合+接触+离地；不阻塞 V3a | [ ] |
+| V3c | （可选）真夹取抬起 | 闭合+接触+离地；不阻塞 V3a | [x] |
 | V-IL | IL 冒烟 | 至少 1 条 `demo_workshop` + success 可被 export 滤出 | [x] |
 
 ### V5 · 克制
