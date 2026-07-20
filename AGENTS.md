@@ -1,10 +1,10 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + V-sprint freeze + 3D Hub are done; **default entry is Hub** (`docs/18-hub-dungeon.md`). UX1/UX2-v0 splash + scene fade landed (`MWTransition` / `shell.html`). Execution: `docs/09-todo.md` (Now P1 · Next PL/UX3). Changelog: `docs/19-changelog.md`. Public HTTPS/wss and T2.7 remain deferred.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + UX splash/fade done. **Platform track planned**: Portal / identity / scores / admin (`docs/20-platform-portal.md`). Execution: `docs/09-todo.md` (Now P1 · Phase A). Changelog: `docs/19-changelog.md`.
 
 ## Project Structure & Module Organization
 
-- `docs/` — design docs (`00` … `19-changelog.md`); `09-todo.md` execution; **`16` V-sprint frozen**; **`18` Hub**; **`19` changelog**.
+- `docs/` — design docs (`00` … `20-platform-portal.md`); `09-todo.md` execution; **`16` V-sprint**; **`18` Hub**; **`19` changelog**; **`20` platform portal plan**.
 - `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, `--physics fake|mujoco`; Hub rooms force FakeMech; `recording_store.py`.
 - `godot/` — spike baseline; default main scene **`demo_hub`**; doors → `demo_workshop` / `demo_city`; autoload `MWTransition`; `?menu=1` text lobby.
 - `gdevelop/` — archived legacy.

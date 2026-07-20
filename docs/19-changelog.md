@@ -4,7 +4,7 @@
 |------|-----|
 | **状态** | Living |
 | **日期** | 2026-07-20 |
-| **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) |
+| **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) |
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
@@ -66,6 +66,13 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 | 物理/IL | 真摩擦抓取、最小 BC 离线检查 | P1a / P1b |
 
 完整条目与验收见 [09 § Next](09-todo.md#next平台与体验·规划)。
+
+---
+
+## 2026-07-20 · 平台门户产品线写入计划
+
+- 新增 [20-platform-portal.md](20-platform-portal.md)：Portal 登录 → Hub → 计分关 → 排行/我的/Admin。
+- Todo 拆 Phase A/B/C（PL/ID/SC/LB/ME/AD/EXP）；与 P1 并行、Gateway 不塞用户库。
 
 ---
 

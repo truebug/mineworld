@@ -6,10 +6,11 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | POC + V 线 + Hub + UX1/UX2-v0 已收口；**Now：P1 · Next：PL API/控制台** |
+| **状态** | POC + Hub + UX 首屏/过场已收口；**规划中：平台 Portal（见 20）**；Now：P1 · Phase A |
 | **创建日期** | 2026-07-17 |
 | **定位** | 「头号玩家」式初始底座：可编辑共享世界 + 真物理机体 + 可回放的人类行为档案 |
 | **地下城 Hub** | [docs/18-hub-dungeon.md](docs/18-hub-dungeon.md) |
+| **平台门户规划** | [docs/20-platform-portal.md](docs/20-platform-portal.md) |
 | **变更记录** | [docs/19-changelog.md](docs/19-changelog.md) |
 | **跑偏与纠偏** | [docs/15-course-correction.md](docs/15-course-correction.md) |
 | **V 线规格（冻结）** | [docs/16-value-sprint.md](docs/16-value-sprint.md) |

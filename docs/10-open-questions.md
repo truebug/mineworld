@@ -3,8 +3,8 @@
 | 字段 | 值 |
 |------|-----|
 | **状态** | Living |
-| **日期** | 2026-07-19 |
-| **关联** | 阶段评审见 [12](12-status-review.md) · 纠偏见 [15](15-course-correction.md) · 执行规格 [16](16-value-sprint.md) |
+| **日期** | 2026-07-20 |
+| **关联** | [12](12-status-review.md) · [15](15-course-correction.md) · [16](16-value-sprint.md) · [20](20-platform-portal.md) |
 
 ---
 
@@ -17,7 +17,8 @@
 | P3 | 默认控制模式 | **纠偏期**：`velocity`（底盘）+ **`joint_targets`（臂/爪）**；UX=键鼠滑条 | — | Partial |
 | P5 | 主演示关 | **纠偏期**：新开 **`demo_workshop`**；`demo_city` 次要 | — | Partial |
 | P6 | 近期数据用途 | **冻结**：优先 **IL / 行为克隆** | — | Closed |
-| P4 | 是否需要账号与进度存档 | MVP 可匿名会话 | — | Open（**不阻塞 M4**） |
+| P4 | 是否需要账号与进度存档 | 见 [20](20-platform-portal.md)：Phase A 起唯一 `player_id`；完整 SaaS 后置 | — | Partial |
+| P9 | 积分 / 排行 / 门户登录 | 旅程已写入 [20](20-platform-portal.md)；计分公式与反作弊未定 | — | Open |
 
 ---
 

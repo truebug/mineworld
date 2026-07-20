@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | Hub + UX1/UX2-v0 已落地；**Now：P1 接触/IL · Next：PL API/控制台 · UX3** |
+| **目标** | Hub + UX1/UX2-v0 已落地；**Now：P1 · 启动平台 Phase A（Portal/API）** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -15,6 +15,7 @@
 | **试验场入口** | [17-lobby-testfield.md](17-lobby-testfield.md)（`?menu=1`） |
 | **地下城 Hub** | **[18-hub-dungeon.md](18-hub-dungeon.md)**（默认主场景） |
 | **变更记录** | **[19-changelog.md](19-changelog.md)** |
+| **平台门户规划** | **[20-platform-portal.md](20-platform-portal.md)**（身份 / 积分 / Admin） |
 
 勾选约定：`[ ]` 未做 · `[x]` 完成 · `[-]` 取消 · `[~]` 暂缓
 
@@ -29,13 +30,14 @@
 | H7 | Hub UI / 门 C–E 占位打磨 | 左栏 lore、右栏地图、名片可读；C–E 门有 stub 文案 | [ ] |
 
 > Hub 展示壳（半层二楼 + 静态电梯）已入库，见 [18](18-hub-dungeon.md) · [19](19-changelog.md)。  
-> **UX1 / UX2-v0**（品牌首屏 + 切景淡入淡出）已入库；余量见下方 Next（UX3 / UX2-v1 门色标签可选）。
+> **UX1 / UX2-v0** 已入库。  
+> **平台产品线**（Portal 登录 → Hub → 计分关 → 排行/我的/Admin）规划见 **[20](20-platform-portal.md)**；与 P1 并行、分期实施。
 
 ---
 
 ## Next（平台与体验 · 规划）
 
-> 与当前 POC Gateway（单进程 WS + 本地 FS）**解耦**；先定配置与边界，再独立仓/目录落地。不阻塞 P1。
+> 规格 SSOT：[20-platform-portal.md](20-platform-portal.md)。Gateway WS 只管仿真；身份/积分/运营走独立 API。
 
 ### UX · 首屏与过场
 
@@ -46,27 +48,47 @@
 | UX2b | 过场增强（可选） | 按门色/路线标签；可跳过；桌面缓动与 Web 对齐 | [ ] |
 | UX3 | Hub 加载与重连提示 | 断线/重连有明确文案，避免静默白屏 | [ ] |
 
-### PL · 独立 API 与后台
+### Phase A · 平台底座（Portal / API / 身份）
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| PL1 | 可配置持久化 + 消息中间件的 **API 服务**（独立进程） | 配置切换 DB（如 SQLite→Postgres）与 MQ（如内存/Redis/NATS）；REST/HTTP API 与现网 Gateway WS **并存**；会话/录制索引/房间元数据可查 | [ ] |
-| PL2 | Web 控制台（后台管理） | 只读/运维：在线房、录制列表、契约/level 开关、基础健康检查；鉴权最小可用（token/本地） | [ ] |
-| PL3 | API 与 Gateway 契约 | 文档化：哪些能力仍走 WS Gateway，哪些走 HTTP API；禁止双写权威位姿 | [ ] |
-| PL4 | 配置 SSOT | `config`/`env` 驱动 DB/MQ/存储根路径；本地默认零依赖可跑 | [ ] |
+| PL1 | 独立 API + 可配置 DB | 健康检查；players CRUD；与 Gateway 并存 | [ ] |
+| PL4 | 配置 SSOT | env 切 SQLite→Postgres；本地默认零依赖 | [ ] |
+| PL3 | API ↔ Gateway 边界文档 | WS vs HTTP；禁止双写位姿 | [ ] |
+| ID1 | Portal 登录页 | 未登录不可进游戏壳；token 进 Hub | [ ] |
+| ID2 | Admin 创建/导入玩家 | 表单或 CSV；唯一 `player_id` | [ ] |
+| AD1 | Admin 壳 v0 | 鉴权、玩家列表、健康检查 | [ ] |
 
-### Hub 后续
+### Phase B · 计分与大厅排行
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| H8 | 可乘电梯 + 可上 L2 | 轿厢运动或瞬移上二楼；栏杆碰撞；小地图层切换 | [ ] |
-| H9 | Hub 交互台玩法雏形 | Party board / Vendor 至少一个有真实 UI 面板（非仅 Label3D） | [ ] |
+| SC1 | 积分模型 v0 | 工坊 outcome + 城市时间/名次 → 公式文档化 | [ ] |
+| SC2 | 通关记账 | 会话结束写 score（幂等）；挂 API | [ ] |
+| LB1 | Hub 排行榜 | 大厅 Top N（DOM 或 3D 板） | [ ] |
 
-### 运维 / 公网（原暂缓，仍排后）
+### Phase C · 玩家页与运营回放
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| ME1 | Portal「我的」 | 积分、战绩、会话列表 | [ ] |
+| ME2 | 自助回放 | 复用 `/?replay=` / recordings | [ ] |
+| AD2 | Admin 玩家/会话钻取 | 按 player 筛录制 | [ ] |
+| EXP1 | 批量导出轨迹 | 对齐现有 IL 导出语义 | [ ] |
+| PL2 | Admin 运维增强 | 在线房只读、契约/level 开关等 | [ ] |
+
+### Hub 后续（降优先于 Phase A/B）
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| H8 | 可乘电梯 + 可上 L2 | 轿厢或瞬移；栏杆碰撞；小地图层 | [ ] |
+| H9 | Hub 交互台玩法雏形 | Party board / Vendor 真 UI；可与 LB1 合并 | [ ] |
+
+### 运维 / 公网（原暂缓）
 
 | ID | 任务 | 状态 |
 |----|------|------|
-| W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] 可与 PL2 合并规划 |
+| W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] 跟 Phase A 反代一起做 |
 | T2.7 | 输入延迟补偿 v0 | [~] |
 
 ---
@@ -266,7 +288,8 @@
 
 ## 明确不做（近期）
 
-- 完整账号体系 / 计费 / 编辑器 SaaS（PL2 仅最小运维鉴权，不等于账号产品）
+- 完整账号 SaaS / OAuth / 计费 / 商城 / 换装（身份先 Admin 导入 + 简单登录，见 [20](20-platform-portal.md)）
 - Godot 内嵌 MuJoCo / 引擎 Multiplayer 同步位姿  
 - 未选许可证清晰模型前批量接入「任意 URDF」  
-- 公网 Demo 优先于 P1 / PL1（除非明确要对外）
+- 公网 Demo 优先于 P1 / Phase A（除非明确要对外）
+- 在 Gateway 进程内塞用户库与排行（必须走独立 API）
