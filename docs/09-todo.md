@@ -73,7 +73,8 @@
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | ME1 | Portal「我的」 | 积分、战绩、会话列表 | [x] v0 |
-| ME2 | 自助回放 | 复用 `/?replay=` / recordings | [x] v0 |
+| ME2 | 自助回放 | 复用 recordings 2D（3D 链暂禁，见 R3） | [x] v0 |
+| R3 | 修复 `/?replay=` 3D 离线回放 | Recordings / My record 重新启用 3D 入口 | [ ] |
 | AD2 | Admin 玩家/会话钻取 | 按 player 筛录制 | [ ] |
 | EXP1 | 批量导出轨迹 | 对齐现有 IL 导出语义 | [ ] |
 | PL2 | Admin 运维增强 | 在线房只读、契约/level 开关等 | [ ] |
@@ -147,7 +148,7 @@
 | D7 | 随机街区 + 楼宇占地空气墙 | `gen_demo_city_block.py` + `city_block_dress.gd`；棕墙隐藏 | [x] |
 | D9 | Web 选 seed / 一键重生街区 | `POST /api/city-block` + shell 控件；Gateway 契约 mtime 热加载 | [x] |
 | D10 | 路面贴花 / 更密路网观感（仍空气墙权威） | 楼宇间深色沥青带 + 浅灰人行底（无 KayKit 标线砖） | [x] |
-| D8 | 客户端内帧回放 | Recordings 2D Play + `/?replay=` 3D 离线驱动傀儡 | [x] |
+| D8 | 客户端内帧回放 | Recordings 2D Play ✅；`/?replay=` 3D 暂不可靠 → R3 | [~] 2D |
 | D11 | KayKit 街道小品 | layout `props`（灯/椅/灌木/消防栓） | [x] |
 | D12 | demo_city 终点开环 smoke | `--expect-objective` 直道东行至绿区 | [x] |
 | D13 | 录制索引 SQLite + 批量轨迹导出 | `recording_store` + `export_trajectories.py` + API | [x] |

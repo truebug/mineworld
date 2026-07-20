@@ -137,9 +137,10 @@
 								cell.innerHTML = '<span class="muted" title="No frames on disk">no rec</span>';
 								return;
 							}
+							// TODO(R3): 3D /?replay= disabled until offline puppet is reliable
 							cell.innerHTML =
-								'<a href="/?replay=' + encodeURIComponent(sid) + '">3D</a>' +
-								'<a href="/recordings.html?session=' + encodeURIComponent(sid) + '">2D</a>';
+								'<a href="/recordings.html?session=' + encodeURIComponent(sid) + '">2D</a>' +
+								'<span class="muted" title="TODO R3: 3D offline replay">3D soon</span>';
 						})
 						.catch(function () {
 							cell.innerHTML = '<span class="muted">—</span>';

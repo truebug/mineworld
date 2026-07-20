@@ -69,9 +69,14 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 ---
 
+## 2026-07-20 · 暂禁 3D offline replay（R3）
+
+- Recordings「▶ 3D Replay」改为 disabled；My record 只保留 2D 链。
+- 任务 **R3**：修好 `/?replay=` 后再开入口。
+
 ## 2026-07-20 · Phase C · ME2 自助回放
 
-- My record 每行探测 `/api/recordings/<id>`：有帧则链 **3D** (`/?replay=`) / **2D** (`recordings.html?session=`)。
+- My record 每行探测 `/api/recordings/<id>`：有帧则链 **2D**（`recordings.html?session=`）；3D 暂禁见上。
 - Admin 本地默认 key `dev-admin`（可用 env 覆盖）。
 
 ---

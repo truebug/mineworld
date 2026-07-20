@@ -104,7 +104,7 @@ v0 实现：`mw_platform/` + `/api/platform/*`（同端口 8080 或独立 `:8090
 | Smoke | `scripts/platform_smoke.py` |
 | 我的页 | `/portal/me.html`（ME1） |
 | Admin | `/portal/admin.html`（默认 key `dev-admin`，可用 `MW_PLATFORM_ADMIN_KEY` 覆盖） |
-| 回放 | My record → 3D `/?replay=` · 2D `recordings.html?session=`（ME2） |
+| 回放 | My record → 2D `recordings.html?session=`（ME2）；3D `/?replay=` 暂禁 → R3 |
 
 Admin 创建玩家（需 `MW_PLATFORM_ADMIN_KEY`）：
 
