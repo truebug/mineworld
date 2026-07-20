@@ -501,15 +501,16 @@ body.mw-play #mw-joints {
 
 		<pre id="mw-hud" title="Click to collapse">MineWorld · connecting…</pre>
 		<div id="mw-hub-profile">
-			<div class="mw-id" id="mw-hub-id">ID --</div>
+			<div class="mw-id" id="mw-hub-id">Pilot card</div>
 			<div id="mw-hub-nick-label">Guest</div>
 			<input id="mw-hub-nick" type="text" maxlength="24" placeholder="Nickname" autocomplete="off">
 			<div class="mw-profile-links">
 				<a href="/portal/me.html">My record</a>
+				<a href="/portal/admin.html">Admin</a>
 			</div>
 		</div>
 		<div id="mw-hub-map">
-			<div class="mw-map-title">Hub map</div>
+			<div class="mw-map-title">Hub map · A orange · B blue · C–E soon</div>
 			<canvas id="mw-hub-map-canvas" width="220" height="132"></canvas>
 			<div class="mw-map-coords" id="mw-hub-map-coords">pos --</div>
 		</div>
@@ -707,7 +708,7 @@ const engine = new Engine(GODOT_CONFIG);
 			const id = String(p.id || '?');
 			const nick = String(p.nickname || 'Guest').slice(0, 24);
 			if (idEl) {
-				idEl.textContent = 'ID ' + id.slice(0, 14);
+				idEl.textContent = 'Pilot · ID ' + id.slice(0, 12);
 			}
 			if (nickLabel) {
 				nickLabel.textContent = nick;
@@ -779,6 +780,8 @@ const engine = new Engine(GODOT_CONFIG);
 			door(HALF_X, 0, '#ff8c28');
 			door(-HALF_X, 0, '#4db3ff');
 			door(0, -HALF_Y, '#d8d88a');
+			door(-6, -HALF_Y, '#8a9098');
+			door(6, -HALF_Y, '#8a9098');
 			/* Mezzanine (south half) + elevator — display-only. */
 			(function () {
 				const a = toLocal(-HALF_X + 1, 1.2);

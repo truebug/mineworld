@@ -362,7 +362,7 @@ func _hide_greybox() -> void:
 		var n := world.get_node_or_null(child_name) as Node3D
 		if n != null:
 			n.visible = false
-	for child_name in ["DoorWorkshop", "DoorCity", "DoorStubC"]:
+	for child_name in ["DoorWorkshop", "DoorCity", "DoorStubC", "DoorStubD", "DoorStubE"]:
 		var door := world.get_node_or_null(child_name)
 		if door is MeshInstance3D:
 			(door as MeshInstance3D).mesh = null
@@ -370,6 +370,8 @@ func _hide_greybox() -> void:
 	_ensure_marker(world, "DoorWorkshop", Vector3(HALL_HALF_X - 1.5, 1.6, 0.0), "A - Workshop", Color(1.0, 0.7, 0.3))
 	_ensure_marker(world, "DoorCity", Vector3(-HALL_HALF_X + 1.5, 1.6, 0.0), "B - Training", Color(0.4, 0.85, 1.0))
 	_ensure_marker(world, "DoorStubC", Vector3(0.0, 1.6, -HALL_HALF_Z + 1.5), "C - Design (soon)", Color(0.75, 0.8, 0.85))
+	_ensure_marker(world, "DoorStubD", Vector3(-6.0, 1.6, -HALL_HALF_Z + 1.5), "D - Missions (soon)", Color(0.65, 0.7, 0.75))
+	_ensure_marker(world, "DoorStubE", Vector3(6.0, 1.6, -HALL_HALF_Z + 1.5), "E - Arena (soon)", Color(0.65, 0.7, 0.75))
 
 
 func _ensure_marker(world: Node3D, marker_name: String, pos: Vector3, text: String, col: Color) -> void:
@@ -401,7 +403,9 @@ func _place_door_glows() -> void:
 		return
 	_glow_at(world, Vector3(HALL_HALF_X - 0.35, 1.6, 0.0), Color(1.0, 0.45, 0.1), Vector3(0.12, 3.0, 2.8))
 	_glow_at(world, Vector3(-HALL_HALF_X + 0.35, 1.6, 0.0), Color(0.2, 0.65, 1.0), Vector3(0.12, 3.0, 2.8))
-	_glow_at(world, Vector3(0.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.75, 0.85, 0.9), Vector3(2.8, 2.8, 0.12))
+	_glow_at(world, Vector3(0.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.75, 0.85, 0.9), Vector3(2.4, 2.6, 0.12))
+	_glow_at(world, Vector3(-6.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.55, 0.6, 0.65), Vector3(2.0, 2.4, 0.1))
+	_glow_at(world, Vector3(6.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.55, 0.6, 0.65), Vector3(2.0, 2.4, 0.1))
 
 
 func _glow_at(parent: Node3D, pos: Vector3, color: Color, size: Vector3) -> void:

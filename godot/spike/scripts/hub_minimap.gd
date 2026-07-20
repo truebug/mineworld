@@ -30,10 +30,12 @@ func _draw() -> void:
 	draw_line(Vector2(cx, cy - 6), Vector2(cx, cy + 6), Color(0.4, 0.55, 0.7, 0.5), 1.0)
 	var sx := inner.size.x / (half_x * 2.0)
 	var sy := inner.size.y / (half_y * 2.0)
-	# Door marks (E workshop, W training, N design).
+	# Door marks: A east, B west, C/D/E north stubs.
 	_draw_door(inner, sx, sy, half_x, 0.0, Color(1.0, 0.55, 0.15))
 	_draw_door(inner, sx, sy, -half_x, 0.0, Color(0.3, 0.7, 1.0))
 	_draw_door(inner, sx, sy, 0.0, -half_y, Color(0.85, 0.85, 0.55))
+	_draw_door(inner, sx, sy, -6.0, -half_y, Color(0.55, 0.6, 0.65))
+	_draw_door(inner, sx, sy, 6.0, -half_y, Color(0.55, 0.6, 0.65))
 	# Mezzanine footprint (south half) + elevator tick — display-only.
 	var mz_a := _map_pt(inner, sx, sy, -half_x + 1.0, 1.2)
 	var mz_b := _map_pt(inner, sx, sy, half_x - 1.0, half_y - 0.8)

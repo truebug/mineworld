@@ -69,6 +69,11 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 ---
 
+## 2026-07-20 · H7 Hub UI + UX3 重连
+
+- H7：左栏门语境 lore；名片 Pilot card；小地图标 C–E；北墙 D/E stub + 走近文案（不进关）。
+- UX3：`WsClient` 自动重连 + `link_phase_changed`；Hub/关卡明确 Connecting / Reconnecting / Offline 文案。
+
 ## 2026-07-20 · 相机 SSOT + P1b BC 离线检查
 
 - `camera_rig.gd`：V/C/鼠标为共享 SSOT；chase 松手视线弹簧回正（焦距保留）；关卡与 Hub 共用。

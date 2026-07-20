@@ -172,7 +172,7 @@ font_size = 64
 outline_size = 6
 
 [node name="DoorStubC" type="MeshInstance3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -7.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -14.5)
 mesh = SubResource("mesh_door")
 
 [node name="DoorLabelC" type="Label3D" parent="World/DoorStubC"]
@@ -182,6 +182,12 @@ billboard = 1
 text = "C · Design (soon)"
 font_size = 48
 modulate = Color(0.7, 0.7, 0.7, 1)
+
+[node name="DoorStubD" type="Node3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1.6, -14.5)
+
+[node name="DoorStubE" type="Node3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1.6, -14.5)
 
 [node name="WsClient" type="Node" parent="."]
 script = ExtResource("2_ws")
@@ -234,7 +240,7 @@ theme_override_constants/separation = 4
 layout_mode = 2
 theme_override_colors/font_color = Color(0.82, 0.92, 1.0, 1)
 theme_override_font_sizes/font_size = 12
-text = "Hub map"
+text = "Hub map · A orange · B blue · C–E soon"
 horizontal_alignment = 2
 
 [node name="MiniMap" type="Control" parent="HUD/MapPanel/MapVBox"]
@@ -257,7 +263,7 @@ anchor_right = 1.0
 offset_left = -268.0
 offset_top = 12.0
 offset_right = -12.0
-offset_bottom = 100.0
+offset_bottom = 118.0
 grow_horizontal = 0
 theme_override_styles/panel = SubResource("style_profile")
 

@@ -89,6 +89,8 @@ func _ready() -> void:
 	ws.event_received.connect(_on_event)
 	ws.gateway_error.connect(_on_gateway_error)
 	ws.link_state_changed.connect(_on_link_state)
+	if ws.has_signal("link_phase_changed"):
+		ws.link_phase_changed.connect(_on_link_phase)
 	mech.entity_id = "mech_player"
 	_puppets["mech_player"] = mech
 	var mech_b := get_node_or_null("MechPlayerB")
@@ -650,7 +652,26 @@ func _on_gateway_error(payload: Dictionary) -> void:
 	_update_hud()
 
 
-func _on_link_state(_connected: bool) -> void:
+func _on_link_state(connected: bool) -> void:
+	if not connected and _status_line == "":
+		_status_line = "Disconnected · reconnecting…"
+	elif connected and _status_line.begins_with("Disconnected"):
+		_status_line = "Reconnected · waiting for scene…"
+	_update_hud()
+
+
+func _on_link_phase(phase: String) -> void:
+	"""UX3: surface connect/reconnect in play HUD (shared WsClient)."""
+	match phase:
+		"connecting":
+			_status_line = "Connecting to gateway…"
+		"reconnecting":
+			_status_line = "Disconnected · reconnecting…"
+		"connected":
+			if _status_line.begins_with("Disconnected") or _status_line.begins_with("Connecting"):
+				_status_line = "Connected"
+		"disconnected":
+			_status_line = "Offline — start gateway: echo_server.py"
 	_update_hud()
 
 

@@ -47,7 +47,7 @@
 | **H4** | 3D Hub 外壳 + 门 A/B + `?menu=1` 文本菜单 | Web/F5 默认进厅；`?menu=1` 见旧菜单 |
 | **H5** | Hub 互见：`level_id=demo_hub` + `room_id=hub`，无 MuJoCo | 两浏览器可见对方纸片人 |
 | **H6** | 本地 Profile：昵称 + accent，localStorage，无登录 | 头顶显示昵称；刷新仍在 |
-| **H7** | 左栏/右栏/人物菜单打磨 + 门 C–E 占位 | 见 [09](09-todo.md) Now |
+| **H7** | 左栏/右栏/人物菜单打磨 + 门 C–E 占位 | ✅ v0 |
 | **H8** | 可乘电梯 + 可上 L2 | 见 [09](09-todo.md) Next |
 | **H6b** | 观感：机库/星空/NPC/DOM HUD/展示电梯+半层二楼 | 已落地 |
 

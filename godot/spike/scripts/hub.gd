@@ -30,7 +30,11 @@ const _WEB_BLOCK_CODES := {
 @onready var nick_edit: LineEdit = $HUD/ProfileCard/VBox/NickEdit
 @onready var door_workshop: Node3D = $World/DoorWorkshop
 @onready var door_city: Node3D = $World/DoorCity
+@onready var door_stub_c: Node3D = $World/DoorStubC
+@onready var door_stub_d: Node3D = $World/DoorStubD
+@onready var door_stub_e: Node3D = $World/DoorStubE
 @onready var hub_life: Node3D = $HubLife
+@onready var map_title: Label = $HUD/MapPanel/MapVBox/MapTitle
 
 var _session_id := ""
 var _cmd_timer := 0.0
@@ -47,7 +51,12 @@ var _entering_door := false
 var _tips_full := ""
 var _tips_collapsed := true
 var _nearby_prompt := ""
+var _lore_body := "You fell into Dungeon Gate — a hangar between routes."
+var _door_context := ""
+var _link_banner := "Connecting to gateway…"
+var _last_door_key := ""
 const DOOR_ENTER_DIST := 2.4
+const DOOR_STUB_DIST := 3.2
 
 
 func _ready() -> void:
@@ -65,12 +74,18 @@ func _ready() -> void:
 	ws.event_received.connect(_on_event)
 	ws.gateway_error.connect(_on_gateway_error)
 	ws.link_state_changed.connect(_on_link_state)
+	if ws.has_signal("link_phase_changed"):
+		ws.link_phase_changed.connect(_on_link_phase)
 	if camera_rig != null:
 		camera_rig.distance = 18.0
 		camera_rig.pitch = -0.55
 		camera_rig.max_distance = 48.0
 		if camera_rig.has_signal("view_mode_changed"):
 			camera_rig.view_mode_changed.connect(_on_camera_view_changed)
+	if map_title != null:
+		map_title.text = "Hub map · A orange · B blue · C–E soon"
+	_link_banner = "Connecting to gateway…"
+	_compose_and_push_tips()
 	if _is_web:
 		_install_web_keyboard_bridge()
 		JavaScriptBridge.eval(
@@ -83,7 +98,6 @@ func _ready() -> void:
 		if hud != null:
 			hud.visible = false
 	ws.connect_to_gateway(_resolve_gateway_url())
-	_refresh_tips("Walk the hall. Approach a glowing door to enter a route.")
 	_push_web_profile()
 	if tips_label != null and tips_label.visible:
 		tips_label.gui_input.connect(_on_tips_gui_input)
@@ -154,15 +168,13 @@ func _new_local_id() -> String:
 
 
 func _apply_profile_ui() -> void:
-	"""Refresh top-right card from _profile."""
+	"""Refresh top-right pilot card from _profile."""
 	var nick := str(_profile.get("nickname", "Guest"))
+	var pid := str(_profile.get("id", "?"))
 	if nick_edit != null:
 		nick_edit.text = nick
 	if profile_label != null:
-		profile_label.text = "ID %s\n%s" % [
-			str(_profile.get("id", "?")).substr(0, 12),
-			nick,
-		]
+		profile_label.text = "Pilot card\n%s\nID %s" % [nick, pid.substr(0, 14)]
 	_push_web_profile()
 
 
@@ -267,7 +279,11 @@ func _on_scene(payload: Dictionary) -> void:
 	if camera_rig != null and own != null and camera_rig.has_method("set_target"):
 		camera_rig.set_target(own)
 	ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
-	_refresh_tips("You are %s · doors: Workshop (E) · Training Yard (W)" % str(_profile.get("nickname", "Guest")))
+	_link_banner = ""
+	_lore_body = "You are %s in the Gate hall.\nOrange A → Workshop · Blue B → Training.\nGrey C–E → sealed stubs (soon)." % str(
+		_profile.get("nickname", "Guest")
+	)
+	_compose_and_push_tips()
 
 
 func _ensure_puppets(entities: Array) -> void:
@@ -372,13 +388,36 @@ func _on_event(payload: Dictionary) -> void:
 
 func _on_gateway_error(payload: Dictionary) -> void:
 	"""Surface join errors in tips."""
-	_refresh_tips("Gateway: %s — %s" % [payload.get("code", "?"), payload.get("message", "")])
+	_link_banner = "Gateway error: %s — %s" % [payload.get("code", "?"), payload.get("message", "")]
+	_compose_and_push_tips()
 
 
 func _on_link_state(connected: bool) -> void:
-	"""Show link drops."""
-	if not connected:
-		_refresh_tips("Disconnected from gateway. Is echo_server running?")
+	"""Legacy connected bool — phase handler owns copy."""
+	if connected:
+		_link_banner = ""
+	elif _link_banner == "" or _link_banner.begins_with("Connected"):
+		_link_banner = "Disconnected · reconnecting…"
+	_compose_and_push_tips()
+
+
+func _on_link_phase(phase: String) -> void:
+	"""UX3: explicit connect / reconnect / drop banners (no silent hang)."""
+	match phase:
+		"connecting":
+			_link_banner = "Connecting to gateway…"
+		"reconnecting":
+			_link_banner = "Disconnected · reconnecting…"
+		"connected":
+			_link_banner = "Connected · joining Hub room…"
+		"disconnected":
+			if _entering_door:
+				_link_banner = ""
+			else:
+				_link_banner = "Offline — start gateway: echo_server.py"
+		_:
+			_link_banner = "Link: %s" % phase
+	_compose_and_push_tips()
 
 
 func _layout_hub_hud() -> void:
@@ -410,7 +449,7 @@ func _layout_hub_hud() -> void:
 		profile_card.offset_left = -(pw + m)
 		profile_card.offset_top = m
 		profile_card.offset_right = -m
-		profile_card.offset_bottom = m + 92.0
+		profile_card.offset_bottom = m + 110.0
 	if tips_label != null and tips_label.visible:
 		tips_label.clip_contents = true
 		var tw := minf(300.0, vr.x * 0.36)
@@ -426,7 +465,7 @@ func _layout_hub_hud() -> void:
 func _push_web_tips(full_text: String) -> void:
 	"""Push hub tips into DOM #mw-hud (avoids Godot Control clip on Web)."""
 	var payload := JSON.stringify(full_text)
-	var collapsed := JSON.stringify("Dungeon Gate - tips > (click)")
+	var collapsed := JSON.stringify("Dungeon Gate · tips › (click)")
 	JavaScriptBridge.eval(
 		(
 			"(function(){var t=%s;var c=%s;"
@@ -437,13 +476,32 @@ func _push_web_tips(full_text: String) -> void:
 	)
 
 
-func _refresh_tips(msg: String) -> void:
-	"""Update left lore / tip panel; Web uses DOM, desktop uses Godot Label."""
-	_tips_full = "Dungeon Gate\n\n%s\n\nWSQE move | A/D turn | F talk / use\nRMB/MMB look + wheel zoom | arrows pan (orbit only)\nC recenter | V cycle orbit / first-person / chase\nChase: release mouse to spring back\nOrange door Workshop | Blue door City\n\n(click to collapse)" % msg
+func _compose_and_push_tips() -> void:
+	"""Build left lore panel from link banner + lore + door context + controls."""
+	var chunks: PackedStringArray = []
+	chunks.append("Dungeon Gate")
+	if _link_banner != "":
+		chunks.append(_link_banner)
+	chunks.append(_lore_body)
+	if _door_context != "":
+		chunks.append(_door_context)
+	chunks.append(
+		"WSQE move | A/D turn | F talk\n"
+		+ "RMB look · wheel zoom · V camera · C recenter\n"
+		+ "A Workshop · B Training · C–E sealed\n"
+		+ "(click to collapse)"
+	)
+	_tips_full = "\n\n".join(chunks)
 	if _is_web:
 		_push_web_tips(_tips_full)
 		return
 	_apply_tips_view()
+
+
+func _refresh_tips(msg: String) -> void:
+	"""Compat: set lore body and rebuild panel."""
+	_lore_body = msg
+	_compose_and_push_tips()
 
 
 func _apply_tips_view() -> void:
@@ -451,7 +509,8 @@ func _apply_tips_view() -> void:
 	if tips_label == null:
 		return
 	if _tips_collapsed:
-		tips_label.text = "Dungeon Gate - tips > (click)"
+		var head := _link_banner if _link_banner != "" else "Dungeon Gate · tips › (click)"
+		tips_label.text = head
 	else:
 		tips_label.text = _tips_full
 
@@ -471,6 +530,7 @@ func _process(delta: float) -> void:
 	if _entering_door:
 		return
 	_check_doors()
+	_update_door_context()
 	_update_interact_prompt()
 	if _is_web:
 		_sync_mw_keys()
@@ -579,7 +639,7 @@ func _send_velocity_cmd() -> void:
 
 
 func _check_doors() -> void:
-	"""Enter a route when own avatar is close to a glowing door."""
+	"""Enter a route when own avatar is close to an open door (A/B only)."""
 	var own := _own_avatar()
 	if own == null or not own.visible:
 		return
@@ -588,6 +648,37 @@ func _check_doors() -> void:
 		return
 	if door_city != null and own.global_position.distance_to(door_city.global_position) < DOOR_ENTER_DIST:
 		_enter_level(CITY_SCENE)
+
+
+func _update_door_context() -> void:
+	"""H7: left-lore line for nearest door (stubs never enter)."""
+	var own := _own_avatar()
+	if own == null:
+		return
+	var best_key := ""
+	var best_dist := DOOR_STUB_DIST
+	var best_msg := ""
+	var candidates: Array = [
+		[door_workshop, "a", "Door A · Workshop — walk in for fine teleop / IL."],
+		[door_city, "b", "Door B · Training Yard — walk in for city drive."],
+		[door_stub_c, "c", "Door C · Design Lab — sealed (editor / contract export later)."],
+		[door_stub_d, "d", "Door D · Mission Desk — sealed (task packs later)."],
+		[door_stub_e, "e", "Door E · Arena — sealed (ranked party later)."],
+	]
+	for row in candidates:
+		var node: Node3D = row[0]
+		if node == null:
+			continue
+		var d := own.global_position.distance_to(node.global_position)
+		if d < best_dist:
+			best_dist = d
+			best_key = str(row[1])
+			best_msg = str(row[2])
+	if best_key == _last_door_key:
+		return
+	_last_door_key = best_key
+	_door_context = best_msg
+	_compose_and_push_tips()
 
 
 func _update_interact_prompt() -> void:
@@ -619,7 +710,8 @@ func _try_interact() -> void:
 
 func _on_camera_view_changed(label: String) -> void:
 	"""HUD toast when CameraRig cycles view (shared SSOT)."""
-	_refresh_tips("Camera: %s (press V to cycle)" % label)
+	_door_context = "Camera: %s (press V to cycle)" % label
+	_compose_and_push_tips()
 
 
 func _unhandled_input(event: InputEvent) -> void:
