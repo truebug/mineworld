@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + UX splash/fade done. **Platform track**: Portal login + SQLite API + scores/leaderboard (`docs/20-platform-portal.md`, `mw_platform/`). Execution: `docs/09-todo.md` (Now P1 · Phase C next). Changelog: `docs/19-changelog.md`.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub + UX splash/fade + Platform Portal (login/scores/admin/export) done. **Now：H7 / UX3** Hub polish — see `docs/09-todo.md`. Changelog: `docs/19-changelog.md`. Platform: `docs/20-platform-portal.md`, `mw_platform/`.
 
 ## Project Structure & Module Organization
 
@@ -22,6 +22,8 @@ pip install -r gateway/requirements.txt    # install deps (websockets)
 python gateway/echo_server.py              # serve ws://127.0.0.1:8765
 python scripts/ws_smoke_test.py            # end-to-end check, expect "smoke OK"
 python scripts/platform_smoke.py         # platform identity API
+python scripts/grasp_lift_smoke.py       # P1a friction grasp (MuJoCo)
+python scripts/bc_offline_check.py --csv examples/il/bc_sample.csv  # P1b
 python mw_platform/api_server.py         # standalone :8090 (optional)
 ajv validate -s schemas/ws-messages.v0.json -d examples/ws/hello.json
 ```
