@@ -54,6 +54,11 @@ def main() -> None:
         default="success",
         help="Filter by outcome (default: success; use 'all' for no filter)",
     )
+    parser.add_argument(
+        "--player-id",
+        default=None,
+        help="Only sessions with this player_id (AD2)",
+    )
     args = parser.parse_args()
 
     sessions_dir = args.sessions_dir.resolve()
@@ -73,6 +78,7 @@ def main() -> None:
         level_id=args.level_id,
         task_id=args.task_id,
         outcome=args.outcome,
+        player_id=args.player_id,
     )
     print(f"exported {rows} row(s) -> {out_path}")
 

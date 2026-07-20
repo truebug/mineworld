@@ -562,7 +562,7 @@ func _ensure_puppets(entities: Array) -> void:
 		if eid == "":
 			continue
 		if kind == "dynamic_prop":
-			_ensure_prop_puppet(eid)
+			_ensure_prop_puppet(eid, entity.get("size", null))
 			continue
 		if kind != "mech":
 			continue
@@ -585,7 +585,7 @@ func _ensure_puppets(entities: Array) -> void:
 			p.apply_team_look()
 
 
-func _ensure_prop_puppet(eid: String) -> void:
+func _ensure_prop_puppet(eid: String, size_arr: Variant = null) -> void:
 	"""Spawn a pushable-box visual for dynamic_prop entity_id."""
 	if _puppets.has(eid):
 		return
@@ -594,6 +594,8 @@ func _ensure_prop_puppet(eid: String) -> void:
 	node.set_script(prop_script)
 	node.name = "Prop_%s" % eid
 	node.set("entity_id", eid)
+	if typeof(size_arr) == TYPE_ARRAY and size_arr.size() >= 3:
+		node.set("box_size", Vector3(float(size_arr[0]), float(size_arr[1]), float(size_arr[2])))
 	add_child(node)
 	_puppets[eid] = node
 	print("[MW] spawned prop entity_id=%s" % eid)

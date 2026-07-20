@@ -60,13 +60,13 @@
                   <joint name="gripper" type="slide" axis="0 1 0" range="0 0.05" damping="0.05"/>
                   <inertial pos="0.03 0 0" mass="0.05" diaginertia="0.0001 0.0001 0.0001"/>
                   <geom name="finger_l_geom" type="box" size="0.045 0.014 0.028"
-                        friction="1.2 0.1 0.01" rgba="0.7 0.75 0.8 1"/>
+                        friction="2.0 0.2 0.02" rgba="0.7 0.75 0.8 1"/>
                 </body>
                 <body name="finger_r" pos="0.05 -0.05 0">
                   <joint name="gripper_r" type="slide" axis="0 -1 0" range="0 0.05" damping="0.05"/>
                   <inertial pos="0.03 0 0" mass="0.05" diaginertia="0.0001 0.0001 0.0001"/>
                   <geom name="finger_r_geom" type="box" size="0.045 0.014 0.028"
-                        friction="1.2 0.1 0.01" rgba="0.7 0.75 0.8 1"/>
+                        friction="2.0 0.2 0.02" rgba="0.7 0.75 0.8 1"/>
                 </body>
               </body>
             </body>
@@ -88,6 +88,6 @@
     <position name="arm_yaw" joint="arm_yaw" kp="100" ctrlrange="-2.8 2.8"/>
     <position name="arm_shoulder" joint="arm_shoulder" kp="120" ctrlrange="-1.4 1.6"/>
     <position name="arm_elbow" joint="arm_elbow" kp="100" ctrlrange="-2.4 0.2"/>
-    <position name="gripper" joint="gripper" kp="80" forcerange="-60 60" ctrlrange="0 0.05"/>
+    <position name="gripper" joint="gripper" kp="120" forcerange="-120 120" ctrlrange="0 0.05"/>
   </actuator>
 </mujoco>

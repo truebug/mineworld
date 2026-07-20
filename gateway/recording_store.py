@@ -50,6 +50,7 @@ def _session_summary(child: Path, header: dict[str, Any], *, has_frames: bool) -
     features = header.get("features") or []
     return {
         "session_id": header.get("session_id") or child.name,
+        "player_id": header.get("player_id"),
         "level_id": header.get("level_id"),
         "task_id": header.get("task_id"),
         "difficulty": header.get("difficulty"),
@@ -66,10 +67,11 @@ def _session_summary(child: Path, header: dict[str, Any], *, has_frames: bool) -
     }
 
 
-def list_sessions(root: Path) -> list[dict[str, Any]]:
+def list_sessions(root: Path, *, player_id: str | None = None) -> list[dict[str, Any]]:
     """Scan sessions/* and return summary dicts (newest started_at first)."""
     if not root.is_dir():
         return []
+    want = (player_id or "").strip() or None
     out: list[dict[str, Any]] = []
     for child in root.iterdir():
         if not child.is_dir():
@@ -80,9 +82,10 @@ def list_sessions(root: Path) -> list[dict[str, Any]]:
         header = _read_header(header_path)
         if header is None:
             continue
-        out.append(
-            _session_summary(child, header, has_frames=(child / "frames.jsonl").is_file())
-        )
+        row = _session_summary(child, header, has_frames=(child / "frames.jsonl").is_file())
+        if want and str(row.get("player_id") or "") != want:
+            continue
+        out.append(row)
     out.sort(key=lambda s: str(s.get("started_at") or ""), reverse=True)
     return out
 
@@ -104,6 +107,7 @@ def rebuild_sqlite(root: Path, db_path: Path) -> int:
             """
             CREATE TABLE sessions (
                 session_id TEXT PRIMARY KEY,
+                player_id TEXT,
                 level_id TEXT,
                 task_id TEXT,
                 difficulty TEXT,
@@ -139,6 +143,7 @@ def rebuild_sqlite(root: Path, db_path: Path) -> int:
             rows.append(
                 (
                     summary["session_id"],
+                    summary.get("player_id"),
                     summary.get("level_id"),
                     summary.get("task_id"),
                     summary.get("difficulty"),
@@ -158,10 +163,10 @@ def rebuild_sqlite(root: Path, db_path: Path) -> int:
         conn.executemany(
             """
             INSERT OR REPLACE INTO sessions (
-                session_id, level_id, task_id, difficulty, control_mode, control_modes,
+                session_id, player_id, level_id, task_id, difficulty, control_mode, control_modes,
                 outcome, started_at, ended_at, duration_sim_s, num_frames, features,
                 has_frames, contract_hash, seed
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             rows,
         )
@@ -196,8 +201,11 @@ def _header_matches(
     level_id: str | None,
     task_id: str | None,
     outcome: str | None,
+    player_id: str | None = None,
 ) -> bool:
-    """Return True if header passes optional IL filters (V3b / V4b)."""
+    """Return True if header passes optional IL filters (V3b / V4b / AD2)."""
+    if player_id and str(header.get("player_id") or "") != player_id:
+        return False
     if level_id and str(header.get("level_id") or "") != level_id:
         return False
     if task_id and str(header.get("task_id") or "") != task_id:
@@ -290,6 +298,7 @@ def collect_trajectory_rows(
     level_id: str | None = None,
     task_id: str | None = None,
     outcome: str | None = "success",
+    player_id: str | None = None,
 ) -> list[dict[str, Any]]:
     """Collect entity rows from sessions matching IL filters (default: success only)."""
     all_rows: list[dict[str, Any]] = []
@@ -300,7 +309,13 @@ def collect_trajectory_rows(
         if not frames_path.is_file():
             continue
         header = _read_header(child / "header.json") or {}
-        if not _header_matches(header, level_id=level_id, task_id=task_id, outcome=outcome):
+        if not _header_matches(
+            header,
+            level_id=level_id,
+            task_id=task_id,
+            outcome=outcome,
+            player_id=player_id,
+        ):
             continue
         session_id = header.get("session_id") or child.name
         all_rows.extend(_iter_trajectory_rows(session_id, frames_path, header=header))
@@ -314,13 +329,18 @@ def export_trajectories_text(
     level_id: str | None = None,
     task_id: str | None = None,
     outcome: str | None = "success",
+    player_id: str | None = None,
 ) -> str:
     """Build trajectory export as a string (CSV or JSONL)."""
     fmt = format.lower()
     if fmt not in ("csv", "jsonl"):
         raise ValueError(f"unsupported format: {format!r}")
     rows = collect_trajectory_rows(
-        root, level_id=level_id, task_id=task_id, outcome=outcome
+        root,
+        level_id=level_id,
+        task_id=task_id,
+        outcome=outcome,
+        player_id=player_id,
     )
     buf = io.StringIO()
     if fmt == "csv":
@@ -338,6 +358,7 @@ def export_trajectories(
     level_id: str | None = None,
     task_id: str | None = None,
     outcome: str | None = "success",
+    player_id: str | None = None,
 ) -> int:
     """Export trajectories with optional IL filters.
 
@@ -345,7 +366,11 @@ def export_trajectories(
     keeps abort/disconnect out of positive IL samples (V3b).
     """
     rows = collect_trajectory_rows(
-        root, level_id=level_id, task_id=task_id, outcome=outcome
+        root,
+        level_id=level_id,
+        task_id=task_id,
+        outcome=outcome,
+        player_id=player_id,
     )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", encoding="utf-8", newline="") as out_fp:

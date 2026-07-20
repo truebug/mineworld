@@ -69,6 +69,16 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 ---
 
+## 2026-07-20 · AD2 / EXP1 + P1a 摩擦抓取
+
+### Admin 钻取与导出
+- 录制 header 写 `player_id`；`/api/recordings?player_id=` 与 `export.csv?player_id=`；CLI `--player-id`。
+- Admin 点玩家 → 会话列表（2D 回放链）+ Export CSV（success / all）。
+
+### P1a 真摩擦抓取 v0
+- 去掉 sticky weld / 每 tick 粘贴；`grasp_lift` 只认闭合 + 真实接触 + `min_z`。
+- 工坊 `prop_crate` 改为可夹 6 cm 料块；`grasp_lift_smoke.py` PASS（不查 weld）。
+
 ## 2026-07-20 · 暂禁 3D offline replay（R3）
 
 - Recordings「▶ 3D Replay」改为 disabled；My record 只保留 2D 链。

@@ -103,8 +103,9 @@ v0 实现：`mw_platform/` + `/api/platform/*`（同端口 8080 或独立 `:8090
 | Demo 账号 | `demo` / `demo`（首次启动自动 seed） |
 | Smoke | `scripts/platform_smoke.py` |
 | 我的页 | `/portal/me.html`（ME1） |
-| Admin | `/portal/admin.html`（默认 key `dev-admin`，可用 `MW_PLATFORM_ADMIN_KEY` 覆盖） |
+| Admin | `/portal/admin.html`（默认 key `dev-admin`；点玩家 → 会话列表 + Export CSV） |
 | 回放 | My record → 2D `recordings.html?session=`（ME2）；3D `/?replay=` 暂禁 → R3 |
+| 录制筛 / 导出 | `GET /api/recordings?player_id=` · `export.csv?player_id=`（header 写 `player_id`） |
 
 Admin 创建玩家（需 `MW_PLATFORM_ADMIN_KEY`）：
 
@@ -145,8 +146,8 @@ curl -X POST http://127.0.0.1:8080/api/platform/admin/players \
 |----|------|------|
 | **ME1** | Portal「我的」页 | 积分、战绩表、会话列表 |
 | **ME2** | 自助回放 | 跳转现有 `/?replay=` 或 recordings 播放器 |
-| **AD2** | Admin 会话/玩家钻取 | 按 player 筛录制 |
-| **EXP1** | 导出 | 批量轨迹导出（复用 `export_trajectories` 语义） |
+| **AD2** | Admin 会话/玩家钻取 | 按 player 筛录制 ✅ |
+| **EXP1** | 导出 | 批量轨迹导出（复用 `export_trajectories` 语义）✅ |
 | **PL2** | Admin 增强 | 在线房只读、契约开关等运维项 |
 
 ### 明确后置

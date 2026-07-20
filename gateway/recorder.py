@@ -78,6 +78,7 @@ class SessionRecorder:
         record_every_n_ticks: int = 1,
         features: list[str] | None = None,
         software: dict[str, Any] | None = None,
+        player_id: str | None = None,
     ) -> None:
         self.session_id = session_id
         self.dt = dt
@@ -123,6 +124,9 @@ class SessionRecorder:
             "software": software or {},
             "stats": {"num_frames": 0, "duration_sim_s": 0.0},
         }
+        pid = (player_id or "").strip()
+        if pid:
+            self._header["player_id"] = pid
         self._flush_header()
         LOG.info("recording started session=%s dir=%s", session_id, self.dir)
 

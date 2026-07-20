@@ -26,14 +26,15 @@
       "id": "prop_crate",
       "kind": "dynamic_prop",
       "shape": "box",
-      "size": [0.5, 0.5, 0.5],
+      "size": [0.06, 0.06, 0.06],
       "pose": {
         "x": 8.0,
         "y": 0.0,
-        "z": 0.25,
+        "z": 0.03,
         "yaw": 0.0
       },
-      "mass": 1.2,
+      "mass": 0.15,
+      "friction": 1.6,
       "physics_role": "mujoco_authoritative"
     }
   ],
@@ -87,11 +88,11 @@
     {
       "id": "obj_lift_crate",
       "type": "grasp_lift",
-      "description": "V3c：夹爪闭合接触并抬起箱子",
+      "description": "P1a：摩擦夹取并抬起小料块（不靠 kinematic weld）",
       "params": {
         "entity_id": "prop_crate",
         "gripper_closed_max": 0.02,
-        "min_z": 0.35
+        "min_z": 0.12
       }
     }
   ],

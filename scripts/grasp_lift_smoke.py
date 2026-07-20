@@ -1,4 +1,4 @@
-"""V3c: sticky grasp + lift prop_crate above min_z (offline MuJoCo, no WS)."""
+"""P1a: friction grasp + lift prop_crate above min_z (offline MuJoCo, no weld)."""
 
 from __future__ import annotations
 
@@ -14,13 +14,14 @@ from echo_server import (  # noqa: E402
     EchoGateway,
     Room,
     Session,
+    _prop_touches_gripper,
     evaluate_objectives,
     load_contract,
 )
 
 
 def main() -> int:
-    """Place crate near gripper, close (sticky weld), lift; expect obj_lift_crate."""
+    """Pinch small crate between fingers, lift via friction; expect obj_lift_crate."""
     contract = load_contract(REPO / "examples" / "contracts" / "demo_workshop.json")
     gw = EchoGateway(
         contract,
@@ -30,6 +31,9 @@ def main() -> int:
         contract_path=REPO / "examples" / "contracts" / "demo_workshop.json",
     )
     mechs, props, data, _sub, grasp_eq = gw._make_room_mechs(contract, gw.mj_model)
+    if grasp_eq:
+        print(f"FAIL: expected no grasp welds, got {grasp_eq}", file=sys.stderr)
+        return 1
     mech = mechs["mech_player"]
     prop = props["prop_crate"]
     room = Room(
@@ -47,7 +51,7 @@ def main() -> int:
     session.controlled_entity_id = mech.entity_id
     mech.controlled = True
 
-    # Reach pose with tip near crate height (~0.4 m).
+    # Open gripper, reach pose with tip near crate height.
     for name, q in (("arm_yaw", 0.0), ("arm_shoulder", 1.4), ("arm_elbow", 0.0), ("gripper", 0.05)):
         mech._data.qpos[mech._pos_qadr[name]] = q
         mech.joint_targets[name] = q
@@ -55,48 +59,47 @@ def main() -> int:
 
     tip_id = mujoco.mj_name2id(mech._model, mujoco.mjtObj.mjOBJ_BODY, f"{mech.entity_id}/gripper_base")
     tip = data.xpos[tip_id]
+    # Seat cube between open fingers (slightly forward of palm center).
     prop.reset_pose(
         {
-            "x": float(tip[0]),
+            "x": float(tip[0]) + 0.06,
             "y": float(tip[1]),
             "z": float(tip[2]),
             "yaw": 0.0,
         }
     )
+    mujoco.mj_forward(mech._model, data)
 
-    # Close gripper → sticky weld via proximity.
+    # Close gripper → pinch via contact friction (no sticky weld).
     mech.joint_targets["gripper"] = 0.0
-    for _ in range(40):
+    contacting = False
+    for _ in range(80):
         mech.apply_ctrl()
         room.step_physics(0.02)
-        gw._update_sticky_grasps(room)
         prop.pull_state()
-
-    eq_id = grasp_eq.get((mech.entity_id, prop.entity_id))
-    if eq_id is None or int(data.eq_active[eq_id]) != 1:
-        print(
-            f"FAIL: expected sticky weld engaged (eq={eq_id} active="
-            f"{None if eq_id is None else int(data.eq_active[eq_id])})",
-            file=sys.stderr,
-        )
+        if _prop_touches_gripper(mech._model, data, mech.entity_id, prop.entity_id):
+            contacting = True
+            break
+    if not contacting:
+        print("FAIL: gripper never contacted prop (friction grasp)", file=sys.stderr)
         return 1
 
-    # Lift arm (raise tip well above spawn height).
+    # Lift arm; prop must stay held by friction.
     mech.joint_targets["arm_shoulder"] = -0.2
     mech.joint_targets["arm_elbow"] = -0.8
-    for _ in range(150):
+    for _ in range(200):
         mech.apply_ctrl()
         room.step_physics(0.02)
-        gw._update_sticky_grasps(room)
         prop.pull_state()
         events = evaluate_objectives(session)
         if any(e.get("objective_id") == "obj_lift_crate" for e in events):
-            print(f"grasp-lift OK z={prop.z:.3f}")
+            print(f"grasp-lift OK (friction) z={prop.z:.3f}")
             return 0
 
     tip = data.xpos[tip_id]
     print(
-        f"FAIL: no grasp_lift objective (prop z={prop.z:.3f} tip_z={float(tip[2]):.3f})",
+        f"FAIL: no grasp_lift objective (prop z={prop.z:.3f} tip_z={float(tip[2]):.3f} "
+        f"contact={_prop_touches_gripper(mech._model, data, mech.entity_id, prop.entity_id)})",
         file=sys.stderr,
     )
     return 1

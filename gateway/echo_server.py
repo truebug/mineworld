@@ -684,7 +684,7 @@ def _gripper_prop_close(model: Any, data: Any, mech_id: str, prop_id: str, max_d
 
 
 def _grasp_lift_ready(session: Session, obj: dict[str, Any]) -> tuple[bool, str | None]:
-    """V3c: gripper closed + contact/weld/proximity + prop height above threshold."""
+    """P1a: gripper closed + real contact + prop height above threshold (no weld)."""
     if session.room is None or session.room.mj_data is None:
         return False, None
     mech = session.mech
@@ -699,18 +699,11 @@ def _grasp_lift_ready(session: Session, obj: dict[str, Any]) -> tuple[bool, str 
         return False, None
     closed_max = float(params.get("gripper_closed_max", 0.02))
     min_z = float(params.get("min_z", 0.45))
-    prox = float(params.get("grasp_proximity", 0.18))
     if not _gripper_command_closed(mech, closed_max):
         return False, None
     model = mech._model
     data = session.room.mj_data
-    contacting = _prop_touches_gripper(model, data, mech.entity_id, prop_id)
-    near = _gripper_prop_close(model, data, mech.entity_id, prop_id, prox)
-    welded = False
-    eq_id = session.room.grasp_eq.get((mech.entity_id, prop_id))
-    if eq_id is not None and int(data.eq_active[eq_id]) == 1:
-        welded = True
-    if not (contacting or near or welded):
+    if not _prop_touches_gripper(model, data, mech.entity_id, prop_id):
         return False, None
     if prop.z < min_z:
         return False, None
@@ -724,7 +717,7 @@ def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
     ``params.subject``) to a ``dynamic_prop`` id to require that prop enter the
     trigger AABB instead (workshop stow-crate).
 
-    ``grasp_lift`` requires closed gripper + contact/weld + prop ``min_z``.
+    ``grasp_lift`` requires closed gripper + contact friction + prop ``min_z`` (P1a).
     """
     events: list[dict[str, Any]] = []
     if session.room is None:
@@ -1031,7 +1024,7 @@ class EchoGateway:
 
         props = contract.get("dynamic_props") or []
         prop_n = self._append_dynamic_props(spec, props)
-        self._append_grasp_welds(spec, contract, props)
+        # P1a: no sticky weld equalities — grasp relies on contact friction.
         LOG.info(
             "mujoco world F7: %d mechs attached, %d/%d static_obstacles, %d/%d dynamic_props, level=%s",
             len(spawns),
@@ -1066,7 +1059,7 @@ class EchoGateway:
             geom.contype = 1
             geom.conaffinity = 1
             fr = float(prop.get("friction", OBSTACLE_FRICTION[0]))
-            geom.friction = [fr, 0.05, 0.01]
+            geom.friction = [fr, 0.1, 0.02]
             geom.rgba = [0.72, 0.48, 0.22, 1.0]
             added += 1
         return added
@@ -1522,6 +1515,7 @@ class EchoGateway:
             software: dict[str, Any] = {"gateway_version": PROTOCOL_VERSION}
             if self.physics == "mujoco" and mujoco is not None:
                 software["mujoco_version"] = getattr(mujoco, "__version__", "unknown")
+            pid = str((profile or {}).get("id") or "").strip() or None
             session.recorder = SessionRecorder(
                 self.record_dir,
                 session_id=session.session_id,
@@ -1533,6 +1527,7 @@ class EchoGateway:
                 record_every_n_ticks=self.record_every_n_ticks,
                 features=self._feature_flags(),
                 software=software,
+                player_id=pid,
             )
 
         entities = []
@@ -1555,13 +1550,15 @@ class EchoGateway:
                 }
             )
         for prop in room.contract.get("dynamic_props") or []:
-            entities.append(
-                {
-                    "entity_id": prop["id"],
-                    "kind": "dynamic_prop",
-                    "controllable": False,
-                }
-            )
+            ent: dict[str, Any] = {
+                "entity_id": prop["id"],
+                "kind": "dynamic_prop",
+                "controllable": False,
+            }
+            size = prop.get("size")
+            if isinstance(size, list) and len(size) >= 3:
+                ent["size"] = [float(size[0]), float(size[1]), float(size[2])]
+            entities.append(ent)
 
         await send_json(
             session.ws,
@@ -1601,7 +1598,7 @@ class EchoGateway:
                 if not members:
                     continue
                 room.step_physics(DT)
-                self._update_sticky_grasps(room)
+                # P1a: friction grasp only (no sticky kinematic weld).
                 room.tick += 1
                 entities = [m.to_entity_state() for m in room.mechs.values()] + [
                     p.to_entity_state() for p in room.props.values()

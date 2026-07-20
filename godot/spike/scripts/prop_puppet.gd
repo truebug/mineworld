@@ -4,7 +4,7 @@ class_name MWPropPuppet
 extends Node3D
 
 @export var entity_id: String = "prop_crate"
-@export var box_size: Vector3 = Vector3(0.5, 0.5, 0.5)
+@export var box_size: Vector3 = Vector3(0.06, 0.06, 0.06)
 
 var _mesh: MeshInstance3D
 

@@ -14,7 +14,7 @@
 			color: #e8eef8;
 			font: 14px/1.4 ui-sans-serif, system-ui, sans-serif;
 		}
-		.wrap { max-width: 640px; margin: 0 auto; }
+		.wrap { max-width: 720px; margin: 0 auto; }
 		h1 { font-size: 22px; margin: 0 0 12px; }
 		.card {
 			background: #161a22;
@@ -43,18 +43,24 @@
 			font: inherit;
 			cursor: pointer;
 			margin-right: 8px;
+			margin-top: 4px;
 		}
 		table { width: 100%; border-collapse: collapse; font: 12px/1.35 ui-monospace, Menlo, Consolas, monospace; }
 		th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid #2a3038; }
+		tr.sel { background: #1e2836; }
+		tr.clickable { cursor: pointer; }
+		tr.clickable:hover { background: #1a222e; }
 		.err { color: #ff8a8a; margin-top: 8px; }
 		.ok { color: #5dff8a; margin-top: 8px; }
 		a { color: #6ec0ff; }
+		.muted { color: #7a9bb8; font-size: 13px; }
+		.actions a { margin-right: 10px; }
 	</style>
 </head>
 <body>
 	<div class="wrap">
 		<h1>Admin · players</h1>
-		<p style="color:#7a9bb8;font-size:13px;">Default key <code>dev-admin</code> (override with <code>MW_PLATFORM_ADMIN_KEY</code>). Stored in this browser only.</p>
+		<p class="muted">Default key <code>dev-admin</code> (override with <code>MW_PLATFORM_ADMIN_KEY</code>). Stored in this browser only.</p>
 		<div class="card">
 			<label>Admin key
 				<input id="key" type="password" autocomplete="off" placeholder="dev-admin">
@@ -77,13 +83,29 @@
 				<tbody id="rows"><tr><td colspan="3">Load with admin key</td></tr></tbody>
 			</table>
 		</div>
-		<p><a href="/">Hub</a> · <a href="/portal/me.html">My record</a></p>
+		<div class="card" id="drill" hidden>
+			<div style="margin-bottom:8px;color:#9bb4c9;">
+				Sessions · <span id="sel-pid"></span>
+			</div>
+			<div class="actions" style="margin-bottom:10px;">
+				<a id="export-link" href="#">Export CSV (success)</a>
+				<a id="export-all" href="#">Export CSV (all)</a>
+			</div>
+			<table>
+				<thead><tr><th>Session</th><th>Level</th><th>Outcome</th><th>Frames</th><th></th></tr></thead>
+				<tbody id="sess-rows"><tr><td colspan="5">—</td></tr></tbody>
+			</table>
+			<div class="err" id="sess-err"></div>
+		</div>
+		<p><a href="/">Hub</a> · <a href="/portal/me.html">My record</a> · <a href="/recordings.html">Recordings</a></p>
 	</div>
 	<script>
 	(function () {
 		const KEY = 'mw_admin_key';
 		const keyEl = document.getElementById('key');
-		try { keyEl.value = localStorage.getItem(KEY) || ''; } catch (e) {}
+		try { keyEl.value = localStorage.getItem(KEY) || 'dev-admin'; } catch (e) {}
+
+		let selectedPid = '';
 
 		function adminKey() { return keyEl.value.trim(); }
 
@@ -91,6 +113,52 @@
 			try { localStorage.setItem(KEY, adminKey()); } catch (e) {}
 			document.getElementById('msg').textContent = 'Key saved locally.';
 		};
+
+		function setExportLinks(pid) {
+			const base = '/api/recordings/export.csv?player_id=' + encodeURIComponent(pid);
+			document.getElementById('export-link').href = base + '&outcome=success';
+			document.getElementById('export-all').href = base + '&outcome=all';
+		}
+
+		async function loadSessions(pid) {
+			selectedPid = pid;
+			document.getElementById('drill').hidden = false;
+			document.getElementById('sel-pid').textContent = pid;
+			document.getElementById('sess-err').textContent = '';
+			setExportLinks(pid);
+			const tbody = document.getElementById('sess-rows');
+			tbody.innerHTML = '<tr><td colspan="5">Loading…</td></tr>';
+			try {
+				const r = await fetch('/api/recordings?player_id=' + encodeURIComponent(pid));
+				const data = await r.json().catch(function () { return {}; });
+				if (!r.ok) {
+					tbody.innerHTML = '';
+					document.getElementById('sess-err').textContent = data.error || ('HTTP ' + r.status);
+					return;
+				}
+				const sessions = data.sessions || [];
+				tbody.innerHTML = '';
+				if (!sessions.length) {
+					tbody.innerHTML = '<tr><td colspan="5">No recordings for this player (need header player_id)</td></tr>';
+					return;
+				}
+				sessions.forEach(function (s) {
+					const tr = document.createElement('tr');
+					const sid = String(s.session_id || '');
+					const short = sid.length > 12 ? sid.slice(0, 8) + '…' : sid;
+					tr.innerHTML =
+						'<td title="' + sid.replace(/"/g, '') + '">' + short + '</td>' +
+						'<td>' + (s.level_id || '') + '</td>' +
+						'<td>' + (s.outcome || '') + '</td>' +
+						'<td>' + (s.num_frames != null ? s.num_frames : '') + '</td>' +
+						'<td><a href="/recordings.html?session=' + encodeURIComponent(sid) + '">2D</a></td>';
+					tbody.appendChild(tr);
+				});
+			} catch (e) {
+				tbody.innerHTML = '';
+				document.getElementById('sess-err').textContent = String(e);
+			}
+		}
 
 		async function loadPlayers() {
 			document.getElementById('err').textContent = '';
@@ -106,10 +174,17 @@
 			tbody.innerHTML = '';
 			(data.players || []).forEach(function (p) {
 				const tr = document.createElement('tr');
+				tr.className = 'clickable';
+				if (p.player_id === selectedPid) tr.classList.add('sel');
 				tr.innerHTML =
 					'<td>' + p.player_id + '</td>' +
 					'<td>' + p.display_name + '</td>' +
 					'<td>' + (p.accent || '') + '</td>';
+				tr.onclick = function () {
+					tbody.querySelectorAll('tr').forEach(function (el) { el.classList.remove('sel'); });
+					tr.classList.add('sel');
+					loadSessions(p.player_id);
+				};
 				tbody.appendChild(tr);
 			});
 		}
