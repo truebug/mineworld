@@ -25,8 +25,11 @@ const WHEEL_COLOR := Color(0.0, 0.0, 0.0)
 const CASTER_COLOR := Color(1.0, 1.0, 1.0)
 const FRONT_ARROW_SCENE := preload("res://assets/platformer/arrow.glb")
 const FRONT_ARROW_POS := Vector3(0.55, 0.55, 0.0)
-const ARM_COLOR := Color(0.45, 0.52, 0.58)
-const GRIPPER_COLOR := Color(0.7, 0.75, 0.8)
+## Industrial arm look (viewer_only; kinematics still follow MJCF pivots).
+const ARM_METAL := Color(0.62, 0.65, 0.7)
+const ARM_DARK := Color(0.2, 0.22, 0.26)
+const ARM_ACCENT := Color(0.95, 0.52, 0.12)
+const GRIPPER_COLOR := Color(0.88, 0.9, 0.93)
 
 var _prev_pos := Vector3.ZERO
 var _prev_yaw := 0.0
@@ -175,7 +178,7 @@ func ensure_planar_cart_visual() -> void:
 
 
 func _ensure_arm_visual() -> void:
-	"""V2b: simple geometric arm under Body, matching diffbot_arm_gripper joint names."""
+	"""V2b: industrial-looking geometric arm under Body (same pivots as MJCF)."""
 	ensure_planar_cart_visual()
 	var body := get_node_or_null("Body") as Node3D
 	if body == null:
@@ -193,72 +196,97 @@ func _ensure_arm_visual() -> void:
 	mount.position = Vector3(0.15, 0.25, 0.0)
 	body.add_child(mount)
 
+	# Pedestal on chassis
+	_arm_add_cyl(mount, "Base", 0.09, 0.06, Vector3(0.0, 0.03, 0.0), Vector3.ZERO, ARM_DARK, 0.55, 0.35)
+
 	_arm_yaw = Node3D.new()
 	_arm_yaw.name = "ArmYaw"
 	mount.add_child(_arm_yaw)
-	var yaw_mesh := MeshInstance3D.new()
-	yaw_mesh.name = "YawLink"
-	var yaw_box := BoxMesh.new()
-	yaw_box.size = Vector3(0.1, 0.24, 0.1)
-	yaw_mesh.mesh = yaw_box
-	yaw_mesh.position = Vector3(0.0, 0.12, 0.0)
-	_tint_mesh(yaw_mesh, ARM_COLOR)
-	_arm_yaw.add_child(yaw_mesh)
+	_arm_add_cyl(_arm_yaw, "YawColumn", 0.055, 0.22, Vector3(0.0, 0.13, 0.0), Vector3.ZERO, ARM_METAL, 0.7, 0.28)
+	_arm_add_cyl(_arm_yaw, "YawRing", 0.078, 0.04, Vector3(0.0, 0.22, 0.0), Vector3.ZERO, ARM_ACCENT, 0.35, 0.45)
 
 	_arm_shoulder = Node3D.new()
 	_arm_shoulder.name = "ArmShoulder"
 	_arm_shoulder.position = Vector3(0.0, 0.24, 0.0)
 	_arm_yaw.add_child(_arm_shoulder)
-	var upper := MeshInstance3D.new()
-	upper.name = "UpperArm"
-	var upper_box := BoxMesh.new()
-	upper_box.size = Vector3(0.36, 0.08, 0.08)
-	upper.mesh = upper_box
-	upper.position = Vector3(0.18, 0.0, 0.0)
-	_tint_mesh(upper, ARM_COLOR)
-	_arm_shoulder.add_child(upper)
+	# Hub along Godot Z (MW hinge +Y)
+	_arm_add_cyl(_arm_shoulder, "ShoulderHub", 0.07, 0.09, Vector3.ZERO, Vector3(PI * 0.5, 0.0, 0.0), ARM_ACCENT, 0.4, 0.4)
+	_arm_add_cyl(_arm_shoulder, "UpperArm", 0.048, 0.36, Vector3(0.18, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), ARM_METAL, 0.75, 0.25)
 
 	_arm_elbow = Node3D.new()
 	_arm_elbow.name = "ArmElbow"
 	_arm_elbow.position = Vector3(0.36, 0.0, 0.0)
 	_arm_shoulder.add_child(_arm_elbow)
-	var fore := MeshInstance3D.new()
-	fore.name = "ForeArm"
-	var fore_box := BoxMesh.new()
-	fore_box.size = Vector3(0.28, 0.07, 0.07)
-	fore.mesh = fore_box
-	fore.position = Vector3(0.14, 0.0, 0.0)
-	_tint_mesh(fore, ARM_COLOR)
-	_arm_elbow.add_child(fore)
+	_arm_add_cyl(_arm_elbow, "ElbowHub", 0.06, 0.08, Vector3.ZERO, Vector3(PI * 0.5, 0.0, 0.0), ARM_ACCENT, 0.4, 0.4)
+	_arm_add_cyl(_arm_elbow, "ForeArm", 0.042, 0.28, Vector3(0.14, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), ARM_METAL, 0.75, 0.25)
 
-	var palm := MeshInstance3D.new()
-	palm.name = "Palm"
-	var palm_box := BoxMesh.new()
-	palm_box.size = Vector3(0.08, 0.06, 0.12)
-	palm.mesh = palm_box
-	palm.position = Vector3(0.28, 0.0, 0.0)
-	_tint_mesh(palm, GRIPPER_COLOR)
-	_arm_elbow.add_child(palm)
+	var wrist := _arm_add_box(_arm_elbow, "Wrist", Vector3(0.06, 0.07, 0.1), Vector3(0.28, 0.0, 0.0), ARM_DARK, 0.5, 0.4)
+	wrist.name = "Palm"
+	_arm_add_box(_arm_elbow, "PalmPlate", Vector3(0.03, 0.09, 0.14), Vector3(0.3, 0.0, 0.0), ARM_METAL, 0.65, 0.3)
 
-	_finger_l = MeshInstance3D.new()
-	_finger_l.name = "FingerL"
-	var fl := BoxMesh.new()
-	fl.size = Vector3(0.08, 0.025, 0.024)
-	(_finger_l as MeshInstance3D).mesh = fl
-	_finger_l.position = Vector3(0.34, 0.0, 0.05)
-	_tint_mesh(_finger_l as MeshInstance3D, GRIPPER_COLOR)
-	_arm_elbow.add_child(_finger_l)
-
-	_finger_r = MeshInstance3D.new()
-	_finger_r.name = "FingerR"
-	var fr := BoxMesh.new()
-	fr.size = Vector3(0.08, 0.025, 0.024)
-	(_finger_r as MeshInstance3D).mesh = fr
-	_finger_r.position = Vector3(0.34, 0.0, -0.05)
-	_tint_mesh(_finger_r as MeshInstance3D, GRIPPER_COLOR)
-	_arm_elbow.add_child(_finger_r)
+	_finger_l = _arm_add_box(_arm_elbow, "FingerL", Vector3(0.1, 0.028, 0.028), Vector3(0.34, 0.0, 0.05), GRIPPER_COLOR, 0.2, 0.35)
+	_finger_r = _arm_add_box(_arm_elbow, "FingerR", Vector3(0.1, 0.028, 0.028), Vector3(0.34, 0.0, -0.05), GRIPPER_COLOR, 0.2, 0.35)
+	_arm_add_box(_finger_l, "PadL", Vector3(0.02, 0.032, 0.034), Vector3(0.05, 0.0, 0.0), ARM_ACCENT, 0.15, 0.55)
+	_arm_add_box(_finger_r, "PadR", Vector3(0.02, 0.032, 0.034), Vector3(0.05, 0.0, 0.0), ARM_ACCENT, 0.15, 0.55)
 
 	_arm_built = true
+
+
+func _arm_style(mesh_inst: MeshInstance3D, color: Color, metallic: float, roughness: float) -> void:
+	"""Apply metal-ish material for arm parts."""
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.metallic = metallic
+	mat.roughness = roughness
+	mesh_inst.material_override = mat
+
+
+func _arm_add_cyl(
+	parent: Node3D,
+	part_name: String,
+	radius: float,
+	height: float,
+	pos: Vector3,
+	rot: Vector3,
+	color: Color,
+	metallic: float,
+	roughness: float
+) -> MeshInstance3D:
+	"""Add a cylinder mesh part under the arm hierarchy."""
+	var mi := MeshInstance3D.new()
+	mi.name = part_name
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = radius
+	cyl.bottom_radius = radius
+	cyl.height = height
+	cyl.radial_segments = 16
+	mi.mesh = cyl
+	mi.position = pos
+	mi.rotation = rot
+	_arm_style(mi, color, metallic, roughness)
+	parent.add_child(mi)
+	return mi
+
+
+func _arm_add_box(
+	parent: Node3D,
+	part_name: String,
+	size: Vector3,
+	pos: Vector3,
+	color: Color,
+	metallic: float,
+	roughness: float
+) -> MeshInstance3D:
+	"""Add a box mesh part under the arm hierarchy."""
+	var mi := MeshInstance3D.new()
+	mi.name = part_name
+	var box := BoxMesh.new()
+	box.size = size
+	mi.mesh = box
+	mi.position = pos
+	_arm_style(mi, color, metallic, roughness)
+	parent.add_child(mi)
+	return mi
 
 
 func _apply_arm_joints(joints: Variant) -> void:

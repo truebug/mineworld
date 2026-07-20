@@ -4,13 +4,7 @@ extends Node3D
 
 const ASSET_DIR := "res://assets/kenney_factory/"
 const FLOOR_ASSET := "floor-large.glb"
-## Kenney floor-large tile size (meters).
-const FLOOR_STEP := 2.0
 const FLOOR_Y := 0.01
-const FLOOR_X_MIN := 1.0
-const FLOOR_X_MAX := 29.0
-const FLOOR_Z_MIN := -11.0
-const FLOOR_Z_MAX := 11.0
 
 ## Godot placement: (x, z) with Y-up; MW (x,y) → Godot (x, 0, -y).
 ## Keep center corridor (z≈0) clear for spawn → crate → bin.
@@ -57,10 +51,17 @@ func _ready() -> void:
 	call_deferred("_place_all")
 
 
+## Sparse floor pads (keep concrete Ground visible; full Kenney tile wash looks flat/purple).
+const FLOOR_PADS: Array = [
+	{"x": 8.0, "z": 0.0}, {"x": 12.0, "z": 0.0}, {"x": 16.0, "z": 0.0}, {"x": 20.0, "z": 0.0},
+	{"x": 8.0, "z": 4.0}, {"x": 12.0, "z": -4.0}, {"x": 18.0, "z": 4.0}, {"x": 22.0, "z": -4.0},
+	{"x": 26.0, "z": 0.0}, {"x": 26.0, "z": 4.0}, {"x": 26.0, "z": -4.0},
+]
+
+
 func _place_all() -> void:
-	"""Tile floor, then place props; skip missing assets with a warning."""
-	_hide_plain_ground()
-	var floor_n := _place_floor_tiles()
+	"""Place floor pads + props; keep concrete Ground as base (viewer_only)."""
+	var floor_n := _place_floor_pads()
 	var n := 0
 	for item in PLACEMENTS:
 		if typeof(item) != TYPE_DICTIONARY:
@@ -69,18 +70,11 @@ func _place_all() -> void:
 		var name := str(d.get("asset", ""))
 		if _spawn_asset(name, float(d.get("x", 0.0)), float(d.get("z", 0.0)), float(d.get("yaw", 0.0)), float(d.get("s", 1.0)), n):
 			n += 1
-	print("[MW] workshop dress floor=%d props=%d (viewer_only)" % [floor_n, n])
+	print("[MW] workshop dress floor_pads=%d props=%d (viewer_only)" % [floor_n, n])
 
 
-func _hide_plain_ground() -> void:
-	"""Hide the solid gray PlaneMesh so Kenney tiles are visible."""
-	var ground := get_parent().get_node_or_null("Ground") as VisualInstance3D
-	if ground != null:
-		ground.visible = false
-
-
-func _place_floor_tiles() -> int:
-	"""Cover the workshop with floor-large tiles (viewer_only)."""
+func _place_floor_pads() -> int:
+	"""Drop a few Kenney floor-large pads on the concrete ground."""
 	var path := ASSET_DIR + FLOOR_ASSET
 	if not ResourceLoader.exists(path):
 		push_warning("[MW] workshop floor missing %s" % path)
@@ -89,19 +83,17 @@ func _place_floor_tiles() -> int:
 	if packed == null:
 		return 0
 	var count := 0
-	var x := FLOOR_X_MIN
-	while x <= FLOOR_X_MAX + 0.001:
-		var z := FLOOR_Z_MIN
-		while z <= FLOOR_Z_MAX + 0.001:
-			var node := packed.instantiate() as Node3D
-			if node == null:
-				return count
-			node.name = "Floor_%d" % count
-			node.position = Vector3(x, FLOOR_Y, z)
-			add_child(node)
-			count += 1
-			z += FLOOR_STEP
-		x += FLOOR_STEP
+	for item in FLOOR_PADS:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var d: Dictionary = item
+		var node := packed.instantiate() as Node3D
+		if node == null:
+			return count
+		node.name = "FloorPad_%d" % count
+		node.position = Vector3(float(d.get("x", 0.0)), FLOOR_Y, float(d.get("z", 0.0)))
+		add_child(node)
+		count += 1
 	return count
 
 

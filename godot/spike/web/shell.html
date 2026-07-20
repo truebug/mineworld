@@ -163,7 +163,7 @@ body {
 	right: max(16px, env(safe-area-inset-right, 0px));
 	bottom: max(16px, env(safe-area-inset-bottom, 0px));
 	z-index: 2147483646;
-	display: flex;
+	display: none;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 6px;
@@ -175,6 +175,10 @@ body {
 	border-radius: 8px;
 	border: 1px solid #3d4450;
 	pointer-events: auto;
+}
+
+#mw-seed.mw-show {
+	display: flex;
 }
 
 #mw-seed input {

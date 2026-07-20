@@ -100,11 +100,24 @@ func _ready() -> void:
 		get_viewport().size_changed.connect(_ensure_hud_layout)
 	if _is_web:
 		_install_web_keyboard_bridge()
+		_sync_web_city_seed_ui()
 	if _replay_session != "":
 		_start_replay_mode()
 		return
 	ws.connect_to_gateway(_resolve_gateway_url())
 	_update_hud()
+
+
+func _sync_web_city_seed_ui() -> void:
+	"""Show city seed/Regen chrome only for demo_city."""
+	if not _is_web:
+		return
+	var show := "true" if level_id == "demo_city" else "false"
+	JavaScriptBridge.eval(
+		"(function(show){var e=document.getElementById('mw-seed');if(!e){return;}"
+		+ "e.classList.toggle('mw-show',!!show);})(%s);" % show,
+		true
+	)
 
 
 func _resolve_replay_id() -> String:
