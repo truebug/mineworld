@@ -214,3 +214,4 @@ extensions.mw.editor.client_scene: res://demo_workshop.tscn
 | 2026-07-19 | V1c 滑条 + V2b 几何臂跟 `joints` |
 | 2026-07-19 | 车间 Factory 皮 + 铺地；Web `#mw-hud` 点击收起；V2c 台账；本批入库 |
 | 2026-07-20 | L2+V3a prop 进料箱；V1d export 成对关节列；V3b 默认 success 过滤；V4b CLI/API 过滤 |
+| 2026-07-20 | V-IL：`scripts/il_smoke.py` 录制 stow → export 断言 ≥1 行 |

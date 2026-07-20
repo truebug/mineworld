@@ -87,4 +87,5 @@ Legacy：GDevelop `gdevelop/demo0`（存档，见 `docs/adr/003-client-engine-go
 - `gateway/recording_store.py` — FS 扫描、`rebuild_sqlite` → `recordings/index.sqlite`
 - `scripts/export_trajectories.py` — IL 导出（默认 `outcome=success`；`--level-id` / `--task-id` / `--outcome`；含 `cmd_joint_targets`+`joints`）
 - `scripts/stow_crate_smoke.py` — V3a 箱子推入料箱 → `objective_complete`
+- `scripts/il_smoke.py` — V-IL：录制版 stow + export 过滤断言 ≥1 行
 - Web：`POST /api/recordings/reindex` · `GET /api/recordings/export.csv?level_id=&task_id=&outcome=`（经 `serve_web_demo.py`）
