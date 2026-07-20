@@ -11,7 +11,7 @@ const LOBBY_SCENE := "res://demo_lobby.tscn"
 const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const _WEB_BLOCK_CODES := {
 	"KeyW": true, "KeyA": true, "KeyS": true, "KeyD": true,
-	"KeyQ": true, "KeyE": true, "KeyV": true, "KeyF": true,
+	"KeyQ": true, "KeyE": true, "KeyV": true, "KeyF": true, "KeyC": true,
 	"ArrowUp": true, "ArrowDown": true, "ArrowLeft": true, "ArrowRight": true,
 }
 
@@ -69,6 +69,8 @@ func _ready() -> void:
 		camera_rig.distance = 18.0
 		camera_rig.pitch = -0.55
 		camera_rig.max_distance = 48.0
+		if camera_rig.has_signal("view_mode_changed"):
+			camera_rig.view_mode_changed.connect(_on_camera_view_changed)
 	if _is_web:
 		_install_web_keyboard_bridge()
 		JavaScriptBridge.eval(
@@ -437,7 +439,7 @@ func _push_web_tips(full_text: String) -> void:
 
 func _refresh_tips(msg: String) -> void:
 	"""Update left lore / tip panel; Web uses DOM, desktop uses Godot Label."""
-	_tips_full = "Dungeon Gate\n\n%s\n\nWSQE move | A/D turn | F talk / use\nRMB/MMB look + wheel zoom | arrows pan (orbit only)\nC recenter | V cycle orbit / first-person / chase\nOrange door Workshop | Blue door City\n\n(click to collapse)" % msg
+	_tips_full = "Dungeon Gate\n\n%s\n\nWSQE move | A/D turn | F talk / use\nRMB/MMB look + wheel zoom | arrows pan (orbit only)\nC recenter | V cycle orbit / first-person / chase\nChase: release mouse to spring back\nOrange door Workshop | Blue door City\n\n(click to collapse)" % msg
 	if _is_web:
 		_push_web_tips(_tips_full)
 		return
@@ -615,34 +617,23 @@ func _try_interact() -> void:
 	_refresh_tips(str(hit.get("line", "...")))
 
 
-func _cycle_camera_view() -> void:
-	"""Orbit / first-person / chase-behind."""
-	if camera_rig == null or not camera_rig.has_method("cycle_view_mode"):
-		return
-	var label := str(camera_rig.cycle_view_mode())
+func _on_camera_view_changed(label: String) -> void:
+	"""HUD toast when CameraRig cycles view (shared SSOT)."""
 	_refresh_tips("Camera: %s (press V to cycle)" % label)
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	"""Desktop: Esc stays in hub; C recenters; V cycles camera."""
+	"""Desktop: Esc stays in hub; F interact. Camera C/V live on CameraRig."""
 	if event is InputEventKey:
 		var ek := event as InputEventKey
 		if ek.pressed and not ek.echo:
 			if ek.keycode == KEY_ESCAPE:
 				get_viewport().set_input_as_handled()
 				return
-			if ek.keycode == KEY_V or ek.physical_keycode == KEY_V:
-				_cycle_camera_view()
-				get_viewport().set_input_as_handled()
-				return
 			if ek.keycode == KEY_F or ek.physical_keycode == KEY_F:
 				_try_interact()
 				get_viewport().set_input_as_handled()
 				return
-			if ek.keycode == KEY_C or ek.physical_keycode == KEY_C:
-				if camera_rig != null and camera_rig.has_method("reset_look_offset"):
-					camera_rig.reset_look_offset()
-				get_viewport().set_input_as_handled()
 
 
 func _install_web_keyboard_bridge() -> void:
@@ -672,10 +663,8 @@ func _on_dom_key_event(args: Array) -> void:
 	if down and nick_edit != null and nick_edit.has_focus():
 		if code in ["KeyW", "KeyS", "KeyQ", "KeyE", "KeyA", "KeyD"]:
 			nick_edit.release_focus()
-	if down and code == "KeyC" and camera_rig != null and camera_rig.has_method("reset_look_offset"):
-		camera_rig.reset_look_offset()
-	if down and code == "KeyV":
-		_cycle_camera_view()
+	if down and camera_rig != null and camera_rig.has_method("handle_code"):
+		camera_rig.handle_code(code, true)
 	if down and code == "KeyF":
 		_try_interact()
 	if _WEB_BLOCK_CODES.has(code):

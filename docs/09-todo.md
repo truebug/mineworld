@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | 平台壳 + AD2/EXP1 + P1a 摩擦抓取 v0；**Now：P1b / Hub 打磨** |
+| **目标** | 平台壳 + P1a/P1b + 相机统一；**Now：H7 / UX3** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -26,13 +26,13 @@
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | P1a | 真摩擦抓取（替换 sticky） | grasp_lift 不靠 kinematic weld | [x] v0 可夹小料块 |
-| P1b | 最小 BC 离线检查 | notebook/脚本读 success CSV 关节列 | [ ] |
+| P1b | 最小 BC 离线检查 | `scripts/bc_offline_check.py` 读 success CSV 关节列 | [x] v0 |
 | H7 | Hub UI / 门 C–E 占位打磨 | 左栏 lore、右栏地图、名片可读；C–E 门有 stub 文案 | [ ] |
 
 > Hub 展示壳（半层二楼 + 静态电梯）已入库，见 [18](18-hub-dungeon.md) · [19](19-changelog.md)。  
 > **UX1 / UX2-v0** 已入库。  
 > **平台产品线**见 **[20](20-platform-portal.md)**。Phase A v0（登录 + SQLite API）已入库。  
-> **建议下一步：P1b 最小 BC 离线检查，或 Hub H7/UX3。**
+> **建议下一步：H7 Hub UI / UX3 重连提示。**
 
 ---
 

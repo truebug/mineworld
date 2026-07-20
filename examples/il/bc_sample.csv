@@ -1,0 +1,2 @@
+session_id,tick,t_sim,entity_id,x,y,z,yaw,cmd_vx,cmd_vy,cmd_yaw_rate,cmd_joint_targets,joints,level_id,task_id,outcome
+bc-sample,1,0.02,mech_player,4,0,0.5,0,0.5,0,0,"{""arm_shoulder"":1.2,""gripper"":0.0}","{""arm_yaw"":0.1,""arm_shoulder"":1.2,""arm_elbow"":-0.3,""gripper"":0.0}",demo_workshop,obj_stow_crate,success

@@ -1,9 +1,13 @@
-## Follow-orbit camera for teleoperation / hub.
-## Modes: orbit (wide 3rd), first-person, chase (close behind head). V cycles.
-## Chase: locked to character — mouse look + zoom only (no pan).
+## Follow-orbit camera for teleoperation / hub / levels (shared SSOT).
+## Modes: orbit (wide 3rd), first-person, chase (close behind). V cycles.
+## Chase: mouse look springs back on release; zoom stays. FP/orbit keep look until C.
 extends Node3D
 
+signal view_mode_changed(label: String)
+
 enum ViewMode { ORBIT, FIRST, CHASE }
+
+const CHASE_PITCH_DEFAULT := -0.28
 
 @export var target_path: NodePath
 @export var distance := 13.0
@@ -19,6 +23,7 @@ enum ViewMode { ORBIT, FIRST, CHASE }
 @export var chase_distance := 3.6
 @export var min_chase_distance := 2.0
 @export var max_chase_distance := 8.0
+@export var chase_recenter_speed := 7.0
 
 @onready var camera: Camera3D = $Camera3D
 var _target: Node3D = null
@@ -32,7 +37,9 @@ var _fp_yaw := 0.0
 var _fp_pitch := 0.0
 ## Chase: mouse orbit relative to "behind head" (radians).
 var _chase_yaw := 0.0
-var _chase_pitch := -0.28
+var _chase_pitch := CHASE_PITCH_DEFAULT
+## True while RMB/MMB held for look.
+var _look_drag := false
 
 
 func _ready() -> void:
@@ -55,8 +62,21 @@ func reset_look_offset() -> void:
 	_fp_yaw = 0.0
 	_fp_pitch = 0.0
 	_chase_yaw = 0.0
-	_chase_pitch = -0.28
+	_chase_pitch = CHASE_PITCH_DEFAULT
 	_update_camera()
+
+
+func handle_code(code: String, down: bool) -> bool:
+	"""Shared camera hotkeys for Web DOM bridge (KeyC / KeyV). Returns true if handled."""
+	if not down:
+		return false
+	if code == "KeyC":
+		reset_look_offset()
+		return true
+	if code == "KeyV":
+		cycle_view_mode()
+		return true
+	return false
 
 
 func cycle_view_mode() -> String:
@@ -69,7 +89,7 @@ func cycle_view_mode() -> String:
 		ViewMode.FIRST:
 			view_mode = ViewMode.CHASE
 			_chase_yaw = 0.0
-			_chase_pitch = -0.28
+			_chase_pitch = CHASE_PITCH_DEFAULT
 			chase_distance = 3.6
 		_:
 			view_mode = ViewMode.ORBIT
@@ -77,7 +97,9 @@ func cycle_view_mode() -> String:
 			pitch = _orbit_pitch
 			yaw = _orbit_yaw
 	_update_camera()
-	return view_mode_label()
+	var label := view_mode_label()
+	view_mode_changed.emit(label)
+	return label
 
 
 func view_mode_label() -> String:
@@ -89,6 +111,11 @@ func view_mode_label() -> String:
 			return "chase (behind)"
 		_:
 			return "orbit"
+
+
+func is_first_person() -> bool:
+	"""True when first-person mode is active."""
+	return view_mode == ViewMode.FIRST
 
 
 func pan_axes(right: float, forward: float, delta: float) -> void:
@@ -131,26 +158,42 @@ func _pan_ground(right: float, forward: float, delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	"""Desktop camera SSOT: C recenter, V cycle, wheel zoom, RMB/MMB look."""
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_C or event.physical_keycode == KEY_C:
 			reset_look_offset()
 			get_viewport().set_input_as_handled()
 			return
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+		if event.keycode == KEY_V or event.physical_keycode == KEY_V:
+			cycle_view_mode()
+			get_viewport().set_input_as_handled()
+			return
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
 			_on_zoom(-1.0)
 			get_viewport().set_input_as_handled()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			return
+		if mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
 			_on_zoom(1.0)
 			get_viewport().set_input_as_handled()
+			return
+		if (
+			mb.button_index == MOUSE_BUTTON_RIGHT
+			or mb.button_index == MOUSE_BUTTON_MIDDLE
+		):
+			_look_drag = mb.pressed
+			get_viewport().set_input_as_handled()
+			return
 	elif event is InputEventMouseMotion:
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE):
+		if _look_drag or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE):
+			_look_drag = true
 			_on_mouse_drag(event.relative)
 			get_viewport().set_input_as_handled()
 
 
 func _on_zoom(sign: float) -> void:
-	"""Wheel zoom by mode."""
+	"""Wheel zoom by mode (never auto-resets on mouse release)."""
 	match view_mode:
 		ViewMode.FIRST:
 			_fp_pitch = clampf(_fp_pitch - sign * 0.08, -1.2, 1.0)
@@ -167,7 +210,7 @@ func _on_zoom(sign: float) -> void:
 
 
 func _on_mouse_drag(relative: Vector2) -> void:
-	"""RMB/MMB drag — orbit / look / chase turn (no chase pan)."""
+	"""RMB/MMB drag — orbit / look / chase peek (no chase pan)."""
 	match view_mode:
 		ViewMode.FIRST:
 			_fp_yaw -= relative.x * orbit_sensitivity
@@ -183,8 +226,20 @@ func _on_mouse_drag(relative: Vector2) -> void:
 	_update_camera()
 
 
+func _spring_chase_look(delta: float) -> void:
+	"""Ease chase look back behind the mech after mouse release (keep zoom)."""
+	if view_mode != ViewMode.CHASE or _look_drag:
+		return
+	var k := clampf(chase_recenter_speed * delta, 0.0, 1.0)
+	_chase_yaw = lerpf(_chase_yaw, 0.0, k)
+	_chase_pitch = lerpf(_chase_pitch, CHASE_PITCH_DEFAULT, k)
+	if absf(_chase_yaw) < 0.001 and absf(_chase_pitch - CHASE_PITCH_DEFAULT) < 0.001:
+		_chase_yaw = 0.0
+		_chase_pitch = CHASE_PITCH_DEFAULT
+
+
 func _process(delta: float) -> void:
-	"""Desktop arrow pan (Web: hub/main call pan_axes from key bridge)."""
+	"""Desktop arrow pan + chase spring; Web scenes call pan_axes from key bridge."""
 	if not OS.has_feature("web"):
 		var right := 0.0
 		var forward := 0.0
@@ -197,6 +252,8 @@ func _process(delta: float) -> void:
 		if Input.is_physical_key_pressed(KEY_DOWN) or Input.is_key_pressed(KEY_DOWN):
 			forward -= 1.0
 		pan_axes(right, forward, delta)
+
+	_spring_chase_look(delta)
 
 	if _target == null:
 		return

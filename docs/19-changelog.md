@@ -69,6 +69,12 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 ---
 
+## 2026-07-20 · 相机 SSOT + P1b BC 离线检查
+
+- `camera_rig.gd`：V/C/鼠标为共享 SSOT；chase 松手视线弹簧回正（焦距保留）；关卡与 Hub 共用。
+- Hub/关卡 Web 桥只调 `handle_code`；关卡补 V + FP 隐藏车体。
+- `scripts/bc_offline_check.py` + `examples/il/bc_sample.csv`：断言 success CSV 有可解析 `joints`。
+
 ## 2026-07-20 · AD2 / EXP1 + P1a 摩擦抓取
 
 ### Admin 钻取与导出

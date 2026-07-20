@@ -16,6 +16,7 @@ const CMD_HZ := 20.0
 const _WEB_BLOCK_CODES := {
 	"KeyW": true, "KeyA": true, "KeyS": true, "KeyD": true,
 	"KeyQ": true, "KeyE": true, "KeyT": true, "KeyR": true,
+	"KeyV": true, "KeyC": true,
 	"ArrowUp": true, "ArrowDown": true, "ArrowLeft": true, "ArrowRight": true,
 	"Space": true,
 }
@@ -106,6 +107,8 @@ func _ready() -> void:
 			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(true);}",
 			true
 		)
+	if camera_rig != null and camera_rig.has_signal("view_mode_changed"):
+		camera_rig.view_mode_changed.connect(_on_camera_view_changed)
 	if _replay_session != "":
 		_start_replay_mode()
 		return
@@ -456,8 +459,8 @@ func _on_dom_key_event(args: Array) -> void:
 	if not _web_key_logged and down:
 		_web_key_logged = true
 		print("[MW] first key from document: ", code)
-	if down and code == "KeyC" and camera_rig != null and camera_rig.has_method("reset_look_offset"):
-		camera_rig.reset_look_offset()
+	if down and not bool(event.repeat) and camera_rig != null and camera_rig.has_method("handle_code"):
+		camera_rig.handle_code(code, true)
 	if _WEB_BLOCK_CODES.has(code):
 		event.preventDefault()
 	if down and not bool(event.repeat):
@@ -473,6 +476,23 @@ func _on_dom_key_event(args: Array) -> void:
 					_toggle_replay_pause()
 			"Escape":
 				MWTransition.go("res://demo_hub.tscn", "Hub")
+
+
+func _on_camera_view_changed(label: String) -> void:
+	"""Show camera mode on HUD when V cycles (CameraRig SSOT)."""
+	_status_line = "Camera: %s (V cycle · C recenter)" % label
+	_update_hud()
+
+
+func _sync_first_person_mesh() -> void:
+	"""Hide own chassis in FP so the camera is not inside the hull."""
+	var own := _own_mech()
+	if own == null:
+		return
+	var fp := false
+	if camera_rig != null and camera_rig.has_method("is_first_person"):
+		fp = bool(camera_rig.is_first_person())
+	own.visible = not fp
 
 
 func _on_dom_blur(_args: Array) -> void:
@@ -677,6 +697,7 @@ func _process(delta: float) -> void:
 		if _web_key("ArrowDown"):
 			pan_f -= 1.0
 		camera_rig.pan_axes(pan_r, pan_f, delta)
+	_sync_first_person_mesh()
 	if ws.session_id == "":
 		return
 	if not _controlled or _mission_done:
@@ -889,7 +910,8 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
 	text += "\nWASD move | QE turn | T take | R release | arm sliders (bottom-left)"
-	text += "\nRMB/MMB orbit | wheel zoom | arrows pan | C center"
+	text += "\nV camera orbit/FP/chase | RMB/MMB look | wheel zoom | arrows pan | C center"
+	text += "\nChase: release mouse → look springs back"
 	if _is_web:
 		text += "\nRecordings → top-right link"
 	if _is_web:
