@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | Phase A/B 平台底座已落地；**Now：P1 · Phase C（我的/Admin）** |
+| **目标** | Phase A–C 平台壳已落地；**Now：P1 接触/IL · ME2 回放** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -32,7 +32,7 @@
 > Hub 展示壳（半层二楼 + 静态电梯）已入库，见 [18](18-hub-dungeon.md) · [19](19-changelog.md)。  
 > **UX1 / UX2-v0** 已入库。  
 > **平台产品线**见 **[20](20-platform-portal.md)**。Phase A v0（登录 + SQLite API）已入库。  
-> **建议下一步：Phase C（ME1/AD1）或 P1a**。SC1/SC2/LB1/PL3 已完成。
+> **建议下一步：P1a 真摩擦抓取，或 ME2 自助回放挂 recordings。**
 
 ---
 
@@ -57,8 +57,8 @@
 | PL4 | 配置 SSOT | env 切 SQLite→Postgres；本地默认零依赖 | [x] v0 URL |
 | PL3 | API ↔ Gateway 边界文档 | WS vs HTTP；禁止双写位姿 | [x] |
 | ID1 | Portal 登录页 | 未登录不可进游戏壳；token 进 Hub | [x] v0 |
-| ID2 | Admin 创建/导入玩家 | 表单或 CSV；唯一 `player_id` | [~] POST API |
-| AD1 | Admin 壳 v0 | 鉴权、玩家列表、健康检查 | [~] API only |
+| ID2 | Admin 创建/导入玩家 | 表单或 CSV；唯一 `player_id` | [x] v0 admin.html |
+| AD1 | Admin 壳 v0 | 鉴权、玩家列表、健康检查 | [x] v0 |
 
 ### Phase B · 计分与大厅排行
 
@@ -72,7 +72,7 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| ME1 | Portal「我的」 | 积分、战绩、会话列表 | [ ] |
+| ME1 | Portal「我的」 | 积分、战绩、会话列表 | [x] v0 |
 | ME2 | 自助回放 | 复用 `/?replay=` / recordings | [ ] |
 | AD2 | Admin 玩家/会话钻取 | 按 player 筛录制 | [ ] |
 | EXP1 | 批量导出轨迹 | 对齐现有 IL 导出语义 | [ ] |

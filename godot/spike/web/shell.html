@@ -251,6 +251,22 @@ body.mw-hub #mw-hub-map {
 	font: inherit;
 }
 
+#mw-hub-profile .mw-profile-links {
+	margin-top: 8px;
+	font-size: 11px;
+}
+
+#mw-hub-profile .mw-profile-links a {
+	color: #6ec0ff;
+	text-decoration: none;
+	margin-right: 10px;
+	pointer-events: auto;
+}
+
+#mw-hub-profile .mw-profile-links a:hover {
+	text-decoration: underline;
+}
+
 #mw-hub-map {
 	/* JS layoutHubChrome pins to #canvas; CSS is fallback only. */
 	right: 16px;
@@ -488,6 +504,9 @@ body.mw-play #mw-joints {
 			<div class="mw-id" id="mw-hub-id">ID --</div>
 			<div id="mw-hub-nick-label">Guest</div>
 			<input id="mw-hub-nick" type="text" maxlength="24" placeholder="Nickname" autocomplete="off">
+			<div class="mw-profile-links">
+				<a href="/portal/me.html">My record</a>
+			</div>
 		</div>
 		<div id="mw-hub-map">
 			<div class="mw-map-title">Hub map</div>

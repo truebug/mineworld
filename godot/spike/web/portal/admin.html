@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>MineWorld · Admin</title>
+	<style>
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			min-height: 100vh;
+			padding: 24px 16px 40px;
+			background: #0a0c10;
+			color: #e8eef8;
+			font: 14px/1.4 ui-sans-serif, system-ui, sans-serif;
+		}
+		.wrap { max-width: 640px; margin: 0 auto; }
+		h1 { font-size: 22px; margin: 0 0 12px; }
+		.card {
+			background: #161a22;
+			border: 1px solid #3d4450;
+			border-radius: 8px;
+			padding: 14px 16px;
+			margin-bottom: 12px;
+		}
+		label { display: block; margin-bottom: 8px; font-size: 12px; color: #9bb4c9; }
+		input {
+			width: 100%;
+			margin-top: 4px;
+			padding: 8px 10px;
+			border-radius: 4px;
+			border: 1px solid #5a6270;
+			background: #12151a;
+			color: #e8eaed;
+			font: inherit;
+		}
+		button {
+			padding: 8px 14px;
+			border-radius: 4px;
+			border: 1px solid #5a6270;
+			background: #2a3140;
+			color: #e8eaed;
+			font: inherit;
+			cursor: pointer;
+			margin-right: 8px;
+		}
+		table { width: 100%; border-collapse: collapse; font: 12px/1.35 ui-monospace, Menlo, Consolas, monospace; }
+		th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid #2a3038; }
+		.err { color: #ff8a8a; margin-top: 8px; }
+		.ok { color: #5dff8a; margin-top: 8px; }
+		a { color: #6ec0ff; }
+	</style>
+</head>
+<body>
+	<div class="wrap">
+		<h1>Admin · players</h1>
+		<p style="color:#7a9bb8;font-size:13px;">Uses <code>MW_PLATFORM_ADMIN_KEY</code>. Stored in this browser only.</p>
+		<div class="card">
+			<label>Admin key
+				<input id="key" type="password" autocomplete="off" placeholder="dev-admin">
+			</label>
+			<button type="button" id="load">Load players</button>
+			<button type="button" id="save-key">Remember key</button>
+		</div>
+		<div class="card">
+			<div style="margin-bottom:8px;color:#9bb4c9;">Create player</div>
+			<label>player_id <input id="pid" placeholder="alice"></label>
+			<label>display_name <input id="dname" placeholder="Alice"></label>
+			<label>password <input id="pw" type="password" placeholder="••••"></label>
+			<button type="button" id="create">Create</button>
+			<div class="ok" id="msg"></div>
+			<div class="err" id="err"></div>
+		</div>
+		<div class="card">
+			<table>
+				<thead><tr><th>ID</th><th>Name</th><th>Accent</th></tr></thead>
+				<tbody id="rows"><tr><td colspan="3">Load with admin key</td></tr></tbody>
+			</table>
+		</div>
+		<p><a href="/">Hub</a> · <a href="/portal/me.html">My record</a></p>
+	</div>
+	<script>
+	(function () {
+		const KEY = 'mw_admin_key';
+		const keyEl = document.getElementById('key');
+		try { keyEl.value = localStorage.getItem(KEY) || ''; } catch (e) {}
+
+		function adminKey() { return keyEl.value.trim(); }
+
+		document.getElementById('save-key').onclick = function () {
+			try { localStorage.setItem(KEY, adminKey()); } catch (e) {}
+			document.getElementById('msg').textContent = 'Key saved locally.';
+		};
+
+		async function loadPlayers() {
+			document.getElementById('err').textContent = '';
+			const r = await fetch('/api/platform/players', {
+				headers: { 'X-Admin-Key': adminKey() },
+			});
+			const data = await r.json().catch(function () { return {}; });
+			if (!r.ok) {
+				document.getElementById('err').textContent = data.error || ('HTTP ' + r.status);
+				return;
+			}
+			const tbody = document.getElementById('rows');
+			tbody.innerHTML = '';
+			(data.players || []).forEach(function (p) {
+				const tr = document.createElement('tr');
+				tr.innerHTML =
+					'<td>' + p.player_id + '</td>' +
+					'<td>' + p.display_name + '</td>' +
+					'<td>' + (p.accent || '') + '</td>';
+				tbody.appendChild(tr);
+			});
+		}
+
+		document.getElementById('load').onclick = function () { loadPlayers(); };
+
+		document.getElementById('create').onclick = async function () {
+			document.getElementById('err').textContent = '';
+			document.getElementById('msg').textContent = '';
+			const body = {
+				player_id: document.getElementById('pid').value.trim(),
+				display_name: document.getElementById('dname').value.trim(),
+				password: document.getElementById('pw').value,
+			};
+			const r = await fetch('/api/platform/admin/players', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Admin-Key': adminKey(),
+				},
+				body: JSON.stringify(body),
+			});
+			const data = await r.json().catch(function () { return {}; });
+			if (!r.ok) {
+				document.getElementById('err').textContent = data.error || ('HTTP ' + r.status);
+				return;
+			}
+			document.getElementById('msg').textContent = 'Created ' + (data.player && data.player.player_id);
+			document.getElementById('pw').value = '';
+			loadPlayers();
+		};
+	})();
+	</script>
+</body>
+</html>

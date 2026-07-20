@@ -67,6 +67,15 @@ def main() -> int:
         print("FAIL: leaderboard", lb, file=sys.stderr)
         return 1
 
+    stats = store.player_stats("demo")
+    if int(stats.get("total_points") or 0) != 100:
+        print("FAIL: player_stats", stats, file=sys.stderr)
+        return 1
+    hist = store.player_scores("demo", limit=5)
+    if not hist or hist[0].get("session_id") != "sess-a":
+        print("FAIL: player_scores", hist, file=sys.stderr)
+        return 1
+
     print("platform smoke OK")
     return 0
 

@@ -55,7 +55,18 @@ def handle_platform_get(
         if player is None:
             send_json({"error": "unauthorized"}, 401)
             return True
-        send_json({"ok": True, "player": player_to_json(player)}, 200)
+        store = get_store()
+        stats = store.player_stats(player.player_id)  # type: ignore[attr-defined]
+        scores = store.player_scores(player.player_id, limit=20)  # type: ignore[attr-defined]
+        send_json(
+            {
+                "ok": True,
+                "player": player_to_json(player),
+                "stats": stats,
+                "scores": scores,
+            },
+            200,
+        )
         return True
     if path == "/api/platform/leaderboard":
         store = get_store()

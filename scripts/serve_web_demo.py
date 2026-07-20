@@ -327,12 +327,13 @@ def main() -> None:
 
     init_platform_data()
 
-    # Portal login + history UI next to export.
-    portal_src = repo / "godot" / "spike" / "web" / "portal" / "login.html"
-    if portal_src.is_file():
-        portal_dst = root / "portal" / "login.html"
-        portal_dst.parent.mkdir(parents=True, exist_ok=True)
-        portal_dst.write_text(portal_src.read_text(encoding="utf-8"), encoding="utf-8")
+    # Portal pages + history UI next to export.
+    portal_src_dir = repo / "godot" / "spike" / "web" / "portal"
+    if portal_src_dir.is_dir():
+        portal_dst = root / "portal"
+        portal_dst.mkdir(parents=True, exist_ok=True)
+        for src in portal_src_dir.glob("*.html"):
+            (portal_dst / src.name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
 
     src_ui = repo / "godot" / "spike" / "web" / "recordings.html"
     if src_ui.is_file():

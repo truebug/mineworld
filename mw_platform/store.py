@@ -207,6 +207,44 @@ class SQLitePlayerStore(PlayerStore):
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def player_stats(self, player_id: str) -> dict[str, Any]:
+        """Totals for one player."""
+        with self._conn() as conn:
+            row = conn.execute(
+                """
+                SELECT COALESCE(SUM(points), 0) AS total_points,
+                       COUNT(*) AS runs,
+                       COALESCE(SUM(CASE WHEN outcome = 'success' THEN 1 ELSE 0 END), 0) AS wins
+                FROM scores
+                WHERE player_id = ?
+                """,
+                (player_id.strip(),),
+            ).fetchone()
+        if row is None:
+            return {"total_points": 0, "runs": 0, "wins": 0}
+        return {
+            "total_points": int(row["total_points"]),
+            "runs": int(row["runs"]),
+            "wins": int(row["wins"]),
+        }
+
+    def player_scores(self, player_id: str, *, limit: int = 20) -> list[dict[str, Any]]:
+        """Recent score rows for one player (newest first)."""
+        lim = max(1, min(100, int(limit)))
+        with self._conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT session_id, level_id, task_id, outcome, duration_sim_s,
+                       points, created_at
+                FROM scores
+                WHERE player_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (player_id.strip(), lim),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
     def _row_to_player(self, row: sqlite3.Row | None) -> Player | None:
         if row is None:
             return None
@@ -369,6 +407,12 @@ class PostgresPlayerStore(PlayerStore):
         raise NotImplementedError
 
     def leaderboard(self, *, limit: int = 10) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    def player_stats(self, player_id: str) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def player_scores(self, player_id: str, *, limit: int = 20) -> list[dict[str, Any]]:
         raise NotImplementedError
 
 

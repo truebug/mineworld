@@ -102,6 +102,8 @@ v0 实现：`mw_platform/` + `/api/platform/*`（同端口 8080 或独立 `:8090
 | 游戏门禁 | `shell.html` · `MW_ENSURE_AUTH`（`?menu=1` 与 `MW_PLATFORM_AUTH=0` 可 bypass） |
 | Demo 账号 | `demo` / `demo`（首次启动自动 seed） |
 | Smoke | `scripts/platform_smoke.py` |
+| 我的页 | `/portal/me.html`（ME1） |
+| Admin | `/portal/admin.html`（需 `MW_PLATFORM_ADMIN_KEY`） |
 
 Admin 创建玩家（需 `MW_PLATFORM_ADMIN_KEY`）：
 

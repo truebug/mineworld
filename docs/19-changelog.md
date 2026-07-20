@@ -69,6 +69,14 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 ---
 
+## 2026-07-20 · Phase C · ME1 / AD1
+
+- Portal `/portal/me.html`：积分汇总 + 近期会话（`/api/platform/me` 扩展）。
+- Admin `/portal/admin.html`：admin key 列玩家 / 创建账号。
+- Hub 名片链到 My record。
+
+---
+
 ## 2026-07-20 · Phase B · SC1/SC2/LB1 + PL3
 
 - 积分公式 `mw_platform/scoring.py`；`scores` 表幂等记账；Gateway `score_client` 在 success close 时 POST。

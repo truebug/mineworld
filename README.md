@@ -6,7 +6,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | POC + Hub + Portal + **计分/排行（Phase B）** 已收口；Now：P1 · Phase C |
+| **状态** | POC + Hub + Portal + 计分/排行 + **我的/Admin** 已收口；Now：P1 · ME2 |
 | **创建日期** | 2026-07-17 |
 | **定位** | 「头号玩家」式初始底座：可编辑共享世界 + 真物理机体 + 可回放的人类行为档案 |
 | **地下城 Hub** | [docs/18-hub-dungeon.md](docs/18-hub-dungeon.md) |
