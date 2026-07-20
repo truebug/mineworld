@@ -137,7 +137,7 @@ curl -X POST http://127.0.0.1:8080/api/platform/admin/players \
 | **Hub 观感 H7/H8** | 降优先；排行榜比电梯更有产品意义 |
 | **公网 W2** | 跟 Phase A 的 HTTPS/反向代理一起做 |
 
-推荐节奏：**P1 小步不停 + 启动 Phase A**；Phase B 在 API 可记账后再开。
+推荐节奏：**Phase A v0 已落地** → 下一步 **SC1→SC2→LB1**（计分模型 → 通关记账 → Hub 排行）；P1 可并行、不阻塞。
 
 ---
 

@@ -31,7 +31,8 @@
 
 > Hub 展示壳（半层二楼 + 静态电梯）已入库，见 [18](18-hub-dungeon.md) · [19](19-changelog.md)。  
 > **UX1 / UX2-v0** 已入库。  
-> **平台产品线**（Portal 登录 → Hub → 计分关 → 排行/我的/Admin）规划见 **[20](20-platform-portal.md)**；与 P1 并行、分期实施。
+> **平台产品线**见 **[20](20-platform-portal.md)**。Phase A v0（登录 + SQLite API）已入库。  
+> **建议下一步：SC1 → SC2 → LB1**（积分公式 → 通关写分 → Hub 排行榜）。P1 可并行。
 
 ---
 
