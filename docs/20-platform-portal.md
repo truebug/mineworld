@@ -103,7 +103,8 @@ v0 实现：`mw_platform/` + `/api/platform/*`（同端口 8080 或独立 `:8090
 | Demo 账号 | `demo` / `demo`（首次启动自动 seed） |
 | Smoke | `scripts/platform_smoke.py` |
 | 我的页 | `/portal/me.html`（ME1） |
-| Admin | `/portal/admin.html`（需 `MW_PLATFORM_ADMIN_KEY`） |
+| Admin | `/portal/admin.html`（默认 key `dev-admin`，可用 `MW_PLATFORM_ADMIN_KEY` 覆盖） |
+| 回放 | My record → 3D `/?replay=` · 2D `recordings.html?session=`（ME2） |
 
 Admin 创建玩家（需 `MW_PLATFORM_ADMIN_KEY`）：
 

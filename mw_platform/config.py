@@ -36,8 +36,8 @@ def secret_key() -> str:
 
 
 def admin_key() -> str | None:
-    """Optional static admin key for POST /api/platform/admin/players."""
-    return os.environ.get("MW_PLATFORM_ADMIN_KEY")
+    """Admin key for player CRUD / admin UI. Local default: dev-admin."""
+    return os.environ.get("MW_PLATFORM_ADMIN_KEY", "dev-admin")
 
 
 def gateway_key() -> str | None:

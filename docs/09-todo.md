@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | Phase A–C 平台壳已落地；**Now：P1 接触/IL · ME2 回放** |
+| **目标** | 平台壳（登录/计分/排行/我的/回放/Admin）已落地；**Now：P1 接触/IL** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -73,7 +73,7 @@
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | ME1 | Portal「我的」 | 积分、战绩、会话列表 | [x] v0 |
-| ME2 | 自助回放 | 复用 `/?replay=` / recordings | [ ] |
+| ME2 | 自助回放 | 复用 `/?replay=` / recordings | [x] v0 |
 | AD2 | Admin 玩家/会话钻取 | 按 player 筛录制 | [ ] |
 | EXP1 | 批量导出轨迹 | 对齐现有 IL 导出语义 | [ ] |
 | PL2 | Admin 运维增强 | 在线房只读、契约/level 开关等 | [ ] |

@@ -218,6 +218,16 @@
       return;
     }
     renderList();
+    const want = new URLSearchParams(location.search).get("session");
+    if (want) {
+      const match = allSessions.find((s) => s.session_id === want);
+      if (match) {
+        const btn = [...listEl.querySelectorAll(".session")].find(
+          (b) => b.querySelector(".id") && b.querySelector(".id").textContent === want
+        );
+        selectSession(match, btn || null);
+      }
+    }
   }
 
   levelSel.addEventListener("change", renderList);

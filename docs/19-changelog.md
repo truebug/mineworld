@@ -69,6 +69,13 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 ---
 
+## 2026-07-20 · Phase C · ME2 自助回放
+
+- My record 每行探测 `/api/recordings/<id>`：有帧则链 **3D** (`/?replay=`) / **2D** (`recordings.html?session=`)。
+- Admin 本地默认 key `dev-admin`（可用 env 覆盖）。
+
+---
+
 ## 2026-07-20 · Phase C · ME1 / AD1
 
 - Portal `/portal/me.html`：积分汇总 + 近期会话（`/api/platform/me` 扩展）。

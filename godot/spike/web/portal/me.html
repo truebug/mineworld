@@ -30,6 +30,9 @@
 		table { width: 100%; border-collapse: collapse; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; }
 		th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid #2a3038; }
 		th { color: #7a9bb8; font-weight: 500; }
+		td a { color: #6ec0ff; text-decoration: none; margin-right: 8px; font-size: 11px; }
+		td a:hover { text-decoration: underline; }
+		td .muted { color: #5a6270; font-size: 11px; }
 		.nav { margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap; }
 		.nav a {
 			color: #6ec0ff;
@@ -61,8 +64,8 @@
 		<div class="card">
 			<div style="margin-bottom:8px;color:#9bb4c9;font-size:12px;">Recent sessions</div>
 			<table>
-				<thead><tr><th>Level</th><th>Pts</th><th>Time</th><th>When</th></tr></thead>
-				<tbody id="rows"><tr><td colspan="4">…</td></tr></tbody>
+				<thead><tr><th>Level</th><th>Pts</th><th>Time</th><th>When</th><th>Replay</th></tr></thead>
+				<tbody id="rows"><tr><td colspan="5">…</td></tr></tbody>
 			</table>
 		</div>
 		<div class="nav">
@@ -106,18 +109,41 @@
 				tbody.innerHTML = '';
 				const scores = data.scores || [];
 				if (!scores.length) {
-					tbody.innerHTML = '<tr><td colspan="4">No scored runs yet — clear Workshop or Training.</td></tr>';
+					tbody.innerHTML = '<tr><td colspan="5">No scored runs yet — clear Workshop or Training.</td></tr>';
 					return;
 				}
 				scores.forEach(function (s) {
 					const tr = document.createElement('tr');
 					const when = String(s.created_at || '').replace('T', ' ').slice(0, 16);
+					const sid = String(s.session_id || '');
 					tr.innerHTML =
 						'<td>' + String(s.level_id || '') + '</td>' +
 						'<td>' + String(s.points || 0) + '</td>' +
 						'<td>' + Number(s.duration_sim_s || 0).toFixed(1) + 's</td>' +
-						'<td>' + when + '</td>';
+						'<td>' + when + '</td>' +
+						'<td class="replay-cell" data-sid="' + sid.replace(/"/g, '') + '">' +
+						'<span class="chk">…</span></td>';
 					tbody.appendChild(tr);
+				});
+				tbody.querySelectorAll('.replay-cell').forEach(function (cell) {
+					const sid = cell.getAttribute('data-sid');
+					if (!sid) {
+						cell.innerHTML = '—';
+						return;
+					}
+					fetch('/api/recordings/' + encodeURIComponent(sid))
+						.then(function (r) {
+							if (!r.ok) {
+								cell.innerHTML = '<span class="muted" title="No frames on disk">no rec</span>';
+								return;
+							}
+							cell.innerHTML =
+								'<a href="/?replay=' + encodeURIComponent(sid) + '">3D</a>' +
+								'<a href="/recordings.html?session=' + encodeURIComponent(sid) + '">2D</a>';
+						})
+						.catch(function () {
+							cell.innerHTML = '<span class="muted">—</span>';
+						});
 				});
 			})
 			.catch(function (e) {
