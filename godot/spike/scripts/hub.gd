@@ -54,8 +54,9 @@ func _ready() -> void:
 	"""Boot Hub or divert to text menu when ?menu=1."""
 	_is_web = OS.has_feature("web")
 	if _wants_text_menu():
-		get_tree().change_scene_to_file(LOBBY_SCENE)
+		MWTransition.go(LOBBY_SCENE, "Debug menu")
 		return
+	MWTransition.notify_arrived()
 	_profile = _load_profile()
 	_apply_profile_ui()
 	ws.hello_received.connect(_on_hello)
@@ -691,6 +692,11 @@ func _enter_level(scene_path: String) -> void:
 	if _entering_door:
 		return
 	_entering_door = true
+	var label := "Entering…"
+	if scene_path.find("workshop") >= 0:
+		label = "Workshop"
+	elif scene_path.find("city") >= 0:
+		label = "Training"
 	_refresh_tips("Entering route…")
 	ws.close_link()
-	get_tree().change_scene_to_file(scene_path)
+	MWTransition.go(scene_path, label)

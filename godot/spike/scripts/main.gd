@@ -80,6 +80,7 @@ const _JOINT_SPECS := [
 
 func _ready() -> void:
 	_is_web = OS.has_feature("web")
+	MWTransition.notify_arrived()
 	_replay_session = _resolve_replay_id()
 	ws.hello_received.connect(_on_hello)
 	ws.scene_received.connect(_on_scene)
@@ -471,7 +472,7 @@ func _on_dom_key_event(args: Array) -> void:
 				if _replay_session != "":
 					_toggle_replay_pause()
 			"Escape":
-				get_tree().change_scene_to_file("res://demo_hub.tscn")
+				MWTransition.go("res://demo_hub.tscn", "Hub")
 
 
 func _on_dom_blur(_args: Array) -> void:
@@ -691,7 +692,7 @@ func _input(event: InputEvent) -> void:
 		if event.pressed and not event.echo:
 			var code: int = event.keycode if event.keycode != KEY_NONE else event.physical_keycode
 			if code == KEY_ESCAPE:
-				get_tree().change_scene_to_file("res://demo_hub.tscn")
+				MWTransition.go("res://demo_hub.tscn", "Hub")
 				return
 			if code == KEY_SPACE and _replay_session != "":
 				_toggle_replay_pause()

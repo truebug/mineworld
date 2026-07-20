@@ -58,11 +58,18 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 | 线 | 摘要 | Todo ID |
 |----|------|---------|
-| UX | 首屏/加载动画（替换 Godot 默认 logo） | UX1 |
-| UX | 关卡过场（替代瞬间 `change_scene`） | UX2 |
+| UX | 首屏/加载动画（替换 Godot 默认 logo） | UX1 **[x] v0** |
+| UX | 关卡过场（替代瞬间 `change_scene`） | UX2 **[x] v0** 淡入淡出 |
 | 平台 | 可配置持久化库 + 消息中间件的独立 API 服务 | PL1 |
 | 平台 | Web 控制台（后台管理） | PL2 |
 | Hub | 可乘电梯 / 可上 L2；门 C–E 占位打磨 | H8 / H7 |
 | 物理/IL | 真摩擦抓取、最小 BC 离线检查 | P1a / P1b |
 
 完整条目与验收见 [09 § Next](09-todo.md#next平台与体验·规划)。
+
+---
+
+## 2026-07-20 · UX1 + UX2-v0
+
+- Web 首屏：`shell.html` 品牌字标（MineWorld / Dungeon Gate）+ 进度条；隐藏 Godot 默认 splash 图。
+- 过场：`MW_TRANSITION` DOM 淡入淡出（~280ms）；Autoload `MWTransition.go` / `notify_arrived` 覆盖 Hub 门、Esc 回 Hub、文本菜单。

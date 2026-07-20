@@ -62,8 +62,9 @@
 ### 3.2 客户端
 
 - 本地走动仍走 Gateway `cmd` velocity（与玩法关同一协议），纸片人跟 `state`。
-- 进门前 `bye` / 断链，再 `change_scene` 到玩法关并重新 `join`。
+- 进门前 `bye` / 断链，再经 **`MWTransition`**（Web DOM 淡入淡出）`change_scene` 到玩法关并重新 `join`。
 - Profile：Web `localStorage.mw_profile`；桌面 `user://mw_profile.json`。
+- 首屏：Web `shell.html` 品牌 boot（UX1 v0）；过场见 [19](19-changelog.md)。
 
 ### 3.3 非目标（本期不做）
 
@@ -86,3 +87,4 @@
 |------|------|
 | 2026-07-20 | 初版：地下城入口世界观；H4–H6 切片；门 A–E 映射 |
 | 2026-07-20 | Hub 展示：南侧半层二楼 + 东南角静态电梯井（不可乘） |
+| 2026-07-20 | UX1/UX2-v0：品牌首屏 + `MWTransition` 切景淡入淡出 |

@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | Hub H4–H6 已落地；**Now：P1 接触/IL · Next：平台 API / 控制台 / UX 过场** |
+| **目标** | Hub + UX1/UX2-v0 已落地；**Now：P1 接触/IL · Next：PL API/控制台 · UX3** |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -28,7 +28,8 @@
 | P1b | 最小 BC 离线检查 | notebook/脚本读 success CSV 关节列 | [ ] |
 | H7 | Hub UI / 门 C–E 占位打磨 | 左栏 lore、右栏地图、名片可读；C–E 门有 stub 文案 | [ ] |
 
-> Hub 展示壳（半层二楼 + 静态电梯）已入库，见 [18](18-hub-dungeon.md) · [19](19-changelog.md)。
+> Hub 展示壳（半层二楼 + 静态电梯）已入库，见 [18](18-hub-dungeon.md) · [19](19-changelog.md)。  
+> **UX1 / UX2-v0**（品牌首屏 + 切景淡入淡出）已入库；余量见下方 Next（UX3 / UX2-v1 门色标签可选）。
 
 ---
 
@@ -40,8 +41,9 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| UX1 | 加载动画 / 首屏画面 | 替换 Godot Web 默认 logo/splash；品牌首屏 + 进度（壳 HTML 或自定义 boot splash） | [ ] |
-| UX2 | 关卡过场动画 | Hub ↔ 工坊/训练场不再瞬间切景；淡入淡出或门洞过场 ≥300ms；可跳过 | [ ] |
+| UX1 | 加载动画 / 首屏画面 | Web 品牌字标 + 进度；隐藏 Godot 默认 splash | [x] v0 |
+| UX2 | 关卡过场动画 | `MWTransition` / `MW_TRANSITION` 淡入淡出 ~280ms；Hub 门 / Esc / 菜单 | [x] v0 |
+| UX2b | 过场增强（可选） | 按门色/路线标签；可跳过；桌面缓动与 Web 对齐 | [ ] |
 | UX3 | Hub 加载与重连提示 | 断线/重连有明确文案，避免静默白屏 | [ ] |
 
 ### PL · 独立 API 与后台

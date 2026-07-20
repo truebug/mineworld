@@ -29,19 +29,17 @@ body {
 	outline: none;
 }
 
-#status, #status-splash, #status-progress {
+#status, #status-progress {
 	position: absolute;
 	left: 0;
 	right: 0;
 }
 
-#status, #status-splash {
+#status {
 	top: 0;
 	bottom: 0;
-}
-
-#status {
-	background-color: $GODOT_SPLASH_COLOR;
+	background:
+		radial-gradient(ellipse at 50% 35%, #1a2740 0%, #05070c 55%, #020308 100%);
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -50,24 +48,40 @@ body {
 	z-index: 2;
 }
 
+/* Hide Godot default splash art; brand mark is #mw-boot. */
 #status-splash {
-	max-height: 100%;
-	max-width: 100%;
-	margin: auto;
+	display: none !important;
 }
 
-#status-splash.show-image--false {
-	display: none;
+#mw-boot {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	padding: 1.5rem;
+	text-align: center;
+	user-select: none;
 }
 
-#status-splash.fullsize--true {
-	height: 100%;
-	width: 100%;
-	object-fit: contain;
+#mw-boot .mw-boot-mark {
+	font: 700 42px/1.1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+	letter-spacing: 0.04em;
+	color: #e8eef8;
+	text-shadow: 0 0 40px rgba(80, 140, 220, 0.35);
 }
 
-#status-splash.use-filter--false {
-	image-rendering: pixelated;
+#mw-boot .mw-boot-sub {
+	font: 500 15px/1.3 ui-sans-serif, system-ui, sans-serif;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: #7a9bb8;
+}
+
+#mw-boot-hint {
+	margin-top: 4px;
+	font: 13px/1.3 ui-monospace, Menlo, Consolas, monospace;
+	color: #9bb4c9;
+	opacity: 0.9;
 }
 
 #status-progress, #status-notice {
@@ -75,9 +89,32 @@ body {
 }
 
 #status-progress {
-	bottom: 10%;
-	width: 50%;
-	margin: 0 auto;
+	position: relative;
+	left: auto;
+	right: auto;
+	bottom: auto;
+	width: min(280px, 60vw);
+	height: 6px;
+	margin: 12px auto 0;
+	border: none;
+	border-radius: 3px;
+	background: rgba(255, 255, 255, 0.12);
+	overflow: hidden;
+}
+
+#status-progress::-webkit-progress-bar {
+	background: rgba(255, 255, 255, 0.12);
+	border-radius: 3px;
+}
+
+#status-progress::-webkit-progress-value {
+	background: linear-gradient(90deg, #3d7eb8, #6ec0ff);
+	border-radius: 3px;
+}
+
+#status-progress::-moz-progress-bar {
+	background: linear-gradient(90deg, #3d7eb8, #6ec0ff);
+	border-radius: 3px;
 }
 
 #status-notice {
@@ -92,6 +129,34 @@ body {
 	padding: 1rem;
 	text-align: center;
 	z-index: 1;
+}
+
+/* UX2-v0 level fade (above game canvas, below failure notices). */
+#mw-transition {
+	position: fixed;
+	inset: 0;
+	z-index: 2147483645;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	background: #05070c;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.28s ease;
+}
+
+#mw-transition.show {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+#mw-transition .mw-tr-label {
+	font: 600 18px/1.3 ui-sans-serif, system-ui, sans-serif;
+	color: #d0dbe8;
+	letter-spacing: 0.04em;
+	min-height: 1.3em;
 }
 
 /* MineWorld overlays — must live in <body>, never in <head>. */
@@ -366,9 +431,17 @@ body.mw-play #mw-joints {
 		</noscript>
 
 		<div id="status">
+			<div id="mw-boot">
+				<div class="mw-boot-mark">MineWorld</div>
+				<div class="mw-boot-sub">Dungeon Gate</div>
+				<progress id="status-progress"></progress>
+				<div id="mw-boot-hint">Loading…</div>
+			</div>
 			<img id="status-splash" class="$GODOT_SPLASH_CLASSES" src="$GODOT_SPLASH" alt="">
-			<progress id="status-progress"></progress>
 			<div id="status-notice"></div>
+		</div>
+		<div id="mw-transition" aria-hidden="true">
+			<div class="mw-tr-label" id="mw-tr-label"></div>
 		</div>
 
 		<pre id="mw-hud" title="Click to collapse">MineWorld · connecting…</pre>
@@ -422,6 +495,32 @@ const engine = new Engine(GODOT_CONFIG);
 			window.MW_LAYOUT_HUB_CHROME();
 		}
 	};
+
+	/* UX2-v0: fade overlay between Godot scenes. */
+	(function setupTransition() {
+		const el = document.getElementById('mw-transition');
+		const lab = document.getElementById('mw-tr-label');
+		if (!el) {
+			return;
+		}
+		window.MW_TRANSITION = {
+			start: function (opts) {
+				const label = opts && opts.label ? String(opts.label) : '';
+				if (lab) {
+					lab.textContent = label;
+				}
+				el.classList.add('show');
+				el.setAttribute('aria-hidden', 'false');
+			},
+			end: function () {
+				el.classList.remove('show');
+				el.setAttribute('aria-hidden', 'true');
+				if (lab) {
+					lab.textContent = '';
+				}
+			},
+		};
+	})();
 
 	/* Local profile card (no login) — docs/18 H6. */
 	window.MW_GET_PROFILE = function () {
@@ -767,6 +866,7 @@ const engine = new Engine(GODOT_CONFIG);
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
 	const statusNotice = document.getElementById('status-notice');
+	const bootHint = document.getElementById('mw-boot-hint');
 
 	let initializing = true;
 	let statusMode = '';
@@ -783,6 +883,12 @@ const engine = new Engine(GODOT_CONFIG);
 		statusOverlay.style.visibility = 'visible';
 		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
 		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		if (bootHint) {
+			bootHint.style.display = mode === 'notice' ? 'none' : 'block';
+			if (mode === 'progress') {
+				bootHint.textContent = 'Loading engine…';
+			}
+		}
 		statusMode = mode;
 	}
 
