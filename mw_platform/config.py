@@ -49,6 +49,11 @@ def gateway_key() -> str | None:
     )
 
 
+def federation_stub_key() -> str:
+    """Shared secret for POST /login/federated stub (E2)."""
+    return os.environ.get("MW_PLATFORM_FEDERATION_STUB_KEY", "dev-federation")
+
+
 def score_url() -> str:
     """Where Gateway POSTs scores (same-origin web server by default)."""
     return os.environ.get(

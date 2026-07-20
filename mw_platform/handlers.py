@@ -6,7 +6,7 @@ import json
 from typing import Any, Callable
 from urllib.parse import parse_qs, urlparse
 
-from mw_platform.config import admin_key, auth_enabled, db_url, gateway_key
+from mw_platform.config import admin_key, auth_enabled, db_url, federation_stub_key, gateway_key
 from mw_platform.scoring import compute_points
 from mw_platform.store import ensure_demo_player, get_store, player_to_json
 
@@ -40,6 +40,15 @@ def _gateway_or_admin(get_header: GetHeader) -> bool:
     return bool(expected and key == expected)
 
 
+def _federation_authorized(get_header: GetHeader, body: dict[str, Any]) -> bool:
+    """True if stub_secret or gateway/admin key matches (E2 federated stub)."""
+    expected = federation_stub_key()
+    secret = str(body.get("stub_secret", "")).strip()
+    if expected and secret == expected:
+        return True
+    return _gateway_or_admin(get_header)
+
+
 def handle_platform_get(
     path: str,
     *,
@@ -58,12 +67,14 @@ def handle_platform_get(
         store = get_store()
         stats = store.player_stats(player.player_id)  # type: ignore[attr-defined]
         scores = store.player_scores(player.player_id, limit=20)  # type: ignore[attr-defined]
+        links = store.list_identity_links(player.player_id)  # type: ignore[attr-defined]
         send_json(
             {
                 "ok": True,
                 "player": player_to_json(player),
                 "stats": stats,
                 "scores": scores,
+                "identity_links": links,
             },
             200,
         )
@@ -111,6 +122,58 @@ def handle_platform_post(
         token = store.issue_token(player.player_id)
         send_json(
             {"ok": True, "token": token, "player": player_to_json(player)},
+            200,
+        )
+        return True
+
+    if path == "/api/platform/login/federated":
+        # E2 stub: exchange issuer+external_sub (+ stub_secret) for local Bearer.
+        body = read_body()
+        if body is None:
+            send_json({"error": "bad_json"}, 400)
+            return True
+        if not _federation_authorized(get_header, body):
+            send_json({"error": "forbidden"}, 403)
+            return True
+        issuer = str(body.get("issuer", "")).strip().lower()
+        external_sub = str(body.get("external_sub", "")).strip()
+        if not issuer or not external_sub:
+            send_json({"error": "missing_fields"}, 400)
+            return True
+        # v0: only stub issuer auto-provisions; others must be pre-linked.
+        display = body.get("display_name")
+        display_s = str(display).strip() if display else None
+        store = get_store()
+        try:
+            if issuer == "stub":
+                player = store.ensure_federated_player(  # type: ignore[attr-defined]
+                    issuer=issuer,
+                    external_sub=external_sub,
+                    display_name=display_s,
+                )
+            else:
+                player = store.resolve_identity(issuer, external_sub)  # type: ignore[attr-defined]
+                if player is None:
+                    send_json(
+                        {
+                            "error": "not_linked",
+                            "message": "link via admin/identity-links first (non-stub issuer)",
+                        },
+                        404,
+                    )
+                    return True
+        except ValueError as exc:
+            send_json({"error": str(exc)}, 400)
+            return True
+        token = store.issue_token(player.player_id)
+        links = store.list_identity_links(player.player_id)  # type: ignore[attr-defined]
+        send_json(
+            {
+                "ok": True,
+                "token": token,
+                "player": player_to_json(player),
+                "identity_links": links,
+            },
             200,
         )
         return True
@@ -196,6 +259,34 @@ def handle_platform_post(
             send_json({"error": str(exc)}, 409)
             return True
         send_json({"ok": True, "player": player_to_json(player)}, 201)
+        return True
+
+    if path == "/api/platform/admin/identity-links":
+        key = get_header("X-Admin-Key") or get_header("x-admin-key")
+        expected = admin_key()
+        if not expected or key != expected:
+            send_json({"error": "forbidden"}, 403)
+            return True
+        body = read_body()
+        if body is None:
+            send_json({"error": "bad_json"}, 400)
+            return True
+        pid = str(body.get("player_id", "")).strip()
+        issuer = str(body.get("issuer", "")).strip().lower()
+        external_sub = str(body.get("external_sub", "")).strip()
+        if not pid or not issuer or not external_sub:
+            send_json({"error": "missing_fields"}, 400)
+            return True
+        try:
+            link = get_store().link_identity(  # type: ignore[attr-defined]
+                player_id=pid,
+                issuer=issuer,
+                external_sub=external_sub,
+            )
+        except ValueError as exc:
+            send_json({"error": str(exc)}, 409)
+            return True
+        send_json({"ok": True, "link": link}, 201)
         return True
 
     return False

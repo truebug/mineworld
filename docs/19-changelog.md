@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-07-21 · E2 身份映射草案 + federated stub
+
+- SSOT：[22-identity-mapping.md](22-identity-mapping.md)；样例 `examples/platform/identity_link.v0.json`。
+- `identity_links` 表；`POST /login/federated`（stub）；Admin `identity-links`；`/me` 返回 links。
+- `platform_smoke` 覆盖 link + federated 幂等。
+
+---
+
 ## 2026-07-21 · E4 展柜 → 外部 Space stub
 
 - Hub 两侧展柜：走近 F → 新标签打开配置 URL（不进 MuJoCo）。

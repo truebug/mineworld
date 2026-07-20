@@ -92,7 +92,7 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 | 建议 ID | 内容 | 为何先做 |
 |---------|------|----------|
 | E1 | Portal Landing：未登录品牌页 → 登录 → Profile/榜单 →「进入大厅」（**Done** `/portal/` · `/portal/me.html`） | 统一前台第一印象 |
-| E2 | `player_id` ↔ 平台 user 映射草案（文档 + 可选 stub token） | 大一统身份的最小契约 |
+| E2 | `player_id` ↔ 平台 user 映射草案（文档 + 可选 stub token） | **Done** — [22](22-identity-mapping.md) + federated stub |
 | E3 | 通关/会话归因字段预留（`space_id` 可空；本仓 `level_id` 已有） | 跨系统战绩不返工 |
 
 ### P1 · 第一条外部卡片通道（验证「对接」）

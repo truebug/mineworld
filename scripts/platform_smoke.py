@@ -76,6 +76,37 @@ def main() -> int:
         print("FAIL: player_scores", hist, file=sys.stderr)
         return 1
 
+    # E2: admin link + federated stub login
+    link = store.link_identity(
+        player_id="demo",
+        issuer="robohub",
+        external_sub="rh-42",
+    )
+    if link.get("player_id") != "demo":
+        print("FAIL: link_identity", link, file=sys.stderr)
+        return 1
+    linked = store.resolve_identity("robohub", "rh-42")
+    if linked is None or linked.player_id != "demo":
+        print("FAIL: resolve_identity", file=sys.stderr)
+        return 1
+
+    fed = store.ensure_federated_player(
+        issuer="stub",
+        external_sub="ext-smoke-1",
+        display_name="Fed Smoke",
+    )
+    if not fed.player_id.startswith("fed_stub_"):
+        print("FAIL: ensure_federated_player id", fed.player_id, file=sys.stderr)
+        return 1
+    fed2 = store.ensure_federated_player(issuer="stub", external_sub="ext-smoke-1")
+    if fed2.player_id != fed.player_id:
+        print("FAIL: federated idempotent", fed2.player_id, file=sys.stderr)
+        return 1
+    links = store.list_identity_links(fed.player_id)
+    if not any(x.get("issuer") == "stub" and x.get("external_sub") == "ext-smoke-1" for x in links):
+        print("FAIL: list_identity_links", links, file=sys.stderr)
+        return 1
+
     print("platform smoke OK")
     return 0
 

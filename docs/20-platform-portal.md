@@ -9,7 +9,7 @@
 
 > **结论**：现在就把这条产品线写进计划是合适的——POC 管道与 3D Hub 已够用；再堆大厅观感收益递减。  
 > **但**必须分期：先「身份 + API + 最小后台」，再「积分/排行」，再「玩家页与回放统一」，避免一次做完账号 SaaS。  
-> **生态下一步**：Portal Landing + `player_id` 对齐平台账号（E1/E2），见 [21](21-ecosystem-federation.md)。
+> **生态下一步**：身份映射见 [22](22-identity-mapping.md)（E2 Done）；Portal Landing 见 [21](21-ecosystem-federation.md)。
 
 ---
 
@@ -107,7 +107,7 @@ v0 实现：`mw_platform/` + `/api/platform/*`（同端口 8080 或独立 `:8090
 | Smoke | `scripts/platform_smoke.py` |
 | 我的页 | `/portal/me.html`（ME1） |
 | Admin | `/portal/admin.html`（默认 key `dev-admin`；点玩家 → 会话列表 + Export CSV） |
-| 回放 | My record → 2D `recordings.html?session=`（ME2）；3D `/?replay=` 暂禁 → R3 |
+| 回放 | My record → 2D `recordings.html?session=`（ME2）；3D `/?replay=`（R3） |
 | 录制筛 / 导出 | `GET /api/recordings?player_id=` · `export.csv?player_id=`（header 写 `player_id`） |
 
 Admin 创建玩家（需 `MW_PLATFORM_ADMIN_KEY`）：

@@ -6,7 +6,8 @@
 
 1. [00-vision.md](00-vision.md) — 为什么做、做什么
 2. **[21-ecosystem-federation.md](21-ecosystem-federation.md)** — **生态对接：Hub↔PMS/Spaces；统一身份**
-3. [15-course-correction.md](15-course-correction.md) — 跑偏纪要与纠偏诊断
+3. **[22-identity-mapping.md](22-identity-mapping.md)** — **E2：`player_id` ↔ 外部 user 映射 + federated stub**
+4. [15-course-correction.md](15-course-correction.md) — 跑偏纪要与纠偏诊断
 4. **[16-value-sprint.md](16-value-sprint.md)** — V 线冻结规格（车间 / 臂爪 / IL）· **Done**
 5. **[18-hub-dungeon.md](18-hub-dungeon.md)** — **3D 地下城 Hub（默认入口）**
 6. **[20-platform-portal.md](20-platform-portal.md)** — **平台门户 / 身份 / 积分 / Admin（规划）**

@@ -118,6 +118,15 @@ class SQLitePlayerStore(PlayerStore):
                     ON scores(player_id);
                 CREATE INDEX IF NOT EXISTS idx_scores_points
                     ON scores(points DESC);
+                CREATE TABLE IF NOT EXISTS identity_links (
+                    issuer TEXT NOT NULL,
+                    external_sub TEXT NOT NULL,
+                    player_id TEXT NOT NULL REFERENCES players(player_id),
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (issuer, external_sub)
+                );
+                CREATE INDEX IF NOT EXISTS idx_identity_links_player
+                    ON identity_links(player_id);
                 """
             )
 
@@ -362,6 +371,110 @@ class SQLitePlayerStore(PlayerStore):
             if p is not None:
                 out.append(p)
         return out
+
+    def list_identity_links(self, player_id: str) -> list[dict[str, str]]:
+        """Return external identity links for a player (E2)."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT issuer, external_sub, player_id, created_at
+                FROM identity_links WHERE player_id = ?
+                ORDER BY issuer, external_sub
+                """,
+                (player_id.strip(),),
+            ).fetchall()
+        return [
+            {
+                "issuer": str(r["issuer"]),
+                "external_sub": str(r["external_sub"]),
+                "player_id": str(r["player_id"]),
+                "created_at": str(r["created_at"]),
+            }
+            for r in rows
+        ]
+
+    def resolve_identity(self, issuer: str, external_sub: str) -> Player | None:
+        """Lookup player by (issuer, external_sub)."""
+        iss = issuer.strip().lower()
+        sub = external_sub.strip()
+        if not iss or not sub:
+            return None
+        with self._conn() as conn:
+            row = conn.execute(
+                """
+                SELECT player_id FROM identity_links
+                WHERE issuer = ? AND external_sub = ?
+                """,
+                (iss, sub),
+            ).fetchone()
+        if row is None:
+            return None
+        return self.get_player(str(row["player_id"]))
+
+    def link_identity(
+        self,
+        *,
+        player_id: str,
+        issuer: str,
+        external_sub: str,
+    ) -> dict[str, str]:
+        """Attach (issuer, external_sub) to an existing player_id.
+
+        Raises ValueError on missing player or conflicting link.
+        """
+        pid = player_id.strip()
+        iss = issuer.strip().lower()
+        sub = external_sub.strip()
+        if not pid or not iss or not sub:
+            raise ValueError("player_id, issuer, external_sub required")
+        if self.get_player(pid) is None:
+            raise ValueError("player not found")
+        existing = self.resolve_identity(iss, sub)
+        if existing is not None and existing.player_id != pid:
+            raise ValueError("external identity already linked to another player")
+        if existing is not None and existing.player_id == pid:
+            return {"issuer": iss, "external_sub": sub, "player_id": pid}
+        now = _iso(_utc_now())
+        with self._conn() as conn:
+            conn.execute(
+                """
+                INSERT INTO identity_links (issuer, external_sub, player_id, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (iss, sub, pid, now),
+            )
+        return {"issuer": iss, "external_sub": sub, "player_id": pid}
+
+    def ensure_federated_player(
+        self,
+        *,
+        issuer: str,
+        external_sub: str,
+        display_name: str | None = None,
+        accent: str = "#4aa3ff",
+    ) -> Player:
+        """Resolve link or create fed_* player + link (E2 stub login)."""
+        iss = issuer.strip().lower()
+        sub = external_sub.strip()
+        found = self.resolve_identity(iss, sub)
+        if found is not None:
+            return found
+        # Stable local id: fed_<issuer>_<safe_sub>
+        safe = "".join(c if c.isalnum() or c in "-_" else "_" for c in sub)[:40]
+        if not safe:
+            safe = "user"
+        base = f"fed_{iss}_{safe}"[:64]
+        pid = base
+        n = 0
+        while self.get_player(pid) is not None:
+            n += 1
+            pid = f"{base}_{n}"[:64]
+        name = (display_name or "").strip() or pid
+        # Random password — federated accounts login via link, not password.
+        password = auth_mod.new_token()
+        player = self.create_player(pid, name, password, accent=accent)
+        self.link_identity(player_id=player.player_id, issuer=iss, external_sub=sub)
+        return player
 
 
 class PostgresPlayerStore(PlayerStore):

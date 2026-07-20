@@ -93,6 +93,7 @@ def main() -> None:
     print(f"mw_platform API http://{host}:{port}/")
     print(f"  GET  /api/platform/health")
     print(f"  POST /api/platform/login")
+    print(f"  POST /api/platform/login/federated  (E2 stub)")
     print(f"  GET  /api/platform/me  (Bearer token)")
     print("demo login: player_id=demo password=demo")
     try:

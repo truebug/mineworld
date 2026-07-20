@@ -1,0 +1,15 @@
+{
+  "contract_version": "0.1",
+  "kind": "identity_link",
+  "description": "E2: map external platform user → MineWorld player_id (docs/22)",
+  "link": {
+    "player_id": "demo",
+    "issuer": "stub",
+    "external_sub": "demo-ext-1",
+    "display_name": "Demo Pilot"
+  },
+  "notes": [
+    "(issuer, external_sub) uniquely maps to one player_id",
+    "Bearer tokens remain MineWorld-local; external JWT is never the Gateway credential"
+  ]
+}
