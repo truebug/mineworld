@@ -5,9 +5,10 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | E1–E5 / W1 / R3 / H8–H11 / PL2 / IL-place 飞轮 Done；**Now：W2 公网或门 C/D**（见 [21](21-ecosystem-federation.md)） |
+| **目标** | E1–E5 / W1 / R3 / H8–H11 / PL2 / IL Done；**Now：W2 公网实施**（见 [23](23-public-deploy.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
+| **公网部署建议** | **[23-public-deploy.md](23-public-deploy.md)**（databall.cloud · 2C8G） |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
 | **阶段评审** | [12-status-review.md](12-status-review.md) |
 | **跑偏与纠偏** | [15-course-correction.md](15-course-correction.md) |
@@ -24,13 +25,15 @@
 
 ## Now（建议下一刀）
 
-> PL2 / E4 / IL-place / H11 已收口。  
-> **建议下一刀：W2 公网 HTTPS/wss，或门 C/D 占位。**
+> H11 已收口。公网 **实施建议书** 见 [23-public-deploy.md](23-public-deploy.md)（待在 CVM 上执行）。  
+> **建议下一刀：按 23 做 W2.1/2/4，或门 C/D 占位。**
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| H11 | 竞技场门占位 | 门 E 壳 + F 四态 stub；不进关、非 PMS | [x] |
-| W2.1 | 公网 HTTPS / wss | 跟统一身份反代 | [~] |
+| W2-doc | 公网实施建议书 | [23](23-public-deploy.md) 入库 | [x] |
+| W2.1 | 静态 HTTPS（databall.cloud） | 证书有效可进 Portal/Hub | [ ] |
+| W2.2 | Gateway `wss` 反代 | 浏览器 hello→join→state | [ ] |
+| W2.4 | 最小运维说明 | 安全组/进程/密钥/重启 | [ ] §4–§10 of 23 |
 | H7c | 门 C/D 占位加深 | Design / Missions 叙事壳 | [ ] |
 
 ---
@@ -110,7 +113,7 @@
 
 | ID | 任务 | 状态 |
 |----|------|------|
-| W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [~] 跟统一身份反代一起做 |
+| W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [ ] 见 [23](23-public-deploy.md) |
 | T2.7 | 输入延迟补偿 v0 | [~] |
 
 ---

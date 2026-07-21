@@ -106,12 +106,14 @@ HUD 应显示 `room: demo`；先到 `entity: mech_player`，后到 `mech_player_
 
 Schema 已支持 `entity_state.joints` / `joint_vels`。Gateway 写出 `slide_x` / `slide_y` / `yaw_z`；客户端可暂不消费。
 
-### W2.1 / W2.2 / W2.4 — 公网可部署（Later / 暂缓）
+### W2.1 / W2.2 / W2.4 — 公网可部署
+
+> **实施建议书（目标机 / 清单）**：[23-public-deploy.md](23-public-deploy.md)（腾讯云 2C8G · `databall.cloud`）。
 
 | ID | 任务 | 验收 |
 |----|------|------|
-| W2.1 | 静态资源上 CDN/对象存储或 Nginx | HTTPS 可打开 |
-| W2.2 | Gateway 反代 `wss://demo.example/ws` | 浏览器跨机可连 |
+| W2.1 | 静态资源上 CDN/对象存储或 Nginx/Caddy | HTTPS 可打开 |
+| W2.2 | Gateway 反代 `wss://…/ws` | 浏览器跨机可连 |
 | W2.4 | 文档：防火墙、仅演示密钥/IP allow（最小） | 有一页运维说明 |
 
 ### W4 — 加固

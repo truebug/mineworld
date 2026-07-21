@@ -10,6 +10,13 @@
 
 ---
 
+## 2026-07-21 · W2 公网实施建议书
+
+- 新增 [23-public-deploy.md](23-public-deploy.md)：腾讯云 2C8G + `databall.cloud` 单机拓扑、资源判断、Caddy/env、分阶段清单与验收。
+- 非仿真负载确认轻量；MuJoCo 公网需限房。实施仍待 CVM 上执行（W2.1/2/4 未勾 Done）。
+
+---
+
 ## 2026-07-21 · H11 竞技场门占位
 
 - 门 E：Arena Gate 立面/地垫/橙红霓虹；小地图 E 点高亮。

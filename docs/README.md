@@ -11,18 +11,19 @@
 5. **[16-value-sprint.md](16-value-sprint.md)** — V 线冻结规格（车间 / 臂爪 / IL）· **Done**
 6. **[18-hub-dungeon.md](18-hub-dungeon.md)** — **3D 地下城 Hub（默认入口）**
 7. **[20-platform-portal.md](20-platform-portal.md)** — **平台门户 / 身份 / 积分 / Admin（规划）**
-8. [17-lobby-testfield.md](17-lobby-testfield.md) — 试验场文本菜单（`?menu=1`）
-9. [01-architecture.md](01-architecture.md) — 怎么拆
-10. [02-scene-contract.md](02-scene-contract.md) — 世界如何进仿真
-11. [03-websocket-protocol.md](03-websocket-protocol.md) — 怎么连
-12. [04-data-collection.md](04-data-collection.md) — 采什么（IL 优先）
-13. [08-modes-roadmap.md](08-modes-roadmap.md) — MVP 与路线
-14. [09-todo.md](09-todo.md) — **可执行待办（Now / Next）**
-15. [19-changelog.md](19-changelog.md) — **变更记录**
-16. [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) — POC 规格 + MVP 薄架构
-17. [12-status-review.md](12-status-review.md) — 阶段回顾
-18. [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) — Web / 多人
-19. [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) — 融合 + URDF/视觉
+8. **[23-public-deploy.md](23-public-deploy.md)** — **公网部署实施建议（W2 · databall.cloud）**
+9. [17-lobby-testfield.md](17-lobby-testfield.md) — 试验场文本菜单（`?menu=1`）
+10. [01-architecture.md](01-architecture.md) — 怎么拆
+11. [02-scene-contract.md](02-scene-contract.md) — 世界如何进仿真
+12. [03-websocket-protocol.md](03-websocket-protocol.md) — 怎么连
+13. [04-data-collection.md](04-data-collection.md) — 采什么（IL 优先）
+14. [08-modes-roadmap.md](08-modes-roadmap.md) — MVP 与路线
+15. [09-todo.md](09-todo.md) — **可执行待办（Now / Next）**
+16. [19-changelog.md](19-changelog.md) — **变更记录**
+17. [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) — POC 规格 + MVP 薄架构
+18. [12-status-review.md](12-status-review.md) — 阶段回顾
+19. [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) — Web / 多人
+20. [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) — 融合 + URDF/视觉
 
 ## 实施参考
 

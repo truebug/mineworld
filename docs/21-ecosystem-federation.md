@@ -119,9 +119,9 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 | H10 | 房间壳：展厅 / 教室走廊占位 + lore | **Done** |
 | H11 | 竞技场门占位（1v1 / 多人） | **Done** — 壳+F stub；权威另案；勿与 PMS 卡片混用 |
 
-### 明确暂缓
+### 明确暂缓 / 另案实施
 
-- 公网 HTTPS/wss 大张旗鼓（跟统一身份反代一起）  
+- 公网 HTTPS/wss：**建议书已写** [23-public-deploy.md](23-public-deploy.md)；CVM 上执行前仍算未 Done  
 - 在 Gateway 内嵌 Gazebo / 高斯 / VLA 训练编排  
 - 真机透传公网演示（安全与运维未就绪前）
 
