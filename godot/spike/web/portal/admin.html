@@ -61,10 +61,9 @@
 <body>
 	<div class="wrap">
 		<h1 data-i18n="admin.title">管理 · 运维</h1>
-		<p class="muted" data-i18n="admin.hint">默认密钥 dev-admin（可用 MW_PLATFORM_ADMIN_KEY 覆盖）。仅存本浏览器。PL2 房间需 Gateway --admin-port 8770。</p>
 		<div class="card">
 			<label><span data-i18n="admin.key">管理密钥</span>
-				<input id="key" type="password" autocomplete="off" placeholder="dev-admin">
+				<input id="key" type="password" autocomplete="off" placeholder="••••">
 			</label>
 			<button type="button" id="load" data-i18n="admin.load">加载玩家</button>
 			<button type="button" id="load-ops" data-i18n="admin.refresh">刷新房间 / 关卡</button>
@@ -139,6 +138,34 @@
 	</div>
 	<script>
 	(function () {
+		const TOKEN_KEY = 'mw_auth_token';
+		const token = localStorage.getItem(TOKEN_KEY);
+		if (!token) {
+			location.replace('/portal/login.html?next=' + encodeURIComponent('/portal/admin.html'));
+			return;
+		}
+		fetch('/api/platform/me', { headers: { Authorization: 'Bearer ' + token } })
+			.then(function (r) {
+				if (r.status === 401) {
+					localStorage.removeItem(TOKEN_KEY);
+					location.replace('/portal/login.html?next=' + encodeURIComponent('/portal/admin.html'));
+					return null;
+				}
+				return r.json();
+			})
+			.then(function (data) {
+				if (data === null) return;
+				if (!data || !data.ok) {
+					location.replace('/portal/login.html?next=' + encodeURIComponent('/portal/admin.html'));
+					return;
+				}
+				bootAdmin();
+			})
+			.catch(function () {
+				location.replace('/portal/login.html?next=' + encodeURIComponent('/portal/admin.html'));
+			});
+
+		function bootAdmin() {
 		if (window.MW_I18N) {
 			window.MW_I18N.mountToggle(document.body);
 		}
@@ -153,7 +180,7 @@
 
 		const KEY = 'mw_admin_key';
 		const keyEl = document.getElementById('key');
-		try { keyEl.value = localStorage.getItem(KEY) || 'dev-admin'; } catch (e) {}
+		try { keyEl.value = localStorage.getItem(KEY) || ''; } catch (e) {}
 
 		let selectedPid = '';
 
@@ -359,6 +386,7 @@
 			document.getElementById('pw').value = '';
 			loadPlayers();
 		};
+		} // bootAdmin
 	})();
 	</script>
 </body>

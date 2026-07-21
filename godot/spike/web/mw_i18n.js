@@ -38,10 +38,6 @@
 		'login.player': { zh: '玩家 ID', en: 'Player ID' },
 		'login.password': { zh: '密码', en: 'Password' },
 		'login.submit': { zh: '登录', en: 'Sign in' },
-		'login.hint': {
-			zh: '本地演示：demo / demo。登录后 → 档案与排行，再进入母港。',
-			en: 'Local demo: demo / demo. After sign-in → Profile & board, then Enter hangar.'
-		},
 		'login.landing': { zh: '首页', en: 'Landing' },
 		'login.profile': { zh: '档案', en: 'Profile' },
 		'me.sub': { zh: '飞行员档案', en: 'Pilot profile' },
@@ -66,10 +62,6 @@
 		'me.fail': { zh: '加载失败', en: 'Failed' },
 		'me.no_rec': { zh: '无录制', en: 'no rec' },
 		'admin.title': { zh: '管理 · 运维', en: 'Admin · ops' },
-		'admin.hint': {
-			zh: '默认密钥 dev-admin（可用 MW_PLATFORM_ADMIN_KEY 覆盖）。仅存本浏览器。PL2 房间需 Gateway --admin-port 8770。',
-			en: 'Default key dev-admin (override with MW_PLATFORM_ADMIN_KEY). Stored in this browser only. PL2 rooms need Gateway --admin-port 8770.'
-		},
 		'admin.key': { zh: '管理密钥', en: 'Admin key' },
 		'admin.load': { zh: '加载玩家', en: 'Load players' },
 		'admin.refresh': { zh: '刷新房间 / 关卡', en: 'Refresh rooms / levels' },

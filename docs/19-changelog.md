@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-07-21 · Portal 登录/Admin 与落地页
+
+- 登录页去掉 demo/demo 提示；Admin 去掉默认密钥文案；未登录不可用 Admin 页（仍无角色组，运维靠 `X-Admin-Key`）。
+- 落地页：SVG 动态星空 + 公司版权 / ICP 页脚。
+- 私有运维：`docs/ops.local.md`（gitignore）。
+
+---
+
 ## 2026-07-21 · H-bounds / E3b / IL-place′ / QA
 
 - Hub：`bounds.walkable` 多段 FakeMech 空气墙（南坞缝不可走）。

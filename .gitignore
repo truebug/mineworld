@@ -26,5 +26,9 @@ godot/**/.godot/
 # Platform DB (local dev; production → Postgres via MW_PLATFORM_DB_URL)
 /mw_platform/data/
 
+# Private ops notes (host paths, keys, runbooks) — never commit
+/docs/ops.local.md
+/docs/ops*.local.md
+
 /*.zip
 /kenney_*.zip

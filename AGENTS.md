@@ -4,7 +4,7 @@ MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authorit
 
 ## Project Structure & Module Organization
 
-- `docs/` — design docs (`00` … `24-hub-mothership.md`); `09-todo.md` execution; **`16` V-sprint**; **`18` Hub**; **`19` changelog**; **`20` portal**; **`21` 生态对接**; **`24` 母港布局**.
+- `docs/` — design docs (`00` … `24-hub-mothership.md`); `09-todo.md` execution; **`16` V-sprint**; **`18` Hub**; **`19` changelog**; **`20` portal**; **`21` 生态对接**; **`24` 母港布局**. 私有运维：`docs/ops.local.md`（**gitignore**，勿提交）。
 - `mw_platform/` — identity HTTP API (SQLite; swap via `MW_PLATFORM_DB_URL`).
 - `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, `--physics fake|mujoco`; Hub rooms force FakeMech; `recording_store.py`.
 - `godot/` — spike baseline; default main scene **`demo_hub`**; doors → `demo_workshop` / `demo_city`; autoloads `MWTransition` / `MWi18n` / `MWFonts`（Noto SC）; `?menu=1` text lobby.
