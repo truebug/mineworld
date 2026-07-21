@@ -154,8 +154,7 @@ surface_material_override/0 = SubResource("mat_door_a")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0.3)
 pixel_size = 0.01
 billboard = 1
-text = "A 仿真工坊
-Workshop"
+text = "A 仿真工坊"
 font_size = 64
 outline_size = 6
 
@@ -168,8 +167,7 @@ surface_material_override/0 = SubResource("mat_door_b")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0.3)
 pixel_size = 0.01
 billboard = 1
-text = "B 机甲训练场
-Training Yard"
+text = "B 机甲训练场"
 font_size = 64
 outline_size = 6
 
@@ -181,8 +179,7 @@ mesh = SubResource("mesh_door")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0.3)
 pixel_size = 0.008
 billboard = 1
-text = "C 设计室 · 卡片
-Design Lab"
+text = "C 设计室"
 font_size = 48
 modulate = Color(0.7, 0.7, 0.7, 1)
 
@@ -218,7 +215,7 @@ theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.75)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 14
-text = "Dungeon Gate - tips > (click)"
+text = "母港 · 提示 ›（点击）"
 autowrap_mode = 3
 
 [node name="MapPanel" type="PanelContainer" parent="HUD"]
@@ -243,7 +240,7 @@ theme_override_constants/separation = 4
 layout_mode = 2
 theme_override_colors/font_color = Color(0.82, 0.92, 1.0, 1)
 theme_override_font_sizes/font_size = 12
-text = "Hub map · A orange · B blue · C–E soon"
+text = "母港图 · 东A橙 · 西B蓝 · 北C · 西偏北D · 南E"
 horizontal_alignment = 2
 
 [node name="MiniMap" type="Control" parent="HUD/MapPanel/MapVBox"]
@@ -277,12 +274,12 @@ theme_override_constants/separation = 4
 [node name="ProfileText" type="Label" parent="HUD/ProfileCard/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
-text = "Profile"
+text = "飞行员卡"
 
 [node name="NickEdit" type="LineEdit" parent="HUD/ProfileCard/VBox"]
 custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
-placeholder_text = "Nickname"
+placeholder_text = "昵称"
 max_length = 24
 
 [connection signal="text_submitted" from="HUD/ProfileCard/VBox/NickEdit" to="." method="_on_nick_submitted"]

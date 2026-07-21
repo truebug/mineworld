@@ -108,7 +108,7 @@ func _place_stations() -> void:
 		"kiosk_welcome",
 		Vector3(-6.0, 0, WALL_Z - 1.0),
 		180.0,
-		"F · 导览台",
+		MWi18n.t("F · 导览台", "F · Welcome"),
 		MWi18n.t(
 			"欢迎来到母港。\n东橙 A 工坊 · 西蓝 B 训练 · 北 C 卡片 · 西偏北 D 边缘 · 南 E 竞技\n按 V 切换相机。",
 			"Welcome to Hangar Core.\nA Workshop · B Training · C Cards · D Edge · E Arena.\nPress V for camera."

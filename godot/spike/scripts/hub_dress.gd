@@ -842,7 +842,7 @@ func _zone_label(root: Node3D, lab_name: String, pos: Vector3, text: String, col
 
 
 func _ensure_marker(world: Node3D, marker_name: String, pos: Vector3, text: String, col: Color) -> void:
-	"""Door route label."""
+	"""Door route label (locale-aware; hide legacy bilingual Label3Ds)."""
 	var n := world.get_node_or_null(marker_name) as Node3D
 	if n == null:
 		n = Node3D.new()
@@ -850,6 +850,11 @@ func _ensure_marker(world: Node3D, marker_name: String, pos: Vector3, text: Stri
 		world.add_child(n)
 	n.position = pos
 	var label := n.get_node_or_null("DoorLabel") as Label3D
+	if label == null:
+		for child in n.get_children():
+			if child is Label3D:
+				label = child as Label3D
+				break
 	if label == null:
 		label = Label3D.new()
 		label.name = "DoorLabel"
@@ -859,6 +864,10 @@ func _ensure_marker(world: Node3D, marker_name: String, pos: Vector3, text: Stri
 		label.font_size = 56
 		label.outline_size = 8
 		label.pixel_size = 0.01
+	for child in n.get_children():
+		if child is Label3D and child != label:
+			(child as Label3D).visible = false
+	label.visible = true
 	label.text = text
 	label.modulate = col
 

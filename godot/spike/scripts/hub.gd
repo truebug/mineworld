@@ -85,11 +85,15 @@ const EDGE_STATES := [
 	"camera_stub",
 ]
 const VENDOR_ACCENTS := ["#4aa3ff", "#e8873a", "#6ecf8e", "#d4a24c", "#c46ecf", "#e06c75"]
-const PARTY_POSTS := [
-	"Maya · 工坊 IL · 再要一只爪",
-	"Rex · 街区热身 · 有空位",
-	"Jin · 找展厅同行",
-]
+
+
+func _party_posts() -> PackedStringArray:
+	"""Stub LFG lines (locale-aware)."""
+	return PackedStringArray([
+		MWi18n.t("Maya · 工坊 IL · 再要一只爪", "Maya · Workshop IL · need one more claw"),
+		MWi18n.t("Rex · 街区热身 · 有空位", "Rex · City warm-up · open seat"),
+		MWi18n.t("Jin · 找展厅同行", "Jin · Looking for Gallery buddy"),
+	])
 
 
 func _ready() -> void:
@@ -646,7 +650,7 @@ func _apply_tips_view() -> void:
 	if tips_label == null:
 		return
 	if _tips_collapsed:
-	var head := _link_banner if _link_banner != "" else MWi18n.t("母港 · 提示 ›（点击）", "Hangar · tips › (click)")
+		var head := _link_banner if _link_banner != "" else MWi18n.t("母港 · 提示 ›（点击）", "Hangar · tips › (click)")
 		tips_label.text = head
 	else:
 		tips_label.text = _tips_full
@@ -963,7 +967,7 @@ func _use_party_board() -> void:
 		else MWi18n.t("你 · 未发布", "YOU · not posting")
 	)
 	var lines: PackedStringArray = [MWi18n.t("组队板", "Party board"), you, ""]
-	for p in PARTY_POSTS:
+	for p in _party_posts():
 		lines.append("· %s" % str(p))
 	lines.append("")
 	lines.append(MWi18n.t("再按 F 切换招募状态。（匹配后置）", "F again to toggle. Matchmaking later."))
@@ -1115,14 +1119,14 @@ func _enter_level(scene_path: String) -> void:
 	if _entering_door:
 		return
 	_entering_door = true
-	var label := "Entering…"
+	var label := MWi18n.t("进入中…", "Entering…")
 	var accent := ""
 	if scene_path.find("workshop") >= 0:
-		label = "Workshop"
+		label = MWi18n.t("仿真工坊", "Workshop")
 		accent = "#e8873a"
 	elif scene_path.find("city") >= 0:
-		label = "Training"
+		label = MWi18n.t("机甲训练场", "Training")
 		accent = "#4aa3ff"
-	_refresh_tips("Entering route…")
+	_refresh_tips(MWi18n.t("进入航线…", "Entering route…"))
 	ws.close_link()
 	MWTransition.go(scene_path, label, accent)
