@@ -204,18 +204,25 @@ func _place_exhibits() -> void:
 		var slot: Dictionary = slots[i]
 		i += 1
 		var eid := str(ex.get("id", "exhibit_%d" % i))
-		var title := str(ex.get("title", "Exhibit"))
+		var title := MWi18n.t(
+			str(ex.get("title_zh", ex.get("title", "展柜"))),
+			str(ex.get("title_en", ex.get("title", "Exhibit"))),
+		)
 		var url := str(ex.get("url", "")).strip_edges()
 		var space_id := str(ex.get("space_id", "")).strip_edges()
-		var lore := str(ex.get("lore", "External Space card."))
-		var line := "%s\n%s\n(F opens card · space_id=%s)" % [
-			title, lore, space_id if space_id != "" else "—"
-		]
+		var lore := MWi18n.t(
+			str(ex.get("lore_zh", ex.get("lore", "外部 Space 卡片。"))),
+			str(ex.get("lore_en", ex.get("lore", "External Space card."))),
+		)
+		var line := MWi18n.t(
+			"%s\n%s\n（按 F 打开卡片 · space_id=%s）",
+			"%s\n%s\n(F opens card · space_id=%s)",
+		) % [title, lore, space_id if space_id != "" else "—"]
 		_station(
 			eid,
 			slot["pos"],
 			float(slot["yaw"]),
-			"F - %s" % title,
+			MWi18n.t("F · %s", "F · %s") % title,
 			line,
 			Color(0.55, 0.85, 0.65),
 			url,
@@ -319,28 +326,37 @@ func _station(
 func _place_npcs() -> void:
 	"""Small standing greeters at walls near doors (no wander)."""
 	_npc(
-		"Maya", "character-a.glb", Vector3(-4.5, 0, WALL_Z - 1.3), 180.0, Color(1.0, 0.85, 0.4),
-		MWi18n.t("F · 与 Maya 交谈", "F · Talk to Maya"),
-		MWi18n.t("Maya: 橙门工坊 · 蓝门训练。按 V 切相机。", "Maya: Orange Workshop, blue Training. V = camera."),
+		"maya",
+		MWi18n.t("玛雅", "Maya"),
+		"character-a.glb", Vector3(-4.5, 0, WALL_Z - 1.3), 180.0, Color(1.0, 0.85, 0.4),
+		MWi18n.t("F · 与玛雅交谈", "F · Talk to Maya"),
+		MWi18n.t("玛雅: 橙门工坊 · 蓝门训练。按 V 切相机。", "Maya: Orange Workshop, blue Training. V = camera."),
 	)
 	_npc(
-		"Rex", "character-b.glb", Vector3(WALL_X - 1.3, 0, 2.2), -90.0, Color(1.0, 0.55, 0.25),
-		MWi18n.t("F · 与 Rex 交谈", "F · Talk to Rex"),
-		MWi18n.t("Rex: 工坊在橙门。把推车完整带回来！", "Rex: Workshop through the orange gate."),
+		"rex",
+		MWi18n.t("雷克斯", "Rex"),
+		"character-b.glb", Vector3(WALL_X - 1.3, 0, 2.2), -90.0, Color(1.0, 0.55, 0.25),
+		MWi18n.t("F · 与雷克斯交谈", "F · Talk to Rex"),
+		MWi18n.t("雷克斯: 工坊在橙门。把推车完整带回来！", "Rex: Workshop through the orange gate."),
 	)
 	_npc(
-		"Jin", "character-c.glb", Vector3(-WALL_X + 1.3, 0, -2.2), 90.0, Color(0.45, 0.8, 1.0),
-		MWi18n.t("F · 与 Jin 交谈", "F · Talk to Jin"),
-		MWi18n.t("Jin: 蓝门是训练场。进街区前先热身。", "Jin: Blue door = Training yard."),
+		"jin",
+		MWi18n.t("金", "Jin"),
+		"character-c.glb", Vector3(-WALL_X + 1.3, 0, -2.2), 90.0, Color(0.45, 0.8, 1.0),
+		MWi18n.t("F · 与金交谈", "F · Talk to Jin"),
+		MWi18n.t("金: 蓝门是训练场。进街区前先热身。", "Jin: Blue door = Training yard."),
 	)
 	_npc(
-		"Pip", "character-d.glb", Vector3(4.5, 0, -WALL_Z + 1.3), 0.0, Color(0.7, 0.9, 0.5),
-		MWi18n.t("F · 与 Pip 交谈", "F · Talk to Pip"),
-		MWi18n.t("Pip: 我在看人来人往。朋友进厅记得打招呼！", "Pip: People-watching — say hi when friends join."),
+		"pip",
+		MWi18n.t("皮普", "Pip"),
+		"character-d.glb", Vector3(4.5, 0, -WALL_Z + 1.3), 0.0, Color(0.7, 0.9, 0.5),
+		MWi18n.t("F · 与皮普交谈", "F · Talk to Pip"),
+		MWi18n.t("皮普: 我在看人来人往。朋友进厅记得打招呼！", "Pip: People-watching — say hi when friends join."),
 	)
 
 
 func _npc(
+	npc_id: String,
 	display: String,
 	asset: String,
 	pos: Vector3,
@@ -351,7 +367,7 @@ func _npc(
 ) -> void:
 	"""Spawn a scaled blocky character planted on the floor."""
 	var root := Node3D.new()
-	root.name = "NPC_%s" % display
+	root.name = "NPC_%s" % npc_id
 	add_child(root)
 	root.position = pos
 	root.rotation_degrees.y = face_yaw_deg
@@ -380,7 +396,7 @@ func _npc(
 	hint.position = Vector3(0, 1.3, 0)
 	interactables.append({
 		"node": root,
-		"id": "npc_%s" % display.to_lower(),
+		"id": "npc_%s" % npc_id,
 		"prompt": prompt,
 		"line": line,
 	})

@@ -6,22 +6,30 @@
     {
       "id": "exhibit_gallery",
       "title": "Demo Gallery",
+      "title_zh": "演示展厅",
+      "title_en": "Demo Gallery",
       "kind": "pms_space",
       "space_id": "mw-gallery-demo",
       "enter_url": "https://spaces.databall.tech/enter/mineworld-gallery",
       "url": "/portal/space_stub.html?id=exhibit_gallery&space_id=mw-gallery-demo&title=Demo%20Gallery&enter=https%3A%2F%2Fspaces.databall.tech%2Fenter%2Fmineworld-gallery",
       "tags": ["stub", "pms", "gallery"],
-      "lore": "PMS Space card — open live enter URL or return to hangar with space_id."
+      "lore": "PMS Space card — open live enter URL or return to hangar with space_id.",
+      "lore_zh": "PMS Space 卡片 — 可打开进入链接，或带回 space_id 回母港。",
+      "lore_en": "PMS Space card — open live enter URL or return to hangar with space_id."
     },
     {
       "id": "exhibit_classroom",
       "title": "Classroom Lab",
+      "title_zh": "教室实验室",
+      "title_en": "Classroom Lab",
       "kind": "pms_space",
       "space_id": "mw-classroom-demo",
       "enter_url": "https://spaces.databall.tech/enter/mineworld-classroom",
       "url": "/portal/space_stub.html?id=exhibit_classroom&space_id=mw-classroom-demo&title=Classroom%20Lab&enter=https%3A%2F%2Fspaces.databall.tech%2Fenter%2Fmineworld-classroom",
       "tags": ["stub", "classroom"],
-      "lore": "Courseware Space — enter URL wired; attribution via space_id on return."
+      "lore": "Courseware Space — enter URL wired; attribution via space_id on return.",
+      "lore_zh": "课件 Space — 已接进入链接；回母港时用 space_id 归因。",
+      "lore_en": "Courseware Space — enter URL wired; attribution via space_id on return."
     }
   ]
 }

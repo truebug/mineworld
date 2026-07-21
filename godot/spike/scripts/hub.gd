@@ -90,9 +90,9 @@ const VENDOR_ACCENTS := ["#4aa3ff", "#e8873a", "#6ecf8e", "#d4a24c", "#c46ecf", 
 func _party_posts() -> PackedStringArray:
 	"""Stub LFG lines (locale-aware)."""
 	return PackedStringArray([
-		MWi18n.t("Maya · 工坊 IL · 再要一只爪", "Maya · Workshop IL · need one more claw"),
-		MWi18n.t("Rex · 街区热身 · 有空位", "Rex · City warm-up · open seat"),
-		MWi18n.t("Jin · 找展厅同行", "Jin · Looking for Gallery buddy"),
+		MWi18n.t("玛雅 · 工坊 IL · 再要一只爪", "Maya · Workshop IL · need one more claw"),
+		MWi18n.t("雷克斯 · 街区热身 · 有空位", "Rex · City warm-up · open seat"),
+		MWi18n.t("金 · 找展厅同行", "Jin · Looking for Gallery buddy"),
 	])
 
 
@@ -1010,15 +1010,25 @@ func _open_exhibit_url(url: String, title: String, space_id: String = "") -> voi
 			true
 		)
 		_refresh_tips(
-			"Opened «%s» · hangar stamped space_id=%s\nStub: Hangar with space_id → door A for attributed play."
-			% [title, space_id if space_id != "" else "—"]
+			MWi18n.t(
+				"已打开「%s」· 母港已写入 space_id=%s\n占位：带回 space_id → 门 A 做归因游玩。",
+				"Opened «%s» · hangar stamped space_id=%s\nStub: Hangar with space_id → door A for attributed play."
+			) % [title, space_id if space_id != "" else "—"]
 		)
 	else:
 		var err := OS.shell_open(resolved)
 		if err != OK:
-			_refresh_tips("Could not open exhibit URL (err %s): %s" % [err, resolved])
+			_refresh_tips(
+				MWi18n.t("无法打开展柜链接（err %s）：%s", "Could not open exhibit URL (err %s): %s")
+				% [err, resolved]
+			)
 		else:
-			_refresh_tips("Opened «%s» in your browser.\nReturn to this window for the hangar." % title)
+			_refresh_tips(
+				MWi18n.t(
+					"已在浏览器打开「%s」。\n回到本窗口继续母港。",
+					"Opened «%s» in your browser.\nReturn to this window for the hangar."
+				) % title
+			)
 
 
 func _toggle_elevator() -> void:
