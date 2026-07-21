@@ -7,7 +7,7 @@ const FACTORY_DIR := "res://assets/kenney_factory/"
 ## Keep ~1.5m inside hub_dress HALL_HALF (24×20).
 const WALL_X := 22.5
 const WALL_Z := 18.5
-const INTERACT_DIST := 2.8
+const INTERACT_DIST := 3.6
 const NPC_SCALE := 0.36
 
 ## [{node, id, prompt, line}]
@@ -143,7 +143,7 @@ func _place_stations() -> void:
 	_place_room_shell_stations()
 	_place_arena_station()
 	_place_cd_stations()
-	_spawn_factory("screen-panel-wide.glb", 0.0, WALL_Z - 0.6, 180.0, 1.1)
+	_spawn_factory("screen-panel-wide.glb", 0.0, WALL_Z - 0.6, 180.0, 2.2)
 	_spawn_factory("machine.glb", WALL_X - 1.2, 9.0, -90.0, 1.0)
 	_spawn_factory("structure-medium.glb", -WALL_X + 1.2, 9.0, 90.0, 1.0)
 	_spawn_factory("hopper-round.glb", WALL_X - 1.3, -9.0, 0.0, 1.0)
@@ -188,12 +188,12 @@ func _place_cd_stations() -> void:
 
 
 func _place_exhibits() -> void:
-	"""E4: cabinets from exhibits.v0.json — F opens external Space URL."""
+	"""E4: tall wall boards from exhibits.v0.json — F opens external Space URL."""
 	var exhibits := _load_exhibits()
-	# Fixed hall slots (east / west, south of vendor / party).
+	# North wing (TYPE B) — large screens flank the Design / gallery bay.
 	var slots: Array = [
-		{"pos": Vector3(WALL_X - 1.0, 0, -5.5), "yaw": -90.0},
-		{"pos": Vector3(-WALL_X + 1.0, 0, -5.5), "yaw": 90.0},
+		{"pos": Vector3(-14.5, 0, -WALL_Z + 1.35), "yaw": 0.0},
+		{"pos": Vector3(14.5, 0, -WALL_Z + 1.35), "yaw": 0.0},
 	]
 	var i := 0
 	for ex in exhibits:
@@ -218,17 +218,58 @@ func _place_exhibits() -> void:
 			"%s\n%s\n（按 F 打开卡片 · space_id=%s）",
 			"%s\n%s\n(F opens card · space_id=%s)",
 		) % [title, lore, space_id if space_id != "" else "—"]
-		_station(
+		_exhibit_board(
 			eid,
 			slot["pos"],
 			float(slot["yaw"]),
 			MWi18n.t("F · %s", "F · %s") % title,
 			line,
-			Color(0.55, 0.85, 0.65),
+			Color(0.45, 0.9, 0.75),
 			url,
 			title,
 			space_id,
 		)
+
+
+func _exhibit_board(
+	id: String,
+	pos: Vector3,
+	yaw_deg: float,
+	prompt: String,
+	line: String,
+	accent: Color,
+	url: String = "",
+	title: String = "",
+	space_id: String = "",
+) -> void:
+	"""Tall PMS card info screen (much larger than kiosk pedestals)."""
+	var root := Node3D.new()
+	root.name = "Exhibit_%s" % id
+	add_child(root)
+	root.position = pos
+	root.rotation_degrees.y = yaw_deg
+	var body := _mat(Color(0.18, 0.22, 0.28), 0.5, 0.3)
+	var trim := _mat(Color(0.35, 0.42, 0.5), 0.45, 0.25)
+	var glow := _mat(accent, 0.35, 0.15)
+	glow.emission_enabled = true
+	glow.emission = accent
+	glow.emission_energy_multiplier = 1.8
+	# Plinth
+	_box_child(root, Vector3(0, 0.2, 0.15), Vector3(3.2, 0.4, 1.2), body)
+	# Tall frame + screen face (~4.5 m high overall)
+	_box_child(root, Vector3(0, 2.6, 0.0), Vector3(3.0, 4.6, 0.45), body)
+	_box_child(root, Vector3(0, 2.7, 0.28), Vector3(2.55, 4.0, 0.1), glow)
+	_box_child(root, Vector3(0, 4.85, 0.3), Vector3(2.4, 0.14, 0.14), trim)
+	_box_child(root, Vector3(0, 0.55, 0.32), Vector3(2.4, 0.1, 0.12), glow)
+	interactables.append({
+		"node": root,
+		"id": id,
+		"prompt": prompt,
+		"line": line,
+		"url": url,
+		"title": title,
+		"space_id": space_id,
+	})
 
 
 func _place_room_shell_stations() -> void:

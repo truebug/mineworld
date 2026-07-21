@@ -599,27 +599,31 @@ func _emissive(albedo: Color, emit: Color, energy: float) -> StandardMaterial3D:
 
 
 func _place_mezzanine(root: Node3D) -> void:
-	"""Half-floor lounge + static elevator shaft (preview only)."""
+	"""Compact L2 lounge (~1/4 hall area) near south elevator — keeps spawn view open."""
 	var deck := _mat(Color(0.38, 0.42, 0.48), 0.65, 0.12)
 	var beam := _mat(Color(0.28, 0.32, 0.38), 0.7, 0.2)
 	var rail := _mat(Color(0.55, 0.6, 0.68), 0.45, 0.35)
 	var accent := _emissive(Color(0.2, 0.4, 0.5), CYAN, 0.75)
-	# South half deck (open edge faces −Z / hall center). Split around elevator shaft.
-	var edge_z := 1.2
-	var deck_z1 := edge_z
-	var deck_z0 := HALL_HALF_Z - 0.7
-	var deck_mid_z := (deck_z0 + deck_z1) * 0.5
-	var deck_depth := deck_z0 - deck_z1
+	# Quarter-hall deck: ~half width × half former depth, anchored at SE elevator.
 	var shaft_w := 3.4
-	# Main slab west of elevator
+	var deck_half_x := HALL_HALF_X * 0.5  # full width ≈ 24 m
+	var deck_x0 := ELEV_X - deck_half_x + 1.0
+	var deck_x1 := minf(ELEV_X + deck_half_x - 1.0, HALL_HALF_X - 0.8)
+	var deck_mid_x := (deck_x0 + deck_x1) * 0.5
+	var deck_w := deck_x1 - deck_x0
+	# Open edge faces hall center (−Z); pull south so L1 plaza stays clear.
+	var edge_z := ELEV_Z - 5.5
+	var deck_z0 := HALL_HALF_Z - 0.7
+	var deck_mid_z := (deck_z0 + edge_z) * 0.5
+	var deck_depth := deck_z0 - edge_z
+	# Main slab (split around shaft so cab opening stays clear).
 	_box(
 		root, "L2West",
-		Vector3((ELEV_X - shaft_w * 0.5 - HALL_HALF_X) * 0.5 + 0.4, FLOOR2_Y, deck_mid_z),
-		Vector3(ELEV_X - shaft_w * 0.5 + HALL_HALF_X - 0.8, 0.18, deck_depth),
+		Vector3((deck_x0 + ELEV_X - shaft_w * 0.5) * 0.5, FLOOR2_Y, deck_mid_z),
+		Vector3(ELEV_X - shaft_w * 0.5 - deck_x0, 0.18, deck_depth),
 		deck,
 	)
-	# Slab east of elevator (narrow strip to wall)
-	var east_w := HALL_HALF_X - (ELEV_X + shaft_w * 0.5) - 0.5
+	var east_w := deck_x1 - (ELEV_X + shaft_w * 0.5)
 	if east_w > 0.5:
 		_box(
 			root, "L2East",
@@ -627,7 +631,6 @@ func _place_mezzanine(root: Node3D) -> void:
 			Vector3(east_w, 0.18, deck_depth),
 			deck,
 		)
-	# Slab south of elevator (between shaft and south wall)
 	var south_d := deck_z0 - (ELEV_Z + shaft_w * 0.5)
 	if south_d > 0.4:
 		_box(
@@ -636,29 +639,29 @@ func _place_mezzanine(root: Node3D) -> void:
 			Vector3(shaft_w + 0.2, 0.18, south_d),
 			deck,
 		)
-	# Slab north of elevator (landing bridge toward open edge)
-	var north_d := (ELEV_Z - shaft_w * 0.5) - deck_z1
+	var north_d := (ELEV_Z - shaft_w * 0.5) - edge_z
 	if north_d > 0.4:
 		_box(
 			root, "L2Landing",
-			Vector3(ELEV_X, FLOOR2_Y, deck_z1 + north_d * 0.5),
+			Vector3(ELEV_X, FLOOR2_Y, edge_z + north_d * 0.5),
 			Vector3(shaft_w + 1.2, 0.18, north_d),
 			deck,
 		)
-	# Open-edge beam + railing
-	_box(root, "L2Beam", Vector3(0, FLOOR2_Y - 0.25, edge_z), Vector3(HALL_HALF_X * 2.0 - 1.0, 0.35, 0.35), beam)
-	_box(root, "L2Rail", Vector3(0, FLOOR2_Y + 0.55, edge_z), Vector3(HALL_HALF_X * 2.0 - 1.5, 0.08, 0.08), rail)
-	for x in [-15.0, -10.0, -5.0, 0.0, 5.0, 10.0, 15.0]:
-		_box(root, "L2Post", Vector3(x, FLOOR2_Y + 0.28, edge_z), Vector3(0.08, 0.55, 0.08), rail)
-	# Support columns under open edge
-	for x in [-12.0, -4.0, 4.0, 12.0]:
+	# Open-edge beam + railing (deck width only).
+	_box(root, "L2Beam", Vector3(deck_mid_x, FLOOR2_Y - 0.25, edge_z), Vector3(deck_w - 0.4, 0.35, 0.35), beam)
+	_box(root, "L2Rail", Vector3(deck_mid_x, FLOOR2_Y + 0.55, edge_z), Vector3(deck_w - 0.8, 0.08, 0.08), rail)
+	for i in range(5):
+		var t := float(i) / 4.0
+		var px := lerpf(deck_x0 + 0.6, deck_x1 - 0.6, t)
+		_box(root, "L2Post", Vector3(px, FLOOR2_Y + 0.28, edge_z), Vector3(0.08, 0.55, 0.08), rail)
+	# Two support columns under open edge
+	for x in [deck_mid_x - deck_w * 0.28, deck_mid_x + deck_w * 0.28]:
 		_box(root, "L2Col", Vector3(x, FLOOR2_Y * 0.5, edge_z + 0.4), Vector3(0.45, FLOOR2_Y, 0.45), beam)
-	# Soft under-glow strip
-	_box(root, "L2Led", Vector3(0, FLOOR2_Y - 0.12, edge_z + 0.2), Vector3(HALL_HALF_X * 1.6, 0.05, 0.12), accent)
-	# Sparse upstairs lounge props
-	_box(root, "L2Rug", Vector3(-6, FLOOR2_Y + 0.1, 8), Vector3(5.0, 0.04, 3.0), _mat(Color(0.32, 0.28, 0.4), 0.9, 0.0))
-	_box(root, "L2Seat", Vector3(-6, FLOOR2_Y + 0.35, 8.6), Vector3(2.4, 0.35, 0.7), _mat(Color(0.4, 0.3, 0.22), 0.8, 0.0))
-	_box(root, "L2Plant", Vector3(6, FLOOR2_Y + 0.4, 10), Vector3(0.6, 0.7, 0.6), _mat(Color(0.3, 0.5, 0.32), 0.85, 0.0))
+	_box(root, "L2Led", Vector3(deck_mid_x, FLOOR2_Y - 0.12, edge_z + 0.2), Vector3(deck_w * 0.75, 0.05, 0.12), accent)
+	# Lounge props on the compact deck (near elevator / south).
+	_box(root, "L2Rug", Vector3(ELEV_X - 4.5, FLOOR2_Y + 0.1, ELEV_Z - 1.5), Vector3(3.5, 0.04, 2.2), _mat(Color(0.32, 0.28, 0.4), 0.9, 0.0))
+	_box(root, "L2Seat", Vector3(ELEV_X - 4.5, FLOOR2_Y + 0.35, ELEV_Z - 0.8), Vector3(2.0, 0.35, 0.6), _mat(Color(0.4, 0.3, 0.22), 0.8, 0.0))
+	_box(root, "L2Plant", Vector3(ELEV_X + 3.5, FLOOR2_Y + 0.4, ELEV_Z + 1.5), Vector3(0.6, 0.7, 0.6), _mat(Color(0.3, 0.5, 0.32), 0.85, 0.0))
 	_place_elevator(root)
 
 
@@ -718,16 +721,16 @@ func _place_room_shells(root: Node3D) -> void:
 	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	glass.roughness = 0.15
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
-	# Gallery alcove (−X, −Z)
-	_box(root, "GalArchL", Vector3(-9.5, 2.2, -HALL_HALF_Z + 0.35), Vector3(0.25, 4.2, 0.35), frame)
-	_box(root, "GalArchR", Vector3(-6.5, 2.2, -HALL_HALF_Z + 0.35), Vector3(0.25, 4.2, 0.35), frame)
-	_box(root, "GalLint", Vector3(-8.0, 4.2, -HALL_HALF_Z + 0.35), Vector3(3.2, 0.28, 0.4), trim)
-	_box(root, "GalGlass", Vector3(-8.0, 2.0, -HALL_HALF_Z + 0.15), Vector3(2.6, 3.2, 0.06), glass)
+	# Gallery alcove (−X, −Z) — larger card-wing screens
+	_box(root, "GalArchL", Vector3(-11.0, 3.0, -HALL_HALF_Z + 0.35), Vector3(0.3, 5.8, 0.4), frame)
+	_box(root, "GalArchR", Vector3(-5.0, 3.0, -HALL_HALF_Z + 0.35), Vector3(0.3, 5.8, 0.4), frame)
+	_box(root, "GalLint", Vector3(-8.0, 5.9, -HALL_HALF_Z + 0.35), Vector3(6.2, 0.32, 0.45), trim)
+	_box(root, "GalGlass", Vector3(-8.0, 2.9, -HALL_HALF_Z + 0.12), Vector3(5.4, 5.2, 0.08), glass)
 	# Classroom alcove (+X, −Z)
-	_box(root, "ClsArchL", Vector3(6.5, 2.2, -HALL_HALF_Z + 0.35), Vector3(0.25, 4.2, 0.35), frame)
-	_box(root, "ClsArchR", Vector3(9.5, 2.2, -HALL_HALF_Z + 0.35), Vector3(0.25, 4.2, 0.35), frame)
-	_box(root, "ClsLint", Vector3(8.0, 4.2, -HALL_HALF_Z + 0.35), Vector3(3.2, 0.28, 0.4), trim)
-	_box(root, "ClsGlass", Vector3(8.0, 2.0, -HALL_HALF_Z + 0.15), Vector3(2.6, 3.2, 0.06), glass)
+	_box(root, "ClsArchL", Vector3(5.0, 3.0, -HALL_HALF_Z + 0.35), Vector3(0.3, 5.8, 0.4), frame)
+	_box(root, "ClsArchR", Vector3(11.0, 3.0, -HALL_HALF_Z + 0.35), Vector3(0.3, 5.8, 0.4), frame)
+	_box(root, "ClsLint", Vector3(8.0, 5.9, -HALL_HALF_Z + 0.35), Vector3(6.2, 0.32, 0.45), trim)
+	_box(root, "ClsGlass", Vector3(8.0, 2.9, -HALL_HALF_Z + 0.12), Vector3(5.4, 5.2, 0.08), glass)
 	_place_arena_shell(root)
 	_place_design_shell(root)
 	_place_edge_shell(root)
@@ -804,8 +807,11 @@ func _place_props(root: Node3D) -> void:
 	var hx := HALL_HALF_X
 	var hz := HALL_HALF_Z
 	var props: Array = [
-		{"a": "screen-panel-wide.glb", "x": hx - 1.2, "z": 6.0, "yaw": -90.0, "s": 1.1},
-		{"a": "screen-panel-wide.glb", "x": -hx + 1.2, "z": 6.0, "yaw": 90.0, "s": 1.1},
+		# Tall wall screens (PMS card wing accents)
+		{"a": "screen-panel-wide.glb", "x": hx - 1.4, "z": -8.0, "yaw": -90.0, "s": 2.4},
+		{"a": "screen-panel-wide.glb", "x": -hx + 1.4, "z": -8.0, "yaw": 90.0, "s": 2.4},
+		{"a": "screen-panel-wide.glb", "x": hx - 1.4, "z": 6.0, "yaw": -90.0, "s": 2.2},
+		{"a": "screen-panel-wide.glb", "x": -hx + 1.4, "z": 6.0, "yaw": 90.0, "s": 2.2},
 		# SE corner reserved for elevator showcase — no machine there
 		{"a": "machine-fortified.glb", "x": -hx + 2.0, "z": hz - 2.0, "yaw": 180.0},
 		{"a": "cone.glb", "x": 5.0, "z": -hz + 1.5, "yaw": 0.0},
