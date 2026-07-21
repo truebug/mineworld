@@ -83,8 +83,8 @@
       "default_room_id": "hub",
       "story": "mothership_hangar",
       "bounds": {
-        "half_x": 28.0,
-        "half_y": 24.0
+        "half_x": 40.0,
+        "half_y": 36.0
       }
     }
   }

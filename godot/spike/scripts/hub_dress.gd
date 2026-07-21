@@ -1,5 +1,5 @@
-## Viewer-only hub hall dress: solid enclosed hangar (docs/18).
-## Procedural shell first (always visible); sparse Kenney props as accents.
+## Viewer-only hub hall dress: solid enclosed hangar (docs/18 · 24).
+## Visual language: matte megastructure + cyan emissive panels (spaceport island).
 extends Node3D
 
 const ASSET_DIR := "res://assets/kenney_factory/"
@@ -12,9 +12,11 @@ const WALL_T := 0.6
 const FLOOR2_Y := 8.5
 const ELEV_X := 16.0
 const ELEV_Z := 15.0
-## Exterior apron half-extents (walkable + future modules).
-const APRON_HALF_X := 36.0
-const APRON_HALF_Z := 30.0
+## Exterior apron half-extents (walkable island + visual city mass).
+const APRON_HALF_X := 48.0
+const APRON_HALF_Z := 42.0
+## Port accent (refs: modular ring / cyan energy panels).
+const CYAN := Color(0.25, 0.85, 1.0)
 
 
 func _ready() -> void:
@@ -44,27 +46,32 @@ func _build() -> void:
 
 
 func _setup_lights() -> void:
-	"""Mild indoor lighting + deep-space sky outside the hall."""
+	"""Cool port lighting + deep-space sky (harder contrast than warehouse)."""
 	var env_node := get_parent().get_node_or_null("WorldEnvironment") as WorldEnvironment
 	if env_node != null and env_node.environment != null:
 		var e: Environment = env_node.environment
 		e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-		e.ambient_light_color = Color(0.5, 0.55, 0.65)
-		e.ambient_light_energy = 0.5
+		e.ambient_light_color = Color(0.28, 0.34, 0.45)
+		e.ambient_light_energy = 0.35
 		e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-		e.tonemap_exposure = 0.95
+		e.tonemap_exposure = 1.05
+		e.glow_enabled = true
+		e.glow_intensity = 0.35
+		e.glow_strength = 0.7
+		e.glow_bloom = 0.08
 		_apply_space_sky(e)
 	var sun := get_parent().get_node_or_null("Sun") as DirectionalLight3D
 	if sun != null:
-		sun.light_color = Color(0.85, 0.9, 1.0)
-		sun.light_energy = 0.45
+		sun.light_color = Color(0.75, 0.85, 1.0)
+		sun.light_energy = 0.85
 		sun.shadow_enabled = false
+		sun.rotation_degrees = Vector3(-48, 35, 0)
 	var fill := get_parent().get_node_or_null("Fill") as OmniLight3D
 	if fill != null:
-		fill.light_color = Color(0.75, 0.85, 1.0)
-		fill.light_energy = 1.8
-		fill.omni_range = 42.0
-		fill.position = Vector3(0.0, 10.0, 0.0)
+		fill.light_color = Color(0.35, 0.75, 0.95)
+		fill.light_energy = 2.4
+		fill.omni_range = 48.0
+		fill.position = Vector3(0.0, 12.0, 0.0)
 
 
 func _apply_space_sky(e: Environment) -> void:
@@ -84,17 +91,17 @@ func _apply_space_sky(e: Environment) -> void:
 
 
 func _place_space_windows(root: Node3D) -> void:
-	"""Tall glass ribbons + skylights — cosmos visible from Hangar Core."""
+	"""Tall cyan glass ribbons + skylights — cosmos as port backdrop."""
 	var glass := StandardMaterial3D.new()
-	glass.albedo_color = Color(0.35, 0.55, 0.85, 0.14)
+	glass.albedo_color = Color(0.2, 0.55, 0.85, 0.18)
 	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	glass.roughness = 0.05
-	glass.metallic = 0.35
+	glass.metallic = 0.45
 	glass.emission_enabled = true
-	glass.emission = Color(0.12, 0.2, 0.4)
-	glass.emission_energy_multiplier = 0.3
+	glass.emission = CYAN
+	glass.emission_energy_multiplier = 0.55
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var frame := _mat(Color(0.25, 0.3, 0.38), 0.6, 0.2)
+	var frame := _mat(Color(0.18, 0.22, 0.28), 0.55, 0.35)
 	var hx := HALL_HALF_X
 	var hz := HALL_HALF_Z
 	var y := 13.0
@@ -113,100 +120,200 @@ func _place_space_windows(root: Node3D) -> void:
 	_box(root, "WinE", Vector3(hx, y, 6), Vector3(t, h, 14.0), glass)
 	_box(root, "WinEN", Vector3(hx, y, -10), Vector3(t, h, 10.0), glass)
 	var sky_glass := glass.duplicate() as StandardMaterial3D
-	sky_glass.albedo_color = Color(0.2, 0.35, 0.65, 0.1)
+	sky_glass.albedo_color = Color(0.15, 0.4, 0.7, 0.12)
 	_box(root, "SkyL", Vector3(-8, CEILING_Y - 0.05, 0), Vector3(10.0, 0.06, 22.0), sky_glass)
 	_box(root, "SkyR", Vector3(8, CEILING_Y - 0.05, 0), Vector3(10.0, 0.06, 22.0), sky_glass)
 
 
 func _place_apron(root: Node3D) -> void:
-	"""Exterior mothership deck beyond hangar walls (grid plating for future modules)."""
-	var deck := _mat(Color(0.22, 0.26, 0.32), 0.85, 0.25)
-	var grid := _mat(Color(0.35, 0.55, 0.7), 0.55, 0.15)
-	grid.emission_enabled = true
-	grid.emission = Color(0.2, 0.4, 0.6)
-	grid.emission_energy_multiplier = 0.35
-	var rim := _mat(Color(0.55, 0.7, 0.9), 0.4, 0.3)
-	rim.emission_enabled = true
-	rim.emission = Color(0.4, 0.65, 0.95)
-	rim.emission_energy_multiplier = 0.55
-	# Main apron slab (below hangar floor so interior deck stays primary).
+	"""Floating-island mega-apron: primary deck + terraces + mini-city mass."""
+	var deck := _mat(Color(0.16, 0.19, 0.24), 0.8, 0.35)
+	var terrace := _mat(Color(0.14, 0.17, 0.22), 0.78, 0.4)
+	var grid := _emissive(Color(0.2, 0.35, 0.45), CYAN, 0.55)
+	var rim := _emissive(Color(0.3, 0.5, 0.6), CYAN, 0.9)
+	# Primary apron (core walkable city platform).
 	_box(
 		root, "Apron",
 		Vector3(0, -0.18, 0),
-		Vector3(APRON_HALF_X * 2.0, 0.1, APRON_HALF_Z * 2.0),
+		Vector3(APRON_HALF_X * 2.0, 0.12, APRON_HALF_Z * 2.0),
 		deck,
 	)
-	# Grid lines every 8 m.
+	# Stepped outer terraces (layered island, not one flat pad).
+	_box(root, "TerraceS", Vector3(0, -0.55, APRON_HALF_Z + 6), Vector3(APRON_HALF_X * 1.5, 0.2, 14.0), terrace)
+	_box(root, "TerraceN", Vector3(0, -0.55, -APRON_HALF_Z - 5), Vector3(APRON_HALF_X * 1.35, 0.2, 12.0), terrace)
+	_box(root, "TerraceE", Vector3(APRON_HALF_X + 5, -0.9, 0), Vector3(12.0, 0.2, APRON_HALF_Z * 1.2), terrace)
+	_box(root, "TerraceW", Vector3(-APRON_HALF_X - 5, -0.9, 0), Vector3(12.0, 0.2, APRON_HALF_Z * 1.2), terrace)
+	# Grid lines every 8 m on primary apron.
 	var step := 8.0
 	var gx := -APRON_HALF_X + step
 	while gx < APRON_HALF_X:
-		_box(root, "GridX", Vector3(gx, -0.12, 0), Vector3(0.08, 0.02, APRON_HALF_Z * 2.0 - 1.0), grid)
+		_box(root, "GridX", Vector3(gx, -0.1, 0), Vector3(0.08, 0.02, APRON_HALF_Z * 2.0 - 1.0), grid)
 		gx += step
 	var gz := -APRON_HALF_Z + step
 	while gz < APRON_HALF_Z:
-		_box(root, "GridZ", Vector3(0, -0.12, gz), Vector3(APRON_HALF_X * 2.0 - 1.0, 0.02, 0.08), grid)
+		_box(root, "GridZ", Vector3(0, -0.1, gz), Vector3(APRON_HALF_X * 2.0 - 1.0, 0.02, 0.08), grid)
 		gz += step
-	# Rim lights (south dock emphasis).
-	_box(root, "RimS", Vector3(0, -0.05, APRON_HALF_Z - 0.4), Vector3(APRON_HALF_X * 1.6, 0.06, 0.35), rim)
-	_box(root, "RimN", Vector3(0, -0.05, -APRON_HALF_Z + 0.4), Vector3(APRON_HALF_X * 1.6, 0.06, 0.35), rim)
-	_box(root, "RimE", Vector3(APRON_HALF_X - 0.4, -0.05, 0), Vector3(0.35, 0.06, APRON_HALF_Z * 1.4), rim)
-	_box(root, "RimW", Vector3(-APRON_HALF_X + 0.4, -0.05, 0), Vector3(0.35, 0.06, APRON_HALF_Z * 1.4), rim)
-	# Future-module pads (south apron = ship berth placeholders).
-	var pad := _mat(Color(0.28, 0.32, 0.4), 0.7, 0.2)
-	_box(root, "BerthL", Vector3(-14, -0.08, APRON_HALF_Z - 8), Vector3(10.0, 0.08, 8.0), pad)
-	_box(root, "BerthR", Vector3(14, -0.08, APRON_HALF_Z - 8), Vector3(10.0, 0.08, 8.0), pad)
+	# Rim lights.
+	_box(root, "RimS", Vector3(0, -0.05, APRON_HALF_Z - 0.4), Vector3(APRON_HALF_X * 1.7, 0.08, 0.4), rim)
+	_box(root, "RimN", Vector3(0, -0.05, -APRON_HALF_Z + 0.4), Vector3(APRON_HALF_X * 1.7, 0.08, 0.4), rim)
+	_box(root, "RimE", Vector3(APRON_HALF_X - 0.4, -0.05, 0), Vector3(0.4, 0.08, APRON_HALF_Z * 1.5), rim)
+	_box(root, "RimW", Vector3(-APRON_HALF_X + 0.4, -0.05, 0), Vector3(0.4, 0.08, APRON_HALF_Z * 1.5), rim)
+	# Berth pads (south fleet apron).
+	var pad := _mat(Color(0.2, 0.24, 0.3), 0.7, 0.3)
+	_box(root, "BerthL", Vector3(-16, -0.06, APRON_HALF_Z - 10), Vector3(12.0, 0.1, 10.0), pad)
+	_box(root, "BerthR", Vector3(16, -0.06, APRON_HALF_Z - 10), Vector3(12.0, 0.1, 10.0), pad)
+	_box(root, "BerthMid", Vector3(0, -0.06, APRON_HALF_Z - 6), Vector3(14.0, 0.08, 6.0), pad)
 	_place_apron_modules(root)
+	_place_mini_city(root)
+
+
+func _place_mini_city(root: Node3D) -> void:
+	"""Stacked modules, docking arms, understructure — mini space-city silhouette."""
+	var hull := _mat(Color(0.2, 0.24, 0.3), 0.7, 0.4)
+	var hull_hi := _mat(Color(0.24, 0.28, 0.34), 0.65, 0.35)
+	var panel := _emissive(Color(0.15, 0.35, 0.45), CYAN, 1.1)
+	var amber := _emissive(Color(0.35, 0.28, 0.18), Color(1.0, 0.55, 0.2), 0.75)
+	# Corner command pylons (taller towers).
+	var ax := APRON_HALF_X - 3.0
+	var az := APRON_HALF_Z - 3.0
+	for p in [Vector3(ax, 0, az), Vector3(-ax, 0, az), Vector3(ax, 0, -az), Vector3(-ax, 0, -az)]:
+		_box(root, "Pylon", p + Vector3(0, 7.0, 0), Vector3(2.8, 14.0, 2.8), hull)
+		_box(root, "PylonMid", p + Vector3(0, 12.0, 0), Vector3(3.6, 2.0, 3.6), hull_hi)
+		_box(root, "PylonCap", p + Vector3(0, 14.5, 0), Vector3(3.2, 0.4, 3.2), panel)
+		_box(root, "PylonFace", p + Vector3(0, 8.0, 1.5), Vector3(2.0, 5.0, 0.14), panel)
+	# South fleet dock ring (between berths).
+	for x in [-28.0, -10.0, 10.0, 28.0]:
+		_box(root, "RingSeg", Vector3(x, 2.2, APRON_HALF_Z - 1.5), Vector3(7.0, 4.0, 2.0), hull)
+		_box(root, "RingPanel", Vector3(x, 2.2, APRON_HALF_Z - 0.4), Vector3(5.5, 2.8, 0.16), panel)
+	# North residential stack cluster (multi-height).
+	_city_stack(root, "NHab", Vector3(-18, 0, -APRON_HALF_Z + 8), 3, hull, panel)
+	_city_stack(root, "NLab", Vector3(0, 0, -APRON_HALF_Z + 7), 4, hull_hi, panel)
+	_city_stack(root, "NOps", Vector3(18, 0, -APRON_HALF_Z + 8), 3, hull, amber)
+	# East / West industrial wings.
+	_city_stack(root, "EWing", Vector3(APRON_HALF_X - 8, 0, -12), 5, hull, panel)
+	_city_stack(root, "EWing2", Vector3(APRON_HALF_X - 7, 0, 10), 3, hull_hi, panel)
+	_city_stack(root, "WWing", Vector3(-APRON_HALF_X + 8, 0, -8), 4, hull, panel)
+	_city_stack(root, "WWing2", Vector3(-APRON_HALF_X + 7, 0, 12), 3, hull_hi, amber)
+	# Sky bridges linking stacks to hangar mass.
+	_box(root, "BridgeN", Vector3(0, 6.5, -HALL_HALF_Z - 4), Vector3(4.0, 0.6, 14.0), hull_hi)
+	_box(root, "BridgeNGlow", Vector3(0, 6.5, -HALL_HALF_Z - 4), Vector3(0.35, 0.2, 14.0), panel)
+	_box(root, "BridgeE", Vector3(HALL_HALF_X + 6, 5.5, 0), Vector3(16.0, 0.5, 3.0), hull_hi)
+	_box(root, "BridgeEGlow", Vector3(HALL_HALF_X + 6, 5.5, 0), Vector3(16.0, 0.18, 0.3), panel)
+	_box(root, "BridgeW", Vector3(-HALL_HALF_X - 6, 5.5, 0), Vector3(16.0, 0.5, 3.0), hull_hi)
+	# Fleet docking arms (cantilever south).
+	_dock_arm(root, "DockArmL", Vector3(-16, 3.5, APRON_HALF_Z + 4), hull, panel)
+	_dock_arm(root, "DockArmR", Vector3(16, 3.5, APRON_HALF_Z + 4), hull, panel)
+	_dock_arm(root, "DockArmMid", Vector3(0, 4.0, APRON_HALF_Z + 8), hull_hi, amber)
+	# East/west secondary dock stubs.
+	_box(root, "DockStubE", Vector3(APRON_HALF_X + 2, 3.0, 0), Vector3(8.0, 1.2, 2.0), hull)
+	_box(root, "DockStubETip", Vector3(APRON_HALF_X + 7, 3.0, 0), Vector3(1.5, 1.5, 1.5), panel)
+	_box(root, "DockStubW", Vector3(-APRON_HALF_X - 2, 3.0, 0), Vector3(8.0, 1.2, 2.0), hull)
+	_box(root, "DockStubWTip", Vector3(-APRON_HALF_X - 7, 3.0, 0), Vector3(1.5, 1.5, 1.5), panel)
+	# Understructure mass (city hanging below the island).
+	_box(root, "Keel", Vector3(0, -4.5, 0), Vector3(APRON_HALF_X * 1.2, 6.0, APRON_HALF_Z * 1.15), hull)
+	_box(root, "KeelCore", Vector3(0, -8.0, 0), Vector3(18.0, 5.0, 16.0), hull_hi)
+	_box(root, "KeelPanelS", Vector3(0, -5.0, APRON_HALF_Z * 0.55), Vector3(22.0, 3.5, 0.2), panel)
+	_box(root, "KeelPanelN", Vector3(0, -5.0, -APRON_HALF_Z * 0.55), Vector3(22.0, 3.5, 0.2), panel)
+	# Underbelly glow — floating in void.
+	_box(
+		root, "UnderGlow",
+		Vector3(0, -1.2, 0),
+		Vector3(APRON_HALF_X * 1.8, 0.12, APRON_HALF_Z * 1.8),
+		_emissive(Color(0.1, 0.25, 0.35), CYAN, 0.85),
+	)
+	_box(
+		root, "UnderGlowDeep",
+		Vector3(0, -7.5, 0),
+		Vector3(14.0, 0.15, 12.0),
+		_emissive(Color(0.15, 0.3, 0.4), CYAN, 0.6),
+	)
+
+
+func _city_stack(
+	root: Node3D, base: String, pos: Vector3, floors: int, hull: Material, panel: Material
+) -> void:
+	"""Vertical stack of sealed modules (mini-city density)."""
+	var y := 1.8
+	var last_w := 6.5
+	for i in range(floors):
+		var w := 6.5 - float(i % 2) * 0.8
+		var d := 5.5 - float((i + 1) % 2) * 0.6
+		last_w = w
+		_box(root, base + "F%d" % i, pos + Vector3(0, y, 0), Vector3(w, 3.2, d), hull)
+		_box(root, base + "P%d" % i, pos + Vector3(0, y, d * 0.5 + 0.05), Vector3(w * 0.75, 2.0, 0.12), panel)
+		y += 3.35
+	_box(root, base + "Mast", pos + Vector3(last_w * 0.3, y + 1.2, 0), Vector3(0.25, 2.8, 0.25), panel)
+
+
+func _dock_arm(root: Node3D, base: String, pos: Vector3, hull: Material, tip: Material) -> void:
+	"""Cantilever fleet docking arm pointing off the south apron."""
+	_box(root, base + "Boom", pos, Vector3(2.2, 1.0, 14.0), hull)
+	_box(root, base + "Joint", pos + Vector3(0, 0, -5), Vector3(3.0, 1.8, 2.0), hull)
+	_box(root, base + "Tip", pos + Vector3(0, 0, 7.5), Vector3(2.8, 2.2, 2.2), tip)
+	_box(root, base + "Guide", pos + Vector3(0, 0.6, 0), Vector3(0.25, 0.2, 14.0), tip)
 
 
 func _place_apron_modules(root: Node3D) -> void:
-	"""H12c: two exterior module pods on south berth pads (visual only)."""
-	_module_pod(root, "ModHab", Vector3(-14, 0, APRON_HALF_Z - 8), Color(0.45, 0.55, 0.7), "栖息舱 · Hab")
-	_module_pod(root, "ModDock", Vector3(14, 0, APRON_HALF_Z - 8), Color(0.55, 0.7, 0.55), "接驳舱 · Berth")
+	"""Labeled berth pods on south fleet apron."""
+	_module_pod(root, "ModHab", Vector3(-16, 0, APRON_HALF_Z - 10), Color(0.35, 0.42, 0.52), "栖息舱 · Hab")
+	_module_pod(root, "ModDock", Vector3(16, 0, APRON_HALF_Z - 10), Color(0.32, 0.4, 0.38), "接驳舱 · Berth")
+	_module_pod(root, "ModCtrl", Vector3(0, 0, APRON_HALF_Z - 5), Color(0.3, 0.36, 0.45), "调度塔 · Control")
 
 
 func _module_pod(root: Node3D, base: String, pos: Vector3, tint: Color, tag: String) -> void:
-	"""Simple sealed module: hull + window band + mast."""
-	var hull := _mat(tint.darkened(0.25), 0.65, 0.2)
-	var band := _mat(tint.lightened(0.15), 0.4, 0.15)
-	band.emission_enabled = true
-	band.emission = tint
-	band.emission_energy_multiplier = 0.45
+	"""Sealed module: matte hull + cyan face panels + mast (ref ring aesthetic)."""
+	var hull := _mat(tint.darkened(0.15), 0.7, 0.35)
+	var panel := _emissive(Color(0.12, 0.32, 0.42), CYAN, 1.0)
 	var glass := StandardMaterial3D.new()
-	glass.albedo_color = Color(0.5, 0.75, 0.95, 0.35)
+	glass.albedo_color = Color(0.35, 0.75, 0.95, 0.4)
 	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	glass.roughness = 0.12
+	glass.roughness = 0.1
+	glass.emission_enabled = true
+	glass.emission = CYAN
+	glass.emission_energy_multiplier = 0.4
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_box(root, base + "Hull", pos + Vector3(0, 2.2, 0), Vector3(7.0, 4.0, 5.5), hull)
-	_box(root, base + "Band", pos + Vector3(0, 3.6, 0), Vector3(7.2, 0.25, 5.7), band)
-	_box(root, base + "Win", pos + Vector3(0, 2.4, 2.85), Vector3(4.0, 1.6, 0.08), glass)
-	_box(root, base + "Mast", pos + Vector3(2.8, 5.2, -1.5), Vector3(0.2, 2.4, 0.2), band)
-	_box(root, base + "Dish", pos + Vector3(2.8, 6.5, -1.5), Vector3(1.4, 0.15, 1.4), band)
+	_box(root, base + "Hull", pos + Vector3(0, 2.4, 0), Vector3(7.2, 4.4, 5.8), hull)
+	_box(root, base + "Face", pos + Vector3(0, 2.5, 2.95), Vector3(5.5, 3.0, 0.12), panel)
+	_box(root, base + "Win", pos + Vector3(0, 2.5, 3.02), Vector3(3.6, 1.4, 0.06), glass)
+	_box(root, base + "Band", pos + Vector3(0, 4.5, 0), Vector3(7.4, 0.2, 6.0), panel)
+	_box(root, base + "Mast", pos + Vector3(2.8, 5.6, -1.5), Vector3(0.22, 2.6, 0.22), panel)
+	_box(root, base + "Dish", pos + Vector3(2.8, 7.0, -1.5), Vector3(1.5, 0.12, 1.5), panel)
 	var lab := Label3D.new()
 	lab.text = tag
 	lab.font_size = 42
 	lab.outline_size = 6
 	lab.pixel_size = 0.012
 	lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	lab.modulate = tint.lightened(0.35)
+	lab.modulate = CYAN.lightened(0.25)
 	root.add_child(lab)
-	lab.position = pos + Vector3(0, 5.0, 0)
+	lab.position = pos + Vector3(0, 5.4, 0)
 
 
 func _place_solid_hall(root: Node3D) -> void:
-	"""One solid box room: floor, 4 walls with door gaps, ceiling rim + skylights."""
-	var floor_mat := _mat(Color(0.42, 0.46, 0.52), 0.7, 0.08)
-	var wall_low := _mat(Color(0.78, 0.82, 0.86), 0.65, 0.05)
-	var wall_hi := _mat(Color(0.32, 0.55, 0.62), 0.7, 0.05)
-	var ceil_mat := _mat(Color(0.35, 0.4, 0.48), 0.75, 0.1)
+	"""Port core volume: dark plating, panel walls, cyan energy guides."""
+	var floor_mat := _mat(Color(0.22, 0.26, 0.32), 0.75, 0.25)
+	var wall_low := _mat(Color(0.28, 0.32, 0.38), 0.7, 0.28)
+	var wall_hi := _mat(Color(0.2, 0.28, 0.34), 0.65, 0.3)
+	var ceil_mat := _mat(Color(0.18, 0.22, 0.28), 0.75, 0.25)
 	# Floor
 	_box(root, "Deck", Vector3(0, -0.06, 0), Vector3(HALL_HALF_X * 2.0, 0.12, HALL_HALF_Z * 2.0), floor_mat)
-	# Floor cross (subtle, non-emissive)
-	_box(root, "LaneX", Vector3(0, 0.01, 0), Vector3(1.0, 0.02, HALL_HALF_Z * 1.5), _mat(Color(0.3, 0.48, 0.78), 0.55, 0.0))
-	_box(root, "LaneZ", Vector3(0, 0.01, 0), Vector3(HALL_HALF_X * 1.5, 0.02, 1.0), _mat(Color(0.78, 0.5, 0.28), 0.55, 0.0))
+	# Cyan primary guide + thin wing tint lanes (readable but not gym-floor).
+	var cyan_lane := _emissive(Color(0.15, 0.4, 0.5), CYAN, 0.65)
+	_box(root, "LaneCyanX", Vector3(0, 0.015, 0), Vector3(0.55, 0.02, HALL_HALF_Z * 1.6), cyan_lane)
+	_box(root, "LaneCyanZ", Vector3(0, 0.015, 0), Vector3(HALL_HALF_X * 1.6, 0.02, 0.55), cyan_lane)
+	_box(root, "LaneX", Vector3(0, 0.01, 0), Vector3(0.22, 0.015, HALL_HALF_Z * 1.35), _mat(Color(0.25, 0.45, 0.7), 0.55, 0.1))
+	_box(root, "LaneZ", Vector3(0, 0.01, 0), Vector3(HALL_HALF_X * 1.35, 0.015, 0.22), _mat(Color(0.7, 0.4, 0.22), 0.55, 0.1))
+	# Deck plate seams
+	var seam := _mat(Color(0.14, 0.16, 0.2), 0.85, 0.15)
+	for x in [-16.0, -8.0, 8.0, 16.0]:
+		_box(root, "SeamX", Vector3(x, 0.005, 0), Vector3(0.06, 0.01, HALL_HALF_Z * 1.8), seam)
+	for z in [-12.0, -4.0, 4.0, 12.0]:
+		_box(root, "SeamZ", Vector3(0, 0.005, z), Vector3(HALL_HALF_X * 1.8, 0.01, 0.06), seam)
 	# Walls: lower band + upper band (door gaps); taller stack under glass ribbon.
 	var split := 4.5
 	_wall_ring(root, "WallLow", wall_low, 0.0, split)
 	_wall_ring(root, "WallHi", wall_hi, split, 4.0)  ## ends ~8.5m; glass ribbon to ceiling
+	_place_wall_energy_ribs(root)
 	# Ceiling rim with two open skylight bays (stars visible looking up)
 	var y_c := CEILING_Y
 	var span_x := HALL_HALF_X * 2.0 + 1.0
@@ -216,13 +323,28 @@ func _place_solid_hall(root: Node3D) -> void:
 	_box(root, "CeilW", Vector3(-hx_edge(span_x), y_c, 0), Vector3(4.0, 0.4, span_z - 8.0), ceil_mat)
 	_box(root, "CeilE", Vector3(hx_edge(span_x), y_c, 0), Vector3(4.0, 0.4, span_z - 8.0), ceil_mat)
 	_box(root, "CeilMid", Vector3(0, y_c, 0), Vector3(3.0, 0.35, span_z - 8.0), ceil_mat)
-	# Soft LED strips under ceiling beams
-	var led := _mat(Color(0.85, 0.9, 1.0), 0.4, 0.0)
-	led.emission_enabled = true
-	led.emission = Color(0.7, 0.8, 1.0)
-	led.emission_energy_multiplier = 0.85
-	for sx in [-10.0, 0.0, 10.0]:
-		_box(root, "Led", Vector3(sx, CEILING_Y - 0.35, 0), Vector3(0.9, 0.06, HALL_HALF_Z * 1.5), led)
+	# Cyan gantry LEDs
+	var led := _emissive(Color(0.4, 0.7, 0.85), CYAN, 1.0)
+	for sx in [-12.0, -4.0, 4.0, 12.0]:
+		_box(root, "Led", Vector3(sx, CEILING_Y - 0.35, 0), Vector3(0.7, 0.08, HALL_HALF_Z * 1.5), led)
+
+
+func _place_wall_energy_ribs(root: Node3D) -> void:
+	"""Vertical cyan panel ribs on interior walls — breaks flat warehouse look."""
+	var rib := _mat(Color(0.15, 0.18, 0.22), 0.6, 0.4)
+	var glow := _emissive(Color(0.12, 0.35, 0.45), CYAN, 0.85)
+	var hx := HALL_HALF_X - 0.2
+	var hz := HALL_HALF_Z - 0.2
+	for x in [-18.0, -10.0, 10.0, 18.0]:
+		_box(root, "RibN", Vector3(x, 4.2, -hz), Vector3(0.35, 7.5, 0.2), rib)
+		_box(root, "RibNGlow", Vector3(x, 4.2, -hz + 0.12), Vector3(0.12, 6.5, 0.08), glow)
+		_box(root, "RibS", Vector3(x, 4.2, hz), Vector3(0.35, 7.5, 0.2), rib)
+		_box(root, "RibSGlow", Vector3(x, 4.2, hz - 0.12), Vector3(0.12, 6.5, 0.08), glow)
+	for z in [-14.0, -6.0, 6.0, 14.0]:
+		_box(root, "RibW", Vector3(-hx, 4.2, z), Vector3(0.2, 7.5, 0.35), rib)
+		_box(root, "RibWGlow", Vector3(-hx + 0.12, 4.2, z), Vector3(0.08, 6.5, 0.12), glow)
+		_box(root, "RibE", Vector3(hx, 4.2, z), Vector3(0.2, 7.5, 0.35), rib)
+		_box(root, "RibEGlow", Vector3(hx - 0.12, 4.2, z), Vector3(0.08, 6.5, 0.12), glow)
 
 
 func hx_edge(span_x: float) -> float:
@@ -279,15 +401,21 @@ func _mat(albedo: Color, roughness: float, metallic: float) -> StandardMaterial3
 	return mat
 
 
+func _emissive(albedo: Color, emit: Color, energy: float) -> StandardMaterial3D:
+	"""Matte surface with cyan-style emission (port energy panels)."""
+	var mat := _mat(albedo, 0.45, 0.25)
+	mat.emission_enabled = true
+	mat.emission = emit
+	mat.emission_energy_multiplier = energy
+	return mat
+
+
 func _place_mezzanine(root: Node3D) -> void:
 	"""Half-floor lounge + static elevator shaft (preview only)."""
 	var deck := _mat(Color(0.38, 0.42, 0.48), 0.65, 0.12)
 	var beam := _mat(Color(0.28, 0.32, 0.38), 0.7, 0.2)
 	var rail := _mat(Color(0.55, 0.6, 0.68), 0.45, 0.35)
-	var accent := _mat(Color(0.35, 0.55, 0.75), 0.5, 0.15)
-	accent.emission_enabled = true
-	accent.emission = Color(0.25, 0.45, 0.7)
-	accent.emission_energy_multiplier = 0.6
+	var accent := _emissive(Color(0.2, 0.4, 0.5), CYAN, 0.75)
 	# South half deck (open edge faces −Z / hall center). Split around elevator shaft.
 	var edge_z := 1.2
 	var deck_z1 := edge_z

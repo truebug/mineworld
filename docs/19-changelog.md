@@ -10,6 +10,20 @@
 
 ---
 
+## 2026-07-21 · H12e 外场迷你太空城
+
+- 外场放大为浮岛迷你城：阶梯 terraces、四角指挥塔、南北东西叠舱群、天桥、南向舰队接驳臂、龙骨 understructure + underglow。
+- Hab / Berth / Control 三舱；契约 bounds → 40×36；相机可视距离放宽。
+
+---
+
+## 2026-07-21 · H12d 太空港视觉语言薄做
+
+- 吸收参考：哑光灰巨型结构 + 青蓝能量面板（非宿舍舱、非仓库灰盒）。
+- Hub dress：暗甲板/墙肋、青蓝导引带与窗带、外场角塔+环段面板、舱底 underglow、轻微 glow。
+
+---
+
 ## 2026-07-21 · H7c + Portal 双语 + H12c 外场舱
 
 - **H7c**：门 C 设计室 / 门 D 边缘坞立面壳 + 地垫；F 循环状态（sealed/catalog/exhibits · offline/pending/camera_stub）；不进 MuJoCo、不接真机。

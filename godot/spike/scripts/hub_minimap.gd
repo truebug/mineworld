@@ -2,8 +2,8 @@
 extends Control
 
 ## MW half-extents (must match gateway hub bounds / dress).
-@export var half_x := 28.0
-@export var half_y := 24.0
+@export var half_x := 40.0
+@export var half_y := 36.0
 
 var _points: Array = [] ## [{x,y,self}]
 

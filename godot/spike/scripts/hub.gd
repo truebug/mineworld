@@ -119,7 +119,7 @@ func _start_hub_session() -> void:
 	if camera_rig != null:
 		camera_rig.distance = 18.0
 		camera_rig.pitch = -0.55
-		camera_rig.max_distance = 48.0
+		camera_rig.max_distance = 72.0
 		if camera_rig.has_signal("view_mode_changed"):
 			camera_rig.view_mode_changed.connect(_on_camera_view_changed)
 	if map_title != null:
