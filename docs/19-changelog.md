@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-07-21 · H7c + Portal 双语 + H12c 外场舱
+
+- **H7c**：门 C 设计室 / 门 D 边缘坞立面壳 + 地垫；F 循环状态（sealed/catalog/exhibits · offline/pending/camera_stub）；不进 MuJoCo、不接真机。
+- **i18n**：`me.html` / `admin.html` 挂 `mw_i18n.js`；错误与空态中文优先。
+- **H12c**：南甲板停机坪上 Hab / Berth 两个模块舱（视觉占位）。
+
+---
+
 ## 2026-07-21 · H12 母港布局 + 中英双语
 
 - 新增 [24-hub-mothership.md](24-hub-mothership.md)：三类出口翼区（本仓/卡片/边缘）+ 浮空岛母港叙事。

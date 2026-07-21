@@ -155,6 +155,41 @@ func _place_apron(root: Node3D) -> void:
 	var pad := _mat(Color(0.28, 0.32, 0.4), 0.7, 0.2)
 	_box(root, "BerthL", Vector3(-14, -0.08, APRON_HALF_Z - 8), Vector3(10.0, 0.08, 8.0), pad)
 	_box(root, "BerthR", Vector3(14, -0.08, APRON_HALF_Z - 8), Vector3(10.0, 0.08, 8.0), pad)
+	_place_apron_modules(root)
+
+
+func _place_apron_modules(root: Node3D) -> void:
+	"""H12c: two exterior module pods on south berth pads (visual only)."""
+	_module_pod(root, "ModHab", Vector3(-14, 0, APRON_HALF_Z - 8), Color(0.45, 0.55, 0.7), "栖息舱 · Hab")
+	_module_pod(root, "ModDock", Vector3(14, 0, APRON_HALF_Z - 8), Color(0.55, 0.7, 0.55), "接驳舱 · Berth")
+
+
+func _module_pod(root: Node3D, base: String, pos: Vector3, tint: Color, tag: String) -> void:
+	"""Simple sealed module: hull + window band + mast."""
+	var hull := _mat(tint.darkened(0.25), 0.65, 0.2)
+	var band := _mat(tint.lightened(0.15), 0.4, 0.15)
+	band.emission_enabled = true
+	band.emission = tint
+	band.emission_energy_multiplier = 0.45
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.5, 0.75, 0.95, 0.35)
+	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass.roughness = 0.12
+	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_box(root, base + "Hull", pos + Vector3(0, 2.2, 0), Vector3(7.0, 4.0, 5.5), hull)
+	_box(root, base + "Band", pos + Vector3(0, 3.6, 0), Vector3(7.2, 0.25, 5.7), band)
+	_box(root, base + "Win", pos + Vector3(0, 2.4, 2.85), Vector3(4.0, 1.6, 0.08), glass)
+	_box(root, base + "Mast", pos + Vector3(2.8, 5.2, -1.5), Vector3(0.2, 2.4, 0.2), band)
+	_box(root, base + "Dish", pos + Vector3(2.8, 6.5, -1.5), Vector3(1.4, 0.15, 1.4), band)
+	var lab := Label3D.new()
+	lab.text = tag
+	lab.font_size = 42
+	lab.outline_size = 6
+	lab.pixel_size = 0.012
+	lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lab.modulate = tint.lightened(0.35)
+	root.add_child(lab)
+	lab.position = pos + Vector3(0, 5.0, 0)
 
 
 func _place_solid_hall(root: Node3D) -> void:
@@ -404,6 +439,74 @@ func _place_room_shells(root: Node3D) -> void:
 	root.add_child(cls)
 	cls.position = Vector3(8.0, 4.7, -HALL_HALF_Z + 0.8)
 	_place_arena_shell(root)
+	_place_design_shell(root)
+	_place_edge_shell(root)
+
+
+func _place_design_shell(root: Node3D) -> void:
+	"""H7c: Door C Design Lab — PMS card wing narrative shell (no editor)."""
+	var frame := _mat(Color(0.28, 0.34, 0.42), 0.55, 0.15)
+	var trim := _mat(Color(0.7, 0.85, 1.0), 0.4, 0.2)
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.65, 0.8, 0.95, 0.2)
+	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass.roughness = 0.15
+	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var cx := 0.0
+	var cz := -HALL_HALF_Z + 1.8
+	_box(root, "DesArchL", Vector3(cx - 1.5, 2.1, cz), Vector3(0.26, 4.0, 0.3), frame)
+	_box(root, "DesArchR", Vector3(cx + 1.5, 2.1, cz), Vector3(0.26, 4.0, 0.3), frame)
+	_box(root, "DesLint", Vector3(cx, 4.15, cz), Vector3(3.2, 0.28, 0.36), trim)
+	_box(root, "DesGlass", Vector3(cx, 2.0, cz - 0.15), Vector3(2.6, 3.2, 0.05), glass)
+	_box(root, "DesPad", Vector3(cx, 0.03, cz + 1.0), Vector3(3.4, 0.06, 2.2), _mat(Color(0.3, 0.36, 0.44), 0.75, 0.05))
+	# Status strip: sealed / Type B
+	var seal := _mat(Color(0.55, 0.75, 0.95), 0.45, 0.1)
+	seal.emission_enabled = true
+	seal.emission = Color(0.4, 0.65, 0.9)
+	seal.emission_energy_multiplier = 0.7
+	_box(root, "DesSeal", Vector3(cx, 3.5, cz + 0.05), Vector3(2.0, 0.12, 0.12), seal)
+	var lab := Label3D.new()
+	lab.text = "设计室 · 卡片通道\nDesign Lab · Type B"
+	lab.font_size = 36
+	lab.outline_size = 6
+	lab.pixel_size = 0.01
+	lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lab.modulate = Color(0.8, 0.9, 1.0)
+	root.add_child(lab)
+	lab.position = Vector3(cx, 4.7, cz + 0.6)
+
+
+func _place_edge_shell(root: Node3D) -> void:
+	"""H7c: Door D Edge Dock — edge/real-robot narrative shell (no live link)."""
+	var frame := _mat(Color(0.22, 0.36, 0.32), 0.55, 0.2)
+	var trim := _mat(Color(0.45, 0.85, 0.7), 0.4, 0.25)
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.35, 0.75, 0.6, 0.22)
+	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass.roughness = 0.2
+	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var dx := -HALL_HALF_X + 1.9
+	var dz := -10.0
+	_box(root, "EdgArchT", Vector3(dx, 2.0, dz - 1.3), Vector3(0.28, 3.8, 0.3), frame)
+	_box(root, "EdgArchB", Vector3(dx, 2.0, dz + 1.3), Vector3(0.28, 3.8, 0.3), frame)
+	_box(root, "EdgLint", Vector3(dx, 3.95, dz), Vector3(0.36, 0.28, 2.8), trim)
+	_box(root, "EdgGlass", Vector3(dx - 0.2, 1.9, dz), Vector3(0.05, 3.0, 2.2), glass)
+	_box(root, "EdgPad", Vector3(dx + 1.0, 0.03, dz), Vector3(2.2, 0.06, 3.2), _mat(Color(0.2, 0.32, 0.28), 0.75, 0.05))
+	# Airlock ring hint
+	var ring := _mat(Color(0.4, 0.9, 0.7), 0.4, 0.15)
+	ring.emission_enabled = true
+	ring.emission = Color(0.3, 0.8, 0.6)
+	ring.emission_energy_multiplier = 0.65
+	_box(root, "EdgRing", Vector3(dx - 0.05, 1.8, dz), Vector3(0.1, 2.4, 0.1), ring)
+	var lab := Label3D.new()
+	lab.text = "边缘任务坞\nEdge Dock · Type C"
+	lab.font_size = 36
+	lab.outline_size = 6
+	lab.pixel_size = 0.01
+	lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lab.modulate = Color(0.6, 0.95, 0.8)
+	root.add_child(lab)
+	lab.position = Vector3(dx + 0.8, 4.5, dz)
 
 
 func _place_arena_shell(root: Node3D) -> void:

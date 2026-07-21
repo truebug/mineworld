@@ -57,6 +57,8 @@
 | **H11** | 竞技场门占位 | ✅ 门 E 南翼 + F stub |
 | **H12a** | 母港尺度/窗带/外延甲板/三类翼区 | ✅ 见 [24](24-hub-mothership.md) |
 | **H12b** | 中英双语壳（Portal + Hub） | ✅ `mw_i18n.js` + 3D 中文优先文案 |
+| **H12c** | 外场 Hab / Berth 模块舱 | ✅ v0 南甲板 |
+| **H7c** | 门 C/D 立面 + F 状态 stub | ✅ |
 | **H6b** | 观感：机库/星空/NPC/DOM HUD/电梯+L2 | 已落地（尺度已抬升） |
 
 ### 3.1 Gateway
@@ -98,3 +100,4 @@
 | 2026-07-20 | UX1/UX2-v0：品牌首屏 + `MWTransition` 切景淡入淡出 |
 | 2026-07-21 | H11：门 E Arena Gate 壳 + F 1v1/party×LFM stub |
 | 2026-07-21 | H12：母港布局 + 双语；叙事 SSOT → [24](24-hub-mothership.md) |
+| 2026-07-21 | H7c 门 C/D 壳 + F；H12c 外场 Hab/Berth；Portal me/admin 双语 |

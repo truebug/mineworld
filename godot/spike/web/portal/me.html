@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +7,7 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+	<script src="/mw_i18n.js"></script>
 	<style>
 		:root {
 			--void: #03050a;
@@ -124,35 +125,47 @@
 <body>
 	<div class="wrap">
 		<h1 class="brand">MineWorld</h1>
-		<p class="sub" id="who">Loading…</p>
+		<p class="sub" id="who" data-i18n="me.loading">加载中…</p>
 		<div class="cta-row">
-			<a class="btn-enter" href="/">Enter hangar</a>
+			<a class="btn-enter" href="/" data-i18n="me.enter">进入母港</a>
 		</div>
 		<div class="card stats" id="stats">
-			<div class="stat"><strong id="s-pts">—</strong><span>Total points</span></div>
-			<div class="stat"><strong id="s-runs">—</strong><span>Scored runs</span></div>
-			<div class="stat"><strong id="s-wins">—</strong><span>Success</span></div>
+			<div class="stat"><strong id="s-pts">—</strong><span data-i18n="me.pts">总积分</span></div>
+			<div class="stat"><strong id="s-runs">—</strong><span data-i18n="me.runs">计分局数</span></div>
+			<div class="stat"><strong id="s-wins">—</strong><span data-i18n="me.wins">通关次数</span></div>
 		</div>
 		<div class="card">
-			<h2>Leaderboard</h2>
-			<ol class="lb" id="lb"><li>Loading…</li></ol>
+			<h2 data-i18n="me.lb">排行榜</h2>
+			<ol class="lb" id="lb"><li data-i18n="me.loading">加载中…</li></ol>
 		</div>
 		<div class="card">
-			<h2>Recent sessions</h2>
+			<h2 data-i18n="me.sessions">最近对局</h2>
 			<table>
-				<thead><tr><th>Level</th><th>Pts</th><th>Time</th><th>When</th><th>Replay</th></tr></thead>
+				<thead><tr>
+					<th data-i18n="me.th.level">关卡</th>
+					<th data-i18n="me.th.pts">分</th>
+					<th data-i18n="me.th.time">时长</th>
+					<th data-i18n="me.th.when">时间</th>
+					<th data-i18n="me.th.replay">回放</th>
+				</tr></thead>
 				<tbody id="rows"><tr><td colspan="5">…</td></tr></tbody>
 			</table>
 		</div>
 		<div class="nav">
-			<a href="/portal/">← Landing</a>
-			<a href="/recordings.html">Recordings</a>
-			<button type="button" class="ghost" id="logout">Sign out</button>
+			<a href="/portal/" data-i18n="me.landing">← 首页</a>
+			<a href="/recordings.html" data-i18n="me.recordings">录制</a>
+			<button type="button" class="ghost" id="logout" data-i18n="me.logout">退出登录</button>
 		</div>
 		<p class="err" id="err"></p>
 	</div>
 	<script>
 	(function () {
+		if (window.MW_I18N) {
+			window.MW_I18N.mountToggle(document.body);
+		}
+		function t(k) {
+			return window.MW_I18N ? window.MW_I18N.t(k) : k;
+		}
 		const TOKEN_KEY = 'mw_auth_token';
 		const token = localStorage.getItem(TOKEN_KEY);
 		if (!token) {
@@ -180,7 +193,7 @@
 			.then(function (data) {
 				if (!data) return;
 				if (!data.ok) {
-					document.getElementById('err').textContent = data.error || 'Failed';
+					document.getElementById('err').textContent = data.error || t('me.fail');
 					return;
 				}
 				const p = data.player || {};
@@ -194,7 +207,7 @@
 				tbody.innerHTML = '';
 				const scores = data.scores || [];
 				if (!scores.length) {
-					tbody.innerHTML = '<tr><td colspan="5">No scored runs yet — clear Workshop or Training.</td></tr>';
+					tbody.innerHTML = '<tr><td colspan="5">' + esc(t('me.empty_scores')) + '</td></tr>';
 				} else {
 					scores.forEach(function (s) {
 						const tr = document.createElement('tr');
@@ -218,7 +231,7 @@
 						fetch('/api/recordings/' + encodeURIComponent(sid))
 							.then(function (r) {
 								if (!r.ok) {
-									cell.innerHTML = '<span class="muted" title="No frames on disk">no rec</span>';
+									cell.innerHTML = '<span class="muted" title="No frames on disk">' + esc(t('me.no_rec')) + '</span>';
 									return;
 								}
 								cell.innerHTML =
@@ -242,7 +255,7 @@
 				ol.innerHTML = '';
 				const entries = (data && data.entries) || [];
 				if (!entries.length) {
-					ol.innerHTML = '<li><span class="name">No scores yet</span></li>';
+					ol.innerHTML = '<li><span class="name">' + esc(t('me.empty_lb')) + '</span></li>';
 					return;
 				}
 				entries.slice(0, 10).forEach(function (e, i) {
@@ -256,14 +269,14 @@
 				});
 			})
 			.catch(function () {
-				document.getElementById('lb').innerHTML = '<li>Leaderboard unavailable</li>';
+				document.getElementById('lb').innerHTML = '<li>' + esc(t('me.lb_fail')) + '</li>';
 			});
 
 		document.getElementById('logout').addEventListener('click', function () {
-			const t = localStorage.getItem(TOKEN_KEY);
+			const tok = localStorage.getItem(TOKEN_KEY);
 			fetch('/api/platform/logout', {
 				method: 'POST',
-				headers: t ? { Authorization: 'Bearer ' + t } : {},
+				headers: tok ? { Authorization: 'Bearer ' + tok } : {},
 			}).finally(function () {
 				localStorage.removeItem(TOKEN_KEY);
 				location.replace('/portal/');

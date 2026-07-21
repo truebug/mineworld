@@ -65,11 +65,24 @@ var _party_looking := false
 var _vendor_accent_i := 0
 ## H11: Arena gate stub — cycle mode + LFM (no matchmaking).
 var _arena_state_i := 0
+## H7c: Design / Edge stub status cycles (no editor / no edge link).
+var _design_state_i := 0
+var _edge_state_i := 0
 const ARENA_STATES := [
 	{"mode": "1v1", "looking": false},
 	{"mode": "1v1", "looking": true},
 	{"mode": "party", "looking": false},
 	{"mode": "party", "looking": true},
+]
+const DESIGN_STATES := [
+	"sealed",
+	"catalog",
+	"exhibits",
+]
+const EDGE_STATES := [
+	"offline",
+	"pending",
+	"camera_stub",
 ]
 const VENDOR_ACCENTS := ["#4aa3ff", "#e8873a", "#6ecf8e", "#d4a24c", "#c46ecf", "#e06c75"]
 const PARTY_POSTS := [
@@ -768,8 +781,8 @@ func _update_door_context() -> void:
 	var candidates: Array = [
 		[door_workshop, "a", "门 A · 仿真工坊 — 进入本仓精细遥操 / IL。\nDoor A · Workshop — native teleop / IL."],
 		[door_city, "b", "门 B · 机甲训练场 — 进入本仓城市场景。\nDoor B · Training Yard — native city drive."],
-		[door_stub_c, "c", "门 C · 设计室 — 卡片通道（后置编辑器）。\nDoor C · Design — PMS card wing (soon)."],
-		[door_stub_d, "d", "门 D · 边缘任务坞 — 真机/边缘入口占位。\nDoor D · Edge Dock — edge stub (soon)."],
+		[door_stub_c, "c", "门 C · 设计室 — Type B 卡片通道。走近按 F 看状态。\nDoor C · Design Lab — F for stub status."],
+		[door_stub_d, "d", "门 D · 边缘坞 — Type C 真机/边缘。走近按 F 看链路。\nDoor D · Edge Dock — F for link stub."],
 		[door_stub_e, "e", "门 E · 竞技场 — 走近按 F 切换 1v1/组队 stub。\nDoor E · Arena — F for match stub."],
 	]
 	for row in candidates:
@@ -825,6 +838,12 @@ func _try_interact() -> void:
 	if sid == "arena_gate":
 		_use_arena_gate()
 		return
+	if sid == "design_lab":
+		_use_design_lab()
+		return
+	if sid == "edge_dock":
+		_use_edge_dock()
+		return
 	var url := str(hit.get("url", "")).strip_edges()
 	if url != "":
 		var space_id := str(hit.get("space_id", "")).strip_edges()
@@ -838,11 +857,41 @@ func _use_arena_gate() -> void:
 	_arena_state_i = (_arena_state_i + 1) % ARENA_STATES.size()
 	var st: Dictionary = ARENA_STATES[_arena_state_i]
 	var mode := str(st.get("mode", "1v1"))
-	var lfm := "Looking for match ✓" if bool(st.get("looking", false)) else "not queued"
+	var lfm := "排队中 Looking ✓" if bool(st.get("looking", false)) else "未排队 not queued"
 	_refresh_tips(
-		"Arena Gate\nMode: %s · %s\n\n1v1 = duel stub · party = ranked crew stub.\nMatchmaking / MuJoCo authority: later.\nNot a PMS Space — local portal only.\nF again to cycle."
+		"竞技场门 · Arena Gate\n模式 Mode: %s · %s\n\n1v1 / 组队 stub；匹配与 MuJoCo 权威后置。\n非 PMS 卡片。再按 F 循环。"
 		% [mode, lfm]
 	)
+
+
+func _use_design_lab() -> void:
+	"""H7c: cycle Design Lab stub panes (no editor / no join)."""
+	_design_state_i = (_design_state_i + 1) % DESIGN_STATES.size()
+	var st := str(DESIGN_STATES[_design_state_i])
+	var body := ""
+	match st:
+		"catalog":
+			body = "目录预览 · Catalog preview\n未来：契约/卡片列表。现用北翼展柜开 Space。"
+		"exhibits":
+			body = "展柜通道 · Exhibit route\nType B：F 打开展品 URL；本门不进 MuJoCo。"
+		_:
+			body = "舱门封闭 · Sealed\n设计室编辑器后置（T4.2）。"
+	_refresh_tips("设计室 · Design Lab (Type B)\n状态: %s\n\n%s\n\n再按 F 切换。" % [st, body])
+
+
+func _use_edge_dock() -> void:
+	"""H7c: cycle Edge Dock link stub (no real robot)."""
+	_edge_state_i = (_edge_state_i + 1) % EDGE_STATES.size()
+	var st := str(EDGE_STATES[_edge_state_i])
+	var body := ""
+	match st:
+		"pending":
+			body = "边缘会话排队 · Edge session pending\n鉴权/编排走 pms-system；Hub 只做入口。"
+		"camera_stub":
+			body = "摄像头占位 · Camera feed stub\n无直播流；真机透传明确不做（近期）。"
+		_:
+			body = "链路离线 · Link offline\nType C 边缘坞；不接本仓 MjData。"
+	_refresh_tips("边缘任务坞 · Edge Dock (Type C)\n链路: %s\n\n%s\n\n再按 F 切换。" % [st, body])
 
 
 func _use_party_board() -> void:

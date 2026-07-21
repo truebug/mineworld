@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>MineWorld · Admin</title>
+	<script src="/mw_i18n.js"></script>
 	<style>
 		* { box-sizing: border-box; }
 		body {
@@ -59,67 +60,97 @@
 </head>
 <body>
 	<div class="wrap">
-		<h1>Admin · ops</h1>
-		<p class="muted">Default key <code>dev-admin</code> (override with <code>MW_PLATFORM_ADMIN_KEY</code>). Stored in this browser only. PL2 rooms need Gateway <code>--admin-port 8770</code>.</p>
+		<h1 data-i18n="admin.title">管理 · 运维</h1>
+		<p class="muted" data-i18n="admin.hint">默认密钥 dev-admin（可用 MW_PLATFORM_ADMIN_KEY 覆盖）。仅存本浏览器。PL2 房间需 Gateway --admin-port 8770。</p>
 		<div class="card">
-			<label>Admin key
+			<label><span data-i18n="admin.key">管理密钥</span>
 				<input id="key" type="password" autocomplete="off" placeholder="dev-admin">
 			</label>
-			<button type="button" id="load">Load players</button>
-			<button type="button" id="load-ops">Refresh rooms / levels</button>
-			<button type="button" id="save-key">Remember key</button>
+			<button type="button" id="load" data-i18n="admin.load">加载玩家</button>
+			<button type="button" id="load-ops" data-i18n="admin.refresh">刷新房间 / 关卡</button>
+			<button type="button" id="save-key" data-i18n="admin.save_key">记住密钥</button>
 			<div class="muted" id="gw-status" style="margin-top:8px;"></div>
 		</div>
 		<div class="card">
-			<div style="margin-bottom:8px;color:#9bb4c9;">Live rooms (read-only)</div>
+			<div style="margin-bottom:8px;color:#9bb4c9;" data-i18n="admin.rooms">在线房间（只读）</div>
 			<table>
-				<thead><tr><th>Room</th><th>Level</th><th>Members</th><th>Tick</th><th>Hub</th></tr></thead>
-				<tbody id="room-rows"><tr><td colspan="5">Refresh rooms / levels</td></tr></tbody>
+				<thead><tr>
+					<th data-i18n="admin.th.room">房间</th>
+					<th data-i18n="admin.th.level">关卡</th>
+					<th data-i18n="admin.th.members">人数</th>
+					<th data-i18n="admin.th.tick">Tick</th>
+					<th data-i18n="admin.th.hub">Hub</th>
+				</tr></thead>
+				<tbody id="room-rows"><tr><td colspan="5" data-i18n="admin.refresh_hint">请刷新房间 / 关卡</td></tr></tbody>
 			</table>
 			<div class="err" id="room-err"></div>
 		</div>
 		<div class="card">
-			<div style="margin-bottom:8px;color:#9bb4c9;">Levels (disable blocks new joins)</div>
+			<div style="margin-bottom:8px;color:#9bb4c9;" data-i18n="admin.levels">关卡（禁用会阻止新 join）</div>
 			<table>
-				<thead><tr><th>Level</th><th>Status</th><th></th></tr></thead>
-				<tbody id="level-rows"><tr><td colspan="3">Refresh rooms / levels</td></tr></tbody>
+				<thead><tr>
+					<th data-i18n="admin.th.level">关卡</th>
+					<th data-i18n="admin.th.status">状态</th>
+					<th></th>
+				</tr></thead>
+				<tbody id="level-rows"><tr><td colspan="3" data-i18n="admin.refresh_hint">请刷新房间 / 关卡</td></tr></tbody>
 			</table>
-			<div class="muted" style="margin-top:8px;">City seed regen: use in-game shell or <code>POST /api/city-block</code>.</div>
+			<div class="muted" style="margin-top:8px;" data-i18n="admin.city_seed">城市场景种子：用游戏壳或 POST /api/city-block。</div>
 			<div class="err" id="level-err"></div>
 		</div>
 		<div class="card">
-			<div style="margin-bottom:8px;color:#9bb4c9;">Create player</div>
+			<div style="margin-bottom:8px;color:#9bb4c9;" data-i18n="admin.create">创建玩家</div>
 			<label>player_id <input id="pid" placeholder="alice"></label>
 			<label>display_name <input id="dname" placeholder="Alice"></label>
 			<label>password <input id="pw" type="password" placeholder="••••"></label>
-			<button type="button" id="create">Create</button>
+			<button type="button" id="create" data-i18n="admin.create_btn">创建</button>
 			<div class="ok" id="msg"></div>
 			<div class="err" id="err"></div>
 		</div>
 		<div class="card">
 			<table>
-				<thead><tr><th>ID</th><th>Name</th><th>Accent</th></tr></thead>
-				<tbody id="rows"><tr><td colspan="3">Load with admin key</td></tr></tbody>
+				<thead><tr>
+					<th data-i18n="admin.th.id">ID</th>
+					<th data-i18n="admin.th.name">名称</th>
+					<th data-i18n="admin.th.accent">配色</th>
+				</tr></thead>
+				<tbody id="rows"><tr><td colspan="3" data-i18n="admin.load_hint">用管理密钥加载</td></tr></tbody>
 			</table>
 		</div>
 		<div class="card" id="drill" hidden>
 			<div style="margin-bottom:8px;color:#9bb4c9;">
-				Sessions · <span id="sel-pid"></span>
+				<span data-i18n="admin.sessions">对局 ·</span> <span id="sel-pid"></span>
 			</div>
 			<div class="actions" style="margin-bottom:10px;">
-				<a id="export-link" href="#">Export CSV (success)</a>
-				<a id="export-all" href="#">Export CSV (all)</a>
+				<a id="export-link" href="#" data-i18n="admin.export_ok">导出 CSV（通关）</a>
+				<a id="export-all" href="#" data-i18n="admin.export_all">导出 CSV（全部）</a>
 			</div>
 			<table>
-				<thead><tr><th>Session</th><th>Level</th><th>Outcome</th><th>Frames</th><th></th></tr></thead>
+				<thead><tr><th>Session</th><th data-i18n="admin.th.level">关卡</th><th>Outcome</th><th>Frames</th><th></th></tr></thead>
 				<tbody id="sess-rows"><tr><td colspan="5">—</td></tr></tbody>
 			</table>
 			<div class="err" id="sess-err"></div>
 		</div>
-		<p><a href="/">Hub</a> · <a href="/portal/me.html">My record</a> · <a href="/recordings.html">Recordings</a></p>
+		<p>
+			<a href="/" data-i18n="admin.hub">母港</a> ·
+			<a href="/portal/me.html" data-i18n="admin.me">我的战绩</a> ·
+			<a href="/recordings.html" data-i18n="admin.recs">录制</a>
+		</p>
 	</div>
 	<script>
 	(function () {
+		if (window.MW_I18N) {
+			window.MW_I18N.mountToggle(document.body);
+		}
+		function t(k) {
+			return window.MW_I18N ? window.MW_I18N.t(k) : k;
+		}
+		function httpErr(data, status) {
+			if (data && data.error) return data.error;
+			if (status === 401 || status === 403) return t('admin.err_auth');
+			return t('admin.err_http') + ' HTTP ' + status;
+		}
+
 		const KEY = 'mw_admin_key';
 		const keyEl = document.getElementById('key');
 		try { keyEl.value = localStorage.getItem(KEY) || 'dev-admin'; } catch (e) {}
@@ -130,7 +161,7 @@
 
 		document.getElementById('save-key').onclick = function () {
 			try { localStorage.setItem(KEY, adminKey()); } catch (e) {}
-			document.getElementById('msg').textContent = 'Key saved locally.';
+			document.getElementById('msg').textContent = t('admin.key_saved');
 		};
 
 		function setExportLinks(pid) {
@@ -146,19 +177,19 @@
 			document.getElementById('sess-err').textContent = '';
 			setExportLinks(pid);
 			const tbody = document.getElementById('sess-rows');
-			tbody.innerHTML = '<tr><td colspan="5">Loading…</td></tr>';
+			tbody.innerHTML = '<tr><td colspan="5">' + t('me.loading') + '</td></tr>';
 			try {
 				const r = await fetch('/api/recordings?player_id=' + encodeURIComponent(pid));
 				const data = await r.json().catch(function () { return {}; });
 				if (!r.ok) {
 					tbody.innerHTML = '';
-					document.getElementById('sess-err').textContent = data.error || ('HTTP ' + r.status);
+					document.getElementById('sess-err').textContent = httpErr(data, r.status);
 					return;
 				}
 				const sessions = data.sessions || [];
 				tbody.innerHTML = '';
 				if (!sessions.length) {
-					tbody.innerHTML = '<tr><td colspan="5">No recordings for this player (need header player_id)</td></tr>';
+					tbody.innerHTML = '<tr><td colspan="5">' + t('admin.no_rec_player') + '</td></tr>';
 					return;
 				}
 				sessions.forEach(function (s) {
@@ -186,7 +217,7 @@
 			});
 			const data = await r.json().catch(function () { return {}; });
 			if (!r.ok) {
-				document.getElementById('err').textContent = data.error || ('HTTP ' + r.status);
+				document.getElementById('err').textContent = httpErr(data, r.status);
 				return;
 			}
 			const tbody = document.getElementById('rows');
@@ -225,7 +256,7 @@
 						' · sessions=' + (stData.session_count != null ? stData.session_count : '?');
 				} else {
 					document.getElementById('gw-status').textContent =
-						'Gateway admin: ' + (stData.error || ('HTTP ' + st.status));
+						'Gateway admin: ' + httpErr(stData, st.status);
 				}
 			} catch (e) {
 				document.getElementById('gw-status').textContent = String(e);
@@ -236,12 +267,12 @@
 				const tbody = document.getElementById('room-rows');
 				tbody.innerHTML = '';
 				if (!r.ok) {
-					document.getElementById('room-err').textContent = data.error || ('HTTP ' + r.status);
+					document.getElementById('room-err').textContent = httpErr(data, r.status);
 					tbody.innerHTML = '<tr><td colspan="5">—</td></tr>';
 				} else {
 					const rooms = data.rooms || [];
 					if (!rooms.length) {
-						tbody.innerHTML = '<tr><td colspan="5">No live rooms</td></tr>';
+						tbody.innerHTML = '<tr><td colspan="5">' + t('admin.no_rooms') + '</td></tr>';
 					}
 					rooms.forEach(function (room) {
 						const tr = document.createElement('tr');
@@ -264,7 +295,7 @@
 				const tbody = document.getElementById('level-rows');
 				tbody.innerHTML = '';
 				if (!r.ok) {
-					document.getElementById('level-err').textContent = data.error || ('HTTP ' + r.status);
+					document.getElementById('level-err').textContent = httpErr(data, r.status);
 					tbody.innerHTML = '<tr><td colspan="3">—</td></tr>';
 					return;
 				}
@@ -273,7 +304,7 @@
 					const disabled = !!lv.disabled;
 					const btn = document.createElement('button');
 					btn.type = 'button';
-					btn.textContent = disabled ? 'Enable' : 'Disable';
+					btn.textContent = disabled ? t('admin.enable') : t('admin.disable');
 					btn.onclick = async function () {
 						const path = disabled
 							? '/api/gateway/levels/enable'
@@ -290,7 +321,7 @@
 					};
 					tr.innerHTML =
 						'<td>' + (lv.level_id || '') + '</td>' +
-						'<td>' + (disabled ? 'DISABLED' : 'open') + '</td>' +
+						'<td>' + (disabled ? t('admin.disabled') : t('admin.enabled')) + '</td>' +
 						'<td></td>';
 					tr.children[2].appendChild(btn);
 					tbody.appendChild(tr);
@@ -320,10 +351,11 @@
 			});
 			const data = await r.json().catch(function () { return {}; });
 			if (!r.ok) {
-				document.getElementById('err').textContent = data.error || ('HTTP ' + r.status);
+				document.getElementById('err').textContent = httpErr(data, r.status);
 				return;
 			}
-			document.getElementById('msg').textContent = 'Created ' + (data.player && data.player.player_id);
+			document.getElementById('msg').textContent =
+				t('admin.created') + ' ' + (data.player && data.player.player_id);
 			document.getElementById('pw').value = '';
 			loadPlayers();
 		};

@@ -25,8 +25,7 @@
 
 ## Now（建议下一刀）
 
-> H11 已收口。公网 **实施建议书** 见 [23-public-deploy.md](23-public-deploy.md)（待在 CVM 上执行）。  
-> **建议下一刀：按 23 做 W2.1/2/4，或门 C/D 占位。**
+> H7c / H12c Done。公网仍待 DNS → W2（见 [23](23-public-deploy.md)）。
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
@@ -34,7 +33,7 @@
 | W2.1 | 静态 HTTPS（databall.cloud） | 证书有效可进 Portal/Hub | [ ] |
 | W2.2 | Gateway `wss` 反代 | 浏览器 hello→join→state | [ ] |
 | W2.4 | 最小运维说明 | 安全组/进程/密钥/重启 | [ ] §4–§10 of 23 |
-| H7c | 门 C/D 占位加深 | Design / Missions 叙事壳 | [ ] |
+| H7c | 门 C/D 占位加深 | Design / Edge 壳 + F 状态循环 | [x] |
 
 ---
 
@@ -110,7 +109,7 @@
 | H11 | 竞技场门占位 | 门 E 壳 + F 四态 stub；权威另案 | [x] |
 | H12a | 母港尺度/甲板/三类翼 | 厅 24×20、举架 22、L2=8.5、外延甲板；门分区 | [x] |
 | H12b | 中英双语（CN 优先） | Portal+shell `mw_i18n.js`；Hub 3D 文案双语 | [x] |
-| H12c | 外场模块舱/接驳廊 | 几何外扩建筑群 | [ ] 后置 |
+| H12c | 外场模块舱/接驳廊 | 南甲板 Hab + Berth 两舱视觉 | [x] v0 |
 
 ### 运维 / 公网（原暂缓）
 

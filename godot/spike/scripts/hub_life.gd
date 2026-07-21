@@ -139,28 +139,48 @@ func _place_stations() -> void:
 	_place_exhibits()
 	_place_room_shell_stations()
 	_place_arena_station()
+	_place_cd_stations()
 	_spawn_factory("screen-panel-wide.glb", 0.0, WALL_Z - 0.6, 180.0, 1.1)
 	_spawn_factory("machine.glb", WALL_X - 1.2, 9.0, -90.0, 1.0)
 	_spawn_factory("structure-medium.glb", -WALL_X + 1.2, 9.0, 90.0, 1.0)
 	_spawn_factory("hopper-round.glb", WALL_X - 1.3, -9.0, 0.0, 1.0)
 	_spawn_factory("warning-orange.glb", -WALL_X + 1.3, -9.0, 0.0, 1.0)
-	# Elevator call panel (H8 ride; matches hub_dress ELEV_X/Z)
+	# Elevator call panel (H8 ride; matches hub_dress ELEV_X/Z ≈ 16/15)
 	_station(
 		"elevator",
-		Vector3(12.0, 0, 10.8),
+		Vector3(16.0, 0, 14.2),
 		180.0,
-		"F - Elevator",
-		"Elevator online — press F to ride between hangar and L2 lounge.",
+		"F · 电梯",
+		"电梯 · Elevator — 按 F 在母港一层与 L2 观景廊之间切换。",
 		Color(0.4, 0.85, 1.0),
 	)
-	# L2 call pad (same id) so F works on the mezzanine landing.
 	_station(
 		"elevator",
-		Vector3(13.5, 5.2, 10.2),
+		Vector3(16.0, 8.5, 14.2),
 		180.0,
-		"F - Elevator",
-		"Elevator online — press F to return to hangar floor.",
+		"F · 电梯",
+		"电梯 · Elevator — 按 F 返回母港一层。",
 		Color(0.4, 0.85, 1.0),
+	)
+
+
+func _place_cd_stations() -> void:
+	"""H7c: Design (C) + Edge Dock (D) pads — F cycles stub status (no join / no edge)."""
+	_station(
+		"design_lab",
+		Vector3(0.0, 0, -WALL_Z + 2.2),
+		0.0,
+		"F · 设计室",
+		"设计室 · Design Lab — Type B 卡片通道。\n按 F 查看状态（编辑器后置；展柜可开 Space）。",
+		Color(0.75, 0.85, 0.98),
+	)
+	_station(
+		"edge_dock",
+		Vector3(-WALL_X + 2.2, 0, -10.0),
+		90.0,
+		"F · 边缘坞",
+		"边缘任务坞 · Edge Dock — Type C。\n按 F 查看链路状态（真机后置，不透传）。",
+		Color(0.5, 0.9, 0.75),
 	)
 
 
