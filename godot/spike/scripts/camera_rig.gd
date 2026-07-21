@@ -1,11 +1,12 @@
 ## Follow-orbit camera for teleoperation / hub / levels (shared SSOT).
 ## Modes: orbit (wide 3rd), first-person, chase (close behind). V cycles.
-## Chase: mouse look springs back on release; zoom stays. FP/orbit keep look until C.
+## Mouse: LMB peek (spring back), RMB sticky look, MMB or L+R pan, wheel zoom, C recenter.
 extends Node3D
 
 signal view_mode_changed(label: String)
 
 enum ViewMode { ORBIT, FIRST, CHASE }
+enum DragKind { NONE, PEEK, STICKY, PAN }
 
 const CHASE_PITCH_DEFAULT := -0.28
 
@@ -18,6 +19,7 @@ const CHASE_PITCH_DEFAULT := -0.28
 @export var zoom_step := 1.0
 @export var orbit_sensitivity := 0.01
 @export var pan_speed := 8.0
+@export var pan_mouse_scale := 0.12
 @export var max_look_offset := 40.0
 @export var view_mode: ViewMode = ViewMode.ORBIT
 @export var chase_distance := 3.6
@@ -27,7 +29,7 @@ const CHASE_PITCH_DEFAULT := -0.28
 
 @onready var camera: Camera3D = $Camera3D
 var _target: Node3D = null
-## World-space offset of the look-at point from the mech (y ignored). Orbit only.
+## World-space offset of the look-at point from the mech (y ignored).
 var look_offset := Vector3.ZERO
 var _orbit_distance := 13.0
 var _orbit_pitch := -0.6
@@ -38,8 +40,17 @@ var _fp_pitch := 0.0
 ## Chase: mouse orbit relative to "behind head" (radians).
 var _chase_yaw := 0.0
 var _chase_pitch := CHASE_PITCH_DEFAULT
-## True while RMB/MMB held for look.
-var _look_drag := false
+## Sticky/home look (RMB commits; LMB peek springs back here; C resets).
+var _c_orbit_yaw := 0.5
+var _c_orbit_pitch := -0.6
+var _c_fp_yaw := 0.0
+var _c_fp_pitch := 0.0
+var _c_chase_yaw := 0.0
+var _c_chase_pitch := CHASE_PITCH_DEFAULT
+var _btn_l := false
+var _btn_r := false
+var _btn_m := false
+var _drag: DragKind = DragKind.NONE
 
 
 func _ready() -> void:
@@ -47,6 +58,7 @@ func _ready() -> void:
 	_orbit_distance = distance
 	_orbit_pitch = pitch
 	_orbit_yaw = yaw
+	_commit_current_look()
 	_update_camera()
 
 
@@ -57,12 +69,15 @@ func set_target(node: Node3D) -> void:
 
 
 func reset_look_offset() -> void:
-	"""Snap look / pan / chase back to defaults for the current mode."""
+	"""C / force recenter: pan + look back to mode defaults."""
 	look_offset = Vector3.ZERO
 	_fp_yaw = 0.0
 	_fp_pitch = 0.0
 	_chase_yaw = 0.0
 	_chase_pitch = CHASE_PITCH_DEFAULT
+	yaw = _orbit_yaw
+	pitch = _orbit_pitch
+	_commit_current_look()
 	_update_camera()
 
 
@@ -86,16 +101,19 @@ func cycle_view_mode() -> String:
 			view_mode = ViewMode.FIRST
 			_fp_yaw = 0.0
 			_fp_pitch = 0.0
+			_commit_current_look()
 		ViewMode.FIRST:
 			view_mode = ViewMode.CHASE
 			_chase_yaw = 0.0
 			_chase_pitch = CHASE_PITCH_DEFAULT
 			chase_distance = 3.6
+			_commit_current_look()
 		_:
 			view_mode = ViewMode.ORBIT
 			distance = _orbit_distance
 			pitch = _orbit_pitch
 			yaw = _orbit_yaw
+			_commit_current_look()
 	_update_camera()
 	var label := view_mode_label()
 	view_mode_changed.emit(label)
@@ -119,15 +137,14 @@ func is_first_person() -> bool:
 
 
 func pan_axes(right: float, forward: float, delta: float) -> void:
-	"""Arrow pan — orbit only; first-person looks; chase ignores (fixed to body)."""
+	"""Arrow pan — orbit/chase shift look point; first-person looks."""
 	if right == 0.0 and forward == 0.0:
 		return
 	match view_mode:
 		ViewMode.FIRST:
 			_fp_yaw -= right * 1.8 * delta
 			_fp_pitch = clampf(_fp_pitch + forward * 1.2 * delta, -1.2, 1.0)
-		ViewMode.CHASE:
-			return
+			_commit_current_look()
 		_:
 			_pan_ground(right, forward, delta)
 
@@ -158,7 +175,7 @@ func _pan_ground(right: float, forward: float, delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	"""Desktop camera SSOT: C recenter, V cycle, wheel zoom, RMB/MMB look."""
+	"""Desktop/Web canvas: C recenter, V cycle, wheel zoom, L/R/M mouse."""
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_C or event.physical_keycode == KEY_C:
 			reset_look_offset()
@@ -178,18 +195,42 @@ func _unhandled_input(event: InputEvent) -> void:
 			_on_zoom(1.0)
 			get_viewport().set_input_as_handled()
 			return
-		if (
-			mb.button_index == MOUSE_BUTTON_RIGHT
-			or mb.button_index == MOUSE_BUTTON_MIDDLE
-		):
-			_look_drag = mb.pressed
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			_btn_l = mb.pressed
+			_refresh_drag_kind()
+			get_viewport().set_input_as_handled()
+			return
+		if mb.button_index == MOUSE_BUTTON_RIGHT:
+			_btn_r = mb.pressed
+			_refresh_drag_kind()
+			get_viewport().set_input_as_handled()
+			return
+		if mb.button_index == MOUSE_BUTTON_MIDDLE:
+			_btn_m = mb.pressed
+			_refresh_drag_kind()
 			get_viewport().set_input_as_handled()
 			return
 	elif event is InputEventMouseMotion:
-		if _look_drag or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE):
-			_look_drag = true
-			_on_mouse_drag(event.relative)
-			get_viewport().set_input_as_handled()
+		if _drag == DragKind.NONE:
+			return
+		var rel: Vector2 = (event as InputEventMouseMotion).relative
+		if _drag == DragKind.PAN:
+			_on_mouse_pan(rel)
+		else:
+			_on_mouse_look(rel, _drag == DragKind.STICKY)
+		get_viewport().set_input_as_handled()
+
+
+func _refresh_drag_kind() -> void:
+	"""LMB peek, RMB sticky, MMB or L+R pan."""
+	if _btn_m or (_btn_l and _btn_r):
+		_drag = DragKind.PAN
+	elif _btn_l:
+		_drag = DragKind.PEEK
+	elif _btn_r:
+		_drag = DragKind.STICKY
+	else:
+		_drag = DragKind.NONE
 
 
 func _on_zoom(sign: float) -> void:
@@ -197,6 +238,7 @@ func _on_zoom(sign: float) -> void:
 	match view_mode:
 		ViewMode.FIRST:
 			_fp_pitch = clampf(_fp_pitch - sign * 0.08, -1.2, 1.0)
+			_commit_current_look()
 		ViewMode.CHASE:
 			chase_distance = clampf(
 				chase_distance + sign * zoom_step * 0.45,
@@ -209,8 +251,8 @@ func _on_zoom(sign: float) -> void:
 	_update_camera()
 
 
-func _on_mouse_drag(relative: Vector2) -> void:
-	"""RMB/MMB drag — orbit / look / chase peek (no chase pan)."""
+func _on_mouse_look(relative: Vector2, commit: bool) -> void:
+	"""Orbit / FP / chase look; commit=true stores sticky home (RMB)."""
 	match view_mode:
 		ViewMode.FIRST:
 			_fp_yaw -= relative.x * orbit_sensitivity
@@ -221,25 +263,50 @@ func _on_mouse_drag(relative: Vector2) -> void:
 		_:
 			yaw -= relative.x * orbit_sensitivity
 			pitch = clampf(pitch - relative.y * orbit_sensitivity, -1.45, -0.05)
-			_orbit_yaw = yaw
-			_orbit_pitch = pitch
+	if commit:
+		_commit_current_look()
 	_update_camera()
 
 
-func _spring_chase_look(delta: float) -> void:
-	"""Ease chase look back behind the mech after mouse release (keep zoom)."""
-	if view_mode != ViewMode.CHASE or _look_drag:
+func _on_mouse_pan(relative: Vector2) -> void:
+	"""MMB / L+R: pan look point (orbit/chase) or look (first-person)."""
+	match view_mode:
+		ViewMode.FIRST:
+			_on_mouse_look(relative, true)
+		_:
+			_pan_ground(relative.x * pan_mouse_scale, -relative.y * pan_mouse_scale, 1.0)
+			_update_camera()
+
+
+func _commit_current_look() -> void:
+	"""Store sticky home for peek spring / C baseline per mode."""
+	_c_orbit_yaw = yaw
+	_c_orbit_pitch = pitch
+	_c_fp_yaw = _fp_yaw
+	_c_fp_pitch = _fp_pitch
+	_c_chase_yaw = _chase_yaw
+	_c_chase_pitch = _chase_pitch
+
+
+func _spring_to_committed(delta: float) -> void:
+	"""Ease look back to sticky home after LMB peek release (keep zoom / pan)."""
+	if _drag != DragKind.NONE:
 		return
 	var k := clampf(chase_recenter_speed * delta, 0.0, 1.0)
-	_chase_yaw = lerpf(_chase_yaw, 0.0, k)
-	_chase_pitch = lerpf(_chase_pitch, CHASE_PITCH_DEFAULT, k)
-	if absf(_chase_yaw) < 0.001 and absf(_chase_pitch - CHASE_PITCH_DEFAULT) < 0.001:
-		_chase_yaw = 0.0
-		_chase_pitch = CHASE_PITCH_DEFAULT
+	match view_mode:
+		ViewMode.FIRST:
+			_fp_yaw = lerpf(_fp_yaw, _c_fp_yaw, k)
+			_fp_pitch = lerpf(_fp_pitch, _c_fp_pitch, k)
+		ViewMode.CHASE:
+			_chase_yaw = lerpf(_chase_yaw, _c_chase_yaw, k)
+			_chase_pitch = lerpf(_chase_pitch, _c_chase_pitch, k)
+		_:
+			yaw = lerpf(yaw, _c_orbit_yaw, k)
+			pitch = lerpf(pitch, _c_orbit_pitch, k)
 
 
 func _process(delta: float) -> void:
-	"""Desktop arrow pan + chase spring; Web scenes call pan_axes from key bridge."""
+	"""Desktop arrow pan + peek spring; Web scenes also call pan_axes from key bridge."""
 	if not OS.has_feature("web"):
 		var right := 0.0
 		var forward := 0.0
@@ -253,11 +320,11 @@ func _process(delta: float) -> void:
 			forward -= 1.0
 		pan_axes(right, forward, delta)
 
-	_spring_chase_look(delta)
+	_spring_to_committed(delta)
 
 	if _target == null:
 		return
-	if view_mode == ViewMode.FIRST or view_mode == ViewMode.CHASE:
+	if view_mode == ViewMode.FIRST:
 		global_position = _target.global_position
 	else:
 		global_position = _target.global_position + look_offset
@@ -280,7 +347,7 @@ func _update_camera() -> void:
 		return
 	if view_mode == ViewMode.CHASE and _target != null:
 		# Look at upper chest / head; sit behind MW forward (+X) by default.
-		var look := _target.global_position + Vector3(0, 1.15, 0)
+		var look := _target.global_position + Vector3(0, 1.15, 0) + look_offset
 		var body_yaw := _target.rotation.y
 		# yaw=-PI/2 places orbit camera on -X when body_yaw=0 (behind +X forward).
 		var orbit_yaw := body_yaw - PI * 0.5 + _chase_yaw

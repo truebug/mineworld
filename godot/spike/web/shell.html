@@ -462,6 +462,10 @@ body.mw-play #mw-joints {
 	display: flex;
 }
 
+body.mw-play.mw-no-joints #mw-joints {
+	display: none !important;
+}
+
 #mw-joints .mw-j-title {
 	font-weight: 600;
 	margin-bottom: 2px;
@@ -566,6 +570,16 @@ const engine = new Engine(GODOT_CONFIG);
 	if (window.MW_I18N) {
 		window.MW_I18N.mountToggle(document.body);
 	}
+})();
+
+(function () {
+	/* RMB look must not open the browser context menu on the game canvas. */
+	document.addEventListener('contextmenu', function (e) {
+		const t = e.target;
+		if (t && (t.id === 'canvas' || (t.tagName && t.tagName.toLowerCase() === 'canvas' && t.id !== 'mw-hub-map-canvas'))) {
+			e.preventDefault();
+		}
+	}, true);
 })();
 
 (function () {

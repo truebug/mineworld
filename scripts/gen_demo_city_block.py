@@ -128,8 +128,14 @@ def _append_building(
     """Append one building + matching MuJoCo footprint box."""
     cx, cy, sx, sy = _footprint_for_lots(col, row, w, h)
     asset = rng.choice(BUILDING_ASSETS)
-    yaw = rng.choice([0.0, HALF_PI, 3.14159265359, -HALF_PI])
-    scale = min(sx, sy) / MESH_XY
+    # Multi-lot: only 0/π yaw so non-uniform KayKit stretch stays AABB-aligned.
+    if w == 1 and h == 1:
+        yaw = rng.choice([0.0, HALF_PI, 3.14159265359, -HALF_PI])
+    else:
+        yaw = rng.choice([0.0, 3.14159265359])
+    scale_x = sx / MESH_XY
+    scale_z = sy / MESH_XY  # MW-y → Godot Z
+    scale = min(scale_x, scale_z)  # height; legacy uniform field
     bid = f"bldg_{col}_{row}_{w}x{h}"
     buildings.append(
         {
@@ -139,6 +145,8 @@ def _append_building(
             "y": round(cy, 3),
             "yaw": yaw,
             "scale": round(scale, 4),
+            "scale_x": round(scale_x, 4),
+            "scale_z": round(scale_z, 4),
             "footprint": [round(sx, 3), round(sy, 3)],
             "lots": [w, h],
         }

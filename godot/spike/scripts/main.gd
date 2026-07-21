@@ -108,6 +108,7 @@ func _ready() -> void:
 	if _is_web:
 		_install_web_keyboard_bridge()
 		_sync_web_city_seed_ui()
+		_sync_web_joints_ui()
 		JavaScriptBridge.eval(
 			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(true);}",
 			true
@@ -129,6 +130,19 @@ func _sync_web_city_seed_ui() -> void:
 	JavaScriptBridge.eval(
 		"(function(show){var e=document.getElementById('mw-seed');if(!e){return;}"
 		+ "e.classList.toggle('mw-show',!!show);})(%s);" % show,
+		true
+	)
+
+
+func _sync_web_joints_ui() -> void:
+	"""Hide arm/gripper DOM on city (DiffBot has no arm joints)."""
+	if not _is_web:
+		return
+	var show := "false" if level_id == "demo_city" else "true"
+	JavaScriptBridge.eval(
+		"(function(show){document.body.classList.toggle('mw-no-joints',!show);"
+		+ "var e=document.getElementById('mw-joints');if(e){e.style.display=show?'':'none';}"
+		+ "})(%s);" % show,
 		true
 	)
 
@@ -905,6 +919,9 @@ func _ensure_joint_sliders() -> void:
 	"""Desktop: bottom-left HSliders for arm/gripper (V1c). Web uses DOM #mw-joints."""
 	if _is_web or _joint_panel != null:
 		return
+	# City DiffBot has no arm — skip desktop panel too.
+	if level_id == "demo_city":
+		return
 	_joint_panel = CanvasLayer.new()
 	_joint_panel.name = "JointSliders"
 	_joint_panel.layer = 12
@@ -972,30 +989,31 @@ func _send_velocity_cmd() -> void:
 	var vy := 0.0
 	var yaw_rate := 0.0
 	if _is_web:
+		# WASD plane + QE yaw (holonomic DiffBot).
 		if _web_key("KeyW"):
 			vx += MOVE_SPEED
 		if _web_key("KeyS"):
 			vx -= MOVE_SPEED
-		if _web_key("KeyQ"):
-			vy += MOVE_SPEED
-		if _web_key("KeyE"):
-			vy -= MOVE_SPEED
 		if _web_key("KeyA"):
-			yaw_rate += TURN_SPEED
+			vy += MOVE_SPEED
 		if _web_key("KeyD"):
+			vy -= MOVE_SPEED
+		if _web_key("KeyQ"):
+			yaw_rate += TURN_SPEED
+		if _web_key("KeyE"):
 			yaw_rate -= TURN_SPEED
 	else:
 		if _key_down(KEY_W):
 			vx += MOVE_SPEED
 		if _key_down(KEY_S):
 			vx -= MOVE_SPEED
-		if _key_down(KEY_Q):
-			vy += MOVE_SPEED
-		if _key_down(KEY_E):
-			vy -= MOVE_SPEED
 		if _key_down(KEY_A):
-			yaw_rate += TURN_SPEED
+			vy += MOVE_SPEED
 		if _key_down(KEY_D):
+			vy -= MOVE_SPEED
+		if _key_down(KEY_Q):
+			yaw_rate += TURN_SPEED
+		if _key_down(KEY_E):
 			yaw_rate -= TURN_SPEED
 		if vx == 0.0 and vy == 0.0 and yaw_rate == 0.0:
 			vx = Input.get_axis("move_back", "move_forward") * MOVE_SPEED
@@ -1009,8 +1027,10 @@ func _send_velocity_cmd() -> void:
 		"vx": vx,
 		"vy": vy,
 		"yaw_rate": yaw_rate,
-		"joint_targets": _read_joint_targets(),
 	}
+	# Workshop arm only — city DiffBot rejects arm_* (UNKNOWN_JOINT spam).
+	if level_id != "demo_city":
+		payload["joint_targets"] = _read_joint_targets()
 	ws.send_cmd(payload)
 
 
@@ -1070,9 +1090,8 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [own.position.x, own.position.z, own.rotation.y]
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
-	text += "\nWASD 移动 | QE 转向 | T 接管 | R 释放 | 左下角臂爪滑条"
-	text += "\nV 相机 环绕/第一人称/跟随 | RMB/MMB 视角 | 滚轮缩放 | 方向键平移 | C 回正"
-	text += "\n跟随模式：松开鼠标 → 视角回弹"
+	text += "\nWASD 平移 | QE 转向 | T 接管 | R 释放 | 左下角臂爪滑条"
+	text += "\nV 相机 | 左键 peek 松手回中 | 右键粘性环视 | 中键/左右同按平移 | 滚轮缩放 | C 强制回中"
 	if _is_web:
 		text += "\n录制 → 右上角链接"
 	if _is_web:

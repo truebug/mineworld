@@ -668,13 +668,13 @@ func _compose_and_push_tips() -> void:
 		chunks.append(_door_context)
 	chunks.append(
 		MWi18n.t(
-			"WSQE 移动 | A/D 转向 | F 交互\n"
-			+ "右键视角 · 滚轮缩放 · V 切换相机 · C 回正\n"
-			+ "A 工坊 · B 训练 · C 卡片 · D 边缘 · E 竞技\n"
+			"WASD 平移 | Q/E 转向 | F 交互\n"
+			+ "左键 peek 回中 · 右键粘性环视 · 中键/左右同按平移 · 滚轮缩放 · C 强制回中 · V 相机\n"
+			+ "门：A 工坊 · B 训练 · C 卡片 · D 边缘 · E 竞技\n"
 			+ "（点击折叠）",
-			"WSQE move | A/D turn | F interact\n"
-			+ "RMB look · wheel zoom · V camera · C recenter\n"
-			+ "A Workshop · B Training · C Cards · D Edge · E Arena\n"
+			"WASD strafe | Q/E turn | F interact\n"
+			+ "LMB peek · RMB sticky look · MMB/L+R pan · wheel zoom · C recenter · V camera\n"
+			+ "Doors: A Workshop · B Training · C Cards · D Edge · E Arena\n"
 			+ "(click to collapse)"
 		)
 	)
@@ -713,7 +713,7 @@ func _on_tips_gui_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	"""Match play-level controls: WSQE/AD drive; arrows pan camera (Web)."""
+	"""Match play-level controls: WASD strafe + QE turn; arrows pan camera (Web)."""
 	if _entering_door:
 		return
 	if _door_grace > 0.0:
@@ -787,7 +787,7 @@ func _web_key(code: String) -> bool:
 
 
 func _send_velocity_cmd() -> void:
-	"""Same mapping as main.gd: W/S forward, Q/E strafe, A/D yaw."""
+	"""Same mapping as main.gd: W/S forward, A/D strafe, Q/E yaw."""
 	var vx := 0.0
 	var vy := 0.0
 	var yaw_rate := 0.0
@@ -796,26 +796,26 @@ func _send_velocity_cmd() -> void:
 			vx += MOVE_SPEED
 		if _web_key("KeyS"):
 			vx -= MOVE_SPEED
-		if _web_key("KeyQ"):
-			vy += MOVE_SPEED
-		if _web_key("KeyE"):
-			vy -= MOVE_SPEED
 		if _web_key("KeyA"):
-			yaw_rate += TURN_SPEED
+			vy += MOVE_SPEED
 		if _web_key("KeyD"):
+			vy -= MOVE_SPEED
+		if _web_key("KeyQ"):
+			yaw_rate += TURN_SPEED
+		if _web_key("KeyE"):
 			yaw_rate -= TURN_SPEED
 	else:
 		if Input.is_physical_key_pressed(KEY_W) or Input.is_key_pressed(KEY_W):
 			vx += MOVE_SPEED
 		if Input.is_physical_key_pressed(KEY_S) or Input.is_key_pressed(KEY_S):
 			vx -= MOVE_SPEED
-		if Input.is_physical_key_pressed(KEY_Q) or Input.is_key_pressed(KEY_Q):
-			vy += MOVE_SPEED
-		if Input.is_physical_key_pressed(KEY_E) or Input.is_key_pressed(KEY_E):
-			vy -= MOVE_SPEED
 		if Input.is_physical_key_pressed(KEY_A) or Input.is_key_pressed(KEY_A):
-			yaw_rate += TURN_SPEED
+			vy += MOVE_SPEED
 		if Input.is_physical_key_pressed(KEY_D) or Input.is_key_pressed(KEY_D):
+			vy -= MOVE_SPEED
+		if Input.is_physical_key_pressed(KEY_Q) or Input.is_key_pressed(KEY_Q):
+			yaw_rate += TURN_SPEED
+		if Input.is_physical_key_pressed(KEY_E) or Input.is_key_pressed(KEY_E):
 			yaw_rate -= TURN_SPEED
 		if vx == 0.0 and vy == 0.0 and yaw_rate == 0.0:
 			vx = Input.get_axis("move_back", "move_forward") * MOVE_SPEED
@@ -1189,7 +1189,7 @@ func _on_dom_key_event(args: Array) -> void:
 	var code := str(event.code)
 	var down := str(event.type) == "keydown"
 	_held_codes[code] = down
-	# Release nickname LineEdit focus so WSQE reach the game again.
+	# Release nickname LineEdit focus so WASD reach the game again.
 	if down and nick_edit != null and nick_edit.has_focus():
 		if code in ["KeyW", "KeyS", "KeyQ", "KeyE", "KeyA", "KeyD"]:
 			nick_edit.release_focus()

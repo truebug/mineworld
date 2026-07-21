@@ -1,37 +1,38 @@
 ## Runtime city-block dress for demo_city.
-## MuJoCo static_obstacles = visual footprint boxes (same size/pose).
-## KayKit glTF ON by default (scaled to fit footprint); ?kaykit=0 for boxes only.
+## MuJoCo static_obstacles match KayKit lots. KayKit ON by default.
+## Footprint boxes only with ?walls=1 (or opaque boxes when ?kaykit=0).
 ## Hides scene Authority greybox. Web: GET /api/city-block/layout (D9).
 extends Node3D
 
 const LAYOUT_PATH := "res://assets/kaykit_city/block_layout.json"
 const ASSET_DIR := "res://assets/kaykit_city/"
 const LAYOUT_API := "/api/city-block/layout"
+## KayKit building glTF native XY ≈ 2 m (see gen_demo_city_block.MESH_XY).
+const MESH_XY := 2.0
 
 
 func _ready() -> void:
-	"""Apply layout after the scene tree is ready."""
+	"""Hide greybox immediately; apply packed layout; Web may refresh via API."""
+	_hide_authority_walls()
 	call_deferred("_begin_layout")
 
 
 func _begin_layout() -> void:
-	"""Web: fetch live layout; desktop: read packed JSON."""
-	if OS.has_feature("web"):
-		var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
-		if origin == "":
-			_apply_from_file()
-			return
-		var http := HTTPRequest.new()
-		http.name = "LayoutHttp"
-		add_child(http)
-		http.request_completed.connect(_on_layout_http.bind(http))
-		var err := http.request(origin + LAYOUT_API)
-		if err != OK:
-			push_warning("[MW] layout HTTP request failed err=%s" % err)
-			http.queue_free()
-			_apply_from_file()
-		return
+	"""Always apply packed layout first (so Web never sticks on old Authority)."""
 	_apply_from_file()
+	if not OS.has_feature("web"):
+		return
+	var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
+	if origin == "":
+		return
+	var http := HTTPRequest.new()
+	http.name = "LayoutHttp"
+	add_child(http)
+	http.request_completed.connect(_on_layout_http.bind(http))
+	var err := http.request(origin + LAYOUT_API)
+	if err != OK:
+		push_warning("[MW] layout HTTP request failed err=%s (using packed)" % err)
+		http.queue_free()
 
 
 func _on_layout_http(
@@ -41,16 +42,14 @@ func _on_layout_http(
 	body: PackedByteArray,
 	http: HTTPRequest,
 ) -> void:
-	"""Parse API layout JSON, fall back to packed file on failure."""
+	"""Refresh dress from live API when available (D9 regen)."""
 	http.queue_free()
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
-		push_warning("[MW] layout API %s/%s — using packed file" % [result, response_code])
-		_apply_from_file()
+		push_warning("[MW] layout API %s/%s — keep packed layout" % [result, response_code])
 		return
 	var data = JSON.parse_string(body.get_string_from_utf8())
 	if typeof(data) != TYPE_DICTIONARY:
-		push_warning("[MW] bad layout API JSON")
-		_apply_from_file()
+		push_warning("[MW] bad layout API JSON — keep packed layout")
 		return
 	_apply_data(data)
 
@@ -69,10 +68,15 @@ func _apply_from_file() -> void:
 
 
 func _apply_data(data: Dictionary) -> void:
-	"""Rebuild Decor: footprints (=physics) + optional KayKit skin."""
+	"""Rebuild Decor: KayKit by default; footprint boxes only with ?walls=1."""
 	_hide_authority_walls()
 	var kaykit := _want_kaykit()
-	_place_footprint_buildings(data, translucent=kaykit)
+	var show_walls := _want_walls_debug()
+	if show_walls or not kaykit:
+		# Opaque boxes when KayKit off (visual=physics); translucent debug if walls=1.
+		_place_footprint_buildings(data, show_walls and kaykit)
+	else:
+		_clear_group("City")
 	if kaykit:
 		_place_kaykit_buildings(data)
 		_place_props(data)
@@ -82,14 +86,24 @@ func _apply_data(data: Dictionary) -> void:
 	_place_roads(data)
 	_place_markers(data)
 	print(
-		"[MW] city dress seed=%s footprints=%d kaykit=%s roads=%d"
+		"[MW] city dress seed=%s kaykit=%s walls=%s roads=%d"
 		% [
 			data.get("seed", "?"),
-			_obstacle_list(data).size(),
 			"on" if kaykit else "off",
+			"on" if show_walls else "off",
 			(data.get("roads", []) as Array).size(),
 		]
 	)
+
+
+func _want_walls_debug() -> bool:
+	"""Footprint overlay; default OFF. Enable with ?walls=1."""
+	return _web_flag("walls", false)
+
+
+func _want_kaykit() -> bool:
+	"""KayKit glTF skin; default ON. Hide with ?kaykit=0."""
+	return _web_flag("kaykit", true)
 
 
 func _web_flag(param: String, default_on: bool) -> bool:
@@ -119,11 +133,6 @@ func _web_flag(param: String, default_on: bool) -> bool:
 		)
 	).strip_edges()
 	return flag != "0"
-
-
-func _want_kaykit() -> bool:
-	"""KayKit glTF skin; default ON. Hide with ?kaykit=0."""
-	return _web_flag("kaykit", true)
 
 
 func _hide_authority_walls() -> void:
@@ -214,11 +223,11 @@ func _place_footprint_buildings(data: Dictionary, translucent: bool = false) -> 
 
 
 func _place_kaykit_buildings(data: Dictionary) -> void:
-	"""Optional decorative KayKit meshes (may overhang footprints — not authority)."""
+	"""KayKit meshes stretched to fill MuJoCo footprints (visual ≈ physics)."""
 	var kay := _ensure_group("KayKit")
 	_clear_children(kay)
 	for entry in data.get("buildings", []):
-		_instance_asset(kay, entry)
+		_instance_asset(kay, entry, true)
 
 
 func _place_props(data: Dictionary) -> void:
@@ -226,7 +235,7 @@ func _place_props(data: Dictionary) -> void:
 	var props := _ensure_group("Props")
 	_clear_children(props)
 	for entry in data.get("props", []):
-		_instance_asset(props, entry)
+		_instance_asset(props, entry, false)
 
 
 func _place_roads(data: Dictionary) -> void:
@@ -278,8 +287,8 @@ func _clear_children(parent: Node3D) -> void:
 		child.queue_free()
 
 
-func _instance_asset(parent: Node3D, entry: Variant) -> void:
-	"""Instance one KayKit gltf entry under parent."""
+func _instance_asset(parent: Node3D, entry: Variant, fill_footprint: bool = false) -> void:
+	"""Instance one KayKit gltf; buildings stretch XZ to footprint when fill_footprint."""
 	if typeof(entry) != TYPE_DICTIONARY:
 		return
 	var asset := str(entry.get("asset", ""))
@@ -295,13 +304,50 @@ func _instance_asset(parent: Node3D, entry: Variant) -> void:
 	var node := packed.instantiate() as Node3D
 	node.name = str(entry.get("id", "asset"))
 	var scale_v := float(entry.get("scale", 2.0))
+	var sx_s := scale_v
+	var sy_s := scale_v
+	var sz_s := scale_v
+	if fill_footprint:
+		var sc := _building_scale_xz(entry)
+		sx_s = sc.x
+		sy_s = sc.y
+		sz_s = sc.z
 	var yaw := float(entry.get("yaw", 0.0))
 	var gx := float(entry.get("x", 0.0))
 	var gy := float(entry.get("y", 0.0))
 	node.position = Vector3(gx, 0.0, -gy)
 	node.rotation = Vector3(0.0, yaw, 0.0)
-	node.scale = Vector3(scale_v, scale_v, scale_v)
+	node.scale = Vector3(sx_s, sy_s, sz_s)
 	parent.add_child(node)
+
+
+func _building_scale_xz(entry: Dictionary) -> Vector3:
+	"""Godot (sx, height, sz) so mesh fills MW footprint [sx,sy] under local yaw."""
+	var fpx := MESH_XY
+	var fpy := MESH_XY
+	var fp: Variant = entry.get("footprint", null)
+	if typeof(fp) == TYPE_ARRAY and (fp as Array).size() >= 2:
+		fpx = float((fp as Array)[0])
+		fpy = float((fp as Array)[1])
+	elif entry.has("scale_x") and entry.has("scale_z"):
+		return Vector3(
+			float(entry.get("scale_x")),
+			float(entry.get("scale", minf(float(entry.get("scale_x")), float(entry.get("scale_z"))))),
+			float(entry.get("scale_z")),
+		)
+	var sx_s := fpx / MESH_XY
+	var sz_s := fpy / MESH_XY
+	# Local scale then yaw: ±90° swaps world X/Z — pre-swap so AABB stays footprint.
+	var ynorm := fposmod(float(entry.get("yaw", 0.0)), TAU)
+	var swap := (ynorm > PI * 0.25 and ynorm < PI * 0.75) or (
+		ynorm > PI * 1.25 and ynorm < PI * 1.75
+	)
+	if swap:
+		var tmp := sx_s
+		sx_s = sz_s
+		sz_s = tmp
+	var h := minf(sx_s, sz_s)
+	return Vector3(sx_s, h, sz_s)
 
 
 func _place_markers(data: Dictionary) -> void:
