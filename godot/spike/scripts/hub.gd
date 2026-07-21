@@ -48,6 +48,10 @@ var _controlled_entity_id := "avatar_0"
 var _joined_room_id := "hub"
 var _profile: Dictionary = {}
 var _entering_door := false
+## Door re-entry lock: grace timer + must leave bay once before arming (Esc bounce).
+var _doors_armed := false
+var _door_grace := 0.0
+const DOOR_GRACE_S := 1.5
 var _tips_full := ""
 var _tips_collapsed := true
 var _nearby_prompt := ""
@@ -110,6 +114,8 @@ func _ready() -> void:
 func _start_hub_session() -> void:
 	"""Normal Hub presence boot (WS FakeMech + chrome)."""
 	MWTransition.notify_arrived()
+	_reset_door_lockout()
+	_clear_held_keys()
 	_profile = _load_profile()
 	_apply_profile_ui()
 	ws.hello_received.connect(_on_hello)
@@ -359,15 +365,33 @@ func _resolve_gateway_url() -> String:
 
 
 func _resolve_room_id() -> String:
-	"""Web ?room= overrides; default hub public room."""
+	"""Hub presence room. Ignore leftover ?room=demo from play levels."""
 	if _is_web:
 		var from_q := str(JavaScriptBridge.eval(
 			"(function(){try{return new URLSearchParams(location.search).get('room')||''}catch(e){return ''}})()",
 			true
-		))
-		if from_q != "":
+		)).strip_edges()
+		# "demo" is the workshop/city shared play room — never use it for hangar.
+		if from_q != "" and from_q != "demo":
 			return from_q
 	return room_id if room_id != "" else "hub"
+
+
+func _reset_door_lockout() -> void:
+	"""Prevent immediate re-entry after Esc / scene arrive."""
+	_doors_armed = false
+	_door_grace = DOOR_GRACE_S
+	_entering_door = false
+
+
+func _clear_held_keys() -> void:
+	"""Drop sticky WASD so returning pilots are not auto-driven into a door."""
+	_held_codes.clear()
+	if _is_web:
+		JavaScriptBridge.eval(
+			"(function(){try{window._mw_keys=Object.create(null);}catch(e){}})()",
+			true
+		)
 
 
 func _on_hello(_payload: Dictionary) -> void:
@@ -683,11 +707,17 @@ func _process(delta: float) -> void:
 	"""Match play-level controls: WSQE/AD drive; arrows pan camera (Web)."""
 	if _entering_door:
 		return
+	if _door_grace > 0.0:
+		_door_grace = maxf(0.0, _door_grace - delta)
 	_check_doors()
 	_update_door_context()
 	_update_interact_prompt()
 	if _is_web:
-		_sync_mw_keys()
+		# During grace, ignore sticky DOM keys left over from the play level.
+		if _door_grace > 0.0:
+			_held_codes.clear()
+		else:
+			_sync_mw_keys()
 	if _is_web and camera_rig != null and camera_rig.has_method("pan_axes"):
 		var pan_r := 0.0
 		var pan_f := 0.0
@@ -707,6 +737,8 @@ func _process(delta: float) -> void:
 	if _cmd_timer < 1.0 / CMD_HZ:
 		return
 	_cmd_timer = 0.0
+	if _door_grace > 0.0:
+		return
 	_send_velocity_cmd()
 
 
@@ -807,16 +839,32 @@ func _door_a_context() -> String:
 
 
 func _check_doors() -> void:
-	"""Enter a route when own avatar is close to an open door (A/B only)."""
-	if _hub_floor != 1:
+	"""Enter a route when own avatar is close to an open door (A/B only).
+
+	Requires a short grace + walking clear of the bay once so Esc→Hub does not
+	immediately bounce back into workshop/city (sticky keys / bay spawn).
+	"""
+	if _hub_floor != 1 or _door_grace > 0.0:
 		return
 	var own := _own_avatar()
 	if own == null or not own.visible:
 		return
-	if door_workshop != null and own.global_position.distance_to(door_workshop.global_position) < DOOR_ENTER_DIST:
+	var near_a := (
+		door_workshop != null
+		and own.global_position.distance_to(door_workshop.global_position) < DOOR_ENTER_DIST
+	)
+	var near_b := (
+		door_city != null
+		and own.global_position.distance_to(door_city.global_position) < DOOR_ENTER_DIST
+	)
+	if not _doors_armed:
+		if not near_a and not near_b:
+			_doors_armed = true
+		return
+	if near_a:
 		_enter_level(WORKSHOP_SCENE)
 		return
-	if door_city != null and own.global_position.distance_to(door_city.global_position) < DOOR_ENTER_DIST:
+	if near_b:
 		_enter_level(CITY_SCENE)
 
 

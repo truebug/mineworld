@@ -10,6 +10,13 @@
 
 ---
 
+## 2026-07-21 · Esc 回母港 / SUCCESS 浮层
+
+- Esc→Hub：清粘键、门触发冷却/需先离开门区再武装；断开 WS；忽略残留 `?room=demo`。
+- Web：通关 `#mw-success` 在回母港 / 离开 play 时清除（不再永远飘着）。
+
+---
+
 ## 2026-07-21 · Portal 登录/Admin 与落地页
 
 - 登录页去掉 demo/demo 提示；Admin 去掉默认密钥文案；未登录不可用 Admin 页（仍无角色组，运维靠 `X-Admin-Key`）。

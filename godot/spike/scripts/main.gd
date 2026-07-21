@@ -495,13 +495,26 @@ func _on_dom_key_event(args: Array) -> void:
 
 
 func _leave_to_hub() -> void:
-	"""Esc → Hub; strip ?replay= so Hub does not re-route (R3)."""
+	"""Esc → Hub; strip ?replay=/?room= so Hub does not re-route or join play rooms."""
+	# Stop cmds + drop play room before scene swap (avoids stale WS / sticky keys).
+	if ws != null:
+		ws.close_link()
 	if _is_web:
 		JavaScriptBridge.eval(
-			"(function(){try{var u=new URL(location.href);u.searchParams.delete('replay');"
-			+ "history.replaceState({},'',u.pathname+u.search+u.hash);}catch(e){}})()",
+			"(function(){try{"
+			+ "if(typeof window.MW_CLEAR_MISSION==='function'){window.MW_CLEAR_MISSION();}"
+			+ "var el=document.getElementById('mw-success');"
+			+ "if(el){el.classList.remove('show','fail');}"
+			+ "window._mw_keys=Object.create(null);"
+			+ "var u=new URL(location.href);"
+			+ "u.searchParams.delete('replay');"
+			+ "u.searchParams.delete('room');"
+			+ "history.replaceState({},'',u.pathname+u.search+u.hash);"
+			+ "}catch(e){}})()",
 			true
 		)
+	_held.clear()
+	_held_codes.clear()
 	MWTransition.go("res://demo_hub.tscn", "Hub", "#8a93a3")
 
 

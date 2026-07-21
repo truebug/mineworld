@@ -574,8 +574,22 @@ const engine = new Engine(GODOT_CONFIG);
 		if (rec) {
 			rec.style.display = play ? 'block' : 'none';
 		}
+		/* SUCCESS/FAIL overlay lives in the shell DOM across Godot scene swaps. */
+		if (!play) {
+			const suc = document.getElementById('mw-success');
+			if (suc) {
+				suc.classList.remove('show', 'fail');
+			}
+		}
 		if (typeof window.MW_LAYOUT_HUB_CHROME === 'function') {
 			window.MW_LAYOUT_HUB_CHROME();
+		}
+	};
+
+	window.MW_CLEAR_MISSION = function () {
+		const suc = document.getElementById('mw-success');
+		if (suc) {
+			suc.classList.remove('show', 'fail');
 		}
 	};
 
