@@ -25,7 +25,7 @@
       "model_ref": "mechs/diffbot_planar.xml",
       "pose": {
         "x": -1.75,
-        "y": -5.9,
+        "y": -9.25,
         "z": 0.5,
         "yaw": 0.0
       },
@@ -38,7 +38,7 @@
       "model_ref": "mechs/diffbot_planar.xml",
       "pose": {
         "x": -1.75,
-        "y": -4.55,
+        "y": -11.25,
         "z": 0.5,
         "yaw": 0.0
       },
@@ -51,7 +51,7 @@
       "model_ref": "mechs/diffbot_planar.xml",
       "pose": {
         "x": -1.75,
-        "y": -3.2,
+        "y": -13.25,
         "z": 0.5,
         "yaw": 0.0
       },
@@ -64,7 +64,7 @@
       "model_ref": "mechs/diffbot_planar.xml",
       "pose": {
         "x": -1.75,
-        "y": -1.85,
+        "y": -15.25,
         "z": 0.5,
         "yaw": 0.0
       },
@@ -111,15 +111,31 @@
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_5_4_2x1",
+      "id": "bldg_5_4_2x1_5_4",
       "shape": "box",
       "size": [
-        13.58,
+        5.08,
         5.08,
         3.5
       ],
       "pose": {
-        "x": 49.25,
+        "x": 45.0,
+        "y": 22.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_5_4_2x1_6_4",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 53.5,
         "y": 22.5,
         "z": 1.75,
         "yaw": 0.0
@@ -143,10 +159,26 @@
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_1_1_3x1",
+      "id": "bldg_1_1_3x1_1_1",
       "shape": "box",
       "size": [
-        22.08,
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 11.0,
+        "y": -3.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_1_1_3x1_2_1",
+      "shape": "box",
+      "size": [
+        5.08,
         5.08,
         3.5
       ],
@@ -159,15 +191,31 @@
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_3_4_2x1",
+      "id": "bldg_1_1_3x1_3_1",
       "shape": "box",
       "size": [
-        13.58,
+        5.08,
         5.08,
         3.5
       ],
       "pose": {
-        "x": 32.25,
+        "x": 28.0,
+        "y": -3.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_3_4_2x1_3_4",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 28.0,
         "y": 22.5,
         "z": 1.75,
         "yaw": 0.0
@@ -175,15 +223,47 @@
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_6_0_2x1",
+      "id": "bldg_3_4_2x1_4_4",
       "shape": "box",
       "size": [
-        13.58,
+        5.08,
         5.08,
         3.5
       ],
       "pose": {
-        "x": 57.75,
+        "x": 36.5,
+        "y": 22.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_6_0_2x1_6_0",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 53.5,
+        "y": -11.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_6_0_2x1_7_0",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 62.0,
         "y": -11.5,
         "z": 1.75,
         "yaw": 0.0
@@ -223,15 +303,47 @@
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_0_2_3x1",
+      "id": "bldg_0_2_3x1_0_2",
       "shape": "box",
       "size": [
-        22.08,
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 2.5,
+        "y": 5.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_0_2_3x1_1_2",
+      "shape": "box",
+      "size": [
+        5.08,
         5.08,
         3.5
       ],
       "pose": {
         "x": 11.0,
+        "y": 5.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_0_2_3x1_2_2",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 19.5,
         "y": 5.5,
         "z": 1.75,
         "yaw": 0.0
@@ -351,31 +463,31 @@
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_7_4_1x2",
+      "id": "bldg_7_4_1x2_7_4",
       "shape": "box",
       "size": [
         5.08,
-        13.58,
+        5.08,
         3.5
       ],
       "pose": {
         "x": 62.0,
-        "y": 26.75,
+        "y": 22.5,
         "z": 1.75,
         "yaw": 0.0
       },
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_1_5_2x1",
+      "id": "bldg_7_4_1x2_7_5",
       "shape": "box",
       "size": [
-        13.58,
+        5.08,
         5.08,
         3.5
       ],
       "pose": {
-        "x": 15.25,
+        "x": 62.0,
         "y": 31.0,
         "z": 1.75,
         "yaw": 0.0
@@ -383,31 +495,95 @@
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_3_2_1x2",
+      "id": "bldg_1_5_2x1_1_5",
       "shape": "box",
       "size": [
         5.08,
-        13.58,
+        5.08,
         3.5
       ],
       "pose": {
-        "x": 28.0,
-        "y": 9.75,
+        "x": 11.0,
+        "y": 31.0,
         "z": 1.75,
         "yaw": 0.0
       },
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_6_6_2x1",
+      "id": "bldg_1_5_2x1_2_5",
       "shape": "box",
       "size": [
-        13.58,
+        5.08,
         5.08,
         3.5
       ],
       "pose": {
-        "x": 57.75,
+        "x": 19.5,
+        "y": 31.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_3_2_1x2_3_2",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 28.0,
+        "y": 5.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_3_2_1x2_3_3",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 28.0,
+        "y": 14.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_6_6_2x1_6_6",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 53.5,
+        "y": 39.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_6_6_2x1_7_6",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 62.0,
         "y": 39.5,
         "z": 1.75,
         "yaw": 0.0
@@ -559,15 +735,31 @@
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_3_0_2x1",
+      "id": "bldg_3_0_2x1_3_0",
       "shape": "box",
       "size": [
-        13.58,
+        5.08,
         5.08,
         3.5
       ],
       "pose": {
-        "x": 32.25,
+        "x": 28.0,
+        "y": -11.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_3_0_2x1_4_0",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 36.5,
         "y": -11.5,
         "z": 1.75,
         "yaw": 0.0

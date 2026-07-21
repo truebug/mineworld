@@ -52,7 +52,8 @@ BUILDING_SCALE = LOT / MESH_XY
 FOOTPRINT = MESH_XY * BUILDING_SCALE + 0.08
 WALL_H = 3.5
 HALF_PI = 1.57079632679
-# Multi-lot spans (w×h lots). Includes streets between claimed lots.
+# Multi-lot megablocks (w×h). Collision is per-lot so streets stay drivible;
+# visual dress still uses one stretched KayKit over the outer AABB.
 MULTI_SHAPES: list[tuple[int, int, float]] = [
     (1, 1, 0.55),
     (2, 1, 0.18),
@@ -67,7 +68,11 @@ CITY_SPAWN_COUNT = 5
 
 
 def _footprint_for_lots(col: int, row: int, w: int, h: int) -> tuple[float, float, float, float]:
-    """Return (cx, cy, size_x, size_y) covering w×h lots (streets between included)."""
+    """Return (cx, cy, size_x, size_y) outer AABB over w×h lots (streets included).
+
+    Used for KayKit dress stretch only. MuJoCo collision uses per-lot boxes so
+    asphalt corridors between lots stay drivible.
+    """
     min_x = OX + col * PITCH
     max_x = OX + (col + w - 1) * PITCH + LOT
     min_y = OY + row * PITCH
@@ -125,7 +130,7 @@ def _append_building(
     h: int,
     rng: random.Random,
 ) -> None:
-    """Append one building + matching MuJoCo footprint box."""
+    """Append one KayKit building; MuJoCo boxes are one FOOTPRINT per lot."""
     cx, cy, sx, sy = _footprint_for_lots(col, row, w, h)
     asset = rng.choice(BUILDING_ASSETS)
     # Multi-lot: only 0/π yaw so non-uniform KayKit stretch stays AABB-aligned.
@@ -151,20 +156,25 @@ def _append_building(
             "lots": [w, h],
         }
     )
-    obstacles.append(
-        {
-            "id": bid,
-            "shape": "box",
-            "size": [round(sx, 3), round(sy, 3), WALL_H],
-            "pose": {
-                "x": round(cx, 3),
-                "y": round(cy, 3),
-                "z": WALL_H * 0.5,
-                "yaw": 0.0,
-            },
-            "physics_role": "mujoco_authoritative",
-        }
-    )
+    # Per-lot air walls — never seal the street that runs between lots.
+    for rr in range(row, row + h):
+        for cc in range(col, col + w):
+            lcx, lcy = _lot_center(cc, rr)
+            oid = bid if (w == 1 and h == 1) else f"{bid}_{cc}_{rr}"
+            obstacles.append(
+                {
+                    "id": oid,
+                    "shape": "box",
+                    "size": [round(FOOTPRINT, 3), round(FOOTPRINT, 3), WALL_H],
+                    "pose": {
+                        "x": round(lcx, 3),
+                        "y": round(lcy, 3),
+                        "z": WALL_H * 0.5,
+                        "yaw": 0.0,
+                    },
+                    "physics_role": "mujoco_authoritative",
+                }
+            )
 
 
 def _bounds() -> tuple[float, float, float, float]:
@@ -400,9 +410,9 @@ def write_contract(layout: dict[str, Any]) -> None:
                 "id": sid,
                 "model_ref": "mechs/diffbot_planar.xml",
                 "pose": {
-                    # Park along west N-S street (north of corridor) so lane stays clear.
+                    # Park south of E-W spawn corridor on west street (2 m pitch).
                     "x": sp["x"],
-                    "y": round(sp["y"] + 1.35 * i, 3),
+                    "y": round(sp["y"] - 2.0 * i, 3),
                     "z": 0.5,
                     "yaw": 0.0,
                 },

@@ -108,11 +108,18 @@ func _ready() -> void:
 	if _is_web:
 		_install_web_keyboard_bridge()
 		_sync_web_city_seed_ui()
+		# Hide arm UI before/with play chrome (city has no arm joints).
 		_sync_web_joints_ui()
+		var play_js := "true"
+		var no_joints := "true" if level_id == "demo_city" else "false"
 		JavaScriptBridge.eval(
-			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(true);}",
+			(
+				"if(typeof window.MW_SET_SHELL_UI==='function'){"
+				+ "window.MW_SET_SHELL_UI(%s,false,%s);}"
+			) % [play_js, no_joints],
 			true
 		)
+		_sync_web_joints_ui()
 	if camera_rig != null and camera_rig.has_signal("view_mode_changed"):
 		camera_rig.view_mode_changed.connect(_on_camera_view_changed)
 	if _replay_session != "":

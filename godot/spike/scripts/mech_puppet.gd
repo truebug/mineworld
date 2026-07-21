@@ -17,14 +17,20 @@ extends Node3D
 @export var chassis_tint_override: Color = Color(0, 0, 0, 0)
 var interp_delay := 0.05
 
-## entity_id → chassis albedo (demo room A/B).
+## entity_id → chassis albedo (shared city room A–E).
 const TEAM_COLORS := {
 	"mech_player": Color(0.22, 0.62, 0.95),
 	"mech_player_b": Color(0.95, 0.48, 0.18),
+	"mech_player_c": Color(0.35, 0.82, 0.45),
+	"mech_player_d": Color(0.85, 0.75, 0.25),
+	"mech_player_e": Color(0.75, 0.4, 0.9),
 }
 const TEAM_TAGS := {
 	"mech_player": "A",
 	"mech_player_b": "B",
+	"mech_player_c": "C",
+	"mech_player_d": "D",
+	"mech_player_e": "E",
 }
 const WHEEL_COLOR := Color(0.0, 0.0, 0.0)
 const CASTER_COLOR := Color(1.0, 1.0, 1.0)

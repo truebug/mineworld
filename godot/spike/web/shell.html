@@ -584,9 +584,19 @@ const engine = new Engine(GODOT_CONFIG);
 
 (function () {
 	/* Lobby vs play vs hub: chrome visibility. */
-	window.MW_SET_SHELL_UI = function (play, hub) {
+	window.MW_SET_SHELL_UI = function (play, hub, noJoints) {
 		document.body.classList.toggle('mw-play', !!play);
 		document.body.classList.toggle('mw-hub', !!hub && !play);
+		if (noJoints === true || noJoints === false) {
+			document.body.classList.toggle('mw-no-joints', !!noJoints);
+		} else if (!play) {
+			document.body.classList.remove('mw-no-joints');
+		}
+		var joints = document.getElementById('mw-joints');
+		if (joints) {
+			var hide = !play || document.body.classList.contains('mw-no-joints');
+			joints.style.display = hide ? 'none' : '';
+		}
 		const rec = document.getElementById('mw-rec-link');
 		if (rec) {
 			rec.style.display = play ? 'block' : 'none';
