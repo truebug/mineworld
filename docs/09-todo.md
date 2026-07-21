@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-21 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | E1–E5 / W1 / R3 / H8–H12 / PL2 / IL Done；**Now：本地 H-bounds / E3b**（公网 W2 待 DNS，见 [23](23-public-deploy.md)） |
+| **目标** | E1–E5 / W1 / R3 / H8–H12 / PL2 / IL Done；本地 H-bounds / E3b / IL-place′ Done；**公网 W2 待 DNS**（见 [23](23-public-deploy.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **公网部署建议** | **[23-public-deploy.md](23-public-deploy.md)**（databall.cloud · 2C8G） |
@@ -42,10 +42,10 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| H-bounds | Hub 多段空气墙 | FakeMech clamp 对齐甲板/坞口，防穿出岛缘 | [ ] **推荐** |
-| E3b | space_id 回母港归因游玩 | 展柜带回 `?space_id=` → 门 A 局写入会话扩展 | [ ] |
-| IL-place′ | 工坊放置/抓取手感 | 现有 place smoke 稳定；薄加接触反馈文案 | [ ] |
-| QA-export | 本地 Web 验收清单 | 中文 Label3D + 圆顶球仓 + journey/platform smoke | [ ] |
+| H-bounds | Hub 多段空气墙 | FakeMech clamp 对齐甲板/坞口，防穿出岛缘 | [x] |
+| E3b | space_id 回母港归因游玩 | 展柜带回 `?space_id=` → 门 A 局写入会话扩展 | [x] |
+| IL-place′ | 工坊放置/抓取手感 | grasp_lift 不终局；提示放置 | [x] |
+| QA-export | 本地 Web 验收清单 | [25](25-qa-local-export.md) + `h_bounds_e3b_smoke.py` | [x] |
 
 ---
 

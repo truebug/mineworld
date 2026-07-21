@@ -792,6 +792,20 @@ func _send_velocity_cmd() -> void:
 	_controlled = true
 
 
+func _door_a_context() -> String:
+	"""Door A lore; mention active space_id attribution when stamped."""
+	var space_id := _resolve_space_id()
+	if space_id != "":
+		return MWi18n.t(
+			"门 A · 仿真工坊 — 归因 space_id=%s\n进入后本局录制/积分会带上该卡片。",
+			"Door A · Workshop — space_id=%s\nSession recording/scores will attribute this card."
+		) % space_id
+	return MWi18n.t(
+		"门 A · 仿真工坊 — 进入本仓精细遥操 / IL。",
+		"Door A · Workshop — native teleop / IL."
+	)
+
+
 func _check_doors() -> void:
 	"""Enter a route when own avatar is close to an open door (A/B only)."""
 	if _hub_floor != 1:
@@ -815,10 +829,7 @@ func _update_door_context() -> void:
 	var best_dist := DOOR_STUB_DIST
 	var best_msg := ""
 	var candidates: Array = [
-		[door_workshop, "a", MWi18n.t(
-			"门 A · 仿真工坊 — 进入本仓精细遥操 / IL。",
-			"Door A · Workshop — native teleop / IL."
-		)],
+		[door_workshop, "a:%s" % _resolve_space_id(), _door_a_context()],
 		[door_city, "b", MWi18n.t(
 			"门 B · 机甲训练场 — 进入本仓城市场景。",
 			"Door B · Training Yard — native city drive."
@@ -1022,10 +1033,11 @@ func _open_exhibit_url(url: String, title: String, space_id: String = "") -> voi
 			+ "history.replaceState({},'',u.pathname+u.search+u.hash);}}catch(e){}})()" % payload,
 			true
 		)
+		_last_door_key = ""
 		_refresh_tips(
 			MWi18n.t(
-				"已打开「%s」· 母港已写入 space_id=%s\n占位：带回 space_id → 门 A 做归因游玩。",
-				"Opened «%s» · hangar stamped space_id=%s\nStub: Hangar with space_id → door A for attributed play."
+				"已打开「%s」· 母港已写入 space_id=%s\n回母港后进门 A，本局将归因该卡片。",
+				"Opened «%s» · hangar stamped space_id=%s\nReturn → door A; this run attributes the card."
 			) % [title, space_id if space_id != "" else "—"]
 		)
 	else:
@@ -1144,12 +1156,33 @@ func _enter_level(scene_path: String) -> void:
 	_entering_door = true
 	var label := MWi18n.t("进入中…", "Entering…")
 	var accent := ""
+	var space_id := _resolve_space_id()
 	if scene_path.find("workshop") >= 0:
 		label = MWi18n.t("仿真工坊", "Workshop")
 		accent = "#e8873a"
+		if space_id != "":
+			label = MWi18n.t("仿真工坊 · 归因", "Workshop · attributed")
 	elif scene_path.find("city") >= 0:
 		label = MWi18n.t("机甲训练场", "Training")
 		accent = "#4aa3ff"
-	_refresh_tips(MWi18n.t("进入航线…", "Entering route…"))
+	if _is_web and space_id != "":
+		# Keep query across scene change so workshop join still sees space_id.
+		JavaScriptBridge.eval(
+			(
+				"(function(){try{var u=new URL(location.href);"
+				+ "u.searchParams.set('space_id',%s);"
+				+ "history.replaceState({},'',u.pathname+u.search+u.hash);}catch(e){}})()"
+			) % JSON.stringify(space_id),
+			true
+		)
+	if space_id != "":
+		_refresh_tips(
+			MWi18n.t(
+				"进入航线… · 归因 space_id=%s",
+				"Entering route… · space_id=%s"
+			) % space_id
+		)
+	else:
+		_refresh_tips(MWi18n.t("进入航线…", "Entering route…"))
 	ws.close_link()
 	MWTransition.go(scene_path, label, accent)

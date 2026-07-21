@@ -68,7 +68,7 @@
 
 - 契约 `examples/contracts/demo_hub.json`，`extensions.mw.mode = "hub"`。
 - 即使进程 `--physics mujoco`，Hub 房也 **强制 FakeMech**（不 compile MjModel）。
-- 边界：契约 `bounds` + `_clamp_hub_bounds`（矩形空气墙）；**不做 Hub MuJoCo 空气墙**。
+- 边界：契约 `bounds.walkable[]` AABB 并集 + `_clamp_hub_bounds`（多段空气墙）；外接 `half_x/half_y` 兜底；**不做 Hub MuJoCo 空气墙**。
 - 默认公共房 `room_id=hub`，`max_members=8`（契约可改）。
 - **不写** `recordings/`（Hub 非遥操采集）。
 - `join.player_name` + `extensions.mw.profile` 写入 session；`state` 实体带 `extensions.mw.display_name`。

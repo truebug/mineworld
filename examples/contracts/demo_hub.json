@@ -84,7 +84,20 @@
       "story": "mothership_hangar",
       "bounds": {
         "half_x": 40.0,
-        "half_y": 36.0
+        "half_y": 36.0,
+        "walkable": [
+          { "min_x": -28.0, "max_x": 28.0, "min_y": -24.0, "max_y": 24.0 },
+          { "min_x": -28.0, "max_x": 28.0, "min_y": 21.0, "max_y": 36.0 },
+          { "min_x": 27.0, "max_x": 40.0, "min_y": -22.0, "max_y": 22.0 },
+          { "min_x": -40.0, "max_x": -27.0, "min_y": -22.0, "max_y": 22.0 },
+          { "min_x": 19.0, "max_x": 40.0, "min_y": 14.0, "max_y": 34.0 },
+          { "min_x": -40.0, "max_x": -19.0, "min_y": 14.0, "max_y": 34.0 },
+          { "min_x": 19.0, "max_x": 40.0, "min_y": -31.0, "max_y": -13.0 },
+          { "min_x": -40.0, "max_x": -19.0, "min_y": -31.0, "max_y": -13.0 },
+          { "min_x": -34.0, "max_x": -14.0, "min_y": -36.0, "max_y": -24.0 },
+          { "min_x": -7.0, "max_x": 7.0, "min_y": -36.0, "max_y": -24.0 },
+          { "min_x": 14.0, "max_x": 34.0, "min_y": -36.0, "max_y": -24.0 }
+        ]
       }
     }
   }

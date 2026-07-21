@@ -705,20 +705,29 @@ func _on_event(payload: Dictionary) -> void:
 		"player_release_control":
 			_controlled = false
 		"objective_complete":
-			_mission_done = true
-			_status_line = "SUCCESS · %s" % payload.get("objective_id", "?")
-			var pts := 0
 			var detail_v: Variant = payload.get("detail", {})
-			if typeof(detail_v) == TYPE_DICTIONARY:
-				pts = int(detail_v.get("points", 0))
+			var detail: Dictionary = detail_v if typeof(detail_v) == TYPE_DICTIONARY else {}
+			var kind := str(detail.get("kind", ""))
+			var oid := str(payload.get("objective_id", "?"))
+			# grasp_lift is a milestone — keep control for place/stow.
+			if kind == "grasp_lift" or oid == "obj_lift_block":
+				_status_line = MWi18n.t(
+					"已夹起 · 放到工作台并张开夹爪",
+					"Lifted · place on bench and open gripper"
+				)
+				_update_hud()
+				return
+			_mission_done = true
+			var pts := int(detail.get("points", 0))
 			if pts <= 0:
 				pts = int(payload.get("points", 0))
-			_show_mission_result(true, str(payload.get("objective_id", "reach_finish")), pts)
+			_status_line = MWi18n.t("通关 · %s", "SUCCESS · %s") % oid
+			_show_mission_result(true, oid, pts)
 			if _controlled:
 				ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
 		"objective_failed":
 			_mission_done = true
-			_status_line = "FAIL · %s" % payload.get("objective_id", "?")
+			_status_line = MWi18n.t("失败 · %s", "FAIL · %s") % payload.get("objective_id", "?")
 			_show_mission_result(false, str(payload.get("objective_id", "objective")))
 			if _controlled:
 				ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
@@ -990,6 +999,9 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		state_name, "ON" if _controlled else "OFF", _controlled_entity_id,
 	]
 	text += "room: %s\n" % (_joined_room_id if _joined_room_id != "" else "(private)")
+	var space_id := _resolve_space_id()
+	if space_id != "":
+		text += "space_id: %s · route: pms_space\n" % space_id
 	if _is_web:
 		text += "input: document→godot | heldW=%s\n" % _web_key("KeyW")
 	if _status_line != "":

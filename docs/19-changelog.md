@@ -10,6 +10,15 @@
 
 ---
 
+## 2026-07-21 · H-bounds / E3b / IL-place′ / QA
+
+- Hub：`bounds.walkable` 多段 FakeMech 空气墙（南坞缝不可走）。
+- E3b：门 A / 进关保留 `space_id`；工坊 HUD 显示归因；去「占位」文案。
+- IL-place′：`grasp_lift` 里程碑不再弹终局 SUCCESS。
+- QA：[25-qa-local-export.md](25-qa-local-export.md) + `scripts/h_bounds_e3b_smoke.py`。
+
+---
+
 ## 2026-07-21 · H12g′ 去悬空细环
 
 - 去掉甲板/拱门纯 Torus 光环；改为舱顶圆顶、落地储罐球、颈+球仓模块。

@@ -21,6 +21,7 @@
 15. [08-modes-roadmap.md](08-modes-roadmap.md) — MVP 与路线
 16. [09-todo.md](09-todo.md) — **可执行待办（Now / Next）**
 17. [19-changelog.md](19-changelog.md) — **变更记录**
+18. [25-qa-local-export.md](25-qa-local-export.md) — **本地 Web / Hub 验收清单**
 18. [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) — POC 规格 + MVP 薄架构
 19. [12-status-review.md](12-status-review.md) — 阶段回顾
 20. [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) — Web / 多人

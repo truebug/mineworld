@@ -530,7 +530,7 @@ class Room:
         self._clamp_hub_bounds()
 
     def _clamp_hub_bounds(self) -> None:
-        """Keep hub avatars inside the hall (no wall clipping)."""
+        """Keep hub avatars on walkable apron AABBs (FakeMech air walls)."""
         if not is_hub_contract(self.contract):
             return
         mw = contract_mw(self.contract)
@@ -540,7 +540,9 @@ class Room:
             half_y = float(bounds.get("half_y", 14.5))
         except (TypeError, ValueError):
             half_x, half_y = 18.5, 14.5
+        walkable = _hub_walkable_aabbs(bounds, half_x, half_y)
         for mech in self.mechs.values():
+            # Outer envelope first.
             if mech.x < -half_x:
                 mech.x = -half_x
                 mech.vx = 0.0
@@ -553,6 +555,16 @@ class Room:
             elif mech.y > half_y:
                 mech.y = half_y
                 mech.vy = 0.0
+            if not walkable:
+                continue
+            if any(_point_in_aabb(mech.x, mech.y, box) for box in walkable):
+                continue
+            nx, ny = _nearest_aabb_point(mech.x, mech.y, walkable)
+            if abs(nx - mech.x) > 1e-6:
+                mech.vx = 0.0
+            if abs(ny - mech.y) > 1e-6:
+                mech.vy = 0.0
+            mech.x, mech.y = nx, ny
 
 
 @dataclass
@@ -596,6 +608,51 @@ def contract_mw(contract: dict[str, Any]) -> dict[str, Any]:
         return {}
     mw = ext.get("mw")
     return mw if isinstance(mw, dict) else {}
+
+
+def _hub_walkable_aabbs(
+    bounds: dict[str, Any], half_x: float, half_y: float
+) -> list[dict[str, float]]:
+    """Parse walkable AABBs; clip to outer half extents. Empty → envelope-only."""
+    raw = bounds.get("walkable")
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, float]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        try:
+            min_x = max(-half_x, float(item["min_x"]))
+            max_x = min(half_x, float(item["max_x"]))
+            min_y = max(-half_y, float(item["min_y"]))
+            max_y = min(half_y, float(item["max_y"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        if min_x >= max_x or min_y >= max_y:
+            continue
+        out.append({"min_x": min_x, "max_x": max_x, "min_y": min_y, "max_y": max_y})
+    return out
+
+
+def _point_in_aabb(x: float, y: float, box: dict[str, float]) -> bool:
+    """True if (x,y) is inside axis-aligned box."""
+    return box["min_x"] <= x <= box["max_x"] and box["min_y"] <= y <= box["max_y"]
+
+
+def _nearest_aabb_point(
+    x: float, y: float, boxes: list[dict[str, float]]
+) -> tuple[float, float]:
+    """Project (x,y) onto the nearest walkable AABB edge/interior."""
+    best_d = float("inf")
+    best = (x, y)
+    for box in boxes:
+        cx = min(max(x, box["min_x"]), box["max_x"])
+        cy = min(max(y, box["min_y"]), box["max_y"])
+        d = (cx - x) * (cx - x) + (cy - y) * (cy - y)
+        if d < best_d:
+            best_d = d
+            best = (cx, cy)
+    return best
 
 
 def is_hub_contract(contract: dict[str, Any]) -> bool:
