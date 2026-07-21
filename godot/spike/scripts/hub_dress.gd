@@ -126,138 +126,206 @@ func _place_space_windows(root: Node3D) -> void:
 
 
 func _place_apron(root: Node3D) -> void:
-	"""Floating-island mega-apron: primary deck + terraces + mini-city mass."""
+	"""Irregular harbor island: ring decks + dock basins (not one flat slab)."""
 	var deck := _mat(Color(0.16, 0.19, 0.24), 0.8, 0.35)
 	var terrace := _mat(Color(0.14, 0.17, 0.22), 0.78, 0.4)
-	var grid := _emissive(Color(0.2, 0.35, 0.45), CYAN, 0.55)
-	var rim := _emissive(Color(0.3, 0.5, 0.6), CYAN, 0.9)
-	# Primary apron (core walkable city platform).
-	_box(
-		root, "Apron",
-		Vector3(0, -0.18, 0),
-		Vector3(APRON_HALF_X * 2.0, 0.12, APRON_HALF_Z * 2.0),
-		deck,
-	)
-	# Stepped outer terraces (layered island, not one flat pad).
-	_box(root, "TerraceS", Vector3(0, -0.55, APRON_HALF_Z + 6), Vector3(APRON_HALF_X * 1.5, 0.2, 14.0), terrace)
-	_box(root, "TerraceN", Vector3(0, -0.55, -APRON_HALF_Z - 5), Vector3(APRON_HALF_X * 1.35, 0.2, 12.0), terrace)
-	_box(root, "TerraceE", Vector3(APRON_HALF_X + 5, -0.9, 0), Vector3(12.0, 0.2, APRON_HALF_Z * 1.2), terrace)
-	_box(root, "TerraceW", Vector3(-APRON_HALF_X - 5, -0.9, 0), Vector3(12.0, 0.2, APRON_HALF_Z * 1.2), terrace)
-	# Grid lines every 8 m on primary apron.
+	var grid := _emissive(Color(0.2, 0.35, 0.45), CYAN, 0.5)
+	var rim := _emissive(Color(0.3, 0.5, 0.6), CYAN, 0.95)
+	# Core plaza under hangar (keeps walkable center).
+	_box(root, "CoreDeck", Vector3(0, -0.18, 0), Vector3(HALL_HALF_X * 2.4, 0.14, HALL_HALF_Z * 2.4), deck)
+	# Ring harbor decks (octant slabs) — broken silhouette vs single rectangle.
+	_box(root, "RingN", Vector3(0, -0.2, -30), Vector3(56, 0.14, 18), deck)
+	_box(root, "RingNE", Vector3(30, -0.28, -24), Vector3(22, 0.14, 20), deck)
+	_box(root, "RingE", Vector3(36, -0.35, 0), Vector3(18, 0.14, 44), deck)
+	_box(root, "RingSE", Vector3(30, -0.28, 22), Vector3(22, 0.14, 18), deck)
+	_box(root, "RingNW", Vector3(-30, -0.28, -24), Vector3(22, 0.14, 20), deck)
+	_box(root, "RingW", Vector3(-36, -0.35, 0), Vector3(18, 0.14, 44), deck)
+	_box(root, "RingSW", Vector3(-30, -0.28, 22), Vector3(22, 0.14, 18), deck)
+	# South split into three pads with dock basins between.
+	_box(root, "RingS_L", Vector3(-24, -0.22, 32), Vector3(20, 0.14, 16), deck)
+	_box(root, "RingS_M", Vector3(0, -0.22, 30), Vector3(14, 0.14, 12), deck)
+	_box(root, "RingS_R", Vector3(24, -0.22, 32), Vector3(20, 0.14, 16), deck)
+	# Outer terraces (lower shelves).
+	_box(root, "TerraceN", Vector3(0, -0.7, -44), Vector3(50, 0.2, 12), terrace)
+	_box(root, "TerraceE", Vector3(48, -1.0, 0), Vector3(12, 0.2, 50), terrace)
+	_box(root, "TerraceW", Vector3(-48, -1.0, 0), Vector3(12, 0.2, 50), terrace)
+	_box(root, "TerraceSE", Vector3(34, -0.85, 40), Vector3(18, 0.2, 12), terrace)
+	_box(root, "TerraceSW", Vector3(-34, -0.85, 40), Vector3(18, 0.2, 12), terrace)
+	# Sparse grid only on core + north ring (avoid filling dock voids).
 	var step := 8.0
-	var gx := -APRON_HALF_X + step
-	while gx < APRON_HALF_X:
-		_box(root, "GridX", Vector3(gx, -0.1, 0), Vector3(0.08, 0.02, APRON_HALF_Z * 2.0 - 1.0), grid)
+	var gx := -20.0
+	while gx <= 20.0:
+		_box(root, "GridX", Vector3(gx, -0.08, -6), Vector3(0.08, 0.02, 36.0), grid)
 		gx += step
-	var gz := -APRON_HALF_Z + step
-	while gz < APRON_HALF_Z:
-		_box(root, "GridZ", Vector3(0, -0.1, gz), Vector3(APRON_HALF_X * 2.0 - 1.0, 0.02, 0.08), grid)
+	var gz := -28.0
+	while gz <= 12.0:
+		_box(root, "GridZ", Vector3(0, -0.08, gz), Vector3(40.0, 0.02, 0.08), grid)
 		gz += step
-	# Rim lights.
-	_box(root, "RimS", Vector3(0, -0.05, APRON_HALF_Z - 0.4), Vector3(APRON_HALF_X * 1.7, 0.08, 0.4), rim)
-	_box(root, "RimN", Vector3(0, -0.05, -APRON_HALF_Z + 0.4), Vector3(APRON_HALF_X * 1.7, 0.08, 0.4), rim)
-	_box(root, "RimE", Vector3(APRON_HALF_X - 0.4, -0.05, 0), Vector3(0.4, 0.08, APRON_HALF_Z * 1.5), rim)
-	_box(root, "RimW", Vector3(-APRON_HALF_X + 0.4, -0.05, 0), Vector3(0.4, 0.08, APRON_HALF_Z * 1.5), rim)
-	# Berth pads (south fleet apron).
+	# Rim lights along ring outer edges.
+	_box(root, "RimN", Vector3(0, -0.05, -38), Vector3(52, 0.08, 0.4), rim)
+	_box(root, "RimE", Vector3(44, -0.12, 0), Vector3(0.4, 0.08, 48), rim)
+	_box(root, "RimW", Vector3(-44, -0.12, 0), Vector3(0.4, 0.08, 48), rim)
+	# South berth pads sit on RingS_* .
 	var pad := _mat(Color(0.2, 0.24, 0.3), 0.7, 0.3)
-	_box(root, "BerthL", Vector3(-16, -0.06, APRON_HALF_Z - 10), Vector3(12.0, 0.1, 10.0), pad)
-	_box(root, "BerthR", Vector3(16, -0.06, APRON_HALF_Z - 10), Vector3(12.0, 0.1, 10.0), pad)
-	_box(root, "BerthMid", Vector3(0, -0.06, APRON_HALF_Z - 6), Vector3(14.0, 0.08, 6.0), pad)
+	_box(root, "BerthL", Vector3(-24, -0.1, 34), Vector3(14.0, 0.1, 10.0), pad)
+	_box(root, "BerthR", Vector3(24, -0.1, 34), Vector3(14.0, 0.1, 10.0), pad)
+	_box(root, "BerthMid", Vector3(0, -0.1, 32), Vector3(12.0, 0.1, 8.0), pad)
+	# Dock basins: recessed floors + side walls (visible notches).
+	_place_dock_basins(root, deck, rim)
 	_place_apron_modules(root)
 	_place_mini_city(root)
+	_place_island_skirt(root)
+
+
+func _place_dock_basins(root: Node3D, deck: Material, rim: Material) -> void:
+	"""South harbor notches — empty berth pockets + long docking arms."""
+	var basin := _mat(Color(0.08, 0.12, 0.18), 0.9, 0.2)
+	var wall := _mat(Color(0.18, 0.22, 0.28), 0.7, 0.4)
+	var panel := _emissive(Color(0.12, 0.35, 0.45), CYAN, 1.15)
+	var amber := _emissive(Color(0.35, 0.28, 0.18), Color(1.0, 0.55, 0.2), 0.85)
+	# Three basin pockets between south pads (void reads as dock slips).
+	_dock_basin_at(root, -12.0, 40.0, basin, wall, rim)
+	_dock_basin_at(root, 0.0, 42.0, basin, wall, rim)
+	_dock_basin_at(root, 12.0, 40.0, basin, wall, rim)
+	# Lengthened cantilever arms into / beyond basins.
+	_dock_arm(root, "DockArmL", Vector3(-24, 3.2, 44), wall, panel, 26.0)
+	_dock_arm(root, "DockArmR", Vector3(24, 3.2, 44), wall, panel, 26.0)
+	_dock_arm(root, "DockArmMid", Vector3(0, 3.8, 48), wall, amber, 30.0)
+	# Approach guide lights on basin lips.
+	_box(root, "ApproachL", Vector3(-12, 0.2, 48), Vector3(0.35, 0.35, 10.0), panel)
+	_box(root, "ApproachR", Vector3(12, 0.2, 48), Vector3(0.35, 0.35, 10.0), panel)
+	_box(root, "ApproachM", Vector3(0, 0.25, 52), Vector3(0.4, 0.4, 12.0), amber)
+
+
+func _dock_basin_at(
+	root: Node3D, bx: float, bz: float, basin: Material, wall: Material, rim: Material
+) -> void:
+	"""One recessed south dock slip."""
+	_box(root, "BasinFloor", Vector3(bx, -2.4, bz), Vector3(8.0, 0.2, 14.0), basin)
+	_box(root, "BasinWallL", Vector3(bx - 4.2, -1.0, bz), Vector3(0.5, 2.8, 14.0), wall)
+	_box(root, "BasinWallR", Vector3(bx + 4.2, -1.0, bz), Vector3(0.5, 2.8, 14.0), wall)
+	_box(root, "BasinLip", Vector3(bx, -0.35, bz - 6), Vector3(9.0, 0.25, 0.6), rim)
+
+
+func _place_island_skirt(root: Node3D) -> void:
+	"""Drop-edge keel skirt — understructure readable from the side."""
+	var hull := _mat(Color(0.18, 0.22, 0.28), 0.75, 0.45)
+	var hull_hi := _mat(Color(0.22, 0.26, 0.32), 0.7, 0.4)
+	var panel := _emissive(Color(0.12, 0.32, 0.42), CYAN, 0.95)
+	# Perimeter drop faces (island lip hanging into void).
+	_box(root, "SkirtN", Vector3(0, -3.2, -39), Vector3(54, 6.0, 1.2), hull)
+	_box(root, "SkirtS_L", Vector3(-26, -3.0, 39), Vector3(22, 5.5, 1.2), hull)
+	_box(root, "SkirtS_R", Vector3(26, -3.0, 39), Vector3(22, 5.5, 1.2), hull)
+	_box(root, "SkirtE", Vector3(45, -3.5, 0), Vector3(1.2, 6.5, 52), hull)
+	_box(root, "SkirtW", Vector3(-45, -3.5, 0), Vector3(1.2, 6.5, 52), hull)
+	# Cyan face panels on skirts.
+	_box(root, "SkirtPanelN", Vector3(0, -2.5, -39.7), Vector3(40, 3.5, 0.2), panel)
+	_box(root, "SkirtPanelE", Vector3(45.7, -2.8, 0), Vector3(0.2, 4.0, 36), panel)
+	_box(root, "SkirtPanelW", Vector3(-45.7, -2.8, 0), Vector3(0.2, 4.0, 36), panel)
+	# Deeper keel mass (stepped).
+	_box(root, "Keel", Vector3(0, -6.5, -4), Vector3(42, 5.0, 48), hull)
+	_box(root, "KeelCore", Vector3(0, -11.0, -2), Vector3(22, 6.0, 28), hull_hi)
+	_box(root, "KeelFinS", Vector3(0, -8.0, 28), Vector3(16, 4.0, 8), hull)
+	_box(
+		root, "UnderGlow",
+		Vector3(0, -2.0, 0),
+		Vector3(70, 0.15, 64),
+		_emissive(Color(0.1, 0.25, 0.35), CYAN, 0.9),
+	)
+	_box(
+		root, "UnderGlowDeep",
+		Vector3(0, -12.5, -2),
+		Vector3(16, 0.2, 20),
+		_emissive(Color(0.15, 0.3, 0.4), CYAN, 0.65),
+	)
 
 
 func _place_mini_city(root: Node3D) -> void:
-	"""Stacked modules, docking arms, understructure — mini space-city silhouette."""
+	"""Dense stacked modules on ring — taller height range."""
 	var hull := _mat(Color(0.2, 0.24, 0.3), 0.7, 0.4)
 	var hull_hi := _mat(Color(0.24, 0.28, 0.34), 0.65, 0.35)
 	var panel := _emissive(Color(0.15, 0.35, 0.45), CYAN, 1.1)
 	var amber := _emissive(Color(0.35, 0.28, 0.18), Color(1.0, 0.55, 0.2), 0.75)
-	# Corner command pylons (taller towers).
-	var ax := APRON_HALF_X - 3.0
-	var az := APRON_HALF_Z - 3.0
-	for p in [Vector3(ax, 0, az), Vector3(-ax, 0, az), Vector3(ax, 0, -az), Vector3(-ax, 0, -az)]:
-		_box(root, "Pylon", p + Vector3(0, 7.0, 0), Vector3(2.8, 14.0, 2.8), hull)
-		_box(root, "PylonMid", p + Vector3(0, 12.0, 0), Vector3(3.6, 2.0, 3.6), hull_hi)
-		_box(root, "PylonCap", p + Vector3(0, 14.5, 0), Vector3(3.2, 0.4, 3.2), panel)
-		_box(root, "PylonFace", p + Vector3(0, 8.0, 1.5), Vector3(2.0, 5.0, 0.14), panel)
-	# South fleet dock ring (between berths).
-	for x in [-28.0, -10.0, 10.0, 28.0]:
-		_box(root, "RingSeg", Vector3(x, 2.2, APRON_HALF_Z - 1.5), Vector3(7.0, 4.0, 2.0), hull)
-		_box(root, "RingPanel", Vector3(x, 2.2, APRON_HALF_Z - 0.4), Vector3(5.5, 2.8, 0.16), panel)
-	# North residential stack cluster (multi-height).
-	_city_stack(root, "NHab", Vector3(-18, 0, -APRON_HALF_Z + 8), 3, hull, panel)
-	_city_stack(root, "NLab", Vector3(0, 0, -APRON_HALF_Z + 7), 4, hull_hi, panel)
-	_city_stack(root, "NOps", Vector3(18, 0, -APRON_HALF_Z + 8), 3, hull, amber)
-	# East / West industrial wings.
-	_city_stack(root, "EWing", Vector3(APRON_HALF_X - 8, 0, -12), 5, hull, panel)
-	_city_stack(root, "EWing2", Vector3(APRON_HALF_X - 7, 0, 10), 3, hull_hi, panel)
-	_city_stack(root, "WWing", Vector3(-APRON_HALF_X + 8, 0, -8), 4, hull, panel)
-	_city_stack(root, "WWing2", Vector3(-APRON_HALF_X + 7, 0, 12), 3, hull_hi, amber)
-	# Sky bridges linking stacks to hangar mass.
-	_box(root, "BridgeN", Vector3(0, 6.5, -HALL_HALF_Z - 4), Vector3(4.0, 0.6, 14.0), hull_hi)
-	_box(root, "BridgeNGlow", Vector3(0, 6.5, -HALL_HALF_Z - 4), Vector3(0.35, 0.2, 14.0), panel)
-	_box(root, "BridgeE", Vector3(HALL_HALF_X + 6, 5.5, 0), Vector3(16.0, 0.5, 3.0), hull_hi)
-	_box(root, "BridgeEGlow", Vector3(HALL_HALF_X + 6, 5.5, 0), Vector3(16.0, 0.18, 0.3), panel)
-	_box(root, "BridgeW", Vector3(-HALL_HALF_X - 6, 5.5, 0), Vector3(16.0, 0.5, 3.0), hull_hi)
-	# Fleet docking arms (cantilever south).
-	_dock_arm(root, "DockArmL", Vector3(-16, 3.5, APRON_HALF_Z + 4), hull, panel)
-	_dock_arm(root, "DockArmR", Vector3(16, 3.5, APRON_HALF_Z + 4), hull, panel)
-	_dock_arm(root, "DockArmMid", Vector3(0, 4.0, APRON_HALF_Z + 8), hull_hi, amber)
+	# Corner command pylons.
+	for p in [
+		Vector3(40, 0, 34), Vector3(-40, 0, 34),
+		Vector3(40, 0, -34), Vector3(-40, 0, -34),
+	]:
+		_box(root, "Pylon", p + Vector3(0, 8.0, 0), Vector3(3.2, 16.0, 3.2), hull)
+		_box(root, "PylonMid", p + Vector3(0, 14.0, 0), Vector3(4.2, 2.4, 4.2), hull_hi)
+		_box(root, "PylonCap", p + Vector3(0, 16.5, 0), Vector3(3.6, 0.45, 3.6), panel)
+		_box(root, "PylonFace", p + Vector3(0, 9.0, 1.7), Vector3(2.2, 6.0, 0.14), panel)
+	# Dense north / east / west stacks (higher variance).
+	_city_stack(root, "N1", Vector3(-28, 0, -32), 5, hull, panel)
+	_city_stack(root, "N2", Vector3(-12, 0, -34), 7, hull_hi, panel)
+	_city_stack(root, "N3", Vector3(4, 0, -30), 4, hull, amber)
+	_city_stack(root, "N4", Vector3(18, 0, -34), 6, hull_hi, panel)
+	_city_stack(root, "N5", Vector3(32, 0, -30), 5, hull, panel)
+	_city_stack(root, "E1", Vector3(38, 0, -16), 6, hull, panel)
+	_city_stack(root, "E2", Vector3(40, 0, -2), 8, hull_hi, panel)
+	_city_stack(root, "E3", Vector3(38, 0, 14), 5, hull, amber)
+	_city_stack(root, "E4", Vector3(36, 0, 26), 4, hull, panel)
+	_city_stack(root, "W1", Vector3(-38, 0, -14), 6, hull, panel)
+	_city_stack(root, "W2", Vector3(-40, 0, 2), 7, hull_hi, amber)
+	_city_stack(root, "W3", Vector3(-38, 0, 16), 5, hull, panel)
+	_city_stack(root, "W4", Vector3(-36, 0, 28), 4, hull_hi, panel)
+	# South flanks beside basins (keep basin voids clear).
+	_city_stack(root, "S1", Vector3(-34, 0, 28), 4, hull, panel)
+	_city_stack(root, "S2", Vector3(34, 0, 28), 4, hull, amber)
+	_city_stack(root, "S3", Vector3(-20, 0, 26), 3, hull_hi, panel)
+	_city_stack(root, "S4", Vector3(20, 0, 26), 3, hull_hi, panel)
+	# Mid-ring fillers for density.
+	_city_stack(root, "M1", Vector3(-22, 0, -12), 3, hull, panel)
+	_city_stack(root, "M2", Vector3(22, 0, -10), 4, hull_hi, panel)
+	_city_stack(root, "M3", Vector3(-26, 0, 8), 3, hull, amber)
+	_city_stack(root, "M4", Vector3(26, 0, 6), 3, hull, panel)
+	# Sky bridges.
+	_box(root, "BridgeN", Vector3(0, 8.0, -HALL_HALF_Z - 6), Vector3(4.5, 0.7, 18.0), hull_hi)
+	_box(root, "BridgeNGlow", Vector3(0, 8.0, -HALL_HALF_Z - 6), Vector3(0.4, 0.25, 18.0), panel)
+	_box(root, "BridgeE", Vector3(HALL_HALF_X + 10, 7.0, 0), Vector3(22.0, 0.55, 3.2), hull_hi)
+	_box(root, "BridgeEGlow", Vector3(HALL_HALF_X + 10, 7.0, 0), Vector3(22.0, 0.2, 0.35), panel)
+	_box(root, "BridgeW", Vector3(-HALL_HALF_X - 10, 7.0, 0), Vector3(22.0, 0.55, 3.2), hull_hi)
+	_box(root, "BridgeWGlow", Vector3(-HALL_HALF_X - 10, 7.0, 0), Vector3(22.0, 0.2, 0.35), panel)
 	# East/west secondary dock stubs.
-	_box(root, "DockStubE", Vector3(APRON_HALF_X + 2, 3.0, 0), Vector3(8.0, 1.2, 2.0), hull)
-	_box(root, "DockStubETip", Vector3(APRON_HALF_X + 7, 3.0, 0), Vector3(1.5, 1.5, 1.5), panel)
-	_box(root, "DockStubW", Vector3(-APRON_HALF_X - 2, 3.0, 0), Vector3(8.0, 1.2, 2.0), hull)
-	_box(root, "DockStubWTip", Vector3(-APRON_HALF_X - 7, 3.0, 0), Vector3(1.5, 1.5, 1.5), panel)
-	# Understructure mass (city hanging below the island).
-	_box(root, "Keel", Vector3(0, -4.5, 0), Vector3(APRON_HALF_X * 1.2, 6.0, APRON_HALF_Z * 1.15), hull)
-	_box(root, "KeelCore", Vector3(0, -8.0, 0), Vector3(18.0, 5.0, 16.0), hull_hi)
-	_box(root, "KeelPanelS", Vector3(0, -5.0, APRON_HALF_Z * 0.55), Vector3(22.0, 3.5, 0.2), panel)
-	_box(root, "KeelPanelN", Vector3(0, -5.0, -APRON_HALF_Z * 0.55), Vector3(22.0, 3.5, 0.2), panel)
-	# Underbelly glow — floating in void.
-	_box(
-		root, "UnderGlow",
-		Vector3(0, -1.2, 0),
-		Vector3(APRON_HALF_X * 1.8, 0.12, APRON_HALF_Z * 1.8),
-		_emissive(Color(0.1, 0.25, 0.35), CYAN, 0.85),
-	)
-	_box(
-		root, "UnderGlowDeep",
-		Vector3(0, -7.5, 0),
-		Vector3(14.0, 0.15, 12.0),
-		_emissive(Color(0.15, 0.3, 0.4), CYAN, 0.6),
-	)
+	_box(root, "DockStubE", Vector3(48, 3.5, 0), Vector3(12.0, 1.4, 2.4), hull)
+	_box(root, "DockStubETip", Vector3(56, 3.5, 0), Vector3(2.0, 2.0, 2.0), panel)
+	_box(root, "DockStubW", Vector3(-48, 3.5, 0), Vector3(12.0, 1.4, 2.4), hull)
+	_box(root, "DockStubWTip", Vector3(-56, 3.5, 0), Vector3(2.0, 2.0, 2.0), panel)
 
 
 func _city_stack(
 	root: Node3D, base: String, pos: Vector3, floors: int, hull: Material, panel: Material
 ) -> void:
-	"""Vertical stack of sealed modules (mini-city density)."""
-	var y := 1.8
-	var last_w := 6.5
+	"""Vertical stack of sealed modules (taller = more city silhouette)."""
+	var y := 2.0
+	var last_w := 7.0
 	for i in range(floors):
-		var w := 6.5 - float(i % 2) * 0.8
-		var d := 5.5 - float((i + 1) % 2) * 0.6
+		var w := 7.0 - float(i % 3) * 0.7
+		var d := 5.8 - float((i + 1) % 2) * 0.7
 		last_w = w
-		_box(root, base + "F%d" % i, pos + Vector3(0, y, 0), Vector3(w, 3.2, d), hull)
-		_box(root, base + "P%d" % i, pos + Vector3(0, y, d * 0.5 + 0.05), Vector3(w * 0.75, 2.0, 0.12), panel)
-		y += 3.35
-	_box(root, base + "Mast", pos + Vector3(last_w * 0.3, y + 1.2, 0), Vector3(0.25, 2.8, 0.25), panel)
+		_box(root, base + "F%d" % i, pos + Vector3(0, y, 0), Vector3(w, 3.4, d), hull)
+		_box(root, base + "P%d" % i, pos + Vector3(0, y, d * 0.5 + 0.06), Vector3(w * 0.78, 2.2, 0.12), panel)
+		y += 3.55
+	_box(root, base + "Mast", pos + Vector3(last_w * 0.28, y + 1.4, 0), Vector3(0.28, 3.2, 0.28), panel)
 
 
-func _dock_arm(root: Node3D, base: String, pos: Vector3, hull: Material, tip: Material) -> void:
-	"""Cantilever fleet docking arm pointing off the south apron."""
-	_box(root, base + "Boom", pos, Vector3(2.2, 1.0, 14.0), hull)
-	_box(root, base + "Joint", pos + Vector3(0, 0, -5), Vector3(3.0, 1.8, 2.0), hull)
-	_box(root, base + "Tip", pos + Vector3(0, 0, 7.5), Vector3(2.8, 2.2, 2.2), tip)
-	_box(root, base + "Guide", pos + Vector3(0, 0.6, 0), Vector3(0.25, 0.2, 14.0), tip)
+func _dock_arm(
+	root: Node3D, base: String, pos: Vector3, hull: Material, tip: Material, boom_len: float = 14.0
+) -> void:
+	"""Long cantilever fleet docking arm (south harbor)."""
+	var half := boom_len * 0.5
+	_box(root, base + "Boom", pos + Vector3(0, 0, half * 0.15), Vector3(2.4, 1.15, boom_len), hull)
+	_box(root, base + "Joint", pos + Vector3(0, 0.2, -half * 0.35), Vector3(3.4, 2.0, 2.4), hull)
+	_box(root, base + "Tip", pos + Vector3(0, 0.3, half * 0.85), Vector3(3.2, 2.6, 2.8), tip)
+	_box(root, base + "Guide", pos + Vector3(0, 0.75, half * 0.1), Vector3(0.3, 0.25, boom_len), tip)
+	_box(root, base + "Clamp", pos + Vector3(0, -0.6, half * 0.7), Vector3(4.0, 0.5, 1.2), tip)
 
 
 func _place_apron_modules(root: Node3D) -> void:
-	"""Labeled berth pods on south fleet apron."""
-	_module_pod(root, "ModHab", Vector3(-16, 0, APRON_HALF_Z - 10), Color(0.35, 0.42, 0.52), "栖息舱 · Hab")
-	_module_pod(root, "ModDock", Vector3(16, 0, APRON_HALF_Z - 10), Color(0.32, 0.4, 0.38), "接驳舱 · Berth")
-	_module_pod(root, "ModCtrl", Vector3(0, 0, APRON_HALF_Z - 5), Color(0.3, 0.36, 0.45), "调度塔 · Control")
+	"""Labeled berth pods on south harbor pads."""
+	_module_pod(root, "ModHab", Vector3(-24, 0, 34), Color(0.35, 0.42, 0.52), "栖息舱 · Hab")
+	_module_pod(root, "ModDock", Vector3(24, 0, 34), Color(0.32, 0.4, 0.38), "接驳舱 · Berth")
+	_module_pod(root, "ModCtrl", Vector3(0, 0, 30), Color(0.3, 0.36, 0.45), "调度塔 · Control")
 
 
 func _module_pod(root: Node3D, base: String, pos: Vector3, tint: Color, tag: String) -> void:

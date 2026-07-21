@@ -117,9 +117,9 @@ func _start_hub_session() -> void:
 	if ws.has_signal("link_phase_changed"):
 		ws.link_phase_changed.connect(_on_link_phase)
 	if camera_rig != null:
-		camera_rig.distance = 18.0
-		camera_rig.pitch = -0.55
-		camera_rig.max_distance = 72.0
+		camera_rig.distance = 22.0
+		camera_rig.pitch = -0.62
+		camera_rig.max_distance = 90.0
 		if camera_rig.has_signal("view_mode_changed"):
 			camera_rig.view_mode_changed.connect(_on_camera_view_changed)
 	if map_title != null:
