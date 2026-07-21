@@ -297,54 +297,63 @@ func _place_mini_city(root: Node3D) -> void:
 func _place_soft_accents(
 	root: Node3D, hull: Material, hull_hi: Material, panel: Material, amber: Material
 ) -> void:
-	"""Viewer-only spheres / rings / capsules to break pure box silhouette."""
+	"""Viewer-only solid spheres / domes / ball pods (no floating wire rings)."""
 	var glass := StandardMaterial3D.new()
-	glass.albedo_color = Color(0.3, 0.7, 0.95, 0.28)
+	glass.albedo_color = Color(0.28, 0.65, 0.9, 0.45)
 	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	glass.roughness = 0.08
-	glass.metallic = 0.35
+	glass.roughness = 0.12
+	glass.metallic = 0.4
 	glass.emission_enabled = true
 	glass.emission = CYAN
-	glass.emission_energy_multiplier = 0.55
+	glass.emission_energy_multiplier = 0.45
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
-	# Corner radar domes on pylons.
+	# Corner radar: opaque dome sitting on pylon cap (not a floating ring).
 	for p in [
-		Vector3(40, 17.8, 34), Vector3(-40, 17.8, 34),
-		Vector3(40, 17.8, -34), Vector3(-40, 17.8, -34),
+		Vector3(40, 16.8, 34), Vector3(-40, 16.8, 34),
+		Vector3(40, 16.8, -34), Vector3(-40, 16.8, -34),
 	]:
-		_sphere(root, "RadarDome", p, 2.4, glass)
-		_torus(root, "RadarRing", p + Vector3(0, -0.4, 0), 2.8, 0.12, panel, Vector3(90, 0, 0))
-	# Fuel / pressure tanks (south harbor + mid flanks).
-	_sphere(root, "TankS", Vector3(0, 5.5, 36), 3.6, hull_hi)
-	_torus(root, "TankSBand", Vector3(0, 5.5, 36), 3.7, 0.22, panel, Vector3(90, 0, 0))
-	_sphere(root, "TankSW", Vector3(-30, 4.2, 22), 2.8, hull)
-	_sphere(root, "TankSE", Vector3(30, 4.2, 22), 2.8, hull)
-	_sphere(root, "TankNW", Vector3(-28, 6.0, -22), 2.2, hull_hi)
-	_sphere(root, "TankNE", Vector3(28, 6.0, -22), 2.2, hull_hi)
-	# Soft glow orbs tucked beside tall stacks.
-	_sphere(root, "GlowE", Vector3(42, 10.0, -2), 1.6, glass)
-	_sphere(root, "GlowW", Vector3(-42, 9.0, 2), 1.5, glass)
-	_sphere(root, "GlowN", Vector3(-12, 12.0, -36), 1.8, amber)
-	# Horizontal orbital rings (apron halo — read as curves from afar).
-	_torus(root, "HaloInner", Vector3(0, 1.2, 0), 30.0, 0.35, panel, Vector3(90, 0, 0))
-	_torus(root, "HaloOuter", Vector3(0, 0.6, 4), 44.0, 0.28, amber, Vector3(90, 0, 0))
-	_torus(root, "HaloHi", Vector3(0, 14.0, -8), 18.0, 0.22, glass, Vector3(90, 12, 0))
-	# Capsule soft-links on east/west dock stubs.
+		_box(root, "RadarPad", p + Vector3(0, -0.35, 0), Vector3(4.0, 0.35, 4.0), hull_hi)
+		_sphere(root, "RadarDome", p + Vector3(0, 1.1, 0), 2.2, glass)
+	# Grounded pressure tanks on short pedestals (south + flanks).
+	_ball_tank(root, "TankS", Vector3(0, 0, 36), 3.4, hull_hi, panel)
+	_ball_tank(root, "TankSW", Vector3(-30, 0, 22), 2.6, hull, panel)
+	_ball_tank(root, "TankSE", Vector3(30, 0, 22), 2.6, hull, panel)
+	_ball_tank(root, "TankNW", Vector3(-28, 0, -22), 2.2, hull_hi, amber)
+	_ball_tank(root, "TankNE", Vector3(28, 0, -22), 2.2, hull_hi, panel)
+	# Dedicated spherical berth pods (cylinder neck + ball cabin).
+	_ball_pod(root, "BallPodE", Vector3(44, 0, 8), 3.0, hull, panel)
+	_ball_pod(root, "BallPodW", Vector3(-44, 0, -6), 2.8, hull_hi, amber)
+	_ball_pod(root, "BallPodN", Vector3(8, 0, -38), 2.5, hull, glass)
+	# Capsule soft-links on east/west dock stubs (volume, not rings).
 	_capsule(root, "CapE", Vector3(52, 3.5, 0), 1.1, 5.5, panel, Vector3(0, 0, 90))
 	_capsule(root, "CapW", Vector3(-52, 3.5, 0), 1.1, 5.5, panel, Vector3(0, 0, 90))
-	# Arch-ish uprights (cylinder bowed silhouette via paired pillars + ring).
-	_cylinder(root, "ArchSPillarL", Vector3(-8, 4.0, 38), 0.55, 8.0, hull)
-	_cylinder(root, "ArchSPillarR", Vector3(8, 4.0, 38), 0.55, 8.0, hull)
-	_torus(root, "ArchSRing", Vector3(0, 8.2, 38), 8.2, 0.35, panel, Vector3(0, 0, 0))
-	_cylinder(root, "ArchNPillarL", Vector3(-10, 5.0, -36), 0.45, 10.0, hull)
-	_cylinder(root, "ArchNPillarR", Vector3(10, 5.0, -36), 0.45, 10.0, hull)
-	_torus(root, "ArchNRing", Vector3(0, 10.5, -36), 10.2, 0.3, glass, Vector3(0, 0, 0))
+
+
+func _ball_tank(
+	root: Node3D, base: String, pos: Vector3, radius: float, hull: Material, band: Material
+) -> void:
+	"""Spherical tank on a short pedestal — reads as hardware, not a halo."""
+	var r := radius
+	_cylinder(root, base + "Ped", pos + Vector3(0, 0.55, 0), r * 0.55, 1.1, hull)
+	_sphere(root, base + "Body", pos + Vector3(0, 1.1 + r * 0.85, 0), r, hull)
+	_cylinder(root, base + "Collar", pos + Vector3(0, 1.1 + r * 0.85, 0), r * 1.02, 0.35, band)
+
+
+func _ball_pod(
+	root: Node3D, base: String, pos: Vector3, radius: float, hull: Material, accent: Material
+) -> void:
+	"""Spherical cabin module: neck + ball + small antenna."""
+	var r := radius
+	_cylinder(root, base + "Neck", pos + Vector3(0, 1.4, 0), r * 0.42, 2.8, hull)
+	_sphere(root, base + "Cabin", pos + Vector3(0, 2.8 + r * 0.75, 0), r, hull)
+	_sphere(root, base + "Port", pos + Vector3(0, 2.8 + r * 0.75, r * 0.55), r * 0.35, accent)
+	_box(root, base + "Ant", pos + Vector3(r * 0.55, 2.8 + r * 1.55, 0), Vector3(0.18, 1.4, 0.18), accent)
 
 
 func _city_stack(
 	root: Node3D, base: String, pos: Vector3, floors: int, hull: Material, panel: Material
 ) -> void:
-	"""Vertical stack of sealed modules (taller = more city silhouette)."""
+	"""Vertical stack of sealed modules; top gets a dome roof."""
 	var y := 2.0
 	var last_w := 7.0
 	for i in range(floors):
@@ -354,7 +363,10 @@ func _city_stack(
 		_box(root, base + "F%d" % i, pos + Vector3(0, y, 0), Vector3(w, 3.4, d), hull)
 		_box(root, base + "P%d" % i, pos + Vector3(0, y, d * 0.5 + 0.06), Vector3(w * 0.78, 2.2, 0.12), panel)
 		y += 3.55
-	_box(root, base + "Mast", pos + Vector3(last_w * 0.28, y + 1.4, 0), Vector3(0.28, 3.2, 0.28), panel)
+	# Dome sits on the top slab (lower half buried → reads as cupola).
+	var dome_r := clampf(last_w * 0.38, 1.6, 2.8)
+	_sphere(root, base + "Dome", pos + Vector3(0, y - 0.4, 0), dome_r, panel)
+	_box(root, base + "Mast", pos + Vector3(last_w * 0.32, y + dome_r * 0.55, 0), Vector3(0.22, 2.2, 0.22), panel)
 
 
 func _dock_arm(
@@ -392,9 +404,10 @@ func _module_pod(root: Node3D, base: String, pos: Vector3, tint: Color, tag: Str
 	_box(root, base + "Face", pos + Vector3(0, 2.5, 2.95), Vector3(5.5, 3.0, 0.12), panel)
 	_box(root, base + "Win", pos + Vector3(0, 2.5, 3.02), Vector3(3.6, 1.4, 0.06), glass)
 	_box(root, base + "Band", pos + Vector3(0, 4.5, 0), Vector3(7.4, 0.2, 6.0), panel)
-	_box(root, base + "Mast", pos + Vector3(2.8, 5.6, -1.5), Vector3(0.22, 2.6, 0.22), panel)
-	_sphere(root, base + "Dish", pos + Vector3(2.8, 7.0, -1.5), 1.05, panel)
-	_torus(root, base + "Ring", pos + Vector3(2.8, 6.6, -1.5), 1.35, 0.08, panel, Vector3(90, 0, 0))
+	# Cupola dome on the module roof (not a free-floating ring).
+	_sphere(root, base + "Dome", pos + Vector3(0, 4.55, 0), 2.6, glass)
+	_box(root, base + "Mast", pos + Vector3(2.8, 6.2, -1.5), Vector3(0.22, 1.8, 0.22), panel)
+	_sphere(root, base + "Dish", pos + Vector3(2.8, 7.3, -1.5), 0.85, panel)
 	var lab := Label3D.new()
 	MWFonts.apply_label3d(lab)
 	lab.text = tag
@@ -559,30 +572,6 @@ func _capsule(
 	cap.height = height
 	cap.radial_segments = 16
 	mi.mesh = cap
-	mi.material_override = mat
-	parent.add_child(mi)
-	mi.position = pos
-	mi.rotation_degrees = rot_deg
-
-
-func _torus(
-	parent: Node3D,
-	mesh_name: String,
-	pos: Vector3,
-	ring_r: float,
-	tube_r: float,
-	mat: Material,
-	rot_deg: Vector3 = Vector3.ZERO,
-) -> void:
-	"""Ring / halo / arch accent (ring_r ≈ centerline, tube_r ≈ thickness/2)."""
-	var mi := MeshInstance3D.new()
-	mi.name = mesh_name
-	var tm := TorusMesh.new()
-	tm.outer_radius = ring_r + tube_r
-	tm.inner_radius = maxf(0.05, ring_r - tube_r)
-	tm.rings = 48
-	tm.ring_segments = 16
-	mi.mesh = tm
 	mi.material_override = mat
 	parent.add_child(mi)
 	mi.position = pos
