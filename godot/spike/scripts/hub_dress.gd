@@ -350,6 +350,34 @@ func _place_room_shells(root: Node3D) -> void:
 	cls.modulate = Color(0.55, 0.85, 1.0)
 	root.add_child(cls)
 	cls.position = Vector3(8.0, 4.7, -HALL_HALF_Z + 0.8)
+	_place_arena_shell(root)
+
+
+func _place_arena_shell(root: Node3D) -> void:
+	"""H11: Door E arena gate shell (narrative only — no matchmaking)."""
+	var frame := _mat(Color(0.42, 0.22, 0.2), 0.55, 0.2)
+	var trim := _mat(Color(0.85, 0.45, 0.28), 0.45, 0.25)
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.9, 0.35, 0.25, 0.22)
+	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass.roughness = 0.2
+	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var ax := 6.0
+	var az := -HALL_HALF_Z + 1.8
+	_box(root, "ArnArchL", Vector3(ax - 1.4, 2.0, az), Vector3(0.28, 3.8, 0.32), frame)
+	_box(root, "ArnArchR", Vector3(ax + 1.4, 2.0, az), Vector3(0.28, 3.8, 0.32), frame)
+	_box(root, "ArnLint", Vector3(ax, 3.95, az), Vector3(3.0, 0.3, 0.38), trim)
+	_box(root, "ArnGlass", Vector3(ax, 1.9, az - 0.2), Vector3(2.4, 3.0, 0.05), glass)
+	_box(root, "ArnPad", Vector3(ax, 0.03, az + 0.9), Vector3(3.2, 0.06, 2.0), _mat(Color(0.35, 0.18, 0.16), 0.7, 0.05))
+	var lab := Label3D.new()
+	lab.text = "Arena Gate"
+	lab.font_size = 44
+	lab.outline_size = 6
+	lab.pixel_size = 0.01
+	lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lab.modulate = Color(1.0, 0.55, 0.35)
+	root.add_child(lab)
+	lab.position = Vector3(ax, 4.55, az + 0.5)
 
 
 func _place_props(root: Node3D) -> void:
@@ -411,7 +439,7 @@ func _hide_greybox() -> void:
 	_ensure_marker(world, "DoorCity", Vector3(-HALL_HALF_X + 1.5, 1.6, 0.0), "B - Training", Color(0.4, 0.85, 1.0))
 	_ensure_marker(world, "DoorStubC", Vector3(0.0, 1.6, -HALL_HALF_Z + 1.5), "C - Design (soon)", Color(0.75, 0.8, 0.85))
 	_ensure_marker(world, "DoorStubD", Vector3(-6.0, 1.6, -HALL_HALF_Z + 1.5), "D - Missions (soon)", Color(0.65, 0.7, 0.75))
-	_ensure_marker(world, "DoorStubE", Vector3(6.0, 1.6, -HALL_HALF_Z + 1.5), "E - Arena (soon)", Color(0.65, 0.7, 0.75))
+	_ensure_marker(world, "DoorStubE", Vector3(6.0, 1.6, -HALL_HALF_Z + 1.5), "E - Arena", Color(1.0, 0.5, 0.3))
 
 
 func _ensure_marker(world: Node3D, marker_name: String, pos: Vector3, text: String, col: Color) -> void:
@@ -445,7 +473,7 @@ func _place_door_glows() -> void:
 	_glow_at(world, Vector3(-HALL_HALF_X + 0.35, 1.6, 0.0), Color(0.2, 0.65, 1.0), Vector3(0.12, 3.0, 2.8))
 	_glow_at(world, Vector3(0.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.75, 0.85, 0.9), Vector3(2.4, 2.6, 0.12))
 	_glow_at(world, Vector3(-6.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.55, 0.6, 0.65), Vector3(2.0, 2.4, 0.1))
-	_glow_at(world, Vector3(6.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.55, 0.6, 0.65), Vector3(2.0, 2.4, 0.1))
+	_glow_at(world, Vector3(6.0, 1.6, -HALL_HALF_Z + 0.35), Color(1.0, 0.4, 0.2), Vector3(2.0, 2.4, 0.1))
 
 
 func _glow_at(parent: Node3D, pos: Vector3, color: Color, size: Vector3) -> void:

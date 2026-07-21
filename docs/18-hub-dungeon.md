@@ -35,7 +35,7 @@
 | **B · 机甲训练场** | 多人联网巡航 / 推箱 | ✅ 可进 | → `demo_city`；`?room=demo`（本仓） |
 | **C · 设计室** | 自定义空间 / 契约导出 | 后置 | 编辑器 + T4.2 |
 | **D · 雇佣兵任务中心** | 任务闯关包 | 后置 | 任务卡 + outcome |
-| **E · 竞技场** | 组队排名 | 后置 | 匹配 / 结算（本仓权威另案） |
+| **E · 竞技场** | 组队排名 | **H11 壳** | 门 E + F 四态 stub；匹配/结算权威另案 |
 | **展柜 / 房间通道** | PMS Space 卡片 | **E4 stub** | F → 新标签 URL；元数据 `examples/hub/exhibits.v0.json` |
 
 铁律：换门 = 换场景 +（若本仓玩法关）换 `join.level_id` 权威世界；Hub 不录 IL 轨迹。外部卡片通道不进入 Hub MjData。
@@ -53,6 +53,7 @@
 | **H8** | 可乘电梯 + 可上 L2 | ✅ 薄乘（viewer Y） |
 | **H9** | Party board / Vendor | ✅ 薄 UI（LFG 切换 / accent 循环） |
 | **H10** | 展厅/教室走廊壳 | ✅ 北墙 alcove + lore |
+| **H11** | 竞技场门占位 | ✅ 门 E 壳 + F 1v1/party×LFM stub |
 | **H6b** | 观感：机库/星空/NPC/DOM HUD/展示电梯+半层二楼 | 已落地 |
 
 ### 3.1 Gateway
@@ -72,8 +73,8 @@
 
 ### 3.3 非目标（本期不做）
 
-账号登录、真匹配、商城、换装 RPG、Hub 内 MuJoCo、门 C–E 完整玩法。  
-**电梯 / 二楼** 已可薄乘（H8）；Gallery / Classroom 仅为走廊叙事壳（H10）。
+账号登录、真匹配、商城、换装 RPG、Hub 内 MuJoCo、门 C–D 完整玩法。  
+**电梯 / 二楼** 已可薄乘（H8）；Gallery / Classroom 仅为走廊叙事壳（H10）；**Arena** 仅为门 E 叙事+F stub（H11，无权威）。
 
 ---
 
@@ -92,3 +93,4 @@
 | 2026-07-20 | 初版：地下城入口世界观；H4–H6 切片；门 A–E 映射 |
 | 2026-07-20 | Hub 展示：南侧半层二楼 + 东南角静态电梯井（不可乘） |
 | 2026-07-20 | UX1/UX2-v0：品牌首屏 + `MWTransition` 切景淡入淡出 |
+| 2026-07-21 | H11：门 E Arena Gate 壳 + F 1v1/party×LFM stub |

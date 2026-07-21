@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | E1–E5 / W1 / R3 / H8–H10 / PL2 / IL-place 飞轮 Done；**Now：H11 或公网运维**（见 [21](21-ecosystem-federation.md)） |
+| **目标** | E1–E5 / W1 / R3 / H8–H11 / PL2 / IL-place 飞轮 Done；**Now：W2 公网或门 C/D**（见 [21](21-ecosystem-federation.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
@@ -24,15 +24,14 @@
 
 ## Now（建议下一刀）
 
-> PL2 / E4 真 URL / IL-place 飞轮已收口。  
-> **建议下一刀：H11 竞技场门占位，或 W2 公网 HTTPS/wss。**
+> PL2 / E4 / IL-place / H11 已收口。  
+> **建议下一刀：W2 公网 HTTPS/wss，或门 C/D 占位。**
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| PL2 | Admin 运维增强 | 在线房只读、level 开关；`admin_ops_smoke` | [x] |
-| E4b | 展柜真 PMS enter URL + E3 回灌 | `enter_url` + stub「Hangar with space_id」 | [x] |
-| IL-place | grasp→place 录制→export→BC | `il_place_smoke` PASS | [x] |
-| H11 | 竞技场门占位 | 1v1 / 多人叙事；权威另案 | [ ] |
+| H11 | 竞技场门占位 | 门 E 壳 + F 四态 stub；不进关、非 PMS | [x] |
+| W2.1 | 公网 HTTPS / wss | 跟统一身份反代 | [~] |
+| H7c | 门 C/D 占位加深 | Design / Missions 叙事壳 | [ ] |
 
 ---
 
@@ -105,7 +104,7 @@
 | H8 | 可乘电梯 + 可上 L2 | 轿厢或瞬移；栏杆碰撞；小地图层 | [x] 薄乘（Y offset） |
 | H9 | Hub 交互台玩法雏形 | Party board / Vendor 真 UI | [x] 薄 |
 | H10 | 房间壳占位（展厅/教室 lore） | 走廊+文案；无真实 URL 亦可 | [x] |
-| H11 | 竞技场门占位 | 1v1 / 多人叙事；权威另案 | [ ] |
+| H11 | 竞技场门占位 | 门 E 壳 + F 四态 stub；权威另案 | [x] |
 
 ### 运维 / 公网（原暂缓）
 

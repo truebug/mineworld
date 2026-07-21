@@ -117,7 +117,7 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 | H8 | 电梯/L2 瞬移薄版 | **Done** |
 | H9 | Party board / Vendor 薄交互 | **Done** |
 | H10 | 房间壳：展厅 / 教室走廊占位 + lore | **Done** |
-| H11 | 竞技场门占位（1v1 / 多人） | 权威模型另案；勿与 PMS 卡片混用 |
+| H11 | 竞技场门占位（1v1 / 多人） | **Done** — 壳+F stub；权威另案；勿与 PMS 卡片混用 |
 
 ### 明确暂缓
 

@@ -63,6 +63,14 @@ const FLOOR2_Y := 5.2
 var _hub_floor := 1
 var _party_looking := false
 var _vendor_accent_i := 0
+## H11: Arena gate stub — cycle mode + LFM (no matchmaking).
+var _arena_state_i := 0
+const ARENA_STATES := [
+	{"mode": "1v1", "looking": false},
+	{"mode": "1v1", "looking": true},
+	{"mode": "party", "looking": false},
+	{"mode": "party", "looking": true},
+]
 const VENDOR_ACCENTS := ["#4aa3ff", "#e8873a", "#6ecf8e", "#d4a24c", "#c46ecf", "#e06c75"]
 const PARTY_POSTS := [
 	"Maya · Workshop IL run · need one more claw",
@@ -761,7 +769,7 @@ func _update_door_context() -> void:
 		[door_city, "b", "Door B · Training Yard — walk in for city drive."],
 		[door_stub_c, "c", "Door C · Design Lab — sealed (editor / contract export later)."],
 		[door_stub_d, "d", "Door D · Mission Desk — sealed (task packs later)."],
-		[door_stub_e, "e", "Door E · Arena — sealed (ranked party later)."],
+		[door_stub_e, "e", "Door E · Arena — approach the gate · F for 1v1 / party stub."],
 	]
 	for row in candidates:
 		var node: Node3D = row[0]
@@ -795,7 +803,7 @@ func _update_interact_prompt() -> void:
 
 
 func _try_interact() -> void:
-	"""F: talk / elevator / E4 exhibit / H9 party+vendor."""
+	"""F: talk / elevator / E4 exhibit / H9 party+vendor / H11 arena."""
 	var own := _own_avatar()
 	if own == null or hub_life == null or not hub_life.has_method("nearest_interact"):
 		return
@@ -813,12 +821,27 @@ func _try_interact() -> void:
 	if sid == "vendor":
 		_use_vendor()
 		return
+	if sid == "arena_gate":
+		_use_arena_gate()
+		return
 	var url := str(hit.get("url", "")).strip_edges()
 	if url != "":
 		var space_id := str(hit.get("space_id", "")).strip_edges()
 		_open_exhibit_url(url, str(hit.get("title", hit.get("id", "Space"))), space_id)
 		return
 	_refresh_tips(str(hit.get("line", "...")))
+
+
+func _use_arena_gate() -> void:
+	"""H11: cycle 1v1/party × Looking-for-match (authority later)."""
+	_arena_state_i = (_arena_state_i + 1) % ARENA_STATES.size()
+	var st: Dictionary = ARENA_STATES[_arena_state_i]
+	var mode := str(st.get("mode", "1v1"))
+	var lfm := "Looking for match ✓" if bool(st.get("looking", false)) else "not queued"
+	_refresh_tips(
+		"Arena Gate\nMode: %s · %s\n\n1v1 = duel stub · party = ranked crew stub.\nMatchmaking / MuJoCo authority: later.\nNot a PMS Space — local portal only.\nF again to cycle."
+		% [mode, lfm]
+	)
 
 
 func _use_party_board() -> void:

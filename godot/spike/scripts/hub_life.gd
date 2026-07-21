@@ -137,6 +137,7 @@ func _place_stations() -> void:
 	)
 	_place_exhibits()
 	_place_room_shell_stations()
+	_place_arena_station()
 	_spawn_factory("screen-panel-wide.glb", 0.0, WALL_Z - 0.6, 180.0, 1.1)
 	_spawn_factory("machine.glb", WALL_X - 1.2, 9.0, -90.0, 1.0)
 	_spawn_factory("structure-medium.glb", -WALL_X + 1.2, 9.0, 90.0, 1.0)
@@ -211,11 +212,23 @@ func _place_room_shell_stations() -> void:
 	)
 	_station(
 		"room_classroom",
-		Vector3(8.0, 0, -WALL_Z + 1.2),
+		Vector3(9.5, 0, -WALL_Z + 1.2),
 		0.0,
 		"F - Classroom wing",
 		"Classroom Wing — courseware corridor.\nStub lore only until a Space URL is linked.\nUse exhibit cabinets for live cards.",
 		Color(0.45, 0.7, 0.85),
+	)
+
+
+func _place_arena_station() -> void:
+	"""H11: Arena gate pad — F cycles 1v1/party stub (no join / no PMS URL)."""
+	_station(
+		"arena_gate",
+		Vector3(4.0, 0, -WALL_Z + 2.4),
+		0.0,
+		"F - Arena gate",
+		"Arena Gate — ranked mech bouts (authority later).\nPress F: cycle 1v1 ↔ party · toggle Looking for match.\nNot a PMS card — local portal route only.",
+		Color(1.0, 0.45, 0.28),
 	)
 
 

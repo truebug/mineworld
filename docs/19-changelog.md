@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-07-21 · H11 竞技场门占位
+
+- 门 E：Arena Gate 立面/地垫/橙红霓虹；小地图 E 点高亮。
+- F：四态循环 `1v1/party × Looking-for-match`；**不** join、**不**开 PMS URL。
+- Classroom 交互台略东移，避免与 Arena pad 抢 F。
+
+---
+
 ## 2026-07-21 · PL2 Admin 运维 + E4 真 URL + IL-place 飞轮
 
 - **PL2**：Gateway admin HTTP `:8770`（`GET /admin/rooms|contracts|status`，`POST /admin/levels/disable|enable`）；Portal Admin 在线房表 + level 开关；`serve_web` 代理 `/api/gateway/*`；`admin_ops_smoke`。
