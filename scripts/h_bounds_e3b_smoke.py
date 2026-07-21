@@ -31,14 +31,14 @@ def _load_bounds() -> tuple[float, float, list[dict]]:
 
 
 def _test_walkable_projection() -> None:
-    """Void between south berth pads must project onto a walkable AABB."""
+    """Outside the hall envelope must project onto interior/door walkable."""
     _half_x, _half_y, walkable = _load_bounds()
     assert walkable, "demo_hub.json missing bounds.walkable"
-    # Gap between RingS_L and RingS_M (dock notch), MW coords.
-    void_x, void_y = -12.0, -32.0
+    # Exterior apron (south-west of hall) — no longer walkable.
+    void_x, void_y = -30.0, -28.0
     assert not any(
         _point_in_aabb(void_x, void_y, b) for b in walkable
-    ), "expected dock void outside walkable"
+    ), "expected exterior apron outside walkable"
     nx, ny = _nearest_aabb_point(void_x, void_y, walkable)
     assert any(_point_in_aabb(nx, ny, b) for b in walkable), f"projected ({nx},{ny}) still void"
     print(f"hub walkable projection OK · void ({void_x},{void_y}) → ({nx:.2f},{ny:.2f})")

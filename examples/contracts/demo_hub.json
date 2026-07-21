@@ -83,20 +83,21 @@
       "default_room_id": "hub",
       "story": "mothership_hangar",
       "bounds": {
-        "half_x": 40.0,
-        "half_y": 36.0,
+        "half_x": 26.0,
+        "half_y": 22.0,
         "walkable": [
-          { "min_x": -28.0, "max_x": 28.0, "min_y": -24.0, "max_y": 24.0 },
-          { "min_x": -28.0, "max_x": 28.0, "min_y": 21.0, "max_y": 36.0 },
-          { "min_x": 27.0, "max_x": 40.0, "min_y": -22.0, "max_y": 22.0 },
-          { "min_x": -40.0, "max_x": -27.0, "min_y": -22.0, "max_y": 22.0 },
-          { "min_x": 19.0, "max_x": 40.0, "min_y": 14.0, "max_y": 34.0 },
-          { "min_x": -40.0, "max_x": -19.0, "min_y": 14.0, "max_y": 34.0 },
-          { "min_x": 19.0, "max_x": 40.0, "min_y": -31.0, "max_y": -13.0 },
-          { "min_x": -40.0, "max_x": -19.0, "min_y": -31.0, "max_y": -13.0 },
-          { "min_x": -34.0, "max_x": -14.0, "min_y": -36.0, "max_y": -24.0 },
-          { "min_x": -7.0, "max_x": 7.0, "min_y": -36.0, "max_y": -24.0 },
-          { "min_x": 14.0, "max_x": 34.0, "min_y": -36.0, "max_y": -24.0 }
+          { "min_x": -23.0, "max_x": 23.0, "min_y": -19.0, "max_y": 19.0 },
+          { "min_x": 22.0, "max_x": 25.5, "min_y": -1.7, "max_y": 1.7 },
+          { "min_x": -25.5, "max_x": -22.0, "min_y": -1.7, "max_y": 1.7 },
+          { "min_x": -1.7, "max_x": 1.7, "min_y": 18.0, "max_y": 21.5 },
+          { "min_x": -1.7, "max_x": 1.7, "min_y": -21.5, "max_y": -18.0 },
+          { "min_x": -25.5, "max_x": -22.0, "min_y": 8.5, "max_y": 11.5 }
+        ],
+        "blocked": [
+          { "min_x": -12.35, "max_x": -11.65, "min_y": -1.95, "max_y": -1.25 },
+          { "min_x": -4.35, "max_x": -3.65, "min_y": -1.95, "max_y": -1.25 },
+          { "min_x": 3.65, "max_x": 4.35, "min_y": -1.95, "max_y": -1.25 },
+          { "min_x": 11.65, "max_x": 12.35, "min_y": -1.95, "max_y": -1.25 }
         ]
       }
     }

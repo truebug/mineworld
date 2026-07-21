@@ -1,6 +1,6 @@
 """Smoke-test MineWorld gateway: hello → join → take_control → velocity → state.
 
-Optional --expect-objective: follow demo_city maze open-loop until objective_complete.
+Optional --expect-objective: closed-loop drive demo_city until objective_complete.
 """
 
 from __future__ import annotations
@@ -9,16 +9,20 @@ import argparse
 import asyncio
 import json
 import sys
+import uuid
+from pathlib import Path
 
 import websockets
 
-# demo_city: straight E-W corridor spawn → finish (~51 m at vx=1).
-DEMO_CITY_FINISH_SCRIPT: list[tuple[float, float, float]] = [
-    (1.0, 0.0, 58.0),
-]
+_SCRIPTS = Path(__file__).resolve().parent
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+from city_drive_helper import entity_xy, load_city_finish, manhattan_cmd  # noqa: E402
 
 
-async def _send_vel(ws, session_id: str, vx: float, yaw_rate: float) -> None:
+async def _send_vel(
+    ws, session_id: str, vx: float, vy: float = 0.0, yaw_rate: float = 0.0
+) -> None:
     """Send a velocity command for mech_player."""
     await ws.send(
         json.dumps(
@@ -29,22 +33,12 @@ async def _send_vel(ws, session_id: str, vx: float, yaw_rate: float) -> None:
                     "entity_id": "mech_player",
                     "control_mode": "velocity",
                     "vx": vx,
-                    "vy": 0.0,
+                    "vy": vy,
                     "yaw_rate": yaw_rate,
                 },
             }
         )
     )
-
-
-async def _run_vel_script(
-    ws, session_id: str, script: list[tuple[float, float, float]]
-) -> None:
-    """Open-loop velocity segments (vx, yaw_rate, duration_s)."""
-    for vx, yaw_rate, dur in script:
-        await _send_vel(ws, session_id, vx, yaw_rate)
-        await asyncio.sleep(dur)
-    await _send_vel(ws, session_id, 0.0, 0.0)
 
 
 async def smoke(
@@ -62,12 +56,17 @@ async def smoke(
         session_id = hello["session_id"]
         print("hello ok", session_id, hello["payload"])
 
+        # Private room so shared `city` occupancy does not block smoke.
+        join_payload: dict = {"level_id": level_id, "player_name": "smoke"}
+        if level_id == "demo_city":
+            join_payload["room_id"] = f"smoke-{uuid.uuid4().hex[:8]}"
+
         await ws.send(
             json.dumps(
                 {
                     "type": "join",
                     "session_id": session_id,
-                    "payload": {"level_id": level_id, "player_name": "smoke"},
+                    "payload": join_payload,
                 }
             )
         )
@@ -85,17 +84,16 @@ async def smoke(
             )
         )
 
-        script_task = None
-        drive_yaw = 0.0 if level_id == "demo_city" else yaw_rate
+        _sx, _sy, finish_x, finish_y = load_city_finish()
+        turn_x = finish_x
         if expect_objective and level_id == "demo_city":
-            print("note: demo_city corridor — open-loop +x to finish")
-            script_task = asyncio.create_task(
-                _run_vel_script(ws, session_id, DEMO_CITY_FINISH_SCRIPT)
+            print(
+                f"note: demo_city Manhattan → finish=({finish_x:.1f},{finish_y:.1f})"
             )
         elif expect_objective:
-            await _send_vel(ws, session_id, 1.0, drive_yaw)
+            await _send_vel(ws, session_id, 1.0, 0.0, yaw_rate)
         else:
-            await _send_vel(ws, session_id, 1.0, drive_yaw)
+            await _send_vel(ws, session_id, 1.0, 0.0, yaw_rate)
 
         saw_take = False
         saw_objective = False
@@ -104,6 +102,7 @@ async def smoke(
         saw_wheels = False
         first_x = None
         last_x = None
+        last_cmd = 0.0
         deadline = asyncio.get_event_loop().time() + seconds
         while asyncio.get_event_loop().time() < deadline:
             raw = await asyncio.wait_for(ws.recv(), timeout=5)
@@ -137,13 +136,13 @@ async def smoke(
                     f"y={ent['base_pose']['y']:.3f} yaw={ent['base_pose']['yaw']:.3f} "
                     f"joints={bool(joints)} wheels={saw_wheels}"
                 )
-
-        if script_task is not None and not script_task.done():
-            script_task.cancel()
-            try:
-                await script_task
-            except asyncio.CancelledError:
-                pass
+                if expect_objective and level_id == "demo_city":
+                    now = asyncio.get_event_loop().time()
+                    if now - last_cmd >= 0.05:
+                        x, y = entity_xy(msg["payload"])
+                        vx, vy = manhattan_cmd(x, y, finish_x, finish_y, turn_x=turn_x)
+                        await _send_vel(ws, session_id, vx, vy, 0.0)
+                        last_cmd = now
 
         if expect_objective:
             if not saw_objective:
@@ -184,7 +183,7 @@ def main() -> None:
     parser.add_argument(
         "--expect-objective",
         action="store_true",
-        help="Drive until objective_complete (demo_city: straight corridor ~58s)",
+        help="Drive until objective_complete (demo_city: Manhattan SW→NE)",
     )
     parser.add_argument(
         "--yaw-rate",
@@ -197,8 +196,8 @@ def main() -> None:
     if yaw is None:
         yaw = 0.0 if args.expect_objective else 0.2
     seconds = args.seconds
-    if args.expect_objective and seconds < 18.0:
-        seconds = 65.0 if args.level_id == "demo_city" else 18.0
+    if args.expect_objective and args.level_id == "demo_city" and seconds < 120:
+        seconds = 140.0
     raise SystemExit(
         asyncio.run(
             smoke(

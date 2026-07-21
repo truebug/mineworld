@@ -26,8 +26,8 @@ CONTRACT_PATH = REPO / "examples" / "contracts" / "demo_city.json"
 LAYOUT_PATH = REPO / "godot" / "spike" / "assets" / "kaykit_city" / "block_layout.json"
 
 # Grid of lots (MW Z-up: +x east, +y north). Streets between lots are free.
-COLS = 6
-ROWS = 5
+COLS = 8
+ROWS = 7
 LOT = 5.0
 STREET = 3.5
 PITCH = LOT + STREET
@@ -44,12 +44,17 @@ BUILDING_ASSETS = [
     "building_G.gltf",
     "building_H.gltf",
 ]
-# KayKit meshes are ~2m; scale ≈ LOT / 2 so footprint matches air wall.
-BUILDING_SCALE = LOT / 2.0
+# KayKit buildings: XZ AABB ≈ 2 m, origin-centered. scale = LOT/2 → dress = LOT.
+MESH_XY = 2.0
+BUILDING_SCALE = LOT / MESH_XY
+# MuJoCo box must match dress footprint (was LOT-1 / LOT-0.5 → drive into mesh).
+# Tiny margin so chassis bounces at the facade, not inside the glTF.
+FOOTPRINT = MESH_XY * BUILDING_SCALE + 0.08
 WALL_H = 3.5
 HALF_PI = 1.57079632679
 # Asphalt strips slightly narrower than street so lots read as sidewalk.
 ROAD_WIDTH = STREET * 0.9
+CITY_SPAWN_COUNT = 5
 
 
 def _bounds() -> tuple[float, float, float, float]:
@@ -180,14 +185,14 @@ def build_layout(seed: int) -> dict[str, Any]:
                     "y": round(cy, 3),
                     "yaw": yaw,
                     "scale": BUILDING_SCALE,
-                    "footprint": [LOT - 1.0, LOT - 1.0],
+                    "footprint": [FOOTPRINT, FOOTPRINT],
                 }
             )
             obstacles.append(
                 {
                     "id": bid,
                     "shape": "box",
-                    "size": [LOT - 1.0, LOT - 1.0, WALL_H],
+                    "size": [FOOTPRINT, FOOTPRINT, WALL_H],
                     "pose": {
                         "x": round(cx, 3),
                         "y": round(cy, 3),
@@ -237,15 +242,15 @@ def build_layout(seed: int) -> dict[str, Any]:
         ]
     )
 
-    # Spawn in west street, finish in east street (same mid row).
-    # Drive corridor: first E-W street (between lot rows 0 and 1), full length.
-    spawn_y = OY + LOT + STREET * 0.5
-    spawn_x = OX - STREET * 0.5
-    finish_x = max_x - STREET * 0.5
-    finish_y = spawn_y
-    # Crate on the drive corridor (pushable); open-loop finish may shove it east.
-    crate_x = spawn_x + 2.5
-    crate_y = spawn_y
+    # Spawn SW street; finish NE street — Manhattan path needs a turn.
+    street_xs, street_ys = _street_centers()
+    spawn_x = street_xs[0]
+    spawn_y = street_ys[1]  # first E-W corridor (between lot rows 0–1)
+    finish_x = street_xs[-1]
+    finish_y = street_ys[-2]  # last E-W corridor (not the outer curb)
+    # Crate on a side street (not the SW→NE main path) so reach is not blocked.
+    crate_x = street_xs[2]
+    crate_y = street_ys[3]
 
     return {
         "seed": seed,
@@ -284,35 +289,32 @@ def write_contract(layout: dict[str, Any]) -> None:
     sp = layout["spawn"]
     fin = layout["finish"]
     cr = layout["crate"]
+    spawns: list[dict[str, Any]] = []
+    for i in range(CITY_SPAWN_COUNT):
+        sid = "mech_player" if i == 0 else f"mech_player_{chr(ord('b') + i - 1)}"
+        spawns.append(
+            {
+                "id": sid,
+                "model_ref": "mechs/diffbot_planar.xml",
+                "pose": {
+                    # Park along west N-S street (north of corridor) so lane stays clear.
+                    "x": sp["x"],
+                    "y": round(sp["y"] + 1.35 * i, 3),
+                    "z": 0.5,
+                    "yaw": 0.0,
+                },
+                "player_slot": i,
+                "control_mode": "velocity",
+                "physics_role": "mujoco_authoritative",
+            }
+        )
     contract: dict[str, Any] = {
         "contract_version": "0.1",
         "level_id": "demo_city",
         "seed": layout["seed"],
         "frame": "mineworld_zup_m",
         "sim": {"dt": 0.02},
-        "mech_spawns": [
-            {
-                "id": "mech_player",
-                "model_ref": "mechs/diffbot_planar.xml",
-                "pose": {"x": sp["x"], "y": sp["y"], "z": 0.5, "yaw": 0.0},
-                "player_slot": 0,
-                "control_mode": "velocity",
-                "physics_role": "mujoco_authoritative",
-            },
-            {
-                "id": "mech_player_b",
-                "model_ref": "mechs/diffbot_planar.xml",
-                "pose": {
-                    "x": sp["x"],
-                    "y": round(sp["y"] - 1.2, 3),
-                    "z": 0.5,
-                    "yaw": 0.0,
-                },
-                "player_slot": 1,
-                "control_mode": "velocity",
-                "physics_role": "mujoco_authoritative",
-            },
-        ],
+        "mech_spawns": spawns,
         "dynamic_props": [
             {
                 "id": "prop_crate",
@@ -330,7 +332,7 @@ def write_contract(layout: dict[str, Any]) -> None:
                 "id": "obj_reach_zone",
                 "type": "reach_region",
                 "target": "trigger_finish",
-                "description": "街区街道：沿楼宇间通道东行至终点绿区",
+                "description": "街区街道：绕行至东北角终点绿区",
             }
         ],
         "triggers": [
@@ -351,12 +353,16 @@ def write_contract(layout: dict[str, Any]) -> None:
         ],
         "tags": ["poc", "demo", "city", "block", "air_walls"],
         "extensions": {
+            "mw": {
+                "default_room_id": "city",
+                "max_members": CITY_SPAWN_COUNT,
+            },
             "mw.editor": {
                 "client_scene": "res://demo_city.tscn",
                 "exported_from": "scripts/gen_demo_city_block.py",
                 "layout": "res://assets/kaykit_city/block_layout.json",
-                "notes": "Buildings=viewer_only; asphalt strips on streets; footprints=MuJoCo air walls.",
-            }
+                "notes": "Buildings=viewer_only; footprints≈LOT align MuJoCo air walls; spawn SW → finish NE.",
+            },
         },
     }
     CONTRACT_PATH.write_text(json.dumps(contract, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

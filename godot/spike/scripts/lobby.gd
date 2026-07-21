@@ -23,7 +23,14 @@ func _on_workshop_pressed() -> void:
 
 
 func _on_city_pressed() -> void:
-	"""Enter city demo; Gateway resolves demo_city via join.level_id (docs/17)."""
+	"""Enter shared training yard (room=city, max 5)."""
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval(
+			"(function(){try{var u=new URL(location.href);"
+			+ "u.searchParams.set('room','city');"
+			+ "history.replaceState({},'',u.pathname+u.search+u.hash);}catch(e){}})()",
+			true
+		)
 	MWTransition.go(CITY_SCENE, "Training", "#4aa3ff")
 
 

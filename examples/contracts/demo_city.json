@@ -25,11 +25,50 @@
       "model_ref": "mechs/diffbot_planar.xml",
       "pose": {
         "x": -1.75,
-        "y": -8.45,
+        "y": -5.9,
         "z": 0.5,
         "yaw": 0.0
       },
       "player_slot": 1,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "mech_player_c",
+      "model_ref": "mechs/diffbot_planar.xml",
+      "pose": {
+        "x": -1.75,
+        "y": -4.55,
+        "z": 0.5,
+        "yaw": 0.0
+      },
+      "player_slot": 2,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "mech_player_d",
+      "model_ref": "mechs/diffbot_planar.xml",
+      "pose": {
+        "x": -1.75,
+        "y": -3.2,
+        "z": 0.5,
+        "yaw": 0.0
+      },
+      "player_slot": 3,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "mech_player_e",
+      "model_ref": "mechs/diffbot_planar.xml",
+      "pose": {
+        "x": -1.75,
+        "y": -1.85,
+        "z": 0.5,
+        "yaw": 0.0
+      },
+      "player_slot": 4,
       "control_mode": "velocity",
       "physics_role": "mujoco_authoritative"
     }
@@ -45,8 +84,8 @@
         0.5
       ],
       "pose": {
-        "x": 0.75,
-        "y": -7.25,
+        "x": 15.25,
+        "y": 9.75,
         "z": 0.25,
         "yaw": 0.0
       },
@@ -59,8 +98,8 @@
       "id": "bldg_0_0",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -75,8 +114,8 @@
       "id": "bldg_1_0",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -91,8 +130,8 @@
       "id": "bldg_2_0",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -107,8 +146,8 @@
       "id": "bldg_3_0",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -123,8 +162,8 @@
       "id": "bldg_4_0",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -139,8 +178,8 @@
       "id": "bldg_5_0",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -152,11 +191,43 @@
       "physics_role": "mujoco_authoritative"
     },
     {
+      "id": "bldg_6_0",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 53.5,
+        "y": -11.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_7_0",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 62.0,
+        "y": -11.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
       "id": "bldg_0_1",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -171,8 +242,8 @@
       "id": "bldg_1_1",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -187,8 +258,8 @@
       "id": "bldg_2_1",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -203,8 +274,8 @@
       "id": "bldg_3_1",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -219,8 +290,8 @@
       "id": "bldg_4_1",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -235,8 +306,8 @@
       "id": "bldg_5_1",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -248,11 +319,43 @@
       "physics_role": "mujoco_authoritative"
     },
     {
+      "id": "bldg_6_1",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 53.5,
+        "y": -3.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_7_1",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 62.0,
+        "y": -3.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
       "id": "bldg_0_2",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -267,8 +370,8 @@
       "id": "bldg_1_2",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -283,8 +386,8 @@
       "id": "bldg_2_2",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -299,8 +402,8 @@
       "id": "bldg_3_2",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -315,8 +418,8 @@
       "id": "bldg_4_2",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -328,11 +431,43 @@
       "physics_role": "mujoco_authoritative"
     },
     {
+      "id": "bldg_6_2",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 53.5,
+        "y": 5.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_7_2",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 62.0,
+        "y": 5.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
       "id": "bldg_0_3",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -347,8 +482,8 @@
       "id": "bldg_1_3",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -363,8 +498,8 @@
       "id": "bldg_2_3",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -379,8 +514,8 @@
       "id": "bldg_3_3",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -395,8 +530,8 @@
       "id": "bldg_4_3",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -411,8 +546,8 @@
       "id": "bldg_5_3",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -424,11 +559,27 @@
       "physics_role": "mujoco_authoritative"
     },
     {
+      "id": "bldg_6_3",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 53.5,
+        "y": 14.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
       "id": "bldg_0_4",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -443,8 +594,8 @@
       "id": "bldg_1_4",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -456,27 +607,11 @@
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_2_4",
-      "shape": "box",
-      "size": [
-        4.0,
-        4.0,
-        3.5
-      ],
-      "pose": {
-        "x": 19.5,
-        "y": 22.5,
-        "z": 1.75,
-        "yaw": 0.0
-      },
-      "physics_role": "mujoco_authoritative"
-    },
-    {
       "id": "bldg_3_4",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -491,8 +626,8 @@
       "id": "bldg_4_4",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
@@ -504,16 +639,272 @@
       "physics_role": "mujoco_authoritative"
     },
     {
-      "id": "bldg_5_4",
+      "id": "bldg_7_4",
       "shape": "box",
       "size": [
-        4.0,
-        4.0,
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 62.0,
+        "y": 22.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_0_5",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 2.5,
+        "y": 31.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_1_5",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 11.0,
+        "y": 31.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_2_5",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 19.5,
+        "y": 31.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_3_5",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 28.0,
+        "y": 31.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_4_5",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 36.5,
+        "y": 31.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_5_5",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
         3.5
       ],
       "pose": {
         "x": 45.0,
-        "y": 22.5,
+        "y": 31.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_6_5",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 53.5,
+        "y": 31.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_7_5",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 62.0,
+        "y": 31.0,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_0_6",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 2.5,
+        "y": 39.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_1_6",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 11.0,
+        "y": 39.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_2_6",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 19.5,
+        "y": 39.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_3_6",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 28.0,
+        "y": 39.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_4_6",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 36.5,
+        "y": 39.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_5_6",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 45.0,
+        "y": 39.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_6_6",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 53.5,
+        "y": 39.5,
+        "z": 1.75,
+        "yaw": 0.0
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "bldg_7_6",
+      "shape": "box",
+      "size": [
+        5.08,
+        5.08,
+        3.5
+      ],
+      "pose": {
+        "x": 62.0,
+        "y": 39.5,
         "z": 1.75,
         "yaw": 0.0
       },
@@ -523,13 +914,13 @@
       "id": "boundary_n",
       "shape": "box",
       "size": [
-        55.0,
+        72.0,
         0.5,
         3.5
       ],
       "pose": {
-        "x": 23.75,
-        "y": 28.5,
+        "x": 32.25,
+        "y": 45.5,
         "z": 1.75,
         "yaw": 0.0
       },
@@ -539,12 +930,12 @@
       "id": "boundary_s",
       "shape": "box",
       "size": [
-        55.0,
+        72.0,
         0.5,
         3.5
       ],
       "pose": {
-        "x": 23.75,
+        "x": 32.25,
         "y": -17.5,
         "z": 1.75,
         "yaw": 0.0
@@ -556,12 +947,12 @@
       "shape": "box",
       "size": [
         0.5,
-        46.5,
+        63.5,
         3.5
       ],
       "pose": {
         "x": -3.5,
-        "y": 5.5,
+        "y": 14.0,
         "z": 1.75,
         "yaw": 0.0
       },
@@ -572,12 +963,12 @@
       "shape": "box",
       "size": [
         0.5,
-        46.5,
+        63.5,
         3.5
       ],
       "pose": {
-        "x": 51.0,
-        "y": 5.5,
+        "x": 68.0,
+        "y": 14.0,
         "z": 1.75,
         "yaw": 0.0
       },
@@ -589,7 +980,7 @@
       "id": "obj_reach_zone",
       "type": "reach_region",
       "target": "trigger_finish",
-      "description": "街区街道：沿楼宇间通道东行至终点绿区"
+      "description": "街区街道：绕行至东北角终点绿区"
     }
   ],
   "triggers": [
@@ -597,13 +988,13 @@
       "id": "trigger_finish",
       "type": "aabb",
       "min": [
-        47.25,
-        -9.05,
+        64.25,
+        33.45,
         0.0
       ],
       "max": [
-        51.25,
-        -5.45,
+        68.25,
+        37.05,
         2.0
       ]
     }
@@ -616,11 +1007,15 @@
     "air_walls"
   ],
   "extensions": {
+    "mw": {
+      "default_room_id": "city",
+      "max_members": 5
+    },
     "mw.editor": {
       "client_scene": "res://demo_city.tscn",
       "exported_from": "scripts/gen_demo_city_block.py",
       "layout": "res://assets/kaykit_city/block_layout.json",
-      "notes": "Buildings=viewer_only; asphalt strips on streets; footprints=MuJoCo air walls."
+      "notes": "Buildings=viewer_only; footprints≈LOT align MuJoCo air walls; spawn SW → finish NE."
     }
   }
 }

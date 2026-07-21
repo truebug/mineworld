@@ -37,6 +37,9 @@ func _ready() -> void:
 		MWFonts.apply_label3d(_label)
 		_label.text = display_name if display_name != "" else "Guest"
 		_label.position = Vector3(0, 1.55, 0)
+		_label.font_size = 28
+		_label.outline_size = 4
+		_label.pixel_size = 0.012
 
 
 func _build_bot() -> void:

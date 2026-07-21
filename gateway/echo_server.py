@@ -6,8 +6,9 @@ Physics backends (--physics):
            Contract static_obstacles are appended as static geoms (T2.3).
 
 Rooms (W2.3 / W3):
-  join.payload.room_id omitted → private room (= session_id), one member.
-  room_id "demo" → shared room, max 2 members; F7: one shared MjData so
+  join.payload.room_id omitted → private room (= session_id), one member;
+  except demo_hub → room "hub", and demo_city → shared room "city" (max 5).
+  room_id "demo" → shared workshop room, max 2 members; F7: one shared MjData so
   mechs can collide (joints/actuators prefixed by entity_id).
 
 Recording (T2.5): on join, writes recordings/sessions/<id>/header.json + frames.jsonl.
@@ -60,6 +61,8 @@ DEFAULT_RECORD_DIR = REPO_ROOT / "recordings" / "sessions"
 OBSTACLE_FRICTION = (0.8, 0.02, 0.01)  # aligned with ground/chassis defaults
 DEMO_ROOM_ID = "demo"
 DEMO_ROOM_MAX = 2
+CITY_ROOM_ID = "city"
+CITY_ROOM_MAX = 5
 HUB_ROOM_ID = "hub"
 HUB_ROOM_MAX = 8
 
@@ -528,6 +531,7 @@ class Room:
         for mech in self.mechs.values():
             mech.step(dt)
         self._clamp_hub_bounds()
+        self._separate_hub_avatars()
 
     def _clamp_hub_bounds(self) -> None:
         """Keep hub avatars on walkable apron AABBs (FakeMech air walls)."""
@@ -558,13 +562,69 @@ class Room:
             if not walkable:
                 continue
             if any(_point_in_aabb(mech.x, mech.y, box) for box in walkable):
-                continue
-            nx, ny = _nearest_aabb_point(mech.x, mech.y, walkable)
-            if abs(nx - mech.x) > 1e-6:
-                mech.vx = 0.0
-            if abs(ny - mech.y) > 1e-6:
-                mech.vy = 0.0
-            mech.x, mech.y = nx, ny
+                pass
+            else:
+                nx, ny = _nearest_aabb_point(mech.x, mech.y, walkable)
+                if abs(nx - mech.x) > 1e-6:
+                    mech.vx = 0.0
+                if abs(ny - mech.y) > 1e-6:
+                    mech.vy = 0.0
+                mech.x, mech.y = nx, ny
+            blocked = _hub_blocked_aabbs(bounds)
+            for box in blocked:
+                if not _point_in_aabb(mech.x, mech.y, box):
+                    continue
+                # Push to nearest face of the blocked AABB.
+                left = abs(mech.x - box["min_x"])
+                right = abs(box["max_x"] - mech.x)
+                bottom = abs(mech.y - box["min_y"])
+                top = abs(box["max_y"] - mech.y)
+                m = min(left, right, bottom, top)
+                if m == left:
+                    mech.x = box["min_x"] - 0.01
+                elif m == right:
+                    mech.x = box["max_x"] + 0.01
+                elif m == bottom:
+                    mech.y = box["min_y"] - 0.01
+                else:
+                    mech.y = box["max_y"] + 0.01
+                mech.vx = mech.vy = 0.0
+
+    def _separate_hub_avatars(self) -> None:
+        """Soft circle push between occupied Hub avatars (FakeMech only)."""
+        if not is_hub_contract(self.contract):
+            return
+        occupied_ids = {
+            s.controlled_entity_id
+            for s in self.members.values()
+            if s.joined and not s.closed and s.controlled_entity_id
+        }
+        bodies = [m for eid, m in self.mechs.items() if eid in occupied_ids]
+        if len(bodies) < 2:
+            return
+        min_dist = 1.1
+        for i, a in enumerate(bodies):
+            for b in bodies[i + 1 :]:
+                dx = b.x - a.x
+                dy = b.y - a.y
+                dist = math.hypot(dx, dy)
+                if dist < 1e-4:
+                    b.x += min_dist * 0.5
+                    continue
+                if dist >= min_dist:
+                    continue
+                push = (min_dist - dist) * 0.5
+                nx = dx / dist
+                ny = dy / dist
+                a.x -= nx * push
+                a.y -= ny * push
+                b.x += nx * push
+                b.y += ny * push
+                # Kill closing relative speed along contact normal.
+                a.vx = a.vy = 0.0
+                b.vx = b.vy = 0.0
+        # Re-clamp after push so pairs cannot shove each other through walls.
+        self._clamp_hub_bounds()
 
 
 @dataclass
@@ -626,6 +686,28 @@ def _hub_walkable_aabbs(
             max_x = min(half_x, float(item["max_x"]))
             min_y = max(-half_y, float(item["min_y"]))
             max_y = min(half_y, float(item["max_y"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        if min_x >= max_x or min_y >= max_y:
+            continue
+        out.append({"min_x": min_x, "max_x": max_x, "min_y": min_y, "max_y": max_y})
+    return out
+
+
+def _hub_blocked_aabbs(bounds: dict[str, Any]) -> list[dict[str, float]]:
+    """Parse solid pillar / prop AABBs (FakeMech cannot enter)."""
+    raw = bounds.get("blocked")
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, float]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        try:
+            min_x = float(item["min_x"])
+            max_x = float(item["max_x"])
+            min_y = float(item["min_y"])
+            max_y = float(item["max_y"])
         except (KeyError, TypeError, ValueError):
             continue
         if min_x >= max_x or min_y >= max_y:
@@ -1120,15 +1202,19 @@ class EchoGateway:
         return out
 
     def _ensure_mj_model(self, contract: dict[str, Any]) -> Any:
-        """Compile (or reuse) MjModel for contract.level_id."""
+        """Compile (or reuse) MjModel for contract.level_id.
+
+        Cache key includes seed so D9 city-block regen rebuilds air walls.
+        """
         level = str(contract.get("level_id") or "unknown")
+        seed = contract.get("seed")
         cached = self._mj_models.get(level)
-        if cached is not None:
-            return cached
+        if cached is not None and cached.get("seed") == seed:
+            return cached["model"]
         if self.model_path is None:
             raise SystemExit("mujoco model_path missing")
         model = self._build_mujoco_world(self.model_path, contract)
-        self._mj_models[level] = model
+        self._mj_models[level] = {"model": model, "seed": seed}
         return model
 
     def _build_mujoco_world(
@@ -1558,13 +1644,20 @@ class EchoGateway:
             )
             return
 
-        # Private room when omitted (= W2.3 isolation).
+        # Private room when omitted (= W2.3 isolation), except hub / city defaults.
         room_id = str(payload.get("room_id") or session.session_id)
         hub = is_hub_contract(contract)
         if hub:
             max_members = hub_max_members(contract)
             if not payload.get("room_id"):
                 room_id = str(contract_mw(contract).get("default_room_id") or HUB_ROOM_ID)
+        elif level_id == "demo_city":
+            # Training yard: shared room `city`, max 5 (one mech each).
+            max_members = CITY_ROOM_MAX
+            if not payload.get("room_id"):
+                room_id = CITY_ROOM_ID
+        elif room_id == CITY_ROOM_ID:
+            max_members = CITY_ROOM_MAX
         elif room_id == DEMO_ROOM_ID:
             max_members = DEMO_ROOM_MAX
         else:
@@ -1591,6 +1684,10 @@ class EchoGateway:
                     route_kind = "pms_space"
         if profile.get("nickname"):
             player_name = str(profile["nickname"]).strip() or player_name
+        # Hub: distinguish concurrent sessions (same account OK for now).
+        if hub:
+            tag = session.session_id.replace("-", "")[:4]
+            player_name = f"{player_name} · {tag}"
 
         self._leave_room(session)
 
@@ -1611,7 +1708,14 @@ class EchoGateway:
                 )
                 return
             active = [s for s in room.members.values() if s.joined and not s.closed]
-            if len(active) >= room.max_members:
+            # Empty city room: rebuild so D9 seed regen air walls apply.
+            if not active and (
+                level_id == "demo_city"
+                or room.contract.get("seed") != contract.get("seed")
+            ):
+                del self.rooms[room_id]
+                room = None
+            elif len(active) >= room.max_members:
                 await send_json(
                     session.ws,
                     envelope(
@@ -1624,7 +1728,7 @@ class EchoGateway:
                     ),
                 )
                 return
-        else:
+        if room is None:
             # Hub is presence-only: never compile MuJoCo even if process uses --physics mujoco.
             mj_model = None
             if self.physics == "mujoco" and not hub:
@@ -1672,7 +1776,7 @@ class EchoGateway:
 
         # First member into an existing empty room already reset via _make_room_mechs.
         # Public rooms (demo / hub): only reset when the room was empty.
-        public_room = hub or room_id in (DEMO_ROOM_ID, HUB_ROOM_ID)
+        public_room = hub or room_id in (DEMO_ROOM_ID, CITY_ROOM_ID, HUB_ROOM_ID)
         if (not public_room) or len([s for s in room.members.values() if s.joined]) == 0:
             spawn = next(
                 (s for s in (room.contract.get("mech_spawns") or []) if s.get("id") == entity_id),

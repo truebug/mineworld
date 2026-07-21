@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """C3: product journey smoke — login → join+profile → success points → me/lb.
 
-Uses demo_city open-loop finish (mech reach) for score wiring; workshop
+Uses demo_city Manhattan finish (mech reach) for score wiring; workshop
 stow uses prop_crate (0.5m) — see W1 / stow_crate_smoke.
 Requires MuJoCo.
 """
@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -24,6 +25,10 @@ from pathlib import Path
 import websockets
 
 REPO = Path(__file__).resolve().parents[1]
+_SCRIPTS = Path(__file__).resolve().parent
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+from city_drive_helper import entity_xy, load_city_finish, manhattan_cmd  # noqa: E402
 
 
 def _wait_port(host: str, port: int, *, timeout: float = 25.0) -> bool:
@@ -68,7 +73,7 @@ def _free_port() -> int:
         return int(sock.getsockname()[1])
 
 
-async def _send_vel(ws, session_id: str, vx: float) -> None:
+async def _send_vel(ws, session_id: str, vx: float, vy: float = 0.0) -> None:
     """Send chassis velocity cmd."""
     await ws.send(
         json.dumps(
@@ -79,7 +84,7 @@ async def _send_vel(ws, session_id: str, vx: float) -> None:
                     "entity_id": "mech_player",
                     "control_mode": "velocity",
                     "vx": vx,
-                    "vy": 0.0,
+                    "vy": vy,
                     "yaw_rate": 0.0,
                 },
             }
@@ -94,7 +99,8 @@ async def city_success_with_profile(
     nickname: str,
     seconds: float,
 ) -> tuple[str, int]:
-    """Join demo_city with profile; drive east until objective_complete; return sid, points."""
+    """Join demo_city with profile; drive Manhattan until objective_complete."""
+    _sx, _sy, finish_x, finish_y = load_city_finish()
     async with websockets.connect(url) as ws:
         hello = json.loads(await asyncio.wait_for(ws.recv(), timeout=5))
         assert hello.get("type") == "hello", hello
@@ -110,6 +116,7 @@ async def city_success_with_profile(
                     "payload": {
                         "level_id": "demo_city",
                         "player_name": nickname,
+                        "room_id": f"journey-{uuid.uuid4().hex[:8]}",
                         "extensions": {
                             "mw": {
                                 "profile": {
@@ -140,10 +147,13 @@ async def city_success_with_profile(
         last_cmd = 0.0
         while asyncio.get_event_loop().time() < deadline:
             now = asyncio.get_event_loop().time()
-            if now - last_cmd >= 0.05:
-                await _send_vel(ws, sid, 1.0)
-                last_cmd = now
             msg = json.loads(await asyncio.wait_for(ws.recv(), timeout=5))
+            if msg.get("type") == "state" and now - last_cmd >= 0.05:
+                x, y = entity_xy(msg.get("payload") or {})
+                vx, vy = manhattan_cmd(x, y, finish_x, finish_y, turn_x=finish_x)
+                await _send_vel(ws, sid, vx, vy)
+                last_cmd = now
+                continue
             if msg.get("type") != "event":
                 continue
             payload = msg.get("payload") or {}
@@ -162,7 +172,7 @@ def main() -> int:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--ws-port", type=int, default=0, help="0 = ephemeral")
     parser.add_argument("--http-port", type=int, default=0, help="0 = ephemeral")
-    parser.add_argument("--seconds", type=float, default=70.0)
+    parser.add_argument("--seconds", type=float, default=140.0)
     parser.add_argument("--player-id", default="demo")
     parser.add_argument("--password", default="demo")
     args = parser.parse_args()

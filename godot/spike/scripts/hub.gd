@@ -365,14 +365,14 @@ func _resolve_gateway_url() -> String:
 
 
 func _resolve_room_id() -> String:
-	"""Hub presence room. Ignore leftover ?room=demo from play levels."""
+	"""Hub presence room. Ignore leftover play-room query (?room=demo|city)."""
 	if _is_web:
 		var from_q := str(JavaScriptBridge.eval(
 			"(function(){try{return new URLSearchParams(location.search).get('room')||''}catch(e){return ''}})()",
 			true
 		)).strip_edges()
-		# "demo" is the workshop/city shared play room — never use it for hangar.
-		if from_q != "" and from_q != "demo":
+		# Shared play rooms — never use them for hangar presence.
+		if from_q != "" and from_q != "demo" and from_q != "city":
 			return from_q
 	return room_id if room_id != "" else "hub"
 
@@ -503,6 +503,15 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 		puppet.visible = is_occ or eid == _controlled_entity_id
 		if puppet.visible and puppet.has_method("push_state"):
 			puppet.call("push_state", entity, t_sim)
+		# Nametag only when nearby (or self) — cuts clutter with many pilots.
+		var tag := puppet.get_node_or_null("NameTag") as Node3D
+		if tag != null:
+			var show_tag := eid == _controlled_entity_id
+			if not show_tag and puppet.visible:
+				var own_for_tag := _own_avatar()
+				if own_for_tag != null:
+					show_tag = own_for_tag.global_position.distance_to(puppet.global_position) < 14.0
+			tag.visible = show_tag and puppet.visible
 		if puppet.visible:
 			occupied[eid] = puppet
 			var mx := 0.0
@@ -1205,6 +1214,7 @@ func _enter_level(scene_path: String) -> void:
 	var label := MWi18n.t("进入中…", "Entering…")
 	var accent := ""
 	var space_id := _resolve_space_id()
+	var play_room := ""
 	if scene_path.find("workshop") >= 0:
 		label = MWi18n.t("仿真工坊", "Workshop")
 		accent = "#e8873a"
@@ -1213,16 +1223,20 @@ func _enter_level(scene_path: String) -> void:
 	elif scene_path.find("city") >= 0:
 		label = MWi18n.t("机甲训练场", "Training")
 		accent = "#4aa3ff"
-	if _is_web and space_id != "":
-		# Keep query across scene change so workshop join still sees space_id.
-		JavaScriptBridge.eval(
-			(
-				"(function(){try{var u=new URL(location.href);"
-				+ "u.searchParams.set('space_id',%s);"
-				+ "history.replaceState({},'',u.pathname+u.search+u.hash);}catch(e){}})()"
-			) % JSON.stringify(space_id),
-			true
+		play_room = "city"
+	if _is_web:
+		var q_js := (
+			"(function(){try{var u=new URL(location.href);"
+			+ "u.searchParams.delete('replay');"
 		)
+		if play_room != "":
+			q_js += "u.searchParams.set('room',%s);" % JSON.stringify(play_room)
+		else:
+			q_js += "u.searchParams.delete('room');"
+		if space_id != "":
+			q_js += "u.searchParams.set('space_id',%s);" % JSON.stringify(space_id)
+		q_js += "history.replaceState({},'',u.pathname+u.search+u.hash);}catch(e){}})()"
+		JavaScriptBridge.eval(q_js, true)
 	if space_id != "":
 		_refresh_tips(
 			MWi18n.t(

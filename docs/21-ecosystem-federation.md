@@ -102,6 +102,29 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 | E4 | Hub 展柜 stub：走近 + F → 打开配置的 Space/卡片 URL（新标签或 iframe 壳） | **Done** — stub 页可回 Hub |
 | E5 | 展柜元数据契约 v0（JSON：id、title、url、kind=pms_space） | **Done** 薄 — `examples/hub/exhibits.v0.json` |
 
+### P1b · 下一刀：参观者壳 + Hub 手感（已共识 · 待做）
+
+> 落点：北翼 TYPE B（门 C / 展厅·教室走廊 / 展柜）。铁律不变：物理在 PMS，Hub 只做入口与壳。
+
+| ID | 内容 | 验收 |
+|----|------|------|
+| E6 | Portal 已登录身份 → PMS 换「参观者」token | 短时 token；不可当完整账号滥用 |
+| E7 | 拉可访问卡片列表（URL + 运行中/待机/离线 + 说明 HTML 元数据） | 域名白名单（如 `*.spaces.databall.tech`） |
+| E8 | 浏览器内壳：中央 iframe（mjviser / rerun / gzweb…）+ 侧栏文档 + 关闭 | 关壳卸 iframe、恢复母港输入；打开时降频/暂停 Hub WS |
+| E9 | Hub 公网手感：远端插值外推限速；自机可选本地预测 | 减轻「飞快 / 跳帧」（延迟+Web 卡顿，非 Hub MuJoCo 算力） |
+
+进卡流程（目标态）：
+
+```text
+北翼展柜 / 门 C
+  → 换参观者 token
+  → 列表（状态 + 说明）
+  → 选卡：同页壳层（中央可视化 + 侧栏文档 + 关闭）
+  → 可选 stamp space_id 回母港（既有 E3）
+```
+
+依赖：PMS 侧提供换票 API + 列表/入口 URL API（本仓对接，不搬容器物理）。
+
 ### P2 · 本仓传送门主体加深（飞轮）
 
 | 建议 ID | 内容 | 备注 |

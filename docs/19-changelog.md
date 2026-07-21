@@ -10,6 +10,29 @@
 
 ---
 
+## 2026-07-21 · 计划入库：PMS 参观者壳 / Hub 手感
+
+- [21](21-ecosystem-federation.md) P1b：E6 换票 → E7 列表 → E8 同页 iframe 壳+侧栏 → E9 插值/降频。
+- [09](09-todo.md) Next 指向该切片；北翼 TYPE B 落点不变。
+
+---
+
+## 2026-07-21 · 训练场共享房 / 空气墙对齐 / 蜿蜒地图
+
+- 训练场（`demo_city`）默认进共享房 `city`，最多 5 人；满员 `ROOM_FULL` 回母港。
+- MuJoCo 模型缓存按 `seed`；空房重建，避免 seed 热更后墙体与视觉脱节。
+- 楼宇 footprint = KayKit×scale（≈LOT）+ 薄边，对齐视觉；地图 8×7；终点东北角（需转弯绕行）。
+
+---
+
+## 2026-07-21 · Hub 同账号区分 / 空气墙 / 减噪
+
+- Hub 显示名：`昵称 · session短码`（账号仍共用；单 session 限制后置）。
+- FakeMech：可行走收束到厅内+门湾；支柱 `blocked`；玩家间软推开。
+- 视觉：去掉满屏 F/翼区/壳 Label3D；A/B 门标更大，C–E 更淡；名牌近距才显示。
+
+---
+
 ## 2026-07-21 · Esc 回母港 / SUCCESS 浮层
 
 - Esc→Hub：清粘键、门触发冷却/需先离开门区再武装；断开 WS；忽略残留 `?room=demo`。

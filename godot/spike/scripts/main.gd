@@ -558,7 +558,8 @@ func _resolve_room_id() -> String:
 	"""Web: ?room= → window.MINEWORLD_ROOM → sessionStorage; else @export room_id.
 
 	Do not rely on `window.MINEWORLD_ROOM=...; location.reload()` — reload clears
-	window vars. Prefer http://host/?room=demo for e2e.
+	window vars. Prefer http://host/?room=city for training yard e2e.
+	demo_city defaults to shared room `city` when omitted.
 	"""
 	if _is_web:
 		var from_q := str(JavaScriptBridge.eval(
@@ -573,6 +574,10 @@ func _resolve_room_id() -> String:
 		))
 		if from_js != "":
 			return from_js
+	if room_id != "":
+		return room_id
+	if level_id == "demo_city":
+		return "city"
 	return room_id
 
 
@@ -748,9 +753,40 @@ func _on_event(payload: Dictionary) -> void:
 
 
 func _on_gateway_error(payload: Dictionary) -> void:
-	_last_error = "%s: %s" % [payload.get("code", "?"), payload.get("message", "")]
+	"""Surface gateway errors; bounce to Hub when training yard is full."""
+	var code := str(payload.get("code", "?"))
+	_last_error = "%s: %s" % [code, payload.get("message", "")]
 	push_warning("[MW] gateway error: %s" % payload)
+	if code == "ROOM_FULL" and level_id == "demo_city":
+		_status_line = MWi18n.t("训练场已满（最多 5 人），返回母港", "Training yard full (max 5) — back to Hub")
+		_update_hud()
+		call_deferred("_bounce_yard_full_to_hub")
+		return
 	_update_hud()
+
+
+func _bounce_yard_full_to_hub() -> void:
+	"""ROOM_FULL on demo_city → leave play scene without sticking in empty yard."""
+	if ws != null:
+		ws.close_link()
+	if _is_web:
+		JavaScriptBridge.eval(
+			"(function(){try{"
+			+ "window._mw_keys=Object.create(null);"
+			+ "var u=new URL(location.href);"
+			+ "u.searchParams.delete('replay');"
+			+ "u.searchParams.delete('room');"
+			+ "history.replaceState({},'',u.pathname+u.search+u.hash);"
+			+ "}catch(e){}})()",
+			true
+		)
+	_held.clear()
+	_held_codes.clear()
+	MWTransition.go(
+		"res://demo_hub.tscn",
+		MWi18n.t("训练场已满", "Yard full"),
+		"#4aa3ff"
+	)
 
 
 func _on_link_state(connected: bool) -> void:

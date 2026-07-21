@@ -46,6 +46,10 @@
 | E3b | space_id 回母港归因游玩 | 展柜带回 `?space_id=` → 门 A 局写入会话扩展 | [x] |
 | IL-place′ | 工坊放置/抓取手感 | grasp_lift 不终局；提示放置 | [x] |
 | QA-export | 本地 Web 验收清单 | [25](25-qa-local-export.md) + `h_bounds_e3b_smoke.py` | [x] |
+| City-share | 训练场共享房 max 5 | 默认 `room=city`；满员回母港 | [x] |
+| City-wall | 训练场空气墙=楼宇占地 | footprint = KayKit×scale；seed 热更重建 MjModel | [x] |
+| E6–E8 | PMS 参观者壳 | 见 [21 §P1b](21-ecosystem-federation.md) | [ ] **Next** |
+| E9 | Hub 公网插值/降频 | 远端不瞬移；开壳降 WS | [ ] |
 
 ---
 

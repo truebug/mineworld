@@ -23,7 +23,11 @@ async def push_box(url: str = "ws://127.0.0.1:8765") -> int:
                 {
                     "type": "join",
                     "session_id": sid,
-                    "payload": {"level_id": "demo_city", "player_name": "push"},
+                    "payload": {
+                        "level_id": "demo_city",
+                        "player_name": "push",
+                        "room_id": "push-box-smoke",
+                    },
                 }
             )
         )

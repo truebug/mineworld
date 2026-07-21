@@ -303,16 +303,7 @@ func _station(
 	glow.emission_energy_multiplier = 1.4
 	_box_child(root, Vector3(0, 0.5, 0), Vector3(1.1, 1.0, 0.7), body)
 	_box_child(root, Vector3(0, 1.35, 0.2), Vector3(0.9, 0.7, 0.08), glow)
-	var label := Label3D.new()
-	MWFonts.apply_label3d(label)
-	label.text = prompt
-	label.font_size = 36
-	label.outline_size = 6
-	label.pixel_size = 0.01
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = accent.lightened(0.2)
-	root.add_child(label)
-	label.position = Vector3(0, 2.0, 0)
+	# No floating "F · …" Label3D — HUD tips show prompt when near (declutter).
 	interactables.append({
 		"node": root,
 		"id": id,
