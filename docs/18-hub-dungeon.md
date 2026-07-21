@@ -56,8 +56,11 @@
 | **H10** | 展厅/教室走廊壳 | ✅ 北墙 alcove + lore |
 | **H11** | 竞技场门占位 | ✅ 门 E 南翼 + F stub |
 | **H12a** | 母港尺度/窗带/外延甲板/三类翼区 | ✅ 见 [24](24-hub-mothership.md) |
-| **H12b** | 中英双语壳（Portal + Hub） | ✅ `mw_i18n.js` + 3D 中文优先文案 |
+| **H12b** | 中英切换（CN 默认单语） | ✅ `mw_i18n.js` + `MWi18n`；切 lang 重载 3D |
 | **H12c** | 外场 Hab / Berth 模块舱 | ✅ v0 南甲板 |
+| **H12d–f** | 太空港视觉 / 迷你城 / 环形港湾 | ✅ v0 |
+| **H12g** | 球体/环带软化剪影 | ✅ viewer-only |
+| **CJK** | Label3D 中文字体 | ✅ Noto Sans SC + `MWFonts` |
 | **H7c** | 门 C/D 立面 + F 状态 stub | ✅ |
 | **H6b** | 观感：机库/星空/NPC/DOM HUD/电梯+L2 | 已落地（尺度已抬升） |
 
@@ -65,6 +68,7 @@
 
 - 契约 `examples/contracts/demo_hub.json`，`extensions.mw.mode = "hub"`。
 - 即使进程 `--physics mujoco`，Hub 房也 **强制 FakeMech**（不 compile MjModel）。
+- 边界：契约 `bounds` + `_clamp_hub_bounds`（矩形空气墙）；**不做 Hub MuJoCo 空气墙**。
 - 默认公共房 `room_id=hub`，`max_members=8`（契约可改）。
 - **不写** `recordings/`（Hub 非遥操采集）。
 - `join.player_name` + `extensions.mw.profile` 写入 session；`state` 实体带 `extensions.mw.display_name`。
@@ -74,6 +78,7 @@
 - 本地走动仍走 Gateway `cmd` velocity（与玩法关同一协议），纸片人跟 `state`。
 - 进门前 `bye` / 断链，再经 **`MWTransition`**（Web DOM 淡入淡出）`change_scene` 到玩法关并重新 `join`。
 - Profile：Web `localStorage.mw_profile`；桌面 `user://mw_profile.json`。
+- i18n：`localStorage.mw_lang`（默认 `zh`）；autoload `MWi18n` / `MWFonts`（Noto）。
 - 首屏：Web `shell.html` 品牌 boot（UX1 v0）；过场见 [19](19-changelog.md)。
 
 ### 3.3 非目标（本期不做）

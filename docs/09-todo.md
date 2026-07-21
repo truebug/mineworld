@@ -3,7 +3,7 @@
 | 字段 | 值 |
 |------|-----|
 | **状态** | Living |
-| **日期** | 2026-07-20 |
+| **日期** | 2026-07-21 |
 | **仓库** | https://github.com/truebug/mineworld |
 | **目标** | E1–E5 / W1 / R3 / H8–H12 / PL2 / IL Done；**Now：W2 公网实施**（见 [23](23-public-deploy.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
@@ -25,14 +25,27 @@
 
 ## Now（建议下一刀）
 
-> H7c / H12c Done。公网仍待 DNS → W2（见 [23](23-public-deploy.md)）。
+> Hub H12a–g / CN i18n / CJK 字体 Done。公网仍待 DNS A 记录 → **W2**（见 [23](23-public-deploy.md)）。  
+> Hub **不上 MuJoCo**（FakeMech + bounds clamp）；空气墙改进如需做多段 clamp，不编 MjModel。
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | W2-doc | 公网实施建议书 | [23](23-public-deploy.md) 入库 | [x] |
+| W2.0 | DNS：`databall.cloud` A→CVM | dig/nslookup 有地址 | [ ] 阻塞 W2.1 |
 | W2.1 | 静态 HTTPS（databall.cloud） | 证书有效可进 Portal/Hub | [ ] |
 | W2.2 | Gateway `wss` 反代 | 浏览器 hello→join→state | [ ] |
 | W2.4 | 最小运维说明 | 安全组/进程/密钥/重启 | [ ] §4–§10 of 23 |
+
+---
+
+## Done（Hub 母港收口 · 2026-07-21）
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| H12g | 外场球体/环带装饰 | 雷达罩/储罐/甲板环/拱环；无碰撞 | [x] |
+| H12-i18n | 中文单语显示（zh） | `MWi18n`；无中英叠行；切 EN 重载 | [x] |
+| H12-cjk | Label3D 中文字体 | Noto Sans SC + `MWFonts` | [x] |
+| H12-npc | NPC/展柜中文名 | 玛雅等；exhibits `title_zh` | [x] |
 | H7c | 门 C/D 占位加深 | Design / Edge 壳 + F 状态循环 | [x] |
 
 ---
@@ -113,6 +126,8 @@
 | H12d | 太空港视觉语言 | 青蓝面板 / 浮岛剪影 / 暗甲板 | [x] v0 |
 | H12e | 外场迷你太空城 | 叠舱群 / 接驳臂 / 龙骨 / 大平台 | [x] v0 |
 | H12f | 环形港湾外轮廓 | 不规则甲板 / 坞口凹槽 / 长接驳臂 / 裙边龙骨 | [x] v0 |
+| H12g | 装饰球体/环带 | 雷达罩 / 储罐 / 环带 / 拱环（viewer-only） | [x] v0 |
+| H12-i18n / CJK | CN 单语 + Noto | `MWi18n` + `MWFonts`；展柜/NPC 中文名 | [x] |
 
 ### 运维 / 公网（原暂缓）
 

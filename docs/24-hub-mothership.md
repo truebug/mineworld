@@ -67,8 +67,9 @@
 | D | 边缘任务坞 | Edge Dock | 西北 | C（后置） |
 | E | 竞技场门 | Arena Gate | 南 | A 壳 |
 
-3D `Label3D` 与左栏 lore：**中文主行 + 英文副行**（或 `中文 / EN` 同行）。  
-Portal / shell：`localStorage.mw_lang` = `zh`（默认）| `en`；右上角切换。
+3D `Label3D` 与左栏 lore：按 `mw_lang` **只显示一种语言**（默认中文，无中英叠行）。  
+Portal / shell：`localStorage.mw_lang` = `zh`（默认）| `en`；右上角切换（Hub 重载以刷新 Label3D）。  
+字体：`assets/fonts/NotoSansSC-Regular.ttf` + autoload `MWFonts`（Godot 默认字体无 CJK）。
 
 ---
 
