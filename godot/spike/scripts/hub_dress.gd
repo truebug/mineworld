@@ -291,6 +291,54 @@ func _place_mini_city(root: Node3D) -> void:
 	_box(root, "DockStubETip", Vector3(56, 3.5, 0), Vector3(2.0, 2.0, 2.0), panel)
 	_box(root, "DockStubW", Vector3(-48, 3.5, 0), Vector3(12.0, 1.4, 2.4), hull)
 	_box(root, "DockStubWTip", Vector3(-56, 3.5, 0), Vector3(2.0, 2.0, 2.0), panel)
+	_place_soft_accents(root, hull, hull_hi, panel, amber)
+
+
+func _place_soft_accents(
+	root: Node3D, hull: Material, hull_hi: Material, panel: Material, amber: Material
+) -> void:
+	"""Viewer-only spheres / rings / capsules to break pure box silhouette."""
+	var glass := StandardMaterial3D.new()
+	glass.albedo_color = Color(0.3, 0.7, 0.95, 0.28)
+	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass.roughness = 0.08
+	glass.metallic = 0.35
+	glass.emission_enabled = true
+	glass.emission = CYAN
+	glass.emission_energy_multiplier = 0.55
+	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# Corner radar domes on pylons.
+	for p in [
+		Vector3(40, 17.8, 34), Vector3(-40, 17.8, 34),
+		Vector3(40, 17.8, -34), Vector3(-40, 17.8, -34),
+	]:
+		_sphere(root, "RadarDome", p, 2.4, glass)
+		_torus(root, "RadarRing", p + Vector3(0, -0.4, 0), 2.8, 0.12, panel, Vector3(90, 0, 0))
+	# Fuel / pressure tanks (south harbor + mid flanks).
+	_sphere(root, "TankS", Vector3(0, 5.5, 36), 3.6, hull_hi)
+	_torus(root, "TankSBand", Vector3(0, 5.5, 36), 3.7, 0.22, panel, Vector3(90, 0, 0))
+	_sphere(root, "TankSW", Vector3(-30, 4.2, 22), 2.8, hull)
+	_sphere(root, "TankSE", Vector3(30, 4.2, 22), 2.8, hull)
+	_sphere(root, "TankNW", Vector3(-28, 6.0, -22), 2.2, hull_hi)
+	_sphere(root, "TankNE", Vector3(28, 6.0, -22), 2.2, hull_hi)
+	# Soft glow orbs tucked beside tall stacks.
+	_sphere(root, "GlowE", Vector3(42, 10.0, -2), 1.6, glass)
+	_sphere(root, "GlowW", Vector3(-42, 9.0, 2), 1.5, glass)
+	_sphere(root, "GlowN", Vector3(-12, 12.0, -36), 1.8, amber)
+	# Horizontal orbital rings (apron halo — read as curves from afar).
+	_torus(root, "HaloInner", Vector3(0, 1.2, 0), 30.0, 0.35, panel, Vector3(90, 0, 0))
+	_torus(root, "HaloOuter", Vector3(0, 0.6, 4), 44.0, 0.28, amber, Vector3(90, 0, 0))
+	_torus(root, "HaloHi", Vector3(0, 14.0, -8), 18.0, 0.22, glass, Vector3(90, 12, 0))
+	# Capsule soft-links on east/west dock stubs.
+	_capsule(root, "CapE", Vector3(52, 3.5, 0), 1.1, 5.5, panel, Vector3(0, 0, 90))
+	_capsule(root, "CapW", Vector3(-52, 3.5, 0), 1.1, 5.5, panel, Vector3(0, 0, 90))
+	# Arch-ish uprights (cylinder bowed silhouette via paired pillars + ring).
+	_cylinder(root, "ArchSPillarL", Vector3(-8, 4.0, 38), 0.55, 8.0, hull)
+	_cylinder(root, "ArchSPillarR", Vector3(8, 4.0, 38), 0.55, 8.0, hull)
+	_torus(root, "ArchSRing", Vector3(0, 8.2, 38), 8.2, 0.35, panel, Vector3(0, 0, 0))
+	_cylinder(root, "ArchNPillarL", Vector3(-10, 5.0, -36), 0.45, 10.0, hull)
+	_cylinder(root, "ArchNPillarR", Vector3(10, 5.0, -36), 0.45, 10.0, hull)
+	_torus(root, "ArchNRing", Vector3(0, 10.5, -36), 10.2, 0.3, glass, Vector3(0, 0, 0))
 
 
 func _city_stack(
@@ -345,7 +393,8 @@ func _module_pod(root: Node3D, base: String, pos: Vector3, tint: Color, tag: Str
 	_box(root, base + "Win", pos + Vector3(0, 2.5, 3.02), Vector3(3.6, 1.4, 0.06), glass)
 	_box(root, base + "Band", pos + Vector3(0, 4.5, 0), Vector3(7.4, 0.2, 6.0), panel)
 	_box(root, base + "Mast", pos + Vector3(2.8, 5.6, -1.5), Vector3(0.22, 2.6, 0.22), panel)
-	_box(root, base + "Dish", pos + Vector3(2.8, 7.0, -1.5), Vector3(1.5, 0.12, 1.5), panel)
+	_sphere(root, base + "Dish", pos + Vector3(2.8, 7.0, -1.5), 1.05, panel)
+	_torus(root, base + "Ring", pos + Vector3(2.8, 6.6, -1.5), 1.35, 0.08, panel, Vector3(90, 0, 0))
 	var lab := Label3D.new()
 	lab.text = tag
 	lab.font_size = 42
@@ -458,6 +507,85 @@ func _box(parent: Node3D, box_name: String, pos: Vector3, size: Vector3, mat: Ma
 	mi.material_override = mat
 	parent.add_child(mi)
 	mi.position = pos
+
+
+func _sphere(parent: Node3D, mesh_name: String, pos: Vector3, radius: float, mat: Material) -> void:
+	"""Decorative sphere (radar / tank / glow)."""
+	var mi := MeshInstance3D.new()
+	mi.name = mesh_name
+	var sm := SphereMesh.new()
+	sm.radius = radius
+	sm.height = radius * 2.0
+	sm.radial_segments = 24
+	sm.rings = 12
+	mi.mesh = sm
+	mi.material_override = mat
+	parent.add_child(mi)
+	mi.position = pos
+
+
+func _cylinder(
+	parent: Node3D, mesh_name: String, pos: Vector3, radius: float, height: float, mat: Material
+) -> void:
+	"""Upright cylinder pillar."""
+	var mi := MeshInstance3D.new()
+	mi.name = mesh_name
+	var cm := CylinderMesh.new()
+	cm.top_radius = radius
+	cm.bottom_radius = radius
+	cm.height = height
+	cm.radial_segments = 20
+	mi.mesh = cm
+	mi.material_override = mat
+	parent.add_child(mi)
+	mi.position = pos
+
+
+func _capsule(
+	parent: Node3D,
+	mesh_name: String,
+	pos: Vector3,
+	radius: float,
+	height: float,
+	mat: Material,
+	rot_deg: Vector3 = Vector3.ZERO,
+) -> void:
+	"""Soft capsule link (dock stub tips)."""
+	var mi := MeshInstance3D.new()
+	mi.name = mesh_name
+	var cap := CapsuleMesh.new()
+	cap.radius = radius
+	cap.height = height
+	cap.radial_segments = 16
+	mi.mesh = cap
+	mi.material_override = mat
+	parent.add_child(mi)
+	mi.position = pos
+	mi.rotation_degrees = rot_deg
+
+
+func _torus(
+	parent: Node3D,
+	mesh_name: String,
+	pos: Vector3,
+	ring_r: float,
+	tube_r: float,
+	mat: Material,
+	rot_deg: Vector3 = Vector3.ZERO,
+) -> void:
+	"""Ring / halo / arch accent (ring_r ≈ centerline, tube_r ≈ thickness/2)."""
+	var mi := MeshInstance3D.new()
+	mi.name = mesh_name
+	var tm := TorusMesh.new()
+	tm.outer_radius = ring_r + tube_r
+	tm.inner_radius = maxf(0.05, ring_r - tube_r)
+	tm.rings = 48
+	tm.ring_segments = 16
+	mi.mesh = tm
+	mi.material_override = mat
+	parent.add_child(mi)
+	mi.position = pos
+	mi.rotation_degrees = rot_deg
 
 
 func _mat(albedo: Color, roughness: float, metallic: float) -> StandardMaterial3D:
