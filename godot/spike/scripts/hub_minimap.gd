@@ -2,8 +2,8 @@
 extends Control
 
 ## MW half-extents (must match gateway hub bounds / dress).
-@export var half_x := 18.5
-@export var half_y := 14.5
+@export var half_x := 28.0
+@export var half_y := 24.0
 
 var _points: Array = [] ## [{x,y,self}]
 
@@ -30,12 +30,12 @@ func _draw() -> void:
 	draw_line(Vector2(cx, cy - 6), Vector2(cx, cy + 6), Color(0.4, 0.55, 0.7, 0.5), 1.0)
 	var sx := inner.size.x / (half_x * 2.0)
 	var sy := inner.size.y / (half_y * 2.0)
-	# Door marks: A east, B west, C/D/E north stubs.
-	_draw_door(inner, sx, sy, half_x, 0.0, Color(1.0, 0.55, 0.15))
-	_draw_door(inner, sx, sy, -half_x, 0.0, Color(0.3, 0.7, 1.0))
-	_draw_door(inner, sx, sy, 0.0, -half_y, Color(0.85, 0.85, 0.55))
-	_draw_door(inner, sx, sy, -6.0, -half_y, Color(0.55, 0.6, 0.65))
-	_draw_door(inner, sx, sy, 6.0, -half_y, Color(1.0, 0.45, 0.25))  # E Arena
+	# Door marks by wing: A east, B west, C north, D NW edge, E south.
+	_draw_door(inner, sx, sy, half_x * 0.86, 0.0, Color(1.0, 0.55, 0.15))
+	_draw_door(inner, sx, sy, -half_x * 0.86, 0.0, Color(0.3, 0.7, 1.0))
+	_draw_door(inner, sx, sy, 0.0, -half_y * 0.83, Color(0.85, 0.9, 1.0))
+	_draw_door(inner, sx, sy, -half_x * 0.86, -half_y * 0.4, Color(0.55, 0.85, 0.7))
+	_draw_door(inner, sx, sy, 0.0, half_y * 0.83, Color(1.0, 0.45, 0.25))
 	# Mezzanine footprint (south half) + elevator tick — display-only.
 	var mz_a := _map_pt(inner, sx, sy, -half_x + 1.0, 1.2)
 	var mz_b := _map_pt(inner, sx, sy, half_x - 1.0, half_y - 0.8)

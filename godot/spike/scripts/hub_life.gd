@@ -4,8 +4,9 @@ extends Node3D
 
 const BLOCKY_DIR := "res://assets/kenney_blocky/"
 const FACTORY_DIR := "res://assets/kenney_factory/"
-const WALL_X := 17.5
-const WALL_Z := 13.5
+## Keep ~1.5m inside hub_dress HALL_HALF (24×20).
+const WALL_X := 22.5
+const WALL_Z := 18.5
 const INTERACT_DIST := 2.8
 const NPC_SCALE := 0.36
 
@@ -105,34 +106,34 @@ func _place_stations() -> void:
 	"""Kiosks flush to walls + E4 exhibit cabinets."""
 	_station(
 		"kiosk_welcome",
-		Vector3(0, 0, WALL_Z - 1.0),
+		Vector3(-6.0, 0, WALL_Z - 1.0),
 		180.0,
-		"F - Info kiosk",
-		"Welcome to Dungeon Gate.\nOrange door = Workshop · Blue door = Training.\nPress V to change camera.",
+		"F · 导览台",
+		"欢迎来到母港 Hangar Core。\n东橙 A 工坊 · 西蓝 B 训练 · 北 C 卡片 · 西偏北 D 边缘 · 南 E 竞技\n按 V 切换相机。\nWelcome — A Workshop · B Training · C Cards · D Edge · E Arena.",
 		Color(0.3, 0.7, 1.0),
 	)
 	_station(
 		"board_party",
 		Vector3(-WALL_X + 1.0, 0, 5.5),
 		90.0,
-		"F - Party board",
-		"Party board online — press F to post / clear Looking for crew.",
+		"F · 组队板",
+		"组队板 · Party board — 按 F 发布/清除 Looking for crew。",
 		Color(1.0, 0.7, 0.3),
 	)
 	_station(
 		"vendor",
 		Vector3(WALL_X - 1.0, 0, 5.5),
 		-90.0,
-		"F - Vendor stall",
-		"Vendor: press F to cycle suit accent (saved to profile).",
+		"F · 商贩",
+		"商贩 · Vendor — 按 F 循环机甲配色（写入 profile）。",
 		Color(0.9, 0.45, 0.85),
 	)
 	_station(
 		"pad_photo",
-		Vector3(0, 0, -WALL_Z + 1.2),
+		Vector3(5.0, 0, -WALL_Z + 1.2),
 		0.0,
-		"F - Photo pad",
-		"Photo pad online.\nSmile for the (future) highlight reel!",
+		"F · 拍照点",
+		"拍照点 · Photo pad — 未来高光回放占位。",
 		Color(0.5, 0.9, 0.6),
 	)
 	_place_exhibits()
@@ -206,16 +207,16 @@ func _place_room_shell_stations() -> void:
 		"room_gallery",
 		Vector3(-8.0, 0, -WALL_Z + 1.2),
 		0.0,
-		"F - Gallery wing",
-		"Gallery Wing — exhibition corridor.\nPMS Space cards hang on the east/west cabinets.\nNo local MuJoCo; open an exhibit with F.",
+		"F · 展厅翼",
+		"展厅翼 · Gallery — 卡片通道走廊。\n展柜挂 PMS Space；无本仓 MuJoCo；F 打开展品。",
 		Color(0.75, 0.65, 0.4),
 	)
 	_station(
 		"room_classroom",
 		Vector3(9.5, 0, -WALL_Z + 1.2),
 		0.0,
-		"F - Classroom wing",
-		"Classroom Wing — courseware corridor.\nStub lore only until a Space URL is linked.\nUse exhibit cabinets for live cards.",
+		"F · 教室翼",
+		"教室翼 · Classroom — 课件走廊。\nSpace URL 未绑定时仅 lore；真卡片用展柜。",
 		Color(0.45, 0.7, 0.85),
 	)
 
@@ -224,10 +225,10 @@ func _place_arena_station() -> void:
 	"""H11: Arena gate pad — F cycles 1v1/party stub (no join / no PMS URL)."""
 	_station(
 		"arena_gate",
-		Vector3(4.0, 0, -WALL_Z + 2.4),
-		0.0,
-		"F - Arena gate",
-		"Arena Gate — ranked mech bouts (authority later).\nPress F: cycle 1v1 ↔ party · toggle Looking for match.\nNot a PMS card — local portal route only.",
+		Vector3(0.0, 0, WALL_Z - 2.4),
+		180.0,
+		"F · 竞技场门",
+		"竞技场门 · Arena Gate — 排名对战（权威后置）。\n按 F：1v1 ↔ 组队 · 切换 Looking for match。\n本仓路由，非 PMS 卡片。",
 		Color(1.0, 0.45, 0.28),
 	)
 
@@ -296,23 +297,23 @@ func _place_npcs() -> void:
 	"""Small standing greeters at walls near doors (no wander)."""
 	_npc(
 		"Maya", "character-a.glb", Vector3(-4.5, 0, WALL_Z - 1.3), 180.0, Color(1.0, 0.85, 0.4),
-		"F - Talk to Maya",
-		"Maya: Need a route? Orange door Workshop, blue door Training.\nPress V for camera modes.",
+		"F · 与 Maya 交谈",
+		"Maya: 橙门工坊 · 蓝门训练。按 V 切相机。\nMaya: Orange Workshop, blue Training. V = camera.",
 	)
 	_npc(
 		"Rex", "character-b.glb", Vector3(WALL_X - 1.3, 0, 2.2), -90.0, Color(1.0, 0.55, 0.25),
-		"F - Talk to Rex",
-		"Rex: Workshop's through the orange gate.\nBring the cart back in one piece!",
+		"F · 与 Rex 交谈",
+		"Rex: 工坊在橙门。把推车完整带回来！\nRex: Workshop through the orange gate.",
 	)
 	_npc(
 		"Jin", "character-c.glb", Vector3(-WALL_X + 1.3, 0, -2.2), 90.0, Color(0.45, 0.8, 1.0),
-		"F - Talk to Jin",
-		"Jin: Training yard's that blue door.\nWarm up before you race the city block.",
+		"F · 与 Jin 交谈",
+		"Jin: 蓝门是训练场。进街区前先热身。\nJin: Blue door = Training yard.",
 	)
 	_npc(
 		"Pip", "character-d.glb", Vector3(4.5, 0, -WALL_Z + 1.3), 0.0, Color(0.7, 0.9, 0.5),
-		"F - Talk to Pip",
-		"Pip: I'm just people-watching.\nSay hi when friends join the hub!",
+		"F · 与 Pip 交谈",
+		"Pip: 我在看人来人往。朋友进厅记得打招呼！\nPip: People-watching — say hi when friends join.",
 	)
 
 

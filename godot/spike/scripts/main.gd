@@ -507,7 +507,7 @@ func _leave_to_hub() -> void:
 
 func _on_camera_view_changed(label: String) -> void:
 	"""Show camera mode on HUD when V cycles (CameraRig SSOT)."""
-	_status_line = "Camera: %s (V cycle · C recenter)" % label
+	_status_line = "相机 · Camera: %s（V 切换 · C 回正）" % label
 	_update_hud()
 
 
@@ -1009,13 +1009,13 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [own.position.x, own.position.z, own.rotation.y]
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
-	text += "\nWASD move | QE turn | T take | R release | arm sliders (bottom-left)"
-	text += "\nV camera orbit/FP/chase | RMB/MMB look | wheel zoom | arrows pan | C center"
-	text += "\nChase: release mouse → look springs back"
+	text += "\nWASD 移动 | QE 转向 | T 接管 | R 释放 | 左下角臂爪滑条"
+	text += "\nV 相机 环绕/第一人称/跟随 | RMB/MMB 视角 | 滚轮缩放 | 方向键平移 | C 回正"
+	text += "\n跟随模式：松开鼠标 → 视角回弹"
 	if _is_web:
-		text += "\nRecordings → top-right link"
+		text += "\n录制 → 右上角链接"
 	if _is_web:
-		text += "\nhistory: /recordings.html"
+		text += "\n历史: /recordings.html"
 	if _is_web:
 		_push_web_hud(text)
 	elif hud_label != null:

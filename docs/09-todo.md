@@ -5,7 +5,7 @@
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | E1–E5 / W1 / R3 / H8–H11 / PL2 / IL Done；**Now：W2 公网实施**（见 [23](23-public-deploy.md)） |
+| **目标** | E1–E5 / W1 / R3 / H8–H12 / PL2 / IL Done；**Now：W2 公网实施**（见 [23](23-public-deploy.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **公网部署建议** | **[23-public-deploy.md](23-public-deploy.md)**（databall.cloud · 2C8G） |
@@ -14,7 +14,7 @@
 | **跑偏与纠偏** | [15-course-correction.md](15-course-correction.md) |
 | **V 线规格** | [16-value-sprint.md](16-value-sprint.md)（冻结项 Done） |
 | **试验场入口** | [17-lobby-testfield.md](17-lobby-testfield.md)（`?menu=1`） |
-| **地下城 Hub** | **[18-hub-dungeon.md](18-hub-dungeon.md)**（默认主场景） |
+| **地下城 Hub** | **[18-hub-dungeon.md](18-hub-dungeon.md)** + **[24-hub-mothership.md](24-hub-mothership.md)**（母港布局） |
 | **变更记录** | **[19-changelog.md](19-changelog.md)** |
 | **平台门户规划** | **[20-platform-portal.md](20-platform-portal.md)**（身份 / 积分 / Admin） |
 | **生态对接** | **[21-ecosystem-federation.md](21-ecosystem-federation.md)**（Hub↔PMS/Spaces；统一身份） |
@@ -108,6 +108,9 @@
 | H9 | Hub 交互台玩法雏形 | Party board / Vendor 真 UI | [x] 薄 |
 | H10 | 房间壳占位（展厅/教室 lore） | 走廊+文案；无真实 URL 亦可 | [x] |
 | H11 | 竞技场门占位 | 门 E 壳 + F 四态 stub；权威另案 | [x] |
+| H12a | 母港尺度/甲板/三类翼 | 厅 24×20、举架 22、L2=8.5、外延甲板；门分区 | [x] |
+| H12b | 中英双语（CN 优先） | Portal+shell `mw_i18n.js`；Hub 3D 文案双语 | [x] |
+| H12c | 外场模块舱/接驳廊 | 几何外扩建筑群 | [ ] 后置 |
 
 ### 运维 / 公网（原暂缓）
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +7,7 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+	<script src="/mw_i18n.js"></script>
 	<style>
 		:root {
 			--void: #03050a;
@@ -169,21 +170,24 @@
 <body>
 	<main class="stage">
 		<div class="hero">
-			<h1 class="brand"><span>Dungeon Gate</span>MineWorld</h1>
-			<p class="lede">True mechs. Real tasks. Teleop data that trains. Enter the hangar — or open a simulation card beyond the doors.</p>
+			<h1 class="brand"><span data-i18n="land.tag">数聚球母港</span>MineWorld</h1>
+			<p class="lede" data-i18n="land.lede">真机甲 · 真任务 · 可训练的遥操数据。进入母港大厅，或从门后打开仿真卡片。</p>
 			<div class="ctas" id="guest">
-				<a class="btn btn-primary" id="signin" href="/portal/login.html">Sign in</a>
-				<a class="btn btn-ghost" href="/portal/login.html?next=%2Fportal%2Fme.html">Pilot record</a>
+				<a class="btn btn-primary" id="signin" href="/portal/login.html" data-i18n="land.signin">登录</a>
+				<a class="btn btn-ghost" href="/portal/login.html?next=%2Fportal%2Fme.html" data-i18n="land.record">飞行员档案</a>
 			</div>
 			<div class="ctas" id="authed">
-				<a class="btn btn-primary" id="enter-hub" href="/">Enter hangar</a>
-				<a class="btn btn-ghost" href="/portal/me.html">Profile &amp; board</a>
+				<a class="btn btn-primary" id="enter-hub" href="/" data-i18n="land.enter">进入母港</a>
+				<a class="btn btn-ghost" href="/portal/me.html" data-i18n="land.profile">档案与排行</a>
 			</div>
 		</div>
-		<p class="foot">Databall · simulation portal · <a href="/portal/admin.html">Admin</a></p>
+		<p class="foot"><span data-i18n="land.foot">数聚球 · 仿真门户 · </span><a href="/portal/admin.html">Admin</a></p>
 	</main>
 	<script>
 	(function () {
+		if (window.MW_I18N) {
+			window.MW_I18N.mountToggle(document.body);
+		}
 		const TOKEN_KEY = 'mw_auth_token';
 		const params = new URLSearchParams(location.search);
 		const nextRaw = params.get('next') || '/';

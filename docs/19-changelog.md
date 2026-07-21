@@ -10,6 +10,15 @@
 
 ---
 
+## 2026-07-21 · H12 母港布局 + 中英双语
+
+- 新增 [24-hub-mothership.md](24-hub-mothership.md)：三类出口翼区（本仓/卡片/边缘）+ 浮空岛母港叙事。
+- Hub 尺度：厅 24×20、举架 22、L2=8.5；外延金属网格甲板；窗带；门 E 南移、D 西北边缘坞。
+- 契约 bounds → 28×24；小地图/shell 同步。
+- `mw_i18n.js`：`localStorage.mw_lang` 默认 `zh`；Landing / login / shell 可切换；3D 门标/lore 中文优先双语。
+
+---
+
 ## 2026-07-21 · W2 公网实施建议书
 
 - 新增 [23-public-deploy.md](23-public-deploy.md)：腾讯云 2C8G + `databall.cloud` 单机拓扑、资源判断、Caddy/env、分阶段清单与验收。

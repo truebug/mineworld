@@ -146,7 +146,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 0)
 mesh = SubResource("mesh_wall_short")
 
 [node name="DoorWorkshop" type="MeshInstance3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 1.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.5, 1.6, 0)
 mesh = SubResource("mesh_door")
 surface_material_override/0 = SubResource("mat_door_a")
 
@@ -154,12 +154,13 @@ surface_material_override/0 = SubResource("mat_door_a")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0.3)
 pixel_size = 0.01
 billboard = 1
-text = "A · Workshop"
+text = "A 仿真工坊
+Workshop"
 font_size = 64
 outline_size = 6
 
 [node name="DoorCity" type="MeshInstance3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 1.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.5, 1.6, 0)
 mesh = SubResource("mesh_door")
 surface_material_override/0 = SubResource("mat_door_b")
 
@@ -167,27 +168,29 @@ surface_material_override/0 = SubResource("mat_door_b")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0.3)
 pixel_size = 0.01
 billboard = 1
-text = "B · Training"
+text = "B 机甲训练场
+Training Yard"
 font_size = 64
 outline_size = 6
 
 [node name="DoorStubC" type="MeshInstance3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -14.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -18.5)
 mesh = SubResource("mesh_door")
 
 [node name="DoorLabelC" type="Label3D" parent="World/DoorStubC"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0.3)
 pixel_size = 0.008
 billboard = 1
-text = "C · Design (soon)"
+text = "C 设计室 · 卡片
+Design Lab"
 font_size = 48
 modulate = Color(0.7, 0.7, 0.7, 1)
 
 [node name="DoorStubD" type="Node3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1.6, -14.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.2, 1.6, -10)
 
 [node name="DoorStubE" type="Node3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1.6, -14.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 18.5)
 
 [node name="WsClient" type="Node" parent="."]
 script = ExtResource("2_ws")

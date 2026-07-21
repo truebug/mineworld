@@ -415,6 +415,10 @@ def main() -> None:
         for src in portal_src_dir.glob("*.html"):
             (portal_dst / src.name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
 
+    i18n_src = repo / "godot" / "spike" / "web" / "mw_i18n.js"
+    if i18n_src.is_file():
+        (root / "mw_i18n.js").write_text(i18n_src.read_text(encoding="utf-8"), encoding="utf-8")
+
     src_ui = repo / "godot" / "spike" / "web" / "recordings.html"
     if src_ui.is_file():
         (root / "recordings.html").write_text(src_ui.read_text(encoding="utf-8"), encoding="utf-8")

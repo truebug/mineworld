@@ -499,64 +499,71 @@ body.mw-play #mw-joints {
 		<div id="status">
 			<div id="mw-boot">
 				<div class="mw-boot-mark">MineWorld</div>
-				<div class="mw-boot-sub">Dungeon Gate</div>
+				<div class="mw-boot-sub" data-i18n="boot.sub">母港 Hangar Core</div>
 				<progress id="status-progress"></progress>
-				<div id="mw-boot-hint">Loading…</div>
+				<div id="mw-boot-hint" data-i18n="boot.hint">加载中…</div>
 			</div>
 			<img id="status-splash" class="$GODOT_SPLASH_CLASSES" src="$GODOT_SPLASH" alt="">
 			<div id="status-notice"></div>
 		</div>
 		<div id="mw-transition" aria-hidden="true">
 			<div class="mw-tr-label" id="mw-tr-label"></div>
-			<div class="mw-tr-hint">Enter / click to skip</div>
+			<div class="mw-tr-hint" data-i18n="tr.skip">Enter / 点击跳过</div>
 		</div>
 
-		<pre id="mw-hud" title="Click to collapse">MineWorld · connecting…</pre>
+		<pre id="mw-hud" title="Click to collapse" data-i18n="hud.connecting">MineWorld · 连接中…</pre>
 		<div id="mw-hub-profile">
-			<div class="mw-id" id="mw-hub-id">Pilot card</div>
+			<div class="mw-id" id="mw-hub-id" data-i18n="hub.pilot">飞行员卡</div>
 			<div id="mw-hub-nick-label">Guest</div>
-			<input id="mw-hub-nick" type="text" maxlength="24" placeholder="Nickname" autocomplete="off">
+			<input id="mw-hub-nick" type="text" maxlength="24" data-i18n="hub.nick" data-i18n-attr="placeholder" placeholder="昵称" autocomplete="off">
 			<div class="mw-profile-links">
-				<a href="/portal/me.html">My record</a>
-				<a href="/portal/admin.html">Admin</a>
+				<a href="/portal/me.html" data-i18n="hub.me">我的战绩</a>
+				<a href="/portal/admin.html" data-i18n="hub.admin">管理</a>
 			</div>
 		</div>
 		<div id="mw-hub-map">
-			<div class="mw-map-title">Hub map · A orange · B blue · C–E soon</div>
+			<div class="mw-map-title" data-i18n="hub.map">母港图 · 东A橙 · 西B蓝 · 北C · 西偏北D · 南E</div>
 			<canvas id="mw-hub-map-canvas" width="220" height="132"></canvas>
 			<div class="mw-map-coords" id="mw-hub-map-coords">pos --</div>
 		</div>
 		<div id="mw-hub-lb" aria-label="Leaderboard">
-			<div class="mw-lb-title">Leaderboard</div>
+			<div class="mw-lb-title" data-i18n="hub.lb">排行榜</div>
 			<ol id="mw-hub-lb-list"><li>…</li></ol>
 		</div>
 		<div id="mw-success" aria-live="polite">
-			<div class="mw-title">SUCCESS</div>
+			<div class="mw-title" data-i18n="hub.success">通关</div>
 			<div class="mw-sub"></div>
-			<a class="mw-me" href="/portal/me.html" style="display:none;margin-top:10px;color:#7ec8ff;font:14px/1.3 ui-sans-serif,system-ui,sans-serif;">My record →</a>
+			<a class="mw-me" href="/portal/me.html" style="display:none;margin-top:10px;color:#7ec8ff;font:14px/1.3 ui-sans-serif,system-ui,sans-serif;" data-i18n="hub.me_link">我的战绩 →</a>
 		</div>
 		<a id="mw-rec-link" href="/recordings.html" title="Recording history"
 			style="display:none;position:fixed;right:16px;top:16px;z-index:2147483646;padding:8px 12px;border-radius:8px;background:rgba(20,22,28,0.88);color:#5dff8a;font:13px/1.2 ui-sans-serif,system-ui,sans-serif;text-decoration:none;border:1px solid #3d4450;">Recordings</a>
 		<div id="mw-seed">
-			<label for="mw-seed-input">seed</label>
+			<label for="mw-seed-input" data-i18n="hub.seed">种子</label>
 			<input id="mw-seed-input" type="number" min="0" step="1" value="42">
-			<button type="button" id="mw-seed-go">Regen</button>
-			<button type="button" id="mw-seed-rnd">Random</button>
+			<button type="button" id="mw-seed-go" data-i18n="hub.regen">重生</button>
+			<button type="button" id="mw-seed-rnd" data-i18n="hub.random">随机</button>
 			<span id="mw-seed-status"></span>
 		</div>
 		<div id="mw-joints">
-			<div class="mw-j-title">Arm / gripper</div>
+			<div class="mw-j-title" data-i18n="hub.joints">臂 / 爪</div>
 			<label>yaw <input id="mw-j-arm_yaw" type="range" min="-2.8" max="2.8" step="0.02" value="0"><span class="mw-j-val" data-for="arm_yaw">0.00</span></label>
 			<label>shoulder <input id="mw-j-arm_shoulder" type="range" min="-1.4" max="1.6" step="0.02" value="0"><span class="mw-j-val" data-for="arm_shoulder">0.00</span></label>
 			<label>elbow <input id="mw-j-arm_elbow" type="range" min="-2.4" max="0.2" step="0.02" value="0"><span class="mw-j-val" data-for="arm_elbow">0.00</span></label>
 			<label>gripper <input id="mw-j-gripper" type="range" min="0" max="0.05" step="0.001" value="0"><span class="mw-j-val" data-for="gripper">0.000</span></label>
 		</div>
 
+		<script src="/mw_i18n.js"></script>
 		<script src="$GODOT_URL"></script>
 		<script>
 const GODOT_CONFIG = $GODOT_CONFIG;
 const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
 const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	if (window.MW_I18N) {
+		window.MW_I18N.mountToggle(document.body);
+	}
+})();
 
 (function () {
 	/* Lobby vs play vs hub: chrome visibility. */
@@ -735,8 +742,8 @@ const engine = new Engine(GODOT_CONFIG);
 		const nickLabel = document.getElementById('mw-hub-nick-label');
 		const canvas = document.getElementById('mw-hub-map-canvas');
 		const coordsEl = document.getElementById('mw-hub-map-coords');
-		const HALF_X = 18.5;
-		const HALF_Y = 14.5;
+		const HALF_X = 28.0;
+		const HALF_Y = 24.0;
 
 		window.MW_SET_HUB_PROFILE = function (p) {
 			if (!p || typeof p !== 'object') {
@@ -814,11 +821,11 @@ const engine = new Engine(GODOT_CONFIG);
 				ctx.fillStyle = color;
 				ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
 			}
-			door(HALF_X, 0, '#ff8c28');
-			door(-HALF_X, 0, '#4db3ff');
-			door(0, -HALF_Y, '#d8d88a');
-			door(-6, -HALF_Y, '#8a9098');
-			door(6, -HALF_Y, '#8a9098');
+			door(HALF_X * 0.86, 0, '#ff8c28');
+			door(-HALF_X * 0.86, 0, '#4db3ff');
+			door(0, -HALF_Y * 0.83, '#d0dceb');
+			door(-HALF_X * 0.86, -HALF_Y * 0.4, '#8ad4b0');
+			door(0, HALF_Y * 0.83, '#ff7340');
 			/* Mezzanine (south half) + elevator — display-only. */
 			(function () {
 				const a = toLocal(-HALF_X + 1, 1.2);
@@ -950,11 +957,11 @@ const engine = new Engine(GODOT_CONFIG);
 
 		function render() {
 			if (collapsed) {
-				el.textContent = el.dataset.collapsedLabel || 'Dungeon Gate - tips > (click)';
+				el.textContent = el.dataset.collapsedLabel || (window.MW_I18N ? window.MW_I18N.t('boot.sub') + ' · tips ›' : '母港 · 提示 ›（点击）');
 				el.classList.add('collapsed');
 				el.title = 'Click to expand';
 			} else {
-				el.textContent = fullText || 'MineWorld · connecting…';
+				el.textContent = fullText || (window.MW_I18N ? window.MW_I18N.t('hud.connecting') : 'MineWorld · 连接中…');
 				el.classList.remove('collapsed');
 				el.title = 'Click to collapse';
 			}

@@ -3,14 +3,18 @@
 extends Node3D
 
 const ASSET_DIR := "res://assets/kenney_factory/"
-const HALL_HALF_X := 20.0
-const HALL_HALF_Z := 16.0
-const CEILING_Y := 14.0
+## Hangar Core · mothership scale (docs/24).
+const HALL_HALF_X := 24.0
+const HALL_HALF_Z := 20.0
+const CEILING_Y := 22.0
 const WALL_T := 0.6
 ## Showcase mezzanine; H8 thin elevator ride (viewer Y offset in hub.gd).
-const FLOOR2_Y := 5.2
-const ELEV_X := 13.5
-const ELEV_Z := 12.5
+const FLOOR2_Y := 8.5
+const ELEV_X := 16.0
+const ELEV_Z := 15.0
+## Exterior apron half-extents (walkable + future modules).
+const APRON_HALF_X := 36.0
+const APRON_HALF_Z := 30.0
 
 
 func _ready() -> void:
@@ -26,13 +30,16 @@ func _build() -> void:
 	root.name = "HangarDress"
 	add_child(root)
 	_place_solid_hall(root)
+	_place_apron(root)
 	_place_space_windows(root)
 	_place_mezzanine(root)
 	_place_room_shells(root)
 	_place_props(root)
 	_place_door_glows()
-	print("[MW] hub dress: solid hangar %.0fx%.0f roof_y=%.1f + mezzanine + room shells + space sky" % [
-		HALL_HALF_X * 2.0, HALL_HALF_Z * 2.0, CEILING_Y,
+	_place_wing_labels(root)
+	print("[MW] hub dress: mothership hangar %.0fx%.0f roof_y=%.1f L2=%.1f apron=%.0fx%.0f" % [
+		HALL_HALF_X * 2.0, HALL_HALF_Z * 2.0, CEILING_Y, FLOOR2_Y,
+		APRON_HALF_X * 2.0, APRON_HALF_Z * 2.0,
 	])
 
 
@@ -55,9 +62,9 @@ func _setup_lights() -> void:
 	var fill := get_parent().get_node_or_null("Fill") as OmniLight3D
 	if fill != null:
 		fill.light_color = Color(0.75, 0.85, 1.0)
-		fill.light_energy = 1.5
-		fill.omni_range = 32.0
-		fill.position = Vector3(0.0, 6.0, 0.0)
+		fill.light_energy = 1.8
+		fill.omni_range = 42.0
+		fill.position = Vector3(0.0, 10.0, 0.0)
 
 
 func _apply_space_sky(e: Environment) -> void:
@@ -77,7 +84,7 @@ func _apply_space_sky(e: Environment) -> void:
 
 
 func _place_space_windows(root: Node3D) -> void:
-	"""Glass ribbons above mid-wall + skylights so cosmos shows from inside."""
+	"""Tall glass ribbons + skylights — cosmos visible from Hangar Core."""
 	var glass := StandardMaterial3D.new()
 	glass.albedo_color = Color(0.35, 0.55, 0.85, 0.14)
 	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -90,20 +97,64 @@ func _place_space_windows(root: Node3D) -> void:
 	var frame := _mat(Color(0.25, 0.3, 0.38), 0.6, 0.2)
 	var hx := HALL_HALF_X
 	var hz := HALL_HALF_Z
-	var y := 9.5
-	var h := 5.5
+	var y := 13.0
+	var h := 7.5
 	var t := 0.1
 	_box(root, "LintS", Vector3(0, CEILING_Y - 0.55, hz), Vector3(hx * 2.0, 0.5, WALL_T), frame)
 	_box(root, "LintN", Vector3(0, CEILING_Y - 0.55, -hz), Vector3(hx * 2.0, 0.5, WALL_T), frame)
-	_box(root, "WinS", Vector3(0, y, hz), Vector3(hx * 2.0 - 0.5, h, t), glass)
-	_box(root, "WinNW", Vector3(-10, y, -hz), Vector3(14.0, h, t), glass)
-	_box(root, "WinNE", Vector3(10, y, -hz), Vector3(14.0, h, t), glass)
-	_box(root, "WinW", Vector3(-hx, y, 8), Vector3(t, h, 12.0), glass)
-	_box(root, "WinE", Vector3(hx, y, 8), Vector3(t, h, 12.0), glass)
+	_box(root, "LintE", Vector3(hx, CEILING_Y - 0.55, 0), Vector3(WALL_T, 0.5, hz * 2.0), frame)
+	_box(root, "LintW", Vector3(-hx, CEILING_Y - 0.55, 0), Vector3(WALL_T, 0.5, hz * 2.0), frame)
+	# South / North glass bands (split around door bays).
+	_box(root, "WinS", Vector3(0, y, hz), Vector3(hx * 2.0 - 1.0, h, t), glass)
+	_box(root, "WinNW", Vector3(-12, y, -hz), Vector3(16.0, h, t), glass)
+	_box(root, "WinNE", Vector3(12, y, -hz), Vector3(16.0, h, t), glass)
+	_box(root, "WinW", Vector3(-hx, y, 6), Vector3(t, h, 14.0), glass)
+	_box(root, "WinWN", Vector3(-hx, y, -10), Vector3(t, h, 10.0), glass)
+	_box(root, "WinE", Vector3(hx, y, 6), Vector3(t, h, 14.0), glass)
+	_box(root, "WinEN", Vector3(hx, y, -10), Vector3(t, h, 10.0), glass)
 	var sky_glass := glass.duplicate() as StandardMaterial3D
 	sky_glass.albedo_color = Color(0.2, 0.35, 0.65, 0.1)
-	_box(root, "SkyL", Vector3(-7, CEILING_Y - 0.05, 0), Vector3(8.0, 0.06, 18.0), sky_glass)
-	_box(root, "SkyR", Vector3(7, CEILING_Y - 0.05, 0), Vector3(8.0, 0.06, 18.0), sky_glass)
+	_box(root, "SkyL", Vector3(-8, CEILING_Y - 0.05, 0), Vector3(10.0, 0.06, 22.0), sky_glass)
+	_box(root, "SkyR", Vector3(8, CEILING_Y - 0.05, 0), Vector3(10.0, 0.06, 22.0), sky_glass)
+
+
+func _place_apron(root: Node3D) -> void:
+	"""Exterior mothership deck beyond hangar walls (grid plating for future modules)."""
+	var deck := _mat(Color(0.22, 0.26, 0.32), 0.85, 0.25)
+	var grid := _mat(Color(0.35, 0.55, 0.7), 0.55, 0.15)
+	grid.emission_enabled = true
+	grid.emission = Color(0.2, 0.4, 0.6)
+	grid.emission_energy_multiplier = 0.35
+	var rim := _mat(Color(0.55, 0.7, 0.9), 0.4, 0.3)
+	rim.emission_enabled = true
+	rim.emission = Color(0.4, 0.65, 0.95)
+	rim.emission_energy_multiplier = 0.55
+	# Main apron slab (below hangar floor so interior deck stays primary).
+	_box(
+		root, "Apron",
+		Vector3(0, -0.18, 0),
+		Vector3(APRON_HALF_X * 2.0, 0.1, APRON_HALF_Z * 2.0),
+		deck,
+	)
+	# Grid lines every 8 m.
+	var step := 8.0
+	var gx := -APRON_HALF_X + step
+	while gx < APRON_HALF_X:
+		_box(root, "GridX", Vector3(gx, -0.12, 0), Vector3(0.08, 0.02, APRON_HALF_Z * 2.0 - 1.0), grid)
+		gx += step
+	var gz := -APRON_HALF_Z + step
+	while gz < APRON_HALF_Z:
+		_box(root, "GridZ", Vector3(0, -0.12, gz), Vector3(APRON_HALF_X * 2.0 - 1.0, 0.02, 0.08), grid)
+		gz += step
+	# Rim lights (south dock emphasis).
+	_box(root, "RimS", Vector3(0, -0.05, APRON_HALF_Z - 0.4), Vector3(APRON_HALF_X * 1.6, 0.06, 0.35), rim)
+	_box(root, "RimN", Vector3(0, -0.05, -APRON_HALF_Z + 0.4), Vector3(APRON_HALF_X * 1.6, 0.06, 0.35), rim)
+	_box(root, "RimE", Vector3(APRON_HALF_X - 0.4, -0.05, 0), Vector3(0.35, 0.06, APRON_HALF_Z * 1.4), rim)
+	_box(root, "RimW", Vector3(-APRON_HALF_X + 0.4, -0.05, 0), Vector3(0.35, 0.06, APRON_HALF_Z * 1.4), rim)
+	# Future-module pads (south apron = ship berth placeholders).
+	var pad := _mat(Color(0.28, 0.32, 0.4), 0.7, 0.2)
+	_box(root, "BerthL", Vector3(-14, -0.08, APRON_HALF_Z - 8), Vector3(10.0, 0.08, 8.0), pad)
+	_box(root, "BerthR", Vector3(14, -0.08, APRON_HALF_Z - 8), Vector3(10.0, 0.08, 8.0), pad)
 
 
 func _place_solid_hall(root: Node3D) -> void:
@@ -117,10 +168,10 @@ func _place_solid_hall(root: Node3D) -> void:
 	# Floor cross (subtle, non-emissive)
 	_box(root, "LaneX", Vector3(0, 0.01, 0), Vector3(1.0, 0.02, HALL_HALF_Z * 1.5), _mat(Color(0.3, 0.48, 0.78), 0.55, 0.0))
 	_box(root, "LaneZ", Vector3(0, 0.01, 0), Vector3(HALL_HALF_X * 1.5, 0.02, 1.0), _mat(Color(0.78, 0.5, 0.28), 0.55, 0.0))
-	# Walls: lower band + upper band (door gaps at E/W z≈0 and N x≈0)
-	var split := 3.8
+	# Walls: lower band + upper band (door gaps); taller stack under glass ribbon.
+	var split := 4.5
 	_wall_ring(root, "WallLow", wall_low, 0.0, split)
-	_wall_ring(root, "WallHi", wall_hi, split, 2.6)  ## ends ~6.4m; glass ribbon above to ceiling
+	_wall_ring(root, "WallHi", wall_hi, split, 4.0)  ## ends ~8.5m; glass ribbon to ceiling
 	# Ceiling rim with two open skylight bays (stars visible looking up)
 	var y_c := CEILING_Y
 	var span_x := HALL_HALF_X * 2.0 + 1.0
@@ -156,13 +207,15 @@ func _wall_ring(root: Node3D, prefix: String, mat: Material, y0: float, h: float
 	var hz := HALL_HALF_Z
 	var t := WALL_T
 	var door := 3.2
-	# South full
-	_box(root, prefix + "S", Vector3(0, y_mid, hz), Vector3(hx * 2.0 + t, h, t), mat)
-	# North split around door
+	# South split around Arena (E) bay
+	var s_span := hx - door * 0.5
+	_box(root, prefix + "SW", Vector3(-(hx + door) * 0.5, y_mid, hz), Vector3(s_span, h, t), mat)
+	_box(root, prefix + "SE", Vector3((hx + door) * 0.5, y_mid, hz), Vector3(s_span, h, t), mat)
+	# North split around Design (C) bay
 	var n_span := hx - door * 0.5
 	_box(root, prefix + "NW", Vector3(-(hx + door) * 0.5, y_mid, -hz), Vector3(n_span, h, t), mat)
 	_box(root, prefix + "NE", Vector3((hx + door) * 0.5, y_mid, -hz), Vector3(n_span, h, t), mat)
-	# West / East split around doors
+	# West / East split around Training (B) / Workshop (A)
 	var e_span := hz - door * 0.5
 	_box(root, prefix + "WS", Vector3(-hx, y_mid, -(hz + door) * 0.5), Vector3(t, h, e_span), mat)
 	_box(root, prefix + "WN", Vector3(-hx, y_mid, (hz + door) * 0.5), Vector3(t, h, e_span), mat)
@@ -256,7 +309,7 @@ func _place_mezzanine(root: Node3D) -> void:
 	_box(root, "L2Seat", Vector3(-6, FLOOR2_Y + 0.35, 8.6), Vector3(2.4, 0.35, 0.7), _mat(Color(0.4, 0.3, 0.22), 0.8, 0.0))
 	_box(root, "L2Plant", Vector3(6, FLOOR2_Y + 0.4, 10), Vector3(0.6, 0.7, 0.6), _mat(Color(0.3, 0.5, 0.32), 0.85, 0.0))
 	var tag := Label3D.new()
-	tag.text = "L2 · Lounge"
+	tag.text = "L2 母港观景廊\nMothership Lounge"
 	tag.font_size = 48
 	tag.outline_size = 8
 	tag.pixel_size = 0.012
@@ -303,7 +356,7 @@ func _place_elevator(root: Node3D) -> void:
 	led.emission_energy_multiplier = 1.2
 	_box(root, "ElevLed", Vector3(ELEV_X, 3.55, ELEV_Z - w * 0.5 - 0.05), Vector3(1.8, 0.08, 0.08), led)
 	var label := Label3D.new()
-	label.text = "Elevator · F to ride"
+	label.text = "电梯 · 按 F 乘梯\nElevator · F to ride"
 	label.font_size = 40
 	label.outline_size = 6
 	label.pixel_size = 0.01
@@ -328,7 +381,7 @@ func _place_room_shells(root: Node3D) -> void:
 	_box(root, "GalLint", Vector3(-8.0, 4.2, -HALL_HALF_Z + 0.35), Vector3(3.2, 0.28, 0.4), trim)
 	_box(root, "GalGlass", Vector3(-8.0, 2.0, -HALL_HALF_Z + 0.15), Vector3(2.6, 3.2, 0.06), glass)
 	var gal := Label3D.new()
-	gal.text = "Gallery Wing"
+	gal.text = "展厅翼 · Gallery"
 	gal.font_size = 42
 	gal.outline_size = 6
 	gal.pixel_size = 0.01
@@ -342,7 +395,7 @@ func _place_room_shells(root: Node3D) -> void:
 	_box(root, "ClsLint", Vector3(8.0, 4.2, -HALL_HALF_Z + 0.35), Vector3(3.2, 0.28, 0.4), trim)
 	_box(root, "ClsGlass", Vector3(8.0, 2.0, -HALL_HALF_Z + 0.15), Vector3(2.6, 3.2, 0.06), glass)
 	var cls := Label3D.new()
-	cls.text = "Classroom Wing"
+	cls.text = "教室翼 · Classroom"
 	cls.font_size = 42
 	cls.outline_size = 6
 	cls.pixel_size = 0.01
@@ -362,22 +415,22 @@ func _place_arena_shell(root: Node3D) -> void:
 	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	glass.roughness = 0.2
 	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var ax := 6.0
-	var az := -HALL_HALF_Z + 1.8
+	var ax := 0.0
+	var az := HALL_HALF_Z - 1.8
 	_box(root, "ArnArchL", Vector3(ax - 1.4, 2.0, az), Vector3(0.28, 3.8, 0.32), frame)
 	_box(root, "ArnArchR", Vector3(ax + 1.4, 2.0, az), Vector3(0.28, 3.8, 0.32), frame)
 	_box(root, "ArnLint", Vector3(ax, 3.95, az), Vector3(3.0, 0.3, 0.38), trim)
-	_box(root, "ArnGlass", Vector3(ax, 1.9, az - 0.2), Vector3(2.4, 3.0, 0.05), glass)
-	_box(root, "ArnPad", Vector3(ax, 0.03, az + 0.9), Vector3(3.2, 0.06, 2.0), _mat(Color(0.35, 0.18, 0.16), 0.7, 0.05))
+	_box(root, "ArnGlass", Vector3(ax, 1.9, az + 0.2), Vector3(2.4, 3.0, 0.05), glass)
+	_box(root, "ArnPad", Vector3(ax, 0.03, az - 0.9), Vector3(3.2, 0.06, 2.0), _mat(Color(0.35, 0.18, 0.16), 0.7, 0.05))
 	var lab := Label3D.new()
-	lab.text = "Arena Gate"
-	lab.font_size = 44
+	lab.text = "竞技场门\nArena Gate"
+	lab.font_size = 40
 	lab.outline_size = 6
 	lab.pixel_size = 0.01
 	lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	lab.modulate = Color(1.0, 0.55, 0.35)
 	root.add_child(lab)
-	lab.position = Vector3(ax, 4.55, az + 0.5)
+	lab.position = Vector3(ax, 4.55, az - 0.5)
 
 
 func _place_props(root: Node3D) -> void:
@@ -435,11 +488,58 @@ func _hide_greybox() -> void:
 		if door is MeshInstance3D:
 			(door as MeshInstance3D).mesh = null
 			door.visible = true
-	_ensure_marker(world, "DoorWorkshop", Vector3(HALL_HALF_X - 1.5, 1.6, 0.0), "A - Workshop", Color(1.0, 0.7, 0.3))
-	_ensure_marker(world, "DoorCity", Vector3(-HALL_HALF_X + 1.5, 1.6, 0.0), "B - Training", Color(0.4, 0.85, 1.0))
-	_ensure_marker(world, "DoorStubC", Vector3(0.0, 1.6, -HALL_HALF_Z + 1.5), "C - Design (soon)", Color(0.75, 0.8, 0.85))
-	_ensure_marker(world, "DoorStubD", Vector3(-6.0, 1.6, -HALL_HALF_Z + 1.5), "D - Missions (soon)", Color(0.65, 0.7, 0.75))
-	_ensure_marker(world, "DoorStubE", Vector3(6.0, 1.6, -HALL_HALF_Z + 1.5), "E - Arena", Color(1.0, 0.5, 0.3))
+	_ensure_marker(
+		world, "DoorWorkshop",
+		Vector3(HALL_HALF_X - 1.5, 1.6, 0.0),
+		"A 仿真工坊\nWorkshop",
+		Color(1.0, 0.7, 0.3),
+	)
+	_ensure_marker(
+		world, "DoorCity",
+		Vector3(-HALL_HALF_X + 1.5, 1.6, 0.0),
+		"B 机甲训练场\nTraining Yard",
+		Color(0.4, 0.85, 1.0),
+	)
+	_ensure_marker(
+		world, "DoorStubC",
+		Vector3(0.0, 1.6, -HALL_HALF_Z + 1.5),
+		"C 设计室 · 卡片\nDesign Lab",
+		Color(0.75, 0.85, 0.95),
+	)
+	_ensure_marker(
+		world, "DoorStubD",
+		Vector3(-HALL_HALF_X + 1.8, 1.6, -10.0),
+		"D 边缘任务坞\nEdge Dock",
+		Color(0.65, 0.75, 0.7),
+	)
+	_ensure_marker(
+		world, "DoorStubE",
+		Vector3(0.0, 1.6, HALL_HALF_Z - 1.5),
+		"E 竞技场门\nArena Gate",
+		Color(1.0, 0.5, 0.3),
+	)
+
+
+func _place_wing_labels(root: Node3D) -> void:
+	"""Floor-facing wing tags for three exit types (docs/24)."""
+	_zone_label(root, "ZoneA", Vector3(HALL_HALF_X - 5.0, 0.05, 4.0), "本仓关卡 · Native", Color(1.0, 0.65, 0.3))
+	_zone_label(root, "ZoneB", Vector3(0.0, 0.05, -HALL_HALF_Z + 5.0), "卡片通道 · PMS Cards", Color(0.7, 0.85, 1.0))
+	_zone_label(root, "ZoneC", Vector3(-HALL_HALF_X + 5.0, 0.05, -6.0), "边缘入口 · Edge", Color(0.55, 0.85, 0.7))
+	_zone_label(root, "ZoneCore", Vector3(0.0, 0.05, 2.0), "母港核心 · Hangar Core", Color(0.85, 0.9, 1.0))
+
+
+func _zone_label(root: Node3D, lab_name: String, pos: Vector3, text: String, col: Color) -> void:
+	"""Billboard zone caption near the floor."""
+	var lab := Label3D.new()
+	lab.name = lab_name
+	lab.text = text
+	lab.font_size = 36
+	lab.outline_size = 5
+	lab.pixel_size = 0.012
+	lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lab.modulate = col
+	root.add_child(lab)
+	lab.position = pos + Vector3(0, 1.2, 0)
 
 
 func _ensure_marker(world: Node3D, marker_name: String, pos: Vector3, text: String, col: Color) -> void:
@@ -469,11 +569,11 @@ func _place_door_glows() -> void:
 	var world := get_parent().get_node_or_null("World") as Node3D
 	if world == null:
 		return
-	_glow_at(world, Vector3(HALL_HALF_X - 0.35, 1.6, 0.0), Color(1.0, 0.45, 0.1), Vector3(0.12, 3.0, 2.8))
-	_glow_at(world, Vector3(-HALL_HALF_X + 0.35, 1.6, 0.0), Color(0.2, 0.65, 1.0), Vector3(0.12, 3.0, 2.8))
-	_glow_at(world, Vector3(0.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.75, 0.85, 0.9), Vector3(2.4, 2.6, 0.12))
-	_glow_at(world, Vector3(-6.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.55, 0.6, 0.65), Vector3(2.0, 2.4, 0.1))
-	_glow_at(world, Vector3(6.0, 1.6, -HALL_HALF_Z + 0.35), Color(1.0, 0.4, 0.2), Vector3(2.0, 2.4, 0.1))
+	_glow_at(world, Vector3(HALL_HALF_X - 0.35, 1.6, 0.0), Color(1.0, 0.45, 0.1), Vector3(0.12, 3.2, 3.0))
+	_glow_at(world, Vector3(-HALL_HALF_X + 0.35, 1.6, 0.0), Color(0.2, 0.65, 1.0), Vector3(0.12, 3.2, 3.0))
+	_glow_at(world, Vector3(0.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.75, 0.85, 0.95), Vector3(2.6, 2.8, 0.12))
+	_glow_at(world, Vector3(-HALL_HALF_X + 0.35, 1.6, -10.0), Color(0.45, 0.75, 0.6), Vector3(0.12, 2.8, 2.4))
+	_glow_at(world, Vector3(0.0, 1.6, HALL_HALF_Z - 0.35), Color(1.0, 0.4, 0.2), Vector3(2.6, 2.8, 0.12))
 
 
 func _glow_at(parent: Node3D, pos: Vector3, color: Color, size: Vector3) -> void:

@@ -81,10 +81,10 @@
       "mode": "hub",
       "max_members": 8,
       "default_room_id": "hub",
-      "story": "dungeon_gate",
+      "story": "mothership_hangar",
       "bounds": {
-        "half_x": 18.5,
-        "half_y": 14.5
+        "half_x": 28.0,
+        "half_y": 24.0
       }
     }
   }

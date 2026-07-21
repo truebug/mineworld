@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>MineWorld · Sign in</title>
+	<title>MineWorld · 登录</title>
+	<script src="/mw_i18n.js"></script>
 	<style>
 		* { box-sizing: border-box; }
 		body {
@@ -84,25 +85,28 @@
 <body>
 	<div class="card">
 		<h1>MineWorld</h1>
-		<p class="sub">Dungeon Gate · Portal</p>
+		<p class="sub" data-i18n="login.sub">母港 · 门户</p>
 		<form id="login-form">
-			<label>Player ID
+			<label><span data-i18n="login.player">玩家 ID</span>
 				<input id="player_id" name="player_id" autocomplete="username" required placeholder="demo">
 			</label>
-			<label>Password
+			<label><span data-i18n="login.password">密码</span>
 				<input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••">
 			</label>
-			<button type="submit" id="submit-btn">Sign in</button>
+			<button type="submit" id="submit-btn" data-i18n="login.submit">登录</button>
 		</form>
 		<div class="err" id="err"></div>
-		<p class="hint">Local demo: <code>demo</code> / <code>demo</code>. After sign-in → Profile &amp; board, then Enter hangar.<br>
-			<a href="/portal/" style="color:#6ec0ff">Landing</a>
-			· <a href="/portal/me.html" style="color:#6ec0ff">Profile</a>
+		<p class="hint"><span data-i18n="login.hint">本地演示：demo / demo。登录后 → 档案与排行，再进入母港。</span><br>
+			<a href="/portal/" style="color:#6ec0ff" data-i18n="login.landing">首页</a>
+			· <a href="/portal/me.html" style="color:#6ec0ff" data-i18n="login.profile">档案</a>
 			· <a href="/portal/admin.html" style="color:#6ec0ff">Admin</a>
 		</p>
 	</div>
 	<script>
 	(function () {
+		if (window.MW_I18N) {
+			window.MW_I18N.mountToggle(document.body);
+		}
 		const TOKEN_KEY = 'mw_auth_token';
 		const params = new URLSearchParams(location.search);
 		const next = params.get('next') || '/portal/me.html';
@@ -135,9 +139,10 @@
 				});
 				const data = await r.json().catch(function () { return {}; });
 				if (!r.ok) {
+					var zh = window.MW_I18N && window.MW_I18N.lang() === 'zh';
 					errEl.textContent = data.error === 'invalid_login'
-						? 'Invalid player ID or password.'
-						: (data.error || 'Login failed');
+						? (zh ? '玩家 ID 或密码错误。' : 'Invalid player ID or password.')
+						: (data.error || (zh ? '登录失败' : 'Login failed'));
 					btn.disabled = false;
 					return;
 				}

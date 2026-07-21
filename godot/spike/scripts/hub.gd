@@ -51,14 +51,14 @@ var _entering_door := false
 var _tips_full := ""
 var _tips_collapsed := true
 var _nearby_prompt := ""
-var _lore_body := "You fell into Dungeon Gate — a hangar between routes."
+var _lore_body := "你已抵达数聚球母港 Hangar Core。\n东翼本仓关卡 · 北翼卡片通道 · 西翼边缘坞。"
 var _door_context := ""
 var _link_banner := "Connecting to gateway…"
 var _last_door_key := ""
 const DOOR_ENTER_DIST := 2.4
 const DOOR_STUB_DIST := 3.2
 ## Matches hub_dress FLOOR2_Y — thin elevator ride (viewer offset).
-const FLOOR2_Y := 5.2
+const FLOOR2_Y := 8.5
 
 var _hub_floor := 1
 var _party_looking := false
@@ -382,9 +382,10 @@ func _on_scene(payload: Dictionary) -> void:
 		camera_rig.set_target(own)
 	ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
 	_link_banner = ""
-	_lore_body = "You are %s in the Gate hall.\nOrange A → Workshop · Blue B → Training.\nGrey C–E → sealed stubs (soon)." % str(
-		_profile.get("nickname", "Guest")
-	)
+	_lore_body = (
+		"飞行员 %s · 母港 Hangar Core\n"
+		+ "东翼本仓 A/B · 北翼卡片 C · 西翼边缘 D · 南翼竞技 E"
+	) % str(_profile.get("nickname", "Guest"))
 	_compose_and_push_tips()
 
 
@@ -569,7 +570,7 @@ func _layout_hub_hud() -> void:
 func _push_web_tips(full_text: String) -> void:
 	"""Push hub tips into DOM #mw-hud (avoids Godot Control clip on Web)."""
 	var payload := JSON.stringify(full_text)
-	var collapsed := JSON.stringify("Dungeon Gate · tips › (click)")
+	var collapsed := JSON.stringify("母港 · 提示 ›（点击）")
 	JavaScriptBridge.eval(
 		(
 			"(function(){var t=%s;var c=%s;"
@@ -583,17 +584,17 @@ func _push_web_tips(full_text: String) -> void:
 func _compose_and_push_tips() -> void:
 	"""Build left lore panel from link banner + lore + door context + controls."""
 	var chunks: PackedStringArray = []
-	chunks.append("Dungeon Gate")
+	chunks.append("母港 Hangar Core")
 	if _link_banner != "":
 		chunks.append(_link_banner)
 	chunks.append(_lore_body)
 	if _door_context != "":
 		chunks.append(_door_context)
 	chunks.append(
-		"WSQE move | A/D turn | F talk\n"
-		+ "RMB look · wheel zoom · V camera · C recenter\n"
-		+ "A Workshop · B Training · C–E sealed\n"
-		+ "(click to collapse)"
+		"WSQE 移动 | A/D 转向 | F 交互\n"
+		+ "RMB 视角 · 滚轮缩放 · V 切换相机 · C 回正\n"
+		+ "A 工坊 · B 训练 · C 卡片 · D 边缘 · E 竞技\n"
+		+ "（点击折叠）"
 	)
 	_tips_full = "\n\n".join(chunks)
 	if _is_web:
@@ -613,7 +614,7 @@ func _apply_tips_view() -> void:
 	if tips_label == null:
 		return
 	if _tips_collapsed:
-		var head := _link_banner if _link_banner != "" else "Dungeon Gate · tips › (click)"
+		var head := _link_banner if _link_banner != "" else "母港 · 提示 ›（点击）"
 		tips_label.text = head
 	else:
 		tips_label.text = _tips_full
@@ -765,11 +766,11 @@ func _update_door_context() -> void:
 	var best_dist := DOOR_STUB_DIST
 	var best_msg := ""
 	var candidates: Array = [
-		[door_workshop, "a", "Door A · Workshop — walk in for fine teleop / IL."],
-		[door_city, "b", "Door B · Training Yard — walk in for city drive."],
-		[door_stub_c, "c", "Door C · Design Lab — sealed (editor / contract export later)."],
-		[door_stub_d, "d", "Door D · Mission Desk — sealed (task packs later)."],
-		[door_stub_e, "e", "Door E · Arena — approach the gate · F for 1v1 / party stub."],
+		[door_workshop, "a", "门 A · 仿真工坊 — 进入本仓精细遥操 / IL。\nDoor A · Workshop — native teleop / IL."],
+		[door_city, "b", "门 B · 机甲训练场 — 进入本仓城市场景。\nDoor B · Training Yard — native city drive."],
+		[door_stub_c, "c", "门 C · 设计室 — 卡片通道（后置编辑器）。\nDoor C · Design — PMS card wing (soon)."],
+		[door_stub_d, "d", "门 D · 边缘任务坞 — 真机/边缘入口占位。\nDoor D · Edge Dock — edge stub (soon)."],
+		[door_stub_e, "e", "门 E · 竞技场 — 走近按 F 切换 1v1/组队 stub。\nDoor E · Arena — F for match stub."],
 	]
 	for row in candidates:
 		var node: Node3D = row[0]
@@ -906,11 +907,11 @@ func _toggle_elevator() -> void:
 	_hub_floor = 2 if _hub_floor == 1 else 1
 	_apply_hub_floor()
 	if _hub_floor == 2:
-		_refresh_tips("L2 Lounge — walk the mezzanine. F at elevator to return.")
-		_door_context = "Floor: L2"
+		_refresh_tips("L2 观景廊 — 可沿廊走动。电梯旁按 F 下楼。\nL2 Lounge — F at elevator to return.")
+		_door_context = "楼层 · Floor: L2"
 	else:
-		_refresh_tips("Hangar floor — F at elevator for L2 lounge.")
-		_door_context = "Floor: L1"
+		_refresh_tips("母港一层 — 电梯旁按 F 上 L2。\nHangar floor — F at elevator for L2.")
+		_door_context = "楼层 · Floor: L1"
 	_compose_and_push_tips()
 
 
