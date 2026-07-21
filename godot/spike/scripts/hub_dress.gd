@@ -323,9 +323,9 @@ func _dock_arm(
 
 func _place_apron_modules(root: Node3D) -> void:
 	"""Labeled berth pods on south harbor pads."""
-	_module_pod(root, "ModHab", Vector3(-24, 0, 34), Color(0.35, 0.42, 0.52), "栖息舱 · Hab")
-	_module_pod(root, "ModDock", Vector3(24, 0, 34), Color(0.32, 0.4, 0.38), "接驳舱 · Berth")
-	_module_pod(root, "ModCtrl", Vector3(0, 0, 30), Color(0.3, 0.36, 0.45), "调度塔 · Control")
+	_module_pod(root, "ModHab", Vector3(-24, 0, 34), Color(0.35, 0.42, 0.52), MWi18n.t("栖息舱", "Hab"))
+	_module_pod(root, "ModDock", Vector3(24, 0, 34), Color(0.32, 0.4, 0.38), MWi18n.t("接驳舱", "Berth"))
+	_module_pod(root, "ModCtrl", Vector3(0, 0, 30), Color(0.3, 0.36, 0.45), MWi18n.t("调度塔", "Control"))
 
 
 func _module_pod(root: Node3D, base: String, pos: Vector3, tint: Color, tag: String) -> void:
@@ -540,7 +540,7 @@ func _place_mezzanine(root: Node3D) -> void:
 	_box(root, "L2Seat", Vector3(-6, FLOOR2_Y + 0.35, 8.6), Vector3(2.4, 0.35, 0.7), _mat(Color(0.4, 0.3, 0.22), 0.8, 0.0))
 	_box(root, "L2Plant", Vector3(6, FLOOR2_Y + 0.4, 10), Vector3(0.6, 0.7, 0.6), _mat(Color(0.3, 0.5, 0.32), 0.85, 0.0))
 	var tag := Label3D.new()
-	tag.text = "L2 母港观景廊\nMothership Lounge"
+	tag.text = MWi18n.t("L2 母港观景廊", "L2 Mothership Lounge")
 	tag.font_size = 48
 	tag.outline_size = 8
 	tag.pixel_size = 0.012
@@ -587,7 +587,7 @@ func _place_elevator(root: Node3D) -> void:
 	led.emission_energy_multiplier = 1.2
 	_box(root, "ElevLed", Vector3(ELEV_X, 3.55, ELEV_Z - w * 0.5 - 0.05), Vector3(1.8, 0.08, 0.08), led)
 	var label := Label3D.new()
-	label.text = "电梯 · 按 F 乘梯\nElevator · F to ride"
+	label.text = MWi18n.t("电梯 · 按 F 乘梯", "Elevator · F to ride")
 	label.font_size = 40
 	label.outline_size = 6
 	label.pixel_size = 0.01
@@ -612,7 +612,7 @@ func _place_room_shells(root: Node3D) -> void:
 	_box(root, "GalLint", Vector3(-8.0, 4.2, -HALL_HALF_Z + 0.35), Vector3(3.2, 0.28, 0.4), trim)
 	_box(root, "GalGlass", Vector3(-8.0, 2.0, -HALL_HALF_Z + 0.15), Vector3(2.6, 3.2, 0.06), glass)
 	var gal := Label3D.new()
-	gal.text = "展厅翼 · Gallery"
+	gal.text = MWi18n.t("展厅翼", "Gallery")
 	gal.font_size = 42
 	gal.outline_size = 6
 	gal.pixel_size = 0.01
@@ -626,7 +626,7 @@ func _place_room_shells(root: Node3D) -> void:
 	_box(root, "ClsLint", Vector3(8.0, 4.2, -HALL_HALF_Z + 0.35), Vector3(3.2, 0.28, 0.4), trim)
 	_box(root, "ClsGlass", Vector3(8.0, 2.0, -HALL_HALF_Z + 0.15), Vector3(2.6, 3.2, 0.06), glass)
 	var cls := Label3D.new()
-	cls.text = "教室翼 · Classroom"
+	cls.text = MWi18n.t("教室翼", "Classroom")
 	cls.font_size = 42
 	cls.outline_size = 6
 	cls.pixel_size = 0.01
@@ -662,7 +662,7 @@ func _place_design_shell(root: Node3D) -> void:
 	seal.emission_energy_multiplier = 0.7
 	_box(root, "DesSeal", Vector3(cx, 3.5, cz + 0.05), Vector3(2.0, 0.12, 0.12), seal)
 	var lab := Label3D.new()
-	lab.text = "设计室 · 卡片通道\nDesign Lab · Type B"
+	lab.text = MWi18n.t("设计室 · 卡片通道", "Design Lab · Type B")
 	lab.font_size = 36
 	lab.outline_size = 6
 	lab.pixel_size = 0.01
@@ -695,7 +695,7 @@ func _place_edge_shell(root: Node3D) -> void:
 	ring.emission_energy_multiplier = 0.65
 	_box(root, "EdgRing", Vector3(dx - 0.05, 1.8, dz), Vector3(0.1, 2.4, 0.1), ring)
 	var lab := Label3D.new()
-	lab.text = "边缘任务坞\nEdge Dock · Type C"
+	lab.text = MWi18n.t("边缘任务坞", "Edge Dock · Type C")
 	lab.font_size = 36
 	lab.outline_size = 6
 	lab.pixel_size = 0.01
@@ -722,7 +722,7 @@ func _place_arena_shell(root: Node3D) -> void:
 	_box(root, "ArnGlass", Vector3(ax, 1.9, az + 0.2), Vector3(2.4, 3.0, 0.05), glass)
 	_box(root, "ArnPad", Vector3(ax, 0.03, az - 0.9), Vector3(3.2, 0.06, 2.0), _mat(Color(0.35, 0.18, 0.16), 0.7, 0.05))
 	var lab := Label3D.new()
-	lab.text = "竞技场门\nArena Gate"
+	lab.text = MWi18n.t("竞技场门", "Arena Gate")
 	lab.font_size = 40
 	lab.outline_size = 6
 	lab.pixel_size = 0.01
@@ -790,41 +790,41 @@ func _hide_greybox() -> void:
 	_ensure_marker(
 		world, "DoorWorkshop",
 		Vector3(HALL_HALF_X - 1.5, 1.6, 0.0),
-		"A 仿真工坊\nWorkshop",
+		MWi18n.t("A 仿真工坊", "A Workshop"),
 		Color(1.0, 0.7, 0.3),
 	)
 	_ensure_marker(
 		world, "DoorCity",
 		Vector3(-HALL_HALF_X + 1.5, 1.6, 0.0),
-		"B 机甲训练场\nTraining Yard",
+		MWi18n.t("B 机甲训练场", "B Training Yard"),
 		Color(0.4, 0.85, 1.0),
 	)
 	_ensure_marker(
 		world, "DoorStubC",
 		Vector3(0.0, 1.6, -HALL_HALF_Z + 1.5),
-		"C 设计室 · 卡片\nDesign Lab",
+		MWi18n.t("C 设计室", "C Design Lab"),
 		Color(0.75, 0.85, 0.95),
 	)
 	_ensure_marker(
 		world, "DoorStubD",
 		Vector3(-HALL_HALF_X + 1.8, 1.6, -10.0),
-		"D 边缘任务坞\nEdge Dock",
+		MWi18n.t("D 边缘任务坞", "D Edge Dock"),
 		Color(0.65, 0.75, 0.7),
 	)
 	_ensure_marker(
 		world, "DoorStubE",
 		Vector3(0.0, 1.6, HALL_HALF_Z - 1.5),
-		"E 竞技场门\nArena Gate",
+		MWi18n.t("E 竞技场门", "E Arena Gate"),
 		Color(1.0, 0.5, 0.3),
 	)
 
 
 func _place_wing_labels(root: Node3D) -> void:
 	"""Floor-facing wing tags for three exit types (docs/24)."""
-	_zone_label(root, "ZoneA", Vector3(HALL_HALF_X - 5.0, 0.05, 4.0), "本仓关卡 · Native", Color(1.0, 0.65, 0.3))
-	_zone_label(root, "ZoneB", Vector3(0.0, 0.05, -HALL_HALF_Z + 5.0), "卡片通道 · PMS Cards", Color(0.7, 0.85, 1.0))
-	_zone_label(root, "ZoneC", Vector3(-HALL_HALF_X + 5.0, 0.05, -6.0), "边缘入口 · Edge", Color(0.55, 0.85, 0.7))
-	_zone_label(root, "ZoneCore", Vector3(0.0, 0.05, 2.0), "母港核心 · Hangar Core", Color(0.85, 0.9, 1.0))
+	_zone_label(root, "ZoneA", Vector3(HALL_HALF_X - 5.0, 0.05, 4.0), MWi18n.t("本仓关卡", "Native"), Color(1.0, 0.65, 0.3))
+	_zone_label(root, "ZoneB", Vector3(0.0, 0.05, -HALL_HALF_Z + 5.0), MWi18n.t("卡片通道", "PMS Cards"), Color(0.7, 0.85, 1.0))
+	_zone_label(root, "ZoneC", Vector3(-HALL_HALF_X + 5.0, 0.05, -6.0), MWi18n.t("边缘入口", "Edge"), Color(0.55, 0.85, 0.7))
+	_zone_label(root, "ZoneCore", Vector3(0.0, 0.05, 2.0), MWi18n.t("母港核心", "Hangar Core"), Color(0.85, 0.9, 1.0))
 
 
 func _zone_label(root: Node3D, lab_name: String, pos: Vector3, text: String, col: Color) -> void:

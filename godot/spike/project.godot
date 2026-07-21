@@ -21,6 +21,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 [autoload]
 
 MWTransition="*res://scripts/mw_transition.gd"
+MWi18n="*res://scripts/mw_i18n.gd"
 
 [display]
 

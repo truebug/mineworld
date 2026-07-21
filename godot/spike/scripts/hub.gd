@@ -51,7 +51,7 @@ var _entering_door := false
 var _tips_full := ""
 var _tips_collapsed := true
 var _nearby_prompt := ""
-var _lore_body := "你已抵达数聚球母港 Hangar Core。\n东翼本仓关卡 · 北翼卡片通道 · 西翼边缘坞。"
+var _lore_body := ""
 var _door_context := ""
 var _link_banner := "Connecting to gateway…"
 var _last_door_key := ""
@@ -86,9 +86,9 @@ const EDGE_STATES := [
 ]
 const VENDOR_ACCENTS := ["#4aa3ff", "#e8873a", "#6ecf8e", "#d4a24c", "#c46ecf", "#e06c75"]
 const PARTY_POSTS := [
-	"Maya · Workshop IL run · need one more claw",
-	"Rex · City block warm-up · open seat",
-	"Jin · Looking for Gallery tour buddy",
+	"Maya · 工坊 IL · 再要一只爪",
+	"Rex · 街区热身 · 有空位",
+	"Jin · 找展厅同行",
 ]
 
 
@@ -123,8 +123,15 @@ func _start_hub_session() -> void:
 		if camera_rig.has_signal("view_mode_changed"):
 			camera_rig.view_mode_changed.connect(_on_camera_view_changed)
 	if map_title != null:
-		map_title.text = "Hub map · A orange · B blue · C–E soon"
-	_link_banner = "Connecting to gateway…"
+		map_title.text = MWi18n.t(
+			"母港图 · 东A橙 · 西B蓝 · 北C · 西偏北D · 南E",
+			"Hub map · A orange · B blue · C north · D NW · E south"
+		)
+	_link_banner = MWi18n.t("正在连接网关…", "Connecting to gateway…")
+	_lore_body = MWi18n.t(
+		"你已抵达数聚球母港。\n东翼本仓关卡 · 北翼卡片通道 · 西翼边缘坞。",
+		"You have reached the mothership hangar.\nEast native · North cards · West edge."
+	)
 	_compose_and_push_tips()
 	if _is_web:
 		_install_web_keyboard_bridge()
@@ -276,7 +283,9 @@ func _apply_profile_ui() -> void:
 	if nick_edit != null:
 		nick_edit.text = nick
 	if profile_label != null:
-		profile_label.text = "Pilot card\n%s\nID %s" % [nick, pid.substr(0, 14)]
+		profile_label.text = MWi18n.t("飞行员卡\n%s\nID %s", "Pilot card\n%s\nID %s") % [
+			nick, pid.substr(0, 14)
+		]
 	_push_web_profile()
 
 
@@ -395,9 +404,9 @@ func _on_scene(payload: Dictionary) -> void:
 		camera_rig.set_target(own)
 	ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
 	_link_banner = ""
-	_lore_body = (
-		"飞行员 %s · 母港 Hangar Core\n"
-		+ "东翼本仓 A/B · 北翼卡片 C · 西翼边缘 D · 南翼竞技 E"
+	_lore_body = MWi18n.t(
+		"飞行员 %s · 母港\n东翼本仓 A/B · 北翼卡片 C · 西翼边缘 D · 南翼竞技 E",
+		"Pilot %s · Hangar Core\nEast A/B · North C · West Edge D · South Arena E"
 	) % str(_profile.get("nickname", "Guest"))
 	_compose_and_push_tips()
 
@@ -468,10 +477,12 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 	if minimap != null and minimap.has_method("set_actors"):
 		minimap.call("set_actors", actors)
 	if map_coords != null:
-		var self_txt := "alone"
+		var self_txt := MWi18n.t("独自", "alone")
 		for a in actors:
 			if bool(a.get("is_self", false)):
-				self_txt = "you (%.1f, %.1f)" % [float(a.get("x", 0.0)), float(a.get("y", 0.0))]
+				self_txt = MWi18n.t("你 (%.1f, %.1f)", "you (%.1f, %.1f)") % [
+					float(a.get("x", 0.0)), float(a.get("y", 0.0))
+				]
 				break
 		map_coords.text = "%s · n=%d" % [self_txt, actors.size()]
 	if _is_web:
@@ -482,10 +493,12 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 
 func _push_web_map(actors: Array) -> void:
 	"""Draw hub minimap in DOM canvas."""
-	var self_txt := "alone"
+	var self_txt := MWi18n.t("独自", "alone")
 	for a in actors:
 		if typeof(a) == TYPE_DICTIONARY and bool(a.get("is_self", false)):
-			self_txt = "you (%.1f, %.1f)" % [float(a.get("x", 0.0)), float(a.get("y", 0.0))]
+			self_txt = MWi18n.t("你 (%.1f, %.1f)", "you (%.1f, %.1f)") % [
+				float(a.get("x", 0.0)), float(a.get("y", 0.0))
+			]
 			break
 	var payload := JSON.stringify({"actors": actors, "self": self_txt})
 	JavaScriptBridge.eval(
@@ -583,7 +596,7 @@ func _layout_hub_hud() -> void:
 func _push_web_tips(full_text: String) -> void:
 	"""Push hub tips into DOM #mw-hud (avoids Godot Control clip on Web)."""
 	var payload := JSON.stringify(full_text)
-	var collapsed := JSON.stringify("母港 · 提示 ›（点击）")
+	var collapsed := JSON.stringify(MWi18n.t("母港 · 提示 ›（点击）", "Hangar · tips › (click)"))
 	JavaScriptBridge.eval(
 		(
 			"(function(){var t=%s;var c=%s;"
@@ -597,17 +610,23 @@ func _push_web_tips(full_text: String) -> void:
 func _compose_and_push_tips() -> void:
 	"""Build left lore panel from link banner + lore + door context + controls."""
 	var chunks: PackedStringArray = []
-	chunks.append("母港 Hangar Core")
+	chunks.append(MWi18n.t("母港", "Hangar Core"))
 	if _link_banner != "":
 		chunks.append(_link_banner)
 	chunks.append(_lore_body)
 	if _door_context != "":
 		chunks.append(_door_context)
 	chunks.append(
-		"WSQE 移动 | A/D 转向 | F 交互\n"
-		+ "RMB 视角 · 滚轮缩放 · V 切换相机 · C 回正\n"
-		+ "A 工坊 · B 训练 · C 卡片 · D 边缘 · E 竞技\n"
-		+ "（点击折叠）"
+		MWi18n.t(
+			"WSQE 移动 | A/D 转向 | F 交互\n"
+			+ "右键视角 · 滚轮缩放 · V 切换相机 · C 回正\n"
+			+ "A 工坊 · B 训练 · C 卡片 · D 边缘 · E 竞技\n"
+			+ "（点击折叠）",
+			"WSQE move | A/D turn | F interact\n"
+			+ "RMB look · wheel zoom · V camera · C recenter\n"
+			+ "A Workshop · B Training · C Cards · D Edge · E Arena\n"
+			+ "(click to collapse)"
+		)
 	)
 	_tips_full = "\n\n".join(chunks)
 	if _is_web:
@@ -627,7 +646,7 @@ func _apply_tips_view() -> void:
 	if tips_label == null:
 		return
 	if _tips_collapsed:
-		var head := _link_banner if _link_banner != "" else "母港 · 提示 ›（点击）"
+	var head := _link_banner if _link_banner != "" else MWi18n.t("母港 · 提示 ›（点击）", "Hangar · tips › (click)")
 		tips_label.text = head
 	else:
 		tips_label.text = _tips_full
@@ -779,11 +798,26 @@ func _update_door_context() -> void:
 	var best_dist := DOOR_STUB_DIST
 	var best_msg := ""
 	var candidates: Array = [
-		[door_workshop, "a", "门 A · 仿真工坊 — 进入本仓精细遥操 / IL。\nDoor A · Workshop — native teleop / IL."],
-		[door_city, "b", "门 B · 机甲训练场 — 进入本仓城市场景。\nDoor B · Training Yard — native city drive."],
-		[door_stub_c, "c", "门 C · 设计室 — Type B 卡片通道。走近按 F 看状态。\nDoor C · Design Lab — F for stub status."],
-		[door_stub_d, "d", "门 D · 边缘坞 — Type C 真机/边缘。走近按 F 看链路。\nDoor D · Edge Dock — F for link stub."],
-		[door_stub_e, "e", "门 E · 竞技场 — 走近按 F 切换 1v1/组队 stub。\nDoor E · Arena — F for match stub."],
+		[door_workshop, "a", MWi18n.t(
+			"门 A · 仿真工坊 — 进入本仓精细遥操 / IL。",
+			"Door A · Workshop — native teleop / IL."
+		)],
+		[door_city, "b", MWi18n.t(
+			"门 B · 机甲训练场 — 进入本仓城市场景。",
+			"Door B · Training Yard — native city drive."
+		)],
+		[door_stub_c, "c", MWi18n.t(
+			"门 C · 设计室 — 卡片通道。走近按 F 看状态。",
+			"Door C · Design Lab — F for stub status."
+		)],
+		[door_stub_d, "d", MWi18n.t(
+			"门 D · 边缘坞 — 真机/边缘入口。走近按 F 看链路。",
+			"Door D · Edge Dock — F for link stub."
+		)],
+		[door_stub_e, "e", MWi18n.t(
+			"门 E · 竞技场 — 走近按 F 切换 1v1/组队。",
+			"Door E · Arena — F for match stub."
+		)],
 	]
 	for row in candidates:
 		var node: Node3D = row[0]
@@ -813,7 +847,7 @@ func _update_interact_prompt() -> void:
 	_nearby_prompt = prompt
 	if prompt != "" and _is_web:
 		# Soft nudge into DOM tips without wiping the full guide permanently.
-		_push_web_tips("%s\n\n(walk closer · press F)" % prompt)
+		_push_web_tips(MWi18n.t("%s\n\n（走近 · 按 F）", "%s\n\n(walk closer · press F)") % prompt)
 
 
 func _try_interact() -> void:
@@ -823,7 +857,7 @@ func _try_interact() -> void:
 		return
 	var hit: Dictionary = hub_life.call("nearest_interact", own.global_position)
 	if hit.is_empty():
-		_refresh_tips("Nothing to use here — approach a glowing kiosk or NPC.")
+		_refresh_tips(MWi18n.t("附近无可交互物 — 走近发光台或 NPC。", "Nothing to use here — approach a kiosk or NPC."))
 		return
 	var sid := str(hit.get("id", ""))
 	if sid == "elevator":
@@ -857,10 +891,12 @@ func _use_arena_gate() -> void:
 	_arena_state_i = (_arena_state_i + 1) % ARENA_STATES.size()
 	var st: Dictionary = ARENA_STATES[_arena_state_i]
 	var mode := str(st.get("mode", "1v1"))
-	var lfm := "排队中 Looking ✓" if bool(st.get("looking", false)) else "未排队 not queued"
+	var lfm := MWi18n.t("排队中 ✓", "Looking ✓") if bool(st.get("looking", false)) else MWi18n.t("未排队", "not queued")
 	_refresh_tips(
-		"竞技场门 · Arena Gate\n模式 Mode: %s · %s\n\n1v1 / 组队 stub；匹配与 MuJoCo 权威后置。\n非 PMS 卡片。再按 F 循环。"
-		% [mode, lfm]
+		MWi18n.t(
+			"竞技场门\n模式: %s · %s\n\n1v1 / 组队占位；匹配与权威后置。\n再按 F 循环。",
+			"Arena Gate\nMode: %s · %s\n\n1v1 / party stub; matchmaking later.\nF again to cycle."
+		) % [mode, lfm]
 	)
 
 
@@ -871,12 +907,24 @@ func _use_design_lab() -> void:
 	var body := ""
 	match st:
 		"catalog":
-			body = "目录预览 · Catalog preview\n未来：契约/卡片列表。现用北翼展柜开 Space。"
+			body = MWi18n.t(
+				"目录预览\n未来：契约/卡片列表。现用北翼展柜开 Space。",
+				"Catalog preview\nFuture: contract list. Use north exhibits for Spaces."
+			)
 		"exhibits":
-			body = "展柜通道 · Exhibit route\nType B：F 打开展品 URL；本门不进 MuJoCo。"
+			body = MWi18n.t(
+				"展柜通道\n卡片通道：F 打开展品；本门不进仿真。",
+				"Exhibit route\nType B: F opens Space URL; no MuJoCo here."
+			)
 		_:
-			body = "舱门封闭 · Sealed\n设计室编辑器后置（T4.2）。"
-	_refresh_tips("设计室 · Design Lab (Type B)\n状态: %s\n\n%s\n\n再按 F 切换。" % [st, body])
+			body = MWi18n.t(
+				"舱门封闭\n设计室编辑器后置。",
+				"Sealed\nDesign editor later."
+			)
+	_refresh_tips(
+		MWi18n.t("设计室\n状态: %s\n\n%s\n\n再按 F 切换。", "Design Lab\nStatus: %s\n\n%s\n\nF again.")
+		% [st, body]
+	)
 
 
 func _use_edge_dock() -> void:
@@ -886,23 +934,39 @@ func _use_edge_dock() -> void:
 	var body := ""
 	match st:
 		"pending":
-			body = "边缘会话排队 · Edge session pending\n鉴权/编排走 pms-system；Hub 只做入口。"
+			body = MWi18n.t(
+				"边缘会话排队\n鉴权/编排走外部系统；Hub 只做入口。",
+				"Edge session pending\nAuth/orchestration external; Hub is entry only."
+			)
 		"camera_stub":
-			body = "摄像头占位 · Camera feed stub\n无直播流；真机透传明确不做（近期）。"
+			body = MWi18n.t(
+				"摄像头占位\n无直播流；真机透传近期不做。",
+				"Camera feed stub\nNo live stream; real robot passthrough later."
+			)
 		_:
-			body = "链路离线 · Link offline\nType C 边缘坞；不接本仓 MjData。"
-	_refresh_tips("边缘任务坞 · Edge Dock (Type C)\n链路: %s\n\n%s\n\n再按 F 切换。" % [st, body])
+			body = MWi18n.t(
+				"链路离线\n边缘坞不接本仓仿真。",
+				"Link offline\nEdge dock has no Hub MuJoCo."
+			)
+	_refresh_tips(
+		MWi18n.t("边缘任务坞\n链路: %s\n\n%s\n\n再按 F 切换。", "Edge Dock\nLink: %s\n\n%s\n\nF again.")
+		% [st, body]
+	)
 
 
 func _use_party_board() -> void:
 	"""H9: toggle Looking-for-crew + show stub LFG posts."""
 	_party_looking = not _party_looking
-	var you := "YOU · Looking for crew ✓" if _party_looking else "YOU · not posting"
-	var lines: PackedStringArray = ["Party board", you, ""]
+	var you := (
+		MWi18n.t("你 · 正在招募 ✓", "YOU · Looking for crew ✓")
+		if _party_looking
+		else MWi18n.t("你 · 未发布", "YOU · not posting")
+	)
+	var lines: PackedStringArray = [MWi18n.t("组队板", "Party board"), you, ""]
 	for p in PARTY_POSTS:
 		lines.append("· %s" % str(p))
 	lines.append("")
-	lines.append("F again to toggle your post. (Matchmaking later.)")
+	lines.append(MWi18n.t("再按 F 切换招募状态。（匹配后置）", "F again to toggle. Matchmaking later."))
 	_refresh_tips("\n".join(lines))
 
 
@@ -919,8 +983,10 @@ func _use_vendor() -> void:
 	elif own != null and "accent" in own:
 		own.set("accent", Color(hex))
 	_refresh_tips(
-		"Vendor · suit accent %d/%d\n%s\nSaved to profile. F again for next color."
-		% [_vendor_accent_i + 1, VENDOR_ACCENTS.size(), hex]
+		MWi18n.t(
+			"商贩 · 配色 %d/%d\n%s\n已写入档案。再按 F 换色。",
+			"Vendor · accent %d/%d\n%s\nSaved. F for next color."
+		) % [_vendor_accent_i + 1, VENDOR_ACCENTS.size(), hex]
 	)
 
 
@@ -956,11 +1022,17 @@ func _toggle_elevator() -> void:
 	_hub_floor = 2 if _hub_floor == 1 else 1
 	_apply_hub_floor()
 	if _hub_floor == 2:
-		_refresh_tips("L2 观景廊 — 可沿廊走动。电梯旁按 F 下楼。\nL2 Lounge — F at elevator to return.")
-		_door_context = "楼层 · Floor: L2"
+		_refresh_tips(MWi18n.t(
+			"L2 观景廊 — 可沿廊走动。电梯旁按 F 下楼。",
+			"L2 Lounge — F at elevator to return."
+		))
+		_door_context = MWi18n.t("楼层: L2", "Floor: L2")
 	else:
-		_refresh_tips("母港一层 — 电梯旁按 F 上 L2。\nHangar floor — F at elevator for L2.")
-		_door_context = "楼层 · Floor: L1"
+		_refresh_tips(MWi18n.t(
+			"母港一层 — 电梯旁按 F 上 L2。",
+			"Hangar floor — F at elevator for L2."
+		))
+		_door_context = MWi18n.t("楼层: L1", "Floor: L1")
 	_compose_and_push_tips()
 
 

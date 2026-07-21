@@ -5,11 +5,14 @@
 (function (global) {
 	var KEY = 'mw_lang';
 	var dict = {
-		'boot.sub': { zh: '母港 Hangar Core', en: 'Hangar Core' },
+		'boot.sub': { zh: '母港', en: 'Hangar Core' },
 		'boot.hint': { zh: '加载中…', en: 'Loading…' },
 		'tr.skip': { zh: 'Enter / 点击跳过', en: 'Enter / click to skip' },
 		'hud.connecting': { zh: 'MineWorld · 连接中…', en: 'MineWorld · connecting…' },
 		'hub.pilot': { zh: '飞行员卡', en: 'Pilot card' },
+		'hub.pilot_id': { zh: '飞行员 · ID ', en: 'Pilot · ID ' },
+		'hub.you': { zh: '你', en: 'you' },
+		'hub.alone': { zh: '独自', en: 'alone' },
 		'hub.nick': { zh: '昵称', en: 'Nickname' },
 		'hub.me': { zh: '我的战绩', en: 'My record' },
 		'hub.admin': { zh: '管理', en: 'Admin' },
@@ -175,6 +178,13 @@
 			'color:#e6edf5;font:600 12px/1 ui-sans-serif,system-ui,sans-serif;cursor:pointer;letter-spacing:0.06em;';
 		btn.addEventListener('click', function () {
 			setLang(lang() === 'zh' ? 'en' : 'zh');
+			/* Godot Label3D is built once — reload shell so 3D labels match. */
+			if (
+				document.body.classList.contains('mw-hub') ||
+				document.body.classList.contains('mw-play')
+			) {
+				location.reload();
+			}
 		});
 		host.appendChild(btn);
 		document.documentElement.lang = lang() === 'zh' ? 'zh-CN' : 'en';

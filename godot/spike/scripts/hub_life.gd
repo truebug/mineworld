@@ -109,31 +109,34 @@ func _place_stations() -> void:
 		Vector3(-6.0, 0, WALL_Z - 1.0),
 		180.0,
 		"F · 导览台",
-		"欢迎来到母港 Hangar Core。\n东橙 A 工坊 · 西蓝 B 训练 · 北 C 卡片 · 西偏北 D 边缘 · 南 E 竞技\n按 V 切换相机。\nWelcome — A Workshop · B Training · C Cards · D Edge · E Arena.",
+		MWi18n.t(
+			"欢迎来到母港。\n东橙 A 工坊 · 西蓝 B 训练 · 北 C 卡片 · 西偏北 D 边缘 · 南 E 竞技\n按 V 切换相机。",
+			"Welcome to Hangar Core.\nA Workshop · B Training · C Cards · D Edge · E Arena.\nPress V for camera."
+		),
 		Color(0.3, 0.7, 1.0),
 	)
 	_station(
 		"board_party",
 		Vector3(-WALL_X + 1.0, 0, 5.5),
 		90.0,
-		"F · 组队板",
-		"组队板 · Party board — 按 F 发布/清除 Looking for crew。",
+		MWi18n.t("F · 组队板", "F · Party board"),
+		MWi18n.t("组队板 — 按 F 发布/清除招募。", "Party board — F to toggle Looking for crew."),
 		Color(1.0, 0.7, 0.3),
 	)
 	_station(
 		"vendor",
 		Vector3(WALL_X - 1.0, 0, 5.5),
 		-90.0,
-		"F · 商贩",
-		"商贩 · Vendor — 按 F 循环机甲配色（写入 profile）。",
+		MWi18n.t("F · 商贩", "F · Vendor"),
+		MWi18n.t("商贩 — 按 F 循环机甲配色。", "Vendor — F to cycle suit accent."),
 		Color(0.9, 0.45, 0.85),
 	)
 	_station(
 		"pad_photo",
 		Vector3(5.0, 0, -WALL_Z + 1.2),
 		0.0,
-		"F · 拍照点",
-		"拍照点 · Photo pad — 未来高光回放占位。",
+		MWi18n.t("F · 拍照点", "F · Photo pad"),
+		MWi18n.t("拍照点 — 未来高光回放占位。", "Photo pad — highlight reel later."),
 		Color(0.5, 0.9, 0.6),
 	)
 	_place_exhibits()
@@ -150,16 +153,16 @@ func _place_stations() -> void:
 		"elevator",
 		Vector3(16.0, 0, 14.2),
 		180.0,
-		"F · 电梯",
-		"电梯 · Elevator — 按 F 在母港一层与 L2 观景廊之间切换。",
+		MWi18n.t("F · 电梯", "F · Elevator"),
+		MWi18n.t("电梯 — 按 F 在一层与 L2 观景廊之间切换。", "Elevator — F to ride L1 ↔ L2."),
 		Color(0.4, 0.85, 1.0),
 	)
 	_station(
 		"elevator",
 		Vector3(16.0, 8.5, 14.2),
 		180.0,
-		"F · 电梯",
-		"电梯 · Elevator — 按 F 返回母港一层。",
+		MWi18n.t("F · 电梯", "F · Elevator"),
+		MWi18n.t("电梯 — 按 F 返回母港一层。", "Elevator — F to return to hangar floor."),
 		Color(0.4, 0.85, 1.0),
 	)
 
@@ -170,16 +173,16 @@ func _place_cd_stations() -> void:
 		"design_lab",
 		Vector3(0.0, 0, -WALL_Z + 2.2),
 		0.0,
-		"F · 设计室",
-		"设计室 · Design Lab — Type B 卡片通道。\n按 F 查看状态（编辑器后置；展柜可开 Space）。",
+		MWi18n.t("F · 设计室", "F · Design Lab"),
+		MWi18n.t("设计室 — 卡片通道。\n按 F 查看状态（编辑器后置）。", "Design Lab — card wing.\nF for stub status."),
 		Color(0.75, 0.85, 0.98),
 	)
 	_station(
 		"edge_dock",
 		Vector3(-WALL_X + 2.2, 0, -10.0),
 		90.0,
-		"F · 边缘坞",
-		"边缘任务坞 · Edge Dock — Type C。\n按 F 查看链路状态（真机后置，不透传）。",
+		MWi18n.t("F · 边缘坞", "F · Edge Dock"),
+		MWi18n.t("边缘任务坞。\n按 F 查看链路状态（真机后置）。", "Edge Dock.\nF for link stub."),
 		Color(0.5, 0.9, 0.75),
 	)
 
@@ -227,16 +230,16 @@ func _place_room_shell_stations() -> void:
 		"room_gallery",
 		Vector3(-8.0, 0, -WALL_Z + 1.2),
 		0.0,
-		"F · 展厅翼",
-		"展厅翼 · Gallery — 卡片通道走廊。\n展柜挂 PMS Space；无本仓 MuJoCo；F 打开展品。",
+		MWi18n.t("F · 展厅翼", "F · Gallery"),
+		MWi18n.t("展厅翼 — 卡片通道。\n展柜可开 Space；无本仓仿真。", "Gallery wing — card corridor.\nExhibits open Spaces; no Hub MuJoCo."),
 		Color(0.75, 0.65, 0.4),
 	)
 	_station(
 		"room_classroom",
 		Vector3(9.5, 0, -WALL_Z + 1.2),
 		0.0,
-		"F · 教室翼",
-		"教室翼 · Classroom — 课件走廊。\nSpace URL 未绑定时仅 lore；真卡片用展柜。",
+		MWi18n.t("F · 教室翼", "F · Classroom"),
+		MWi18n.t("教室翼 — 课件走廊。\n未绑 URL 时仅说明；真卡片用展柜。", "Classroom wing.\nStub lore until Space URL linked."),
 		Color(0.45, 0.7, 0.85),
 	)
 
@@ -247,8 +250,8 @@ func _place_arena_station() -> void:
 		"arena_gate",
 		Vector3(0.0, 0, WALL_Z - 2.4),
 		180.0,
-		"F · 竞技场门",
-		"竞技场门 · Arena Gate — 排名对战（权威后置）。\n按 F：1v1 ↔ 组队 · 切换 Looking for match。\n本仓路由，非 PMS 卡片。",
+		MWi18n.t("F · 竞技场门", "F · Arena Gate"),
+		MWi18n.t("竞技场门 — 排名对战（权威后置）。\n按 F：1v1 ↔ 组队 · 切换排队。", "Arena Gate — ranked bouts later.\nF: cycle 1v1/party · looking."),
 		Color(1.0, 0.45, 0.28),
 	)
 
@@ -317,23 +320,23 @@ func _place_npcs() -> void:
 	"""Small standing greeters at walls near doors (no wander)."""
 	_npc(
 		"Maya", "character-a.glb", Vector3(-4.5, 0, WALL_Z - 1.3), 180.0, Color(1.0, 0.85, 0.4),
-		"F · 与 Maya 交谈",
-		"Maya: 橙门工坊 · 蓝门训练。按 V 切相机。\nMaya: Orange Workshop, blue Training. V = camera.",
+		MWi18n.t("F · 与 Maya 交谈", "F · Talk to Maya"),
+		MWi18n.t("Maya: 橙门工坊 · 蓝门训练。按 V 切相机。", "Maya: Orange Workshop, blue Training. V = camera."),
 	)
 	_npc(
 		"Rex", "character-b.glb", Vector3(WALL_X - 1.3, 0, 2.2), -90.0, Color(1.0, 0.55, 0.25),
-		"F · 与 Rex 交谈",
-		"Rex: 工坊在橙门。把推车完整带回来！\nRex: Workshop through the orange gate.",
+		MWi18n.t("F · 与 Rex 交谈", "F · Talk to Rex"),
+		MWi18n.t("Rex: 工坊在橙门。把推车完整带回来！", "Rex: Workshop through the orange gate."),
 	)
 	_npc(
 		"Jin", "character-c.glb", Vector3(-WALL_X + 1.3, 0, -2.2), 90.0, Color(0.45, 0.8, 1.0),
-		"F · 与 Jin 交谈",
-		"Jin: 蓝门是训练场。进街区前先热身。\nJin: Blue door = Training yard.",
+		MWi18n.t("F · 与 Jin 交谈", "F · Talk to Jin"),
+		MWi18n.t("Jin: 蓝门是训练场。进街区前先热身。", "Jin: Blue door = Training yard."),
 	)
 	_npc(
 		"Pip", "character-d.glb", Vector3(4.5, 0, -WALL_Z + 1.3), 0.0, Color(0.7, 0.9, 0.5),
-		"F · 与 Pip 交谈",
-		"Pip: 我在看人来人往。朋友进厅记得打招呼！\nPip: People-watching — say hi when friends join.",
+		MWi18n.t("F · 与 Pip 交谈", "F · Talk to Pip"),
+		MWi18n.t("Pip: 我在看人来人往。朋友进厅记得打招呼！", "Pip: People-watching — say hi when friends join."),
 	)
 
 

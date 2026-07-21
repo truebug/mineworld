@@ -499,7 +499,7 @@ body.mw-play #mw-joints {
 		<div id="status">
 			<div id="mw-boot">
 				<div class="mw-boot-mark">MineWorld</div>
-				<div class="mw-boot-sub" data-i18n="boot.sub">母港 Hangar Core</div>
+		<div class="mw-boot-sub" data-i18n="boot.sub">母港</div>
 				<progress id="status-progress"></progress>
 				<div id="mw-boot-hint" data-i18n="boot.hint">加载中…</div>
 			</div>
@@ -752,7 +752,8 @@ const engine = new Engine(GODOT_CONFIG);
 			const id = String(p.id || '?');
 			const nick = String(p.nickname || 'Guest').slice(0, 24);
 			if (idEl) {
-				idEl.textContent = 'Pilot · ID ' + id.slice(0, 12);
+				var prefix = window.MW_I18N ? window.MW_I18N.t('hub.pilot_id') : '飞行员 · ID ';
+				idEl.textContent = prefix + id.slice(0, 12);
 			}
 			if (nickLabel) {
 				nickLabel.textContent = nick;
@@ -782,7 +783,7 @@ const engine = new Engine(GODOT_CONFIG);
 				return;
 			}
 			const actors = Array.isArray(payload.actors) ? payload.actors : [];
-			const selfTxt = payload.self || 'alone';
+			const selfTxt = payload.self || (window.MW_I18N ? window.MW_I18N.t('hub.alone') : '独自');
 			if (coordsEl) {
 				coordsEl.textContent = selfTxt + ' · n=' + actors.length;
 			}
