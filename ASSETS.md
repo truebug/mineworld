@@ -28,3 +28,4 @@
 | Factory Kit 3.0（子集） | [kenney.nl/assets/factory-kit](https://kenney.nl/assets/factory-kit) | CC0 | `demo_workshop` viewer_only 皮；`godot/spike/assets/kenney_factory/`（见目录 ASSETS.md） | 无 | 2026-07-19 |
 | KayKit Dungeon Remastered 1.0（子集） | [itch](https://kaylousberg.itch.io/kaykit-dungeon-remastered) · [GitHub](https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0) | CC0 | `demo_hub` 地下城入口厅皮；`godot/spike/assets/kaykit_dungeon/` | 无（可署名 Kay Lousberg） | 2026-07-20 |
 | Blocky Characters 2.0（子集） | [kenney.nl/assets/blocky-characters](https://kenney.nl/assets/blocky-characters) | CC0 | Hub 人形纸片人；`godot/spike/assets/kenney_blocky/` | 无 | 2026-07-20 |
+| Noto Sans SC Regular（子集 TTF） | [fontsource](https://github.com/fontsource/font-files) · [Noto CJK](https://github.com/notofonts/noto-cjk) | SIL OFL 1.1 | Hub `Label3D`/HUD 中文；`godot/spike/assets/fonts/`（见 OFL.txt） | 保留 OFL | 2026-07-21 |

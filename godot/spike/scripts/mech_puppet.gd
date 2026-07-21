@@ -354,6 +354,7 @@ func apply_team_look() -> void:
 		tag.position = Vector3(0.0, 1.15, 0.0)
 		tag.pixel_size = 0.012
 		add_child(tag)
+	MWFonts.apply_label3d(tag)
 	tag.visible = true
 	tag.text = str(TEAM_TAGS.get(entity_id, "?"))
 	tag.modulate = color

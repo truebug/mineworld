@@ -396,6 +396,7 @@ func _module_pod(root: Node3D, base: String, pos: Vector3, tint: Color, tag: Str
 	_sphere(root, base + "Dish", pos + Vector3(2.8, 7.0, -1.5), 1.05, panel)
 	_torus(root, base + "Ring", pos + Vector3(2.8, 6.6, -1.5), 1.35, 0.08, panel, Vector3(90, 0, 0))
 	var lab := Label3D.new()
+	MWFonts.apply_label3d(lab)
 	lab.text = tag
 	lab.font_size = 42
 	lab.outline_size = 6
@@ -668,6 +669,7 @@ func _place_mezzanine(root: Node3D) -> void:
 	_box(root, "L2Seat", Vector3(-6, FLOOR2_Y + 0.35, 8.6), Vector3(2.4, 0.35, 0.7), _mat(Color(0.4, 0.3, 0.22), 0.8, 0.0))
 	_box(root, "L2Plant", Vector3(6, FLOOR2_Y + 0.4, 10), Vector3(0.6, 0.7, 0.6), _mat(Color(0.3, 0.5, 0.32), 0.85, 0.0))
 	var tag := Label3D.new()
+	MWFonts.apply_label3d(tag)
 	tag.text = MWi18n.t("L2 母港观景廊", "L2 Mothership Lounge")
 	tag.font_size = 48
 	tag.outline_size = 8
@@ -715,6 +717,7 @@ func _place_elevator(root: Node3D) -> void:
 	led.emission_energy_multiplier = 1.2
 	_box(root, "ElevLed", Vector3(ELEV_X, 3.55, ELEV_Z - w * 0.5 - 0.05), Vector3(1.8, 0.08, 0.08), led)
 	var label := Label3D.new()
+	MWFonts.apply_label3d(label)
 	label.text = MWi18n.t("电梯 · 按 F 乘梯", "Elevator · F to ride")
 	label.font_size = 40
 	label.outline_size = 6
@@ -740,6 +743,7 @@ func _place_room_shells(root: Node3D) -> void:
 	_box(root, "GalLint", Vector3(-8.0, 4.2, -HALL_HALF_Z + 0.35), Vector3(3.2, 0.28, 0.4), trim)
 	_box(root, "GalGlass", Vector3(-8.0, 2.0, -HALL_HALF_Z + 0.15), Vector3(2.6, 3.2, 0.06), glass)
 	var gal := Label3D.new()
+	MWFonts.apply_label3d(gal)
 	gal.text = MWi18n.t("展厅翼", "Gallery")
 	gal.font_size = 42
 	gal.outline_size = 6
@@ -754,6 +758,7 @@ func _place_room_shells(root: Node3D) -> void:
 	_box(root, "ClsLint", Vector3(8.0, 4.2, -HALL_HALF_Z + 0.35), Vector3(3.2, 0.28, 0.4), trim)
 	_box(root, "ClsGlass", Vector3(8.0, 2.0, -HALL_HALF_Z + 0.15), Vector3(2.6, 3.2, 0.06), glass)
 	var cls := Label3D.new()
+	MWFonts.apply_label3d(cls)
 	cls.text = MWi18n.t("教室翼", "Classroom")
 	cls.font_size = 42
 	cls.outline_size = 6
@@ -790,6 +795,7 @@ func _place_design_shell(root: Node3D) -> void:
 	seal.emission_energy_multiplier = 0.7
 	_box(root, "DesSeal", Vector3(cx, 3.5, cz + 0.05), Vector3(2.0, 0.12, 0.12), seal)
 	var lab := Label3D.new()
+	MWFonts.apply_label3d(lab)
 	lab.text = MWi18n.t("设计室 · 卡片通道", "Design Lab · Type B")
 	lab.font_size = 36
 	lab.outline_size = 6
@@ -823,6 +829,7 @@ func _place_edge_shell(root: Node3D) -> void:
 	ring.emission_energy_multiplier = 0.65
 	_box(root, "EdgRing", Vector3(dx - 0.05, 1.8, dz), Vector3(0.1, 2.4, 0.1), ring)
 	var lab := Label3D.new()
+	MWFonts.apply_label3d(lab)
 	lab.text = MWi18n.t("边缘任务坞", "Edge Dock · Type C")
 	lab.font_size = 36
 	lab.outline_size = 6
@@ -850,6 +857,7 @@ func _place_arena_shell(root: Node3D) -> void:
 	_box(root, "ArnGlass", Vector3(ax, 1.9, az + 0.2), Vector3(2.4, 3.0, 0.05), glass)
 	_box(root, "ArnPad", Vector3(ax, 0.03, az - 0.9), Vector3(3.2, 0.06, 2.0), _mat(Color(0.35, 0.18, 0.16), 0.7, 0.05))
 	var lab := Label3D.new()
+	MWFonts.apply_label3d(lab)
 	lab.text = MWi18n.t("竞技场门", "Arena Gate")
 	lab.font_size = 40
 	lab.outline_size = 6
@@ -958,6 +966,7 @@ func _place_wing_labels(root: Node3D) -> void:
 func _zone_label(root: Node3D, lab_name: String, pos: Vector3, text: String, col: Color) -> void:
 	"""Billboard zone caption near the floor."""
 	var lab := Label3D.new()
+	MWFonts.apply_label3d(lab)
 	lab.name = lab_name
 	lab.text = text
 	lab.font_size = 36
@@ -992,6 +1001,7 @@ func _ensure_marker(world: Node3D, marker_name: String, pos: Vector3, text: Stri
 		label.font_size = 56
 		label.outline_size = 8
 		label.pixel_size = 0.01
+	MWFonts.apply_label3d(label)
 	for child in n.get_children():
 		if child is Label3D and child != label:
 			(child as Label3D).visible = false

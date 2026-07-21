@@ -131,6 +131,7 @@ func _start_hub_session() -> void:
 			"母港图 · 东A橙 · 西B蓝 · 北C · 西偏北D · 南E",
 			"Hub map · A orange · B blue · C north · D NW · E south"
 		)
+	_apply_cjk_fonts()
 	_link_banner = MWi18n.t("正在连接网关…", "Connecting to gateway…")
 	_lore_body = MWi18n.t(
 		"你已抵达数聚球母港。\n东翼本仓关卡 · 北翼卡片通道 · 西翼边缘坞。",
@@ -235,6 +236,18 @@ func _on_replay_route_header(
 		# Hub recordings are presence-only; fall back to workshop puppet stage.
 		scene = WORKSHOP_SCENE
 	MWTransition.go(scene, label, accent)
+
+
+func _apply_cjk_fonts() -> void:
+	"""Desktop HUD Controls need CJK font (Web uses DOM shell fonts)."""
+	var f := MWFonts.font()
+	if f == null:
+		return
+	for node in [tips_label, map_title, map_coords, profile_label]:
+		if node is Label:
+			(node as Label).add_theme_font_override("font", f)
+	if nick_edit != null:
+		nick_edit.add_theme_font_override("font", f)
 
 
 func _load_profile() -> Dictionary:

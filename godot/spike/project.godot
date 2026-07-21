@@ -22,6 +22,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 MWTransition="*res://scripts/mw_transition.gd"
 MWi18n="*res://scripts/mw_i18n.gd"
+MWFonts="*res://scripts/mw_fonts.gd"
 
 [display]
 

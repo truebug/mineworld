@@ -34,6 +34,7 @@ func _ready() -> void:
 	"""Build wheeled bot mesh."""
 	_build_bot()
 	if _label != null:
+		MWFonts.apply_label3d(_label)
 		_label.text = display_name if display_name != "" else "Guest"
 		_label.position = Vector3(0, 1.55, 0)
 

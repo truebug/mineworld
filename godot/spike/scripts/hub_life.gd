@@ -304,6 +304,7 @@ func _station(
 	_box_child(root, Vector3(0, 0.5, 0), Vector3(1.1, 1.0, 0.7), body)
 	_box_child(root, Vector3(0, 1.35, 0.2), Vector3(0.9, 0.7, 0.08), glow)
 	var label := Label3D.new()
+	MWFonts.apply_label3d(label)
 	label.text = prompt
 	label.font_size = 36
 	label.outline_size = 6
@@ -377,6 +378,7 @@ func _npc(
 	else:
 		call_deferred("_plant_feet", root)
 	var tag := Label3D.new()
+	MWFonts.apply_label3d(tag)
 	tag.text = display
 	tag.font_size = 36
 	tag.outline_size = 6
@@ -386,6 +388,7 @@ func _npc(
 	root.add_child(tag)
 	tag.position = Vector3(0, 1.55, 0)
 	var hint := Label3D.new()
+	MWFonts.apply_label3d(hint)
 	hint.text = prompt
 	hint.font_size = 24
 	hint.outline_size = 4
