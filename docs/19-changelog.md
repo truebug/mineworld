@@ -4,9 +4,15 @@
 |------|-----|
 | **状态** | Living |
 | **日期** | 2026-07-20 |
-| **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) |
+| **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) |
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
+
+---
+
+## 2026-07-21 · 文档：City 三连坑教训入库
+
+- [25-qa-local-export.md](25-qa-local-export.md)：臂 UI 竞态 / A–E 队标 / multi-lot 吞街空气墙；导出缓存假象；playground 发版核对。
 
 ---
 
