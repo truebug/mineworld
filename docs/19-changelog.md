@@ -121,6 +121,27 @@
 
 ---
 
+## 2026-07-21 · City 多格楼 + KayKit 恢复
+
+- 生成器支持 1×1 / 2×1 / 1×2 / 3×1 / 1×3 / 2×2 占地（含格间街道），MuJoCo 盒与之一致。
+- Godot：KayKit 默认开（按 footprint 缩放塞进盒内）；半透明占地盒仍可见碰撞；`?kaykit=0` 仅方盒。
+
+---
+
+## 2026-07-21 · City 视觉=MuJoCo 占地盒
+
+- `city_block_dress`：默认画与 `static_obstacles` 同尺寸的不透明楼盒（看得见的墙=会撞的墙）。
+- 旧 Authority 灰盒一律隐藏；KayKit 皮可选 `?kaykit=1`（装饰，不改权威）。
+
+---
+
+## 2026-07-21 · City 空气墙调试叠层
+
+- `city_block_dress`：半透明青盒 = MuJoCo `static_obstacles`（默认开；`?walls=0` / 取消「空气墙」关掉）。
+- `block_layout.json` 含 `obstacles`；与契约同 seed 双写。
+
+---
+
 ## 2026-07-21 · W2 公网实施建议书
 
 - 新增 [23-public-deploy.md](23-public-deploy.md)：腾讯云 2C8G + `databall.cloud` 单机拓扑、资源判断、Caddy/env、分阶段清单与验收。

@@ -44,7 +44,7 @@ BUILDING_ASSETS = [
     "building_G.gltf",
     "building_H.gltf",
 ]
-# KayKit buildings: XZ AABB ≈ 2 m, origin-centered. scale = LOT/2 → dress = LOT.
+# KayKit buildings: XZ AABB ≈ 2 m, origin-centered. scale = footprint/MESH_XY.
 MESH_XY = 2.0
 BUILDING_SCALE = LOT / MESH_XY
 # MuJoCo box must match dress footprint (was LOT-1 / LOT-0.5 → drive into mesh).
@@ -52,9 +52,111 @@ BUILDING_SCALE = LOT / MESH_XY
 FOOTPRINT = MESH_XY * BUILDING_SCALE + 0.08
 WALL_H = 3.5
 HALF_PI = 1.57079632679
+# Multi-lot spans (w×h lots). Includes streets between claimed lots.
+MULTI_SHAPES: list[tuple[int, int, float]] = [
+    (1, 1, 0.55),
+    (2, 1, 0.18),
+    (1, 2, 0.14),
+    (3, 1, 0.05),
+    (1, 3, 0.04),
+    (2, 2, 0.04),
+]
 # Asphalt strips slightly narrower than street so lots read as sidewalk.
 ROAD_WIDTH = STREET * 0.9
 CITY_SPAWN_COUNT = 5
+
+
+def _footprint_for_lots(col: int, row: int, w: int, h: int) -> tuple[float, float, float, float]:
+    """Return (cx, cy, size_x, size_y) covering w×h lots (streets between included)."""
+    min_x = OX + col * PITCH
+    max_x = OX + (col + w - 1) * PITCH + LOT
+    min_y = OY + row * PITCH
+    max_y = OY + (row + h - 1) * PITCH + LOT
+    size_x = (max_x - min_x) + 0.08
+    size_y = (max_y - min_y) + 0.08
+    cx = (min_x + max_x) * 0.5
+    cy = (min_y + max_y) * 0.5
+    return cx, cy, size_x, size_y
+
+
+def _pick_shape(rng: random.Random) -> tuple[int, int]:
+    """Weighted random (w, h) lot span."""
+    r = rng.random()
+    acc = 0.0
+    for w, h, p in MULTI_SHAPES:
+        acc += p
+        if r <= acc:
+            return w, h
+    return 1, 1
+
+
+def _lot_free(
+    occupied: set[tuple[int, int]],
+    blocked: set[tuple[int, int]],
+    col: int,
+    row: int,
+    w: int,
+    h: int,
+) -> bool:
+    """True if w×h lots fit in grid and are unused."""
+    if col < 0 or row < 0 or col + w > COLS or row + h > ROWS:
+        return False
+    for rr in range(row, row + h):
+        for cc in range(col, col + w):
+            if (cc, rr) in occupied or (cc, rr) in blocked:
+                return False
+    return True
+
+
+def _claim(occupied: set[tuple[int, int]], col: int, row: int, w: int, h: int) -> None:
+    """Mark lots as used."""
+    for rr in range(row, row + h):
+        for cc in range(col, col + w):
+            occupied.add((cc, rr))
+
+
+def _append_building(
+    buildings: list[dict[str, Any]],
+    obstacles: list[dict[str, Any]],
+    *,
+    col: int,
+    row: int,
+    w: int,
+    h: int,
+    rng: random.Random,
+) -> None:
+    """Append one building + matching MuJoCo footprint box."""
+    cx, cy, sx, sy = _footprint_for_lots(col, row, w, h)
+    asset = rng.choice(BUILDING_ASSETS)
+    yaw = rng.choice([0.0, HALF_PI, 3.14159265359, -HALF_PI])
+    scale = min(sx, sy) / MESH_XY
+    bid = f"bldg_{col}_{row}_{w}x{h}"
+    buildings.append(
+        {
+            "id": bid,
+            "asset": asset,
+            "x": round(cx, 3),
+            "y": round(cy, 3),
+            "yaw": yaw,
+            "scale": round(scale, 4),
+            "footprint": [round(sx, 3), round(sy, 3)],
+            "lots": [w, h],
+        }
+    )
+    obstacles.append(
+        {
+            "id": bid,
+            "shape": "box",
+            "size": [round(sx, 3), round(sy, 3), WALL_H],
+            "pose": {
+                "x": round(cx, 3),
+                "y": round(cy, 3),
+                "z": WALL_H * 0.5,
+                "yaw": 0.0,
+            },
+            "physics_role": "mujoco_authoritative",
+        }
+    )
 
 
 def _bounds() -> tuple[float, float, float, float]:
@@ -164,43 +266,36 @@ def build_layout(seed: int) -> dict[str, Any]:
     buildings: list[dict[str, Any]] = []
     obstacles: list[dict[str, Any]] = []
 
+    # Plaza + sparse holes; then place 1×1 … 2×2 megablocks.
+    blocked: set[tuple[int, int]] = {(COLS - 1, ROWS // 2)}
     for row in range(ROWS):
         for col in range(COLS):
-            # Leave one plaza lot empty near the finish approach (east mid).
-            if col == COLS - 1 and row == ROWS // 2:
+            if (col, row) in blocked:
                 continue
-            # Sparse random holes (~15%) for variety, keep perimeter denser.
             if col not in (0, COLS - 1) and row not in (0, ROWS - 1):
-                if rng.random() < 0.15:
-                    continue
-            cx, cy = _lot_center(col, row)
-            asset = rng.choice(BUILDING_ASSETS)
-            yaw = rng.choice([0.0, HALF_PI, 3.14159265359, -HALF_PI])
-            bid = f"bldg_{col}_{row}"
-            buildings.append(
-                {
-                    "id": bid,
-                    "asset": asset,
-                    "x": round(cx, 3),
-                    "y": round(cy, 3),
-                    "yaw": yaw,
-                    "scale": BUILDING_SCALE,
-                    "footprint": [FOOTPRINT, FOOTPRINT],
-                }
-            )
-            obstacles.append(
-                {
-                    "id": bid,
-                    "shape": "box",
-                    "size": [FOOTPRINT, FOOTPRINT, WALL_H],
-                    "pose": {
-                        "x": round(cx, 3),
-                        "y": round(cy, 3),
-                        "z": WALL_H * 0.5,
-                        "yaw": 0.0,
-                    },
-                    "physics_role": "mujoco_authoritative",
-                }
+                if rng.random() < 0.12:
+                    blocked.add((col, row))
+
+    occupied: set[tuple[int, int]] = set()
+    cells = [(c, r) for r in range(ROWS) for c in range(COLS) if (c, r) not in blocked]
+    rng.shuffle(cells)
+    for col, row in cells:
+        if (col, row) in occupied:
+            continue
+        placed = False
+        for _ in range(4):
+            w, h = _pick_shape(rng)
+            if _lot_free(occupied, blocked, col, row, w, h):
+                _claim(occupied, col, row, w, h)
+                _append_building(
+                    buildings, obstacles, col=col, row=row, w=w, h=h, rng=rng
+                )
+                placed = True
+                break
+        if not placed and _lot_free(occupied, blocked, col, row, 1, 1):
+            _claim(occupied, col, row, 1, 1)
+            _append_building(
+                buildings, obstacles, col=col, row=row, w=1, h=1, rng=rng
             )
 
     # Outer air-wall curb (thin boxes).
@@ -361,7 +456,7 @@ def write_contract(layout: dict[str, Any]) -> None:
                 "client_scene": "res://demo_city.tscn",
                 "exported_from": "scripts/gen_demo_city_block.py",
                 "layout": "res://assets/kaykit_city/block_layout.json",
-                "notes": "Buildings=viewer_only; footprints≈LOT align MuJoCo air walls; spawn SW → finish NE.",
+                "notes": "Footprints=MuJoCo boxes (1×1…2×2 lots); KayKit default ON scaled to fit; ?kaykit=0 boxes-only.",
             },
         },
     }
@@ -369,7 +464,7 @@ def write_contract(layout: dict[str, Any]) -> None:
 
 
 def godot_layout_view(layout: dict[str, Any]) -> dict[str, Any]:
-    """Strip MuJoCo obstacles; keep viewer dress fields."""
+    """Viewer dress fields + obstacles (for air-wall debug overlay)."""
     return {
         "seed": layout["seed"],
         "bounds": layout["bounds"],
@@ -380,6 +475,8 @@ def godot_layout_view(layout: dict[str, Any]) -> dict[str, Any]:
         "buildings": layout["buildings"],
         "props": layout.get("props") or [],
         "roads": layout.get("roads") or [],
+        # Same boxes Gateway compiles into MuJoCo (City-wall debug).
+        "obstacles": layout.get("obstacles") or [],
     }
 
 

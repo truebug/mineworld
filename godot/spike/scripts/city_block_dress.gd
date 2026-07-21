@@ -1,9 +1,7 @@
 ## Runtime city-block dress for demo_city.
-## Loads block_layout.json (from scripts/gen_demo_city_block.py), instances
-## KayKit buildings + roads as viewer_only, hides brown Authority wall meshes
-## (MuJoCo air walls come from the contract footprints), and places the
-## green finish zone + ground plane from the same layout.
-## On Web, prefers live GET /api/city-block/layout so D9 regen needs no re-export.
+## MuJoCo static_obstacles = visual footprint boxes (same size/pose).
+## KayKit glTF ON by default (scaled to fit footprint); ?kaykit=0 for boxes only.
+## Hides scene Authority greybox. Web: GET /api/city-block/layout (D9).
 extends Node3D
 
 const LAYOUT_PATH := "res://assets/kaykit_city/block_layout.json"
@@ -71,41 +69,156 @@ func _apply_from_file() -> void:
 
 
 func _apply_data(data: Dictionary) -> void:
-	"""Rebuild Decor from a layout dict."""
+	"""Rebuild Decor: footprints (=physics) + optional KayKit skin."""
 	_hide_authority_walls()
-	_place_buildings(data)
-	_place_props(data)
+	var kaykit := _want_kaykit()
+	_place_footprint_buildings(data, translucent=kaykit)
+	if kaykit:
+		_place_kaykit_buildings(data)
+		_place_props(data)
+	else:
+		_clear_group("KayKit")
+		_clear_group("Props")
 	_place_roads(data)
 	_place_markers(data)
 	print(
-		"[MW] city block dress seed=%s buildings=%d props=%d roads=%d"
+		"[MW] city dress seed=%s footprints=%d kaykit=%s roads=%d"
 		% [
 			data.get("seed", "?"),
-			(data.get("buildings", []) as Array).size(),
-			(data.get("props", []) as Array).size(),
+			_obstacle_list(data).size(),
+			"on" if kaykit else "off",
 			(data.get("roads", []) as Array).size(),
 		]
 	)
 
 
+func _web_flag(param: String, default_on: bool) -> bool:
+	"""Read ?param=0|1 or window.MINEWORLD_* ; default_on when unset."""
+	var def := "1" if default_on else "0"
+	if not OS.has_feature("web"):
+		for a in OS.get_cmdline_user_args():
+			var s := str(a)
+			if s == ("%s=0" % param) or s == ("--%s=0" % param):
+				return false
+			if s == ("%s=1" % param) or s == ("--%s=1" % param):
+				return true
+		return default_on
+	var win_key := "MINEWORLD_SHOW_KAYKIT" if param == "kaykit" else "MINEWORLD_SHOW_WALLS"
+	var flag := str(
+		JavaScriptBridge.eval(
+			(
+				"(function(){try{var q=new URLSearchParams(location.search).get('%s');"
+				+ "if(q==='0'||q==='false')return '0';"
+				+ "if(q==='1'||q==='true')return '1';"
+				+ "var w=window.%s;if(w===false||w==='0')return '0';"
+				+ "if(w===true||w==='1')return '1';"
+				+ "return '%s';}catch(e){return '%s'}})()"
+			)
+			% [param, win_key, def, def],
+			true,
+		)
+	).strip_edges()
+	return flag != "0"
+
+
+func _want_kaykit() -> bool:
+	"""KayKit glTF skin; default ON. Hide with ?kaykit=0."""
+	return _web_flag("kaykit", true)
+
+
 func _hide_authority_walls() -> void:
-	"""Air walls: keep FinishZone visible, hide all other Authority meshes."""
+	"""Hide baked greybox Authority meshes (except FinishZone)."""
 	var authority := get_node_or_null("../Authority") as Node3D
 	if authority == null:
 		return
 	for child in authority.get_children():
 		if child.name == "FinishZone":
 			continue
+		child.visible = false
 		if child is VisualInstance3D:
-			(child as VisualInstance3D).visible = false
+			(child as VisualInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
-func _place_buildings(data: Dictionary) -> void:
-	"""Clear City children and instance KayKit buildings from layout."""
+func _obstacle_list(data: Dictionary) -> Array:
+	"""MuJoCo obstacles from layout, or synthesize from building footprints."""
+	var obstacles: Array = data.get("obstacles", []) as Array
+	if not obstacles.is_empty():
+		return obstacles
+	var out: Array = []
+	for entry in data.get("buildings", []):
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var fp: Variant = entry.get("footprint", [5.08, 5.08])
+		var sx := 5.08
+		var sy := 5.08
+		if typeof(fp) == TYPE_ARRAY and (fp as Array).size() >= 2:
+			sx = float((fp as Array)[0])
+			sy = float((fp as Array)[1])
+		out.append(
+			{
+				"id": str(entry.get("id", "bldg")),
+				"size": [sx, sy, 3.5],
+				"pose": {
+					"x": float(entry.get("x", 0.0)),
+					"y": float(entry.get("y", 0.0)),
+					"z": 1.75,
+					"yaw": 0.0,
+				},
+			}
+		)
+	return out
+
+
+func _place_footprint_buildings(data: Dictionary, translucent: bool = false) -> void:
+	"""Boxes = exact MuJoCo static_obstacles. Translucent when KayKit skin on."""
 	var city := _ensure_group("City")
 	_clear_children(city)
+	var mat_bldg := StandardMaterial3D.new()
+	if translucent:
+		mat_bldg.albedo_color = Color(0.55, 0.5, 0.45, 0.32)
+		mat_bldg.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat_bldg.cull_mode = BaseMaterial3D.CULL_DISABLED
+	else:
+		mat_bldg.albedo_color = Color(0.52, 0.48, 0.44, 1.0)
+	mat_bldg.roughness = 0.88
+	var mat_curb := StandardMaterial3D.new()
+	mat_curb.albedo_color = Color(0.35, 0.38, 0.42, 1.0)
+	mat_curb.roughness = 0.9
+	for entry in _obstacle_list(data):
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var size: Variant = entry.get("size", [])
+		var pose: Variant = entry.get("pose", {})
+		if typeof(size) != TYPE_ARRAY or (size as Array).size() < 3:
+			continue
+		if typeof(pose) != TYPE_DICTIONARY:
+			continue
+		var oid := str(entry.get("id", "wall"))
+		var sx := float((size as Array)[0])
+		var sy := float((size as Array)[1])
+		var sz := float((size as Array)[2])
+		var px := float((pose as Dictionary).get("x", 0.0))
+		var py := float((pose as Dictionary).get("y", 0.0))
+		var pz := float((pose as Dictionary).get("z", sz * 0.5))
+		var yaw := float((pose as Dictionary).get("yaw", 0.0))
+		var mi := MeshInstance3D.new()
+		mi.name = oid
+		var box := BoxMesh.new()
+		# MW [sx,sy,sz] → Godot (x, y-up=z, depth=-y) → (sx, sz, sy).
+		box.size = Vector3(sx, sz, sy)
+		box.material = mat_curb if oid.begins_with("boundary_") else mat_bldg
+		mi.mesh = box
+		mi.position = Vector3(px, pz, -py)
+		mi.rotation = Vector3(0.0, yaw, 0.0)
+		city.add_child(mi)
+
+
+func _place_kaykit_buildings(data: Dictionary) -> void:
+	"""Optional decorative KayKit meshes (may overhang footprints — not authority)."""
+	var kay := _ensure_group("KayKit")
+	_clear_children(kay)
 	for entry in data.get("buildings", []):
-		_instance_asset(city, entry)
+		_instance_asset(kay, entry)
 
 
 func _place_props(data: Dictionary) -> void:
@@ -134,7 +247,6 @@ func _place_roads(data: Dictionary) -> void:
 		pm.size = Vector2(float(entry.get("sx", 4.0)), float(entry.get("sy", 4.0)))
 		pm.material = mat
 		mi.mesh = pm
-		# Slightly above ground to avoid z-fight; MW→Godot.
 		mi.position = Vector3(
 			float(entry.get("x", 0.0)),
 			0.02,
@@ -151,6 +263,13 @@ func _ensure_group(group_name: String) -> Node3D:
 		node.name = group_name
 		add_child(node)
 	return node
+
+
+func _clear_group(group_name: String) -> void:
+	"""Clear children of a named group if it exists."""
+	var node := get_node_or_null(group_name) as Node3D
+	if node != null:
+		_clear_children(node)
 
 
 func _clear_children(parent: Node3D) -> void:
@@ -177,7 +296,6 @@ func _instance_asset(parent: Node3D, entry: Variant) -> void:
 	node.name = str(entry.get("id", "asset"))
 	var scale_v := float(entry.get("scale", 2.0))
 	var yaw := float(entry.get("yaw", 0.0))
-	# MW (x,y) → Godot (x, 0, -y); yaw around Godot Y.
 	var gx := float(entry.get("x", 0.0))
 	var gy := float(entry.get("y", 0.0))
 	node.position = Vector3(gx, 0.0, -gy)
@@ -195,6 +313,7 @@ func _place_markers(data: Dictionary) -> void:
 		var zone := get_node_or_null("../Authority/FinishZone") as Node3D
 		if zone != null:
 			zone.position = Vector3(fx, 1.0, -fy)
+			zone.visible = true
 		var flag := get_node_or_null("FinishFlag") as Node3D
 		if flag != null:
 			flag.position = Vector3(fx + 0.3, 0.5, -fy - 0.4)

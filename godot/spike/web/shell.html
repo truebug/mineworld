@@ -542,6 +542,9 @@ body.mw-play #mw-joints {
 			<input id="mw-seed-input" type="number" min="0" step="1" value="42">
 			<button type="button" id="mw-seed-go" data-i18n="hub.regen">重生</button>
 			<button type="button" id="mw-seed-rnd" data-i18n="hub.random">随机</button>
+			<label style="margin-left:8px;font-size:12px;color:#9bb4c9;cursor:pointer;">
+				<input id="mw-kaykit" type="checkbox" checked style="vertical-align:middle;"> KayKit皮
+			</label>
 			<span id="mw-seed-status"></span>
 		</div>
 		<div id="mw-joints">
@@ -1028,6 +1031,28 @@ const engine = new Engine(GODOT_CONFIG);
 	const seedStatus = document.getElementById('mw-seed-status');
 	const seedGo = document.getElementById('mw-seed-go');
 	const seedRnd = document.getElementById('mw-seed-rnd');
+	const wallsCb = document.getElementById('mw-kaykit');
+
+	(function initKaykitToggle() {
+		const params = new URLSearchParams(location.search);
+		const q = params.get('kaykit');
+		let on = true;
+		if (q === '0' || q === 'false') {
+			on = false;
+		} else if (q === '1' || q === 'true') {
+			on = true;
+		}
+		window.MINEWORLD_SHOW_KAYKIT = on;
+		if (wallsCb) {
+			wallsCb.checked = on;
+			wallsCb.addEventListener('change', function () {
+				const next = wallsCb.checked ? '1' : '0';
+				const u = new URL(location.href);
+				u.searchParams.set('kaykit', next);
+				location.href = u.pathname + u.search + u.hash;
+			});
+		}
+	})();
 
 	function setSeedStatus(text) {
 		if (seedStatus) {
