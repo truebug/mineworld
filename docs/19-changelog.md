@@ -10,6 +10,13 @@
 
 ---
 
+## 2026-07-22 · Hub 人偶：Kenney Blocky + 走跑动画
+
+- `avatar_puppet`：轮式程序化模型 → Kenney `character-a..d`；idle/walk/sprint 由插值速度驱动；H9 accent 换皮。Gateway 不变。
+- 大厅 `MOVE_SPEED` 5.5 → 2.8（人形手感）。
+
+---
+
 ## 2026-07-21 · 文档：City 三连坑教训入库
 
 - [25-qa-local-export.md](25-qa-local-export.md)：臂 UI 竞态 / A–E 队标 / multi-lot 吞街空气墙；导出缓存假象；playground 发版核对。

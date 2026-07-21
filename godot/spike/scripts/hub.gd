@@ -2,7 +2,8 @@
 ## No MuJoCo — Gateway FakeMech presence only. ?menu=1 → text lobby.
 extends Node3D
 
-const MOVE_SPEED := 5.5
+## Humanoid Hub pace (was 5.5 for wheeled bot; felt too fast as Blocky walk).
+const MOVE_SPEED := 2.8
 const TURN_SPEED := 2.2
 const CMD_HZ := 20.0
 const WORKSHOP_SCENE := "res://demo_workshop.tscn"
@@ -752,11 +753,13 @@ func _process(delta: float) -> void:
 
 
 func _sync_first_person_mesh() -> void:
-	"""Hide own chassis in FP so the camera is not inside the hull."""
+	"""Hide own body in FP so the camera is not inside the mesh."""
 	var own := _own_avatar()
 	if own == null:
 		return
-	var bot := own.get_node_or_null("WheelBot") as Node3D
+	var bot := own.get_node_or_null("Blocky") as Node3D
+	if bot == null:
+		bot = own.get_node_or_null("WheelBot") as Node3D
 	if bot == null:
 		return
 	var fp := false
