@@ -10,6 +10,22 @@
 
 ---
 
+## 2026-07-22 · demo_race 驾驶模型重构 R1–R5
+
+- R1 协议：`control_mode: "drive"`（throttle/brake/steer/handbrake 模拟量），网关 Ackermann 映射按契约 `extensions.mw.drive` 参数执行；`velocity` 模式零影响。
+- R2 输入：键盘按住渐进给油（2.5/s）、松开衰减、转向按住渐进打死（3/s）松手自动回正（5/s）；X 倒车低速保护；手柄 axis 原生接入。
+- R3 HUD：车速 km/h、油门/刹车条、转向指示、cp 分段计时；相机 FOV 随速度扩张（55→67°）+ 弹性跟随滞后。
+- R4 特效：重刹/高速急转胎痕（FIFO 220 条）+ 刹车烟尘粒子；race 插值延迟 50→30ms。全部 viewer-only。
+- R5 赛道：弯心红白路缘带 + 弯前 50/100/150m 刹车牌（按 centerline 曲率自动布点）。
+- 验收：无头 drive 冒烟 PASS（半油门+半转向 3s 位移 8.1m、转向 0.44rad）。
+
+## 2026-07-22 · 赛车场环境丰富化（viewer-only）
+
+- 草坪：路缘外侧绿地毯条带沿全圈铺设；绿化带：每 3 个采样点一排修剪绿篱。
+- 安全区：弯心出口侧砾石缓冲区（浅色 pad）+ 远端红白糖罐轮胎墙。
+- 看台：起终点双侧三层阶梯看台（灰阶台阶 + 彩色观众点）+ billboardLow 背景板。
+- 全部由 centerline/curvature 自动布点；不碰 MuJoCo 物理与契约。
+
 ## 2026-07-22 · Hub 门 E/R 分离：竞技场 WIP，赛车场独立
 
 - 门 E「竞技场」改为建设中占位：不再可进入，文案改为机甲格斗（1v1 / 团队对战）规划；F 四态 stub 保留。
@@ -561,17 +577,3 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 - Web 首屏：`shell.html` 品牌字标（MineWorld / Dungeon Gate）+ 进度条；隐藏 Godot 默认 splash 图。
 - 过场：`MW_TRANSITION` DOM 淡入淡出（~280ms）；Autoload `MWTransition.go` / `notify_arrived` 覆盖 Hub 门、Esc 回 Hub、文本菜单。
-## 2026-07-22 · demo_race 驾驶模型重构 R1–R5
-
-- R1 协议：`control_mode: "drive"`（throttle/brake/steer/handbrake 模拟量），网关 Ackermann 映射按契约 `extensions.mw.drive` 参数执行；`velocity` 模式零影响。
-- R2 输入：键盘按住渐进给油（2.5/s）、松开衰减、转向按住渐进打死（3/s）松手自动回正（5/s）；X 倒车低速保护；手柄 axis 原生接入。
-- R3 HUD：车速 km/h、油门/刹车条、转向指示、cp 分段计时；相机 FOV 随速度扩张（55→67°）+ 弹性跟随滞后。
-- R4 特效：重刹/高速急转胎痕（FIFO 220 条）+ 刹车烟尘粒子；race 插值延迟 50→30ms。全部 viewer-only。
-- R5 赛道：弯心红白路缘带 + 弯前 50/100/150m 刹车牌（按 centerline 曲率自动布点）。
-- 验收：无头 drive 冒烟 PASS（半油门+半转向 3s 位移 8.1m、转向 0.44rad）。
-## 2026-07-22 · 赛车场环境丰富化（viewer-only）
-
-- 草坪：路缘外侧绿地毯条带沿全圈铺设；绿化带：每 3 个采样点一排修剪绿篱。
-- 安全区：弯心出口侧砾石缓冲区（浅色 pad）+ 远端红白糖罐轮胎墙。
-- 看台：起终点双侧三层阶梯看台（灰阶台阶 + 彩色观众点）+ billboardLow 背景板。
-- 全部由 centerline/curvature 自动布点；不碰 MuJoCo 物理与契约。

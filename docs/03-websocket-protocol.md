@@ -77,15 +77,6 @@ Client/Gateway --{ type: "bye" }--> 关闭
   "payload": {
     "entity_id": "mech_player",
     "control_mode": "velocity",
-
-`control_mode: "drive"`（R1 · demo_race）：模拟量驾驶通道，与 `velocity` 并存、向后兼容。
-
-```json
-{"control_mode": "drive", "throttle": 0.6, "brake": 0.0, "steer": -0.35, "handbrake": 0}
-```
-
-- `throttle [-1,1]`（<0 倒车）、`brake [0,1]`、`steer [-1,1]`（+ 左）、`handbrake [0,1]`（预留）
-- 手感曲线参数集中在契约 `extensions.mw.drive`（`steer_max_rad` / `steer_speed_gain` / `v_max` / `v_taper` / `brake_torque` / `reverse_gain`），网关强制执行，客户端用同参数做 HUD 预览
     "vx": 0.5,
     "vy": 0.0,
     "yaw_rate": 0.1,
@@ -93,6 +84,27 @@ Client/Gateway --{ type: "bye" }--> 关闭
   }
 }
 ```
+
+`control_mode: "drive"`（R1 · `demo_race`）：模拟量驾驶通道，与 `velocity` 并存、向后兼容。
+
+```json
+{
+  "type": "cmd",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "tick": 1205,
+  "payload": {
+    "entity_id": "mech_0",
+    "control_mode": "drive",
+    "throttle": 0.6,
+    "brake": 0.0,
+    "steer": -0.35,
+    "handbrake": 0
+  }
+}
+```
+
+- `throttle [-1,1]`（<0 倒车）、`brake [0,1]`、`steer [-1,1]`（+ 左）、`handbrake [0,1]`（预留）
+- 手感曲线参数集中在契约 `extensions.mw.drive`（`steer_max_rad` / `steer_speed_gain` / `v_max` / `v_taper` / `brake_torque` / `reverse_gain`），网关强制执行，客户端用同参数做 HUD 预览
 
 ### 4.3 接管 / 释放
 
