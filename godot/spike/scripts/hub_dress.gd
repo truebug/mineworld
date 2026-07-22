@@ -37,6 +37,7 @@ func _build() -> void:
 	_place_mezzanine(root)
 	_place_room_shells(root)
 	_place_props(root)
+	_place_guide_paths(root)
 	_place_door_glows()
 	_place_wing_labels(root)
 	print("[MW] hub dress: mothership hangar %.0fx%.0f roof_y=%.1f L2=%.1f apron=%.0fx%.0f" % [
@@ -46,32 +47,44 @@ func _build() -> void:
 
 
 func _setup_lights() -> void:
-	"""Cool port lighting + deep-space sky (harder contrast than warehouse)."""
+	"""Academy-warm hangar: higher ambient + warm key; cyan fill as rim."""
 	var env_node := get_parent().get_node_or_null("WorldEnvironment") as WorldEnvironment
 	if env_node != null and env_node.environment != null:
 		var e: Environment = env_node.environment
 		e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-		e.ambient_light_color = Color(0.28, 0.34, 0.45)
-		e.ambient_light_energy = 0.35
+		e.ambient_light_color = Color(0.42, 0.40, 0.38)
+		e.ambient_light_energy = 0.55
 		e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-		e.tonemap_exposure = 1.05
+		e.tonemap_exposure = 1.12
 		e.glow_enabled = true
-		e.glow_intensity = 0.35
-		e.glow_strength = 0.7
-		e.glow_bloom = 0.08
+		e.glow_intensity = 0.4
+		e.glow_strength = 0.75
+		e.glow_bloom = 0.1
 		_apply_space_sky(e)
 	var sun := get_parent().get_node_or_null("Sun") as DirectionalLight3D
 	if sun != null:
-		sun.light_color = Color(0.75, 0.85, 1.0)
-		sun.light_energy = 0.85
+		sun.light_color = Color(1.0, 0.92, 0.82)
+		sun.light_energy = 1.05
 		sun.shadow_enabled = false
-		sun.rotation_degrees = Vector3(-48, 35, 0)
+		sun.rotation_degrees = Vector3(-42, 28, 0)
 	var fill := get_parent().get_node_or_null("Fill") as OmniLight3D
 	if fill != null:
 		fill.light_color = Color(0.35, 0.75, 0.95)
-		fill.light_energy = 2.4
-		fill.omni_range = 48.0
-		fill.position = Vector3(0.0, 12.0, 0.0)
+		fill.light_energy = 1.6
+		fill.omni_range = 52.0
+		fill.position = Vector3(0.0, 14.0, 0.0)
+	# Warm key over spawn / central plaza (academy hangar, not cold warehouse).
+	var key := get_parent().get_node_or_null("AcademyKey") as OmniLight3D
+	if key == null:
+		key = OmniLight3D.new()
+		key.name = "AcademyKey"
+		get_parent().add_child(key)
+	key.light_color = Color(1.0, 0.78, 0.55)
+	key.light_energy = 3.2
+	key.omni_range = 22.0
+	key.omni_attenuation = 1.1
+	key.shadow_enabled = false
+	key.position = Vector3(4.0, 7.5, 0.0)
 
 
 func _apply_space_sky(e: Environment) -> void:
@@ -952,19 +965,103 @@ func _ensure_marker(
 
 
 func _place_door_glows() -> void:
-	"""Neon portal slabs in door bays."""
+	"""Neon portal slabs in door bays (subtle pulse for life)."""
 	var world := get_parent().get_node_or_null("World") as Node3D
 	if world == null:
 		return
-	_glow_at(world, Vector3(HALL_HALF_X - 0.35, 1.6, 0.0), Color(1.0, 0.45, 0.1), Vector3(0.12, 3.2, 3.0))
-	_glow_at(world, Vector3(-HALL_HALF_X + 0.35, 1.6, 0.0), Color(0.2, 0.65, 1.0), Vector3(0.12, 3.2, 3.0))
+	var a := _glow_at(world, Vector3(HALL_HALF_X - 0.35, 1.6, 0.0), Color(1.0, 0.45, 0.1), Vector3(0.12, 3.2, 3.0))
+	var b := _glow_at(world, Vector3(-HALL_HALF_X + 0.35, 1.6, 0.0), Color(0.2, 0.65, 1.0), Vector3(0.12, 3.2, 3.0))
 	_glow_at(world, Vector3(0.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.75, 0.85, 0.95), Vector3(2.6, 2.8, 0.12))
 	_glow_at(world, Vector3(-HALL_HALF_X + 0.35, 1.6, -10.0), Color(0.45, 0.75, 0.6), Vector3(0.12, 2.8, 2.4))
 	_glow_at(world, Vector3(0.0, 1.6, HALL_HALF_Z - 0.35), Color(1.0, 0.4, 0.2), Vector3(2.6, 2.8, 0.12))
+	_start_glow_pulse([a, b])
 
 
-func _glow_at(parent: Node3D, pos: Vector3, color: Color, size: Vector3) -> void:
-	"""Emissive portal marker."""
+func _place_guide_paths(root: Node3D) -> void:
+	"""Dashed floor strips spawn → A (orange) / B (blue); viewer-only."""
+	var paths := Node3D.new()
+	paths.name = "GuidePaths"
+	root.add_child(paths)
+	# Spawn cluster near +X; strips run to east Workshop and west Training.
+	_lay_dashed_path(paths, Vector2(3.0, 0.0), Vector2(20.5, 0.0), Color(1.0, 0.5, 0.12))
+	_lay_dashed_path(paths, Vector2(1.5, 0.0), Vector2(-20.5, 0.0), Color(0.25, 0.7, 1.0))
+	# Soft omnis so Compatibility renderer still reads the route.
+	for x in [6.0, 12.0, 18.0]:
+		_path_omni(paths, Vector3(x, 1.1, 0.0), Color(1.0, 0.55, 0.2))
+		_path_omni(paths, Vector3(-x, 1.1, 0.0), Color(0.3, 0.7, 1.0))
+
+
+func _lay_dashed_path(parent: Node3D, a: Vector2, b: Vector2, color: Color) -> void:
+	"""Lay short emissive floor segments from a→b (Godot XZ as Vector2 x,z)."""
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(color.r, color.g, color.b, 0.9)
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 2.2
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var soft := StandardMaterial3D.new()
+	soft.albedo_color = Color(color.r, color.g, color.b, 0.2)
+	soft.emission_enabled = true
+	soft.emission = color
+	soft.emission_energy_multiplier = 1.0
+	soft.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	soft.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var delta := b - a
+	var length := delta.length()
+	if length < 0.2:
+		return
+	var dir := delta / length
+	var yaw := atan2(-dir.y, dir.x)
+	var seg_len := 1.1
+	var gap := 0.32
+	var width := 0.42
+	var t := 0.0
+	var i := 0
+	while t + seg_len * 0.3 < length:
+		var seg := minf(seg_len, length - t)
+		var mid := a + dir * (t + seg * 0.5)
+		var mi := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(seg, 0.025, width)
+		mi.mesh = box
+		mi.material_override = mat
+		mi.position = Vector3(mid.x, 0.035, mid.y)
+		mi.rotation.y = yaw
+		parent.add_child(mi)
+		var halo := MeshInstance3D.new()
+		var soft_box := BoxMesh.new()
+		soft_box.size = Vector3(seg * 1.05, 0.012, width * 2.1)
+		halo.mesh = soft_box
+		halo.material_override = soft
+		halo.position = Vector3(mid.x, 0.02, mid.y)
+		halo.rotation.y = yaw
+		parent.add_child(halo)
+		i += 1
+		t += seg + gap
+
+
+func _path_omni(parent: Node3D, pos: Vector3, color: Color) -> void:
+	"""Dim route marker light."""
+	var light := OmniLight3D.new()
+	light.position = pos
+	light.light_color = color
+	light.light_energy = 0.28
+	light.omni_range = 4.0
+	light.shadow_enabled = false
+	parent.add_child(light)
+
+
+func _start_glow_pulse(nodes: Array) -> void:
+	"""Pulse A/B door glows so the hall feels alive."""
+	var driver: Node = preload("res://scripts/hub_glow_pulse.gd").new()
+	driver.name = "DoorGlowPulse"
+	driver.set("glows", nodes)
+	add_child(driver)
+
+
+func _glow_at(parent: Node3D, pos: Vector3, color: Color, size: Vector3) -> MeshInstance3D:
+	"""Emissive portal marker; returns mesh for optional pulse."""
 	var mi := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = size
@@ -978,3 +1075,4 @@ func _glow_at(parent: Node3D, pos: Vector3, color: Color, size: Vector3) -> void
 	mi.material_override = mat
 	parent.add_child(mi)
 	mi.position = pos
+	return mi

@@ -8,7 +8,7 @@ signal view_mode_changed(label: String)
 enum ViewMode { ORBIT, FIRST, CHASE }
 enum DragKind { NONE, PEEK, STICKY, PAN }
 
-const CHASE_PITCH_DEFAULT := -0.28
+const CHASE_PITCH_DEFAULT := -0.38
 
 @export var target_path: NodePath
 @export var distance := 13.0
@@ -22,9 +22,9 @@ const CHASE_PITCH_DEFAULT := -0.28
 @export var pan_mouse_scale := 0.12
 @export var max_look_offset := 40.0
 @export var view_mode: ViewMode = ViewMode.CHASE
-@export var chase_distance := 3.6
+@export var chase_distance := 4.8
 @export var min_chase_distance := 2.0
-@export var max_chase_distance := 8.0
+@export var max_chase_distance := 9.0
 @export var chase_recenter_speed := 7.0
 
 @onready var camera: Camera3D = $Camera3D
@@ -112,7 +112,7 @@ func cycle_view_mode() -> String:
 			view_mode = ViewMode.CHASE
 			_chase_yaw = 0.0
 			_chase_pitch = CHASE_PITCH_DEFAULT
-			chase_distance = 3.6
+			chase_distance = 4.8
 			_commit_current_look()
 	_update_camera()
 	var label := view_mode_label()

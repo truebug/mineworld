@@ -10,7 +10,12 @@
     {
       "id": "avatar_0",
       "model_ref": "hub/paper_doll",
-      "pose": { "x": 0.0, "y": 0.0, "z": 0.9, "yaw": 0.0 },
+      "pose": {
+        "x": 2.0,
+        "y": 0.0,
+        "z": 0.9,
+        "yaw": 0.0
+      },
       "player_slot": 0,
       "control_mode": "velocity",
       "physics_role": "viewer_only"
@@ -18,7 +23,12 @@
     {
       "id": "avatar_1",
       "model_ref": "hub/paper_doll",
-      "pose": { "x": 1.5, "y": 0.0, "z": 0.9, "yaw": 0.0 },
+      "pose": {
+        "x": 3.5,
+        "y": 0.0,
+        "z": 0.9,
+        "yaw": 0.0
+      },
       "player_slot": 1,
       "control_mode": "velocity",
       "physics_role": "viewer_only"
@@ -26,7 +36,12 @@
     {
       "id": "avatar_2",
       "model_ref": "hub/paper_doll",
-      "pose": { "x": -1.5, "y": 0.0, "z": 0.9, "yaw": 0.0 },
+      "pose": {
+        "x": 0.5,
+        "y": 0.0,
+        "z": 0.9,
+        "yaw": 0.0
+      },
       "player_slot": 2,
       "control_mode": "velocity",
       "physics_role": "viewer_only"
@@ -34,7 +49,12 @@
     {
       "id": "avatar_3",
       "model_ref": "hub/paper_doll",
-      "pose": { "x": 0.0, "y": 1.5, "z": 0.9, "yaw": 0.0 },
+      "pose": {
+        "x": 2.0,
+        "y": 1.5,
+        "z": 0.9,
+        "yaw": 0.0
+      },
       "player_slot": 3,
       "control_mode": "velocity",
       "physics_role": "viewer_only"
@@ -42,7 +62,12 @@
     {
       "id": "avatar_4",
       "model_ref": "hub/paper_doll",
-      "pose": { "x": 0.0, "y": -1.5, "z": 0.9, "yaw": 0.0 },
+      "pose": {
+        "x": 2.0,
+        "y": -1.5,
+        "z": 0.9,
+        "yaw": 0.0
+      },
       "player_slot": 4,
       "control_mode": "velocity",
       "physics_role": "viewer_only"
@@ -50,7 +75,12 @@
     {
       "id": "avatar_5",
       "model_ref": "hub/paper_doll",
-      "pose": { "x": 3.0, "y": 1.0, "z": 0.9, "yaw": 0.0 },
+      "pose": {
+        "x": 5.0,
+        "y": 1.0,
+        "z": 0.9,
+        "yaw": 0.0
+      },
       "player_slot": 5,
       "control_mode": "velocity",
       "physics_role": "viewer_only"
@@ -58,7 +88,12 @@
     {
       "id": "avatar_6",
       "model_ref": "hub/paper_doll",
-      "pose": { "x": 3.0, "y": -1.0, "z": 0.9, "yaw": 0.0 },
+      "pose": {
+        "x": 5.0,
+        "y": -1.0,
+        "z": 0.9,
+        "yaw": 0.0
+      },
       "player_slot": 6,
       "control_mode": "velocity",
       "physics_role": "viewer_only"
@@ -66,7 +101,12 @@
     {
       "id": "avatar_7",
       "model_ref": "hub/paper_doll",
-      "pose": { "x": -3.0, "y": 0.0, "z": 0.9, "yaw": 0.0 },
+      "pose": {
+        "x": -1.0,
+        "y": 0.0,
+        "z": 0.9,
+        "yaw": 0.0
+      },
       "player_slot": 7,
       "control_mode": "velocity",
       "physics_role": "viewer_only"
@@ -86,16 +126,56 @@
         "half_x": 26.0,
         "half_y": 22.0,
         "walkable": [
-          { "min_x": -23.0, "max_x": 23.0, "min_y": -19.0, "max_y": 19.0 },
-          { "min_x": 22.0, "max_x": 25.5, "min_y": -1.7, "max_y": 1.7 },
-          { "min_x": -25.5, "max_x": -22.0, "min_y": -1.7, "max_y": 1.7 },
-          { "min_x": -1.7, "max_x": 1.7, "min_y": 18.0, "max_y": 21.5 },
-          { "min_x": -1.7, "max_x": 1.7, "min_y": -21.5, "max_y": -18.0 },
-          { "min_x": -25.5, "max_x": -22.0, "min_y": 8.5, "max_y": 11.5 }
+          {
+            "min_x": -23.0,
+            "max_x": 23.0,
+            "min_y": -19.0,
+            "max_y": 19.0
+          },
+          {
+            "min_x": 22.0,
+            "max_x": 25.5,
+            "min_y": -1.7,
+            "max_y": 1.7
+          },
+          {
+            "min_x": -25.5,
+            "max_x": -22.0,
+            "min_y": -1.7,
+            "max_y": 1.7
+          },
+          {
+            "min_x": -1.7,
+            "max_x": 1.7,
+            "min_y": 18.0,
+            "max_y": 21.5
+          },
+          {
+            "min_x": -1.7,
+            "max_x": 1.7,
+            "min_y": -21.5,
+            "max_y": -18.0
+          },
+          {
+            "min_x": -25.5,
+            "max_x": -22.0,
+            "min_y": 8.5,
+            "max_y": 11.5
+          }
         ],
         "blocked": [
-          { "min_x": 8.65, "max_x": 9.35, "min_y": -10.25, "max_y": -9.55 },
-          { "min_x": 18.85, "max_x": 19.55, "min_y": -10.25, "max_y": -9.55 }
+          {
+            "min_x": 8.65,
+            "max_x": 9.35,
+            "min_y": -10.25,
+            "max_y": -9.55
+          },
+          {
+            "min_x": 18.85,
+            "max_x": 19.55,
+            "min_y": -10.25,
+            "max_y": -9.55
+          }
         ]
       }
     }

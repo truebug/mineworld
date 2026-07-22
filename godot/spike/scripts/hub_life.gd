@@ -1,5 +1,5 @@
 ## Hub life: furniture, humanoid NPCs, interactive props (viewer-only).
-## Props hug the walls; center stays clear for player traffic.
+## Mid-ring welcome + wall props; center has wayfinding beacon (docs/24 first-look).
 extends Node3D
 
 const BLOCKY_DIR := "res://assets/kenney_blocky/"
@@ -9,6 +9,7 @@ const WALL_X := 22.5
 const WALL_Z := 18.5
 const INTERACT_DIST := 3.6
 const NPC_SCALE := 0.36
+const BEACON_POS := Vector3(5.0, 0.0, 0.0)
 
 ## [{node, id, prompt, line}]
 var interactables: Array = []
@@ -20,11 +21,15 @@ func _ready() -> void:
 
 
 func _build() -> void:
-	"""Assemble hub life dressing along walls."""
+	"""Assemble hub life: mid-ring focus + walls + ambient life."""
 	_place_furniture()
+	_place_mid_ring()
+	_place_beacon()
 	_place_stations()
 	_place_npcs()
-	print("[MW] hub life: wall props + %d interactables" % interactables.size())
+	_place_patrols()
+	_start_ambient_hum()
+	print("[MW] hub life: mid-ring + %d interactables" % interactables.size())
 
 
 func nearest_interact(player_pos: Vector3) -> Dictionary:
@@ -103,17 +108,17 @@ func _planter(pos: Vector3, pot: Material, leaf: Material) -> void:
 
 
 func _place_stations() -> void:
-	"""Kiosks flush to walls + E4 exhibit cabinets."""
+	"""Kiosks: welcome near beacon; others flush to walls + E4 exhibits."""
 	_station(
 		"kiosk_welcome",
-		Vector3(-6.0, 0, WALL_Z - 1.0),
-		180.0,
+		Vector3(3.2, 0, 3.2),
+		-35.0,
 		MWi18n.t("F · 导览台", "F · Welcome"),
 		MWi18n.t(
-			"欢迎来到母港。\n东橙 A 工坊 · 西蓝 B 训练 · 北 C 卡片 · 西偏北 D 边缘 · 南 E 竞技\n按 V 切换相机。",
-			"Welcome to Hangar Core.\nA Workshop · B Training · C Cards · D Edge · E Arena.\nPress V for camera."
+			"欢迎来到机甲学院母港。\n东橙 A 工坊 · 西蓝 B 训练 · 北 C 卡片 · 南 E 竞技\n跟随地面灯带前往。",
+			"Welcome to Mech Academy Hangar.\nA Workshop · B Training · C Cards · E Arena.\nFollow the floor lights."
 		),
-		Color(0.3, 0.7, 1.0),
+		Color(0.95, 0.7, 0.35),
 	)
 	_station(
 		"board_party",
@@ -357,34 +362,34 @@ func _station(
 
 
 func _place_npcs() -> void:
-	"""Small standing greeters at walls near doors (no wander)."""
+	"""Greeters on mid-ring: beacon + A/B approaches (not all on walls)."""
 	_npc(
 		"maya",
 		MWi18n.t("玛雅", "Maya"),
-		"character-a.glb", Vector3(-4.5, 0, WALL_Z - 1.3), 180.0, Color(1.0, 0.85, 0.4),
+		"character-a.glb", Vector3(5.8, 0, 2.4), -120.0, Color(1.0, 0.85, 0.4),
 		MWi18n.t("F · 与玛雅交谈", "F · Talk to Maya"),
-		MWi18n.t("玛雅: 橙门工坊 · 蓝门训练。按 V 切相机。", "Maya: Orange Workshop, blue Training. V = camera."),
+		MWi18n.t("玛雅: 跟橙灯带去工坊，蓝灯带去训练场。", "Maya: Orange lights → Workshop, blue → Training."),
 	)
 	_npc(
 		"rex",
 		MWi18n.t("雷克斯", "Rex"),
-		"character-b.glb", Vector3(WALL_X - 1.3, 0, 2.2), -90.0, Color(1.0, 0.55, 0.25),
+		"character-b.glb", Vector3(17.5, 0, 2.4), -90.0, Color(1.0, 0.55, 0.25),
 		MWi18n.t("F · 与雷克斯交谈", "F · Talk to Rex"),
-		MWi18n.t("雷克斯: 工坊在橙门。把推车完整带回来！", "Rex: Workshop through the orange gate."),
+		MWi18n.t("雷克斯: 橙门工坊就在前面。把推车完整带回来！", "Rex: Orange gate Workshop ahead — bring the cart back!"),
 	)
 	_npc(
 		"jin",
 		MWi18n.t("金", "Jin"),
-		"character-c.glb", Vector3(-WALL_X + 1.3, 0, -2.2), 90.0, Color(0.45, 0.8, 1.0),
+		"character-c.glb", Vector3(-17.5, 0, 2.2), 90.0, Color(0.45, 0.8, 1.0),
 		MWi18n.t("F · 与金交谈", "F · Talk to Jin"),
 		MWi18n.t("金: 蓝门是训练场。进街区前先热身。", "Jin: Blue door = Training yard."),
 	)
 	_npc(
 		"pip",
 		MWi18n.t("皮普", "Pip"),
-		"character-d.glb", Vector3(4.5, 0, -WALL_Z + 1.3), 0.0, Color(0.7, 0.9, 0.5),
+		"character-d.glb", Vector3(0.0, 0, -8.0), 0.0, Color(0.7, 0.9, 0.5),
 		MWi18n.t("F · 与皮普交谈", "F · Talk to Pip"),
-		MWi18n.t("皮普: 我在看人来人往。朋友进厅记得打招呼！", "Pip: People-watching — say hi when friends join."),
+		MWi18n.t("皮普: 中央碑有今日去处。朋友进厅记得打招呼！", "Pip: Check the central board — say hi when friends join."),
 	)
 
 
@@ -558,3 +563,136 @@ func _mat(albedo: Color, roughness: float, metallic: float) -> StandardMaterial3
 	mat.roughness = roughness
 	mat.metallic = metallic
 	return mat
+
+
+func _place_mid_ring() -> void:
+	"""Planters / crates around beacon so the plaza is not empty grid."""
+	var pot := _mat(Color(0.38, 0.34, 0.3), 0.75, 0.05)
+	var leaf := _mat(Color(0.32, 0.58, 0.35), 0.85, 0.0)
+	var rug := _mat(Color(0.4, 0.32, 0.28), 0.9, 0.0)
+	_box(Vector3(5.0, 0.02, 0.0), Vector3(5.5, 0.04, 5.5), rug)
+	_planter(Vector3(7.5, 0, 3.2), pot, leaf)
+	_planter(Vector3(7.5, 0, -3.2), pot, leaf)
+	_planter(Vector3(2.5, 0, 3.5), pot, leaf)
+	_spawn_factory("cone.glb", 8.5, -2.0, 15.0, 1.0)
+	_spawn_factory("box-small.glb", 3.5, -3.0, -25.0, 1.0)
+
+
+func _place_beacon() -> void:
+	"""Central wayfinding pillar: A Workshop / B Training (F for lore)."""
+	var root := Node3D.new()
+	root.name = "WayfindingBeacon"
+	add_child(root)
+	root.position = BEACON_POS
+	var hull := _mat(Color(0.22, 0.24, 0.28), 0.45, 0.35)
+	var warm := _mat(Color(1.0, 0.72, 0.35), 0.35, 0.1)
+	warm.emission_enabled = true
+	warm.emission = Color(1.0, 0.65, 0.25)
+	warm.emission_energy_multiplier = 1.6
+	var cyan := _mat(Color(0.3, 0.8, 1.0), 0.35, 0.1)
+	cyan.emission_enabled = true
+	cyan.emission = Color(0.25, 0.75, 1.0)
+	cyan.emission_energy_multiplier = 1.4
+	_box_child(root, Vector3(0, 0.15, 0), Vector3(1.6, 0.3, 1.6), hull)
+	_box_child(root, Vector3(0, 1.1, 0), Vector3(0.55, 1.9, 0.55), hull)
+	_box_child(root, Vector3(0, 2.25, 0), Vector3(1.1, 0.12, 1.1), warm)
+	_box_child(root, Vector3(0.42, 1.2, 0), Vector3(0.08, 1.2, 0.45), warm)
+	_box_child(root, Vector3(-0.42, 1.2, 0), Vector3(0.08, 1.2, 0.45), cyan)
+	var ring := OmniLight3D.new()
+	ring.position = Vector3(0, 2.4, 0)
+	ring.light_color = Color(1.0, 0.75, 0.45)
+	ring.light_energy = 1.8
+	ring.omni_range = 8.0
+	ring.shadow_enabled = false
+	root.add_child(ring)
+	var title := Label3D.new()
+	MWFonts.apply_label3d(title)
+	title.text = MWi18n.t("今日去处", "Today")
+	title.font_size = 42
+	title.outline_size = 6
+	title.pixel_size = 0.011
+	title.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	title.modulate = Color(1.0, 0.85, 0.55)
+	root.add_child(title)
+	title.position = Vector3(0, 2.85, 0)
+	var body := Label3D.new()
+	MWFonts.apply_label3d(body)
+	body.text = MWi18n.t("→ 东 A 仿真工坊\n← 西 B 机甲训练", "→ East A Workshop\n← West B Training")
+	body.font_size = 32
+	body.outline_size = 5
+	body.pixel_size = 0.01
+	body.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	body.modulate = Color(0.95, 0.95, 0.98)
+	root.add_child(body)
+	body.position = Vector3(0, 3.35, 0)
+	interactables.append({
+		"node": root,
+		"id": "beacon",
+		"prompt": MWi18n.t("F · 今日去处", "F · Destinations"),
+		"line": MWi18n.t(
+			"今日去处\n橙灯带 → A 仿真工坊（臂爪任务）\n蓝灯带 → B 机甲训练场（街区驾驶）\n走近发光门即可进入。",
+			"Destinations\nOrange lights → A Workshop (arm/claw)\nBlue lights → B Training yard\nWalk into the glowing door."
+		),
+	})
+
+
+func _place_patrols() -> void:
+	"""Local walkers (not on Gateway) so the plaza feels occupied."""
+	_patrol(
+		"scout_a",
+		"character-b.glb",
+		Color(1.0, 0.6, 0.3),
+		[
+			Vector3(8.0, 0, 6.0),
+			Vector3(14.0, 0, 4.0),
+			Vector3(14.0, 0, -4.0),
+			Vector3(8.0, 0, -5.0),
+		],
+	)
+	_patrol(
+		"scout_b",
+		"character-c.glb",
+		Color(0.4, 0.75, 1.0),
+		[
+			Vector3(-6.0, 0, 5.0),
+			Vector3(-12.0, 0, 3.0),
+			Vector3(-12.0, 0, -4.0),
+			Vector3(-5.0, 0, -5.5),
+		],
+	)
+	_patrol(
+		"scout_c",
+		"character-a.glb",
+		Color(0.95, 0.8, 0.45),
+		[
+			Vector3(2.0, 0, 8.0),
+			Vector3(-3.0, 0, 10.0),
+			Vector3(4.0, 0, 12.0),
+		],
+	)
+
+
+func _patrol(npc_id: String, asset: String, accent: Color, path: Array) -> void:
+	"""Instance a hub_patrol_npc along waypoints."""
+	var node: Node3D = preload("res://scripts/hub_patrol_npc.gd").new()
+	node.name = "Patrol_%s" % npc_id
+	add_child(node)
+	if node.has_method("setup"):
+		node.call("setup", asset, path, accent)
+
+
+func _start_ambient_hum() -> void:
+	"""Low procedural hangar hum (no third-party sample; soft loop)."""
+	var player := AudioStreamPlayer.new()
+	player.name = "AmbientHum"
+	player.volume_db = -22.0
+	add_child(player)
+	var gen := AudioStreamGenerator.new()
+	gen.mix_rate = 22050.0
+	gen.buffer_length = 0.5
+	player.stream = gen
+	player.play()
+	var filler: Node = preload("res://scripts/hub_ambient_hum.gd").new()
+	filler.name = "AmbientHumFiller"
+	filler.set("player", player)
+	add_child(filler)
