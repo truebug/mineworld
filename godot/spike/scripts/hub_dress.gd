@@ -726,24 +726,10 @@ func _place_elevator(root: Node3D) -> void:
 
 
 func _place_room_shells(root: Node3D) -> void:
-	"""H10: north-wall gallery / classroom corridor alcoves (narrative only)."""
-	var frame := _mat(Color(0.28, 0.3, 0.34), 0.65, 0.15)
-	var trim := _mat(Color(0.55, 0.48, 0.32), 0.5, 0.2)
-	var glass := StandardMaterial3D.new()
-	glass.albedo_color = Color(0.55, 0.7, 0.85, 0.18)
-	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	glass.roughness = 0.15
-	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
-	# Gallery alcove (−X, −Z) — larger card-wing screens
-	_box(root, "GalArchL", Vector3(-11.0, 3.0, -HALL_HALF_Z + 0.35), Vector3(0.3, 5.8, 0.4), frame)
-	_box(root, "GalArchR", Vector3(-5.0, 3.0, -HALL_HALF_Z + 0.35), Vector3(0.3, 5.8, 0.4), frame)
-	_box(root, "GalLint", Vector3(-8.0, 5.9, -HALL_HALF_Z + 0.35), Vector3(6.2, 0.32, 0.45), trim)
-	_box(root, "GalGlass", Vector3(-8.0, 2.9, -HALL_HALF_Z + 0.12), Vector3(5.4, 5.2, 0.08), glass)
-	# Classroom alcove (+X, −Z)
-	_box(root, "ClsArchL", Vector3(5.0, 3.0, -HALL_HALF_Z + 0.35), Vector3(0.3, 5.8, 0.4), frame)
-	_box(root, "ClsArchR", Vector3(11.0, 3.0, -HALL_HALF_Z + 0.35), Vector3(0.3, 5.8, 0.4), frame)
-	_box(root, "ClsLint", Vector3(8.0, 5.9, -HALL_HALF_Z + 0.35), Vector3(6.2, 0.32, 0.45), trim)
-	_box(root, "ClsGlass", Vector3(8.0, 2.9, -HALL_HALF_Z + 0.12), Vector3(5.4, 5.2, 0.08), glass)
+	"""H10: north gallery/classroom alcove frames removed — E5d boards need clear wall.
+
+	Keep Door C/D/E narrative shells only.
+	"""
 	_place_arena_shell(root)
 	_place_design_shell(root)
 	_place_edge_shell(root)
