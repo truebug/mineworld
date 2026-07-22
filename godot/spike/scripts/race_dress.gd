@@ -16,7 +16,10 @@ func _ready() -> void:
 	"""Build flat asphalt lane, Kenney fences, finish flags, sparse trees."""
 	var layout := _load_layout()
 	if layout.is_empty():
-		push_warning("[MW] race dress: missing %s" % LAYOUT_PATH)
+		# Web export may omit data/*.json (non-imported file): degrade to
+		# grass + sky instead of a black void.
+		push_warning("[MW] race dress: missing %s — fallback ground only" % LAYOUT_PATH)
+		_add_fallback_ground()
 		return
 	_add_ground(layout)
 	_add_flat_lane(layout)
@@ -387,6 +390,19 @@ func _add_trees(layout: Dictionary) -> void:
 		var asset := "treeLarge.glb" if i % 3 == 0 else "treeSmall.glb"
 		var s := 4.0 if asset == "treeLarge.glb" else 3.4
 		_spawn_asset(asset, "tree_%d" % i, Vector3(px, 0.0, -py), ang, Vector3(s, s, s))
+
+
+func _add_fallback_ground() -> void:
+	"""Layout-less fallback: big grass pad so the track never renders as void."""
+	var mi := MeshInstance3D.new()
+	mi.name = "FallbackGrass"
+	var mesh := PlaneMesh.new()
+	mesh.size = Vector2(400, 400)
+	var mat := _grass_mat()
+	mesh.material = mat
+	mi.mesh = mesh
+	mi.position = Vector3(0, 0.002, 0)
+	add_child(mi)
 
 
 func _grass_mat() -> StandardMaterial3D:

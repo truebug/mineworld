@@ -10,6 +10,17 @@
 
 ---
 
+## 2026-07-22 · 修复 Web 赛车场黑场（race_layout.json 未打包）
+
+- 根因：Web 导出默认只收「已导入资源」，`data/*.json` 非导入文件未进 pck；
+  `race_dress` 布局缺失直接 return → 地面/围栏/树全部未建，画面只剩车和天空。
+- 修复：导出预设 `include_filter="data/*.json"`；`race_dress` 增加无布局兜底
+  （大草坪地垫，不再黑场）。需重新导出部署 playground 生效。
+- 注：本地 Godot 4.7.1 无头启动在 Metal shader 转换阶段崩溃（exit 134），
+  `--rendering-driver opengl3` 同样崩溃——属引擎本地问题，与 GDScript 无关；
+  脚本语法以日志中无 SCRIPT ERROR / Parse Error 判读。
+
+
 ## 2026-07-22 · demo_race 驾驶模型重构 R1–R5
 
 - R1 协议：`control_mode: "drive"`（throttle/brake/steer/handbrake 模拟量），网关 Ackermann 映射按契约 `extensions.mw.drive` 参数执行；`velocity` 模式零影响。
