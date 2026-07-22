@@ -26,6 +26,7 @@
 - 安全区：弯心出口侧砾石缓冲区（浅色 pad）+ 远端红白糖罐轮胎墙。
 - 看台：起终点双侧三层阶梯看台（灰阶台阶 + 彩色观众点）+ billboardLow 背景板。
 - 全部由 centerline/curvature 自动布点；不碰 MuJoCo 物理与契约。
+- Playground：`MW_BUILD=20260722-223128` · 含 R1–R5 驾驶模型 + 赛道布景 · web/gateway active。
 
 ## 2026-07-22 · Hub 门 E/R 分离：竞技场 WIP，赛车场独立
 
