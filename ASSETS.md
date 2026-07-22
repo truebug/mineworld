@@ -30,11 +30,11 @@
 | Blocky Characters 2.0（子集） | [kenney.nl/assets/blocky-characters](https://kenney.nl/assets/blocky-characters) | CC0 | Hub 人形纸片人；`godot/spike/assets/kenney_blocky/` | 无 | 2026-07-20 |
 | Noto Sans SC Regular（子集 TTF） | [fontsource](https://github.com/fontsource/font-files) · [Noto CJK](https://github.com/notofonts/noto-cjk) | SIL OFL 1.1 | Hub `Label3D`/HUD 中文；`godot/spike/assets/fonts/`（见 OFL.txt） | 保留 OFL | 2026-07-21 |
 | Racing Kit 1.x（子集） | [kenney.nl/assets/racing-kit](https://kenney.nl/assets/racing-kit) | CC0 | `demo_race` viewer 护栏/旗/树；`godot/spike/assets/kenney_racing/` | 无 | 2026-07-22 |
+| Car Kit 3.1（子集） | [kenney.nl/assets/car-kit](https://kenney.nl/assets/car-kit) | CC0 | `demo_race` viewer 车皮；`godot/spike/assets/kenney_car/` | 无 | 2026-07-22 |
 
 ### 候选（未入库 · demo_race 皮）
 
 | 资产 | 来源 | 许可 | 拟用途 |
 |------|------|------|--------|
-| Car Kit | [kenney.nl/assets/car-kit](https://kenney.nl/assets/car-kit) | CC0 | 赛车皮（仍 MuJoCo DiffBot 权威） |
 | Toy Car Kit | [kenney.nl/assets/toy-car-kit](https://kenney.nl/assets/toy-car-kit) | CC0 | 备选玩具风赛道块 |
 | Godot Racing Starter（参考） | [github.com/KenneyNL/Starter-Kit-Racing](https://github.com/KenneyNL/Starter-Kit-Racing) | 看仓库许可 | 仅对照玩法/镜头，不整包迁入 |

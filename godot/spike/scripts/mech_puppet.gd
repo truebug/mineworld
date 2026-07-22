@@ -15,6 +15,8 @@ extends Node3D
 @export var show_front_arrow: bool = true
 ## Race chassis has no arm in MJCF — skip industrial arm mesh.
 @export var show_arm: bool = true
+## Race: Kenney Car Kit skin (viewer_only; MuJoCo still DiffBot).
+@export var use_kenney_car: bool = false
 ## If alpha > 0, overrides TEAM_COLORS chassis tint (e.g. industrial orange).
 @export var chassis_tint_override: Color = Color(0, 0, 0, 0)
 var interp_delay := 0.05
@@ -40,6 +42,21 @@ const WHEEL_COLOR := Color(0.0, 0.0, 0.0)
 const CASTER_COLOR := Color(1.0, 1.0, 1.0)
 const FRONT_ARROW_SCENE := preload("res://assets/platformer/arrow.glb")
 const FRONT_ARROW_POS := Vector3(0.55, 0.55, 0.0)
+## Kenney Car Kit (CC0) — one body style per race slot; baked colormap colors.
+const KENNEY_CAR_DIR := "res://assets/kenney_car/"
+const KENNEY_CAR_BY_ENTITY := {
+	"mech_player": "race.glb",
+	"mech_player_b": "race-future.glb",
+	"mech_player_c": "sedan-sports.glb",
+	"mech_player_d": "hatchback-sports.glb",
+	"mech_player_e": "police.glb",
+	"mech_player_f": "taxi.glb",
+}
+## Car forward is typically -Z; MW puppet forward is +X.
+const KENNEY_CAR_YAW := -PI * 0.5
+const KENNEY_CAR_SCALE := Vector3(0.9, 0.9, 0.9)
+## Authority pose is chassis center (~0.5 m); Kenney origin is ground.
+const KENNEY_CAR_Y := -0.42
 ## Industrial arm look (viewer_only; kinematics still follow MJCF pivots).
 const ARM_METAL := Color(0.62, 0.65, 0.7)
 const ARM_DARK := Color(0.2, 0.22, 0.26)
@@ -61,6 +78,7 @@ var last_mw_y := 0.0
 var last_mw_yaw := 0.0
 var _cart_built := false
 var _arm_built := false
+var _kenney_car_id := ""
 var _wheel_joint_names: PackedStringArray = PackedStringArray()
 var _arm_yaw: Node3D
 var _arm_shoulder: Node3D
@@ -71,7 +89,7 @@ var _finger_r: Node3D
 
 func _ready() -> void:
 	ensure_planar_cart_visual()
-	if show_arm:
+	if show_arm and not use_kenney_car:
 		_ensure_arm_visual()
 	_ensure_front_arrow()
 	apply_team_look()
@@ -127,7 +145,10 @@ func _load_visual_spec() -> Dictionary:
 
 
 func ensure_planar_cart_visual() -> void:
-	"""Build/replace Body from F8 visual JSON (idempotent)."""
+	"""Build/replace Body from F8 visual JSON or Kenney car skin (idempotent)."""
+	if use_kenney_car:
+		_ensure_kenney_car_visual()
+		return
 	if _cart_built and get_node_or_null("Body/Chassis") != null:
 		return
 	var spec := _load_visual_spec()
@@ -195,9 +216,46 @@ func ensure_planar_cart_visual() -> void:
 		i += 1
 
 	_cart_built = true
+	_kenney_car_id = ""
 	_arm_built = false
 	if show_arm:
 		_ensure_arm_visual()
+
+
+func _ensure_kenney_car_visual() -> void:
+	"""Viewer-only Kenney car body; skip DiffBot box/wheels/arm."""
+	if _cart_built and get_node_or_null("Body/KenneyCar") != null and _kenney_car_id == entity_id:
+		return
+	var old := get_node_or_null("Body")
+	if old != null:
+		remove_child(old)
+		old.free()
+	var body := Node3D.new()
+	body.name = "Body"
+	add_child(body)
+	var fname := str(KENNEY_CAR_BY_ENTITY.get(entity_id, "race.glb"))
+	var path := KENNEY_CAR_DIR + fname
+	if not ResourceLoader.exists(path):
+		push_warning("MWMechPuppet: Kenney car missing: %s" % path)
+		_cart_built = false
+		_kenney_car_id = ""
+		return
+	var packed := load(path) as PackedScene
+	if packed == null:
+		push_warning("MWMechPuppet: Kenney car load failed: %s" % path)
+		_cart_built = false
+		_kenney_car_id = ""
+		return
+	var car: Node3D = packed.instantiate() as Node3D
+	car.name = "KenneyCar"
+	car.position = Vector3(0.0, KENNEY_CAR_Y, 0.0)
+	car.rotation.y = KENNEY_CAR_YAW
+	car.scale = KENNEY_CAR_SCALE
+	body.add_child(car)
+	_wheel_joint_names = PackedStringArray()
+	_cart_built = true
+	_kenney_car_id = entity_id
+	_arm_built = false
 
 
 func _ensure_arm_visual() -> void:
@@ -340,17 +398,19 @@ func apply_team_look() -> void:
 	var color: Color = TEAM_COLORS.get(entity_id, Color(0.65, 0.65, 0.68))
 	if chassis_tint_override.a > 0.01:
 		color = chassis_tint_override
-	var chassis := get_node_or_null("Body/Chassis") as MeshInstance3D
-	if chassis != null:
-		_tint_mesh(chassis, color)
-	else:
-		var body_root := get_node_or_null("Body")
-		if body_root is MeshInstance3D:
-			_tint_mesh(body_root as MeshInstance3D, color)
-		elif body_root != null:
-			for child in body_root.find_children("*", "MeshInstance3D", true, false):
-				if child.has_meta("team_tint"):
-					_tint_mesh(child as MeshInstance3D, color)
+	# Kenney cars keep baked colormap; only DiffBot box gets albedo tint.
+	if not use_kenney_car:
+		var chassis := get_node_or_null("Body/Chassis") as MeshInstance3D
+		if chassis != null:
+			_tint_mesh(chassis, color)
+		else:
+			var body_root := get_node_or_null("Body")
+			if body_root is MeshInstance3D:
+				_tint_mesh(body_root as MeshInstance3D, color)
+			elif body_root != null:
+				for child in body_root.find_children("*", "MeshInstance3D", true, false):
+					if child.has_meta("team_tint"):
+						_tint_mesh(child as MeshInstance3D, color)
 	var tag := get_node_or_null("TeamTag") as Label3D
 	if not show_team_tag:
 		if tag != null:
@@ -363,9 +423,11 @@ func apply_team_look() -> void:
 		tag.font_size = 72
 		tag.outline_size = 10
 		tag.outline_modulate = Color(0, 0, 0, 0.85)
-		tag.position = Vector3(0.0, 1.15, 0.0)
+		tag.position = Vector3(0.0, 1.35 if use_kenney_car else 1.15, 0.0)
 		tag.pixel_size = 0.012
 		add_child(tag)
+	elif use_kenney_car:
+		tag.position = Vector3(0.0, 1.35, 0.0)
 	MWFonts.apply_label3d(tag)
 	tag.visible = true
 	tag.text = str(TEAM_TAGS.get(entity_id, "?"))
@@ -411,6 +473,8 @@ func apply_state(entity: Dictionary, t_sim: float) -> void:
 
 func _apply_wheel_spin(joints: Variant) -> void:
 	"""F6: spin drive-wheel meshes from hinge joint angles (MW +Y axle → Godot +Z)."""
+	if use_kenney_car:
+		return
 	if typeof(joints) != TYPE_DICTIONARY:
 		return
 	ensure_planar_cart_visual()
