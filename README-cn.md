@@ -57,7 +57,7 @@ bash scripts/serve_web.sh restart
 # → 母港 http://127.0.0.1:8080/
 ```
 
-母港操作：**WASD** 移动 · **QE** 转向 · **V** 切相机（默认第一人称）· **F** 交互 · 门进工坊/训练场。
+母港操作：**WASD** 移动 · **QE** 转向 · **V** 切相机（默认**身后跟随** chase）· **F** 交互 · 门进工坊/训练场。
 
 ```bash
 .venv/bin/python scripts/ws_smoke_test.py

@@ -58,7 +58,7 @@ bash scripts/serve_web.sh restart
 # → hangar at http://127.0.0.1:8080/
 ```
 
-Controls (hangar): **WASD** move · **QE** turn · **V** cycle camera (default is first-person) · **F** interact · doors to Workshop / Training.
+Controls (hangar): **WASD** move · **QE** turn · **V** cycle camera (default is **chase-behind**) · **F** interact · doors to Workshop / Training.
 
 Smoke:
 
