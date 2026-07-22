@@ -499,6 +499,7 @@
         "z": 0.8,
         "yaw": 2.051
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -515,6 +516,7 @@
         "z": 0.8,
         "yaw": 2.3437
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -531,6 +533,7 @@
         "z": 0.8,
         "yaw": 2.5413
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -547,6 +550,7 @@
         "z": 0.8,
         "yaw": 2.6773
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -563,6 +567,7 @@
         "z": 0.8,
         "yaw": 2.7744
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -579,6 +584,7 @@
         "z": 0.8,
         "yaw": 2.845
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -595,6 +601,7 @@
         "z": 0.8,
         "yaw": 2.8956
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -611,6 +618,7 @@
         "z": 0.8,
         "yaw": 2.9294
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -627,6 +635,7 @@
         "z": 0.8,
         "yaw": 2.9472
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -643,6 +652,7 @@
         "z": 0.8,
         "yaw": 2.9492
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -659,6 +669,7 @@
         "z": 0.8,
         "yaw": 2.9357
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -675,6 +686,7 @@
         "z": 0.8,
         "yaw": 2.9096
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -691,6 +703,7 @@
         "z": 0.8,
         "yaw": 2.8775
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -707,6 +720,7 @@
         "z": 0.8,
         "yaw": 2.8504
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -723,6 +737,7 @@
         "z": 0.8,
         "yaw": 2.8398
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -739,6 +754,7 @@
         "z": 0.8,
         "yaw": 2.8521
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -755,6 +771,7 @@
         "z": 0.8,
         "yaw": 2.8864
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -771,6 +788,7 @@
         "z": 0.8,
         "yaw": 2.9352
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -787,6 +805,7 @@
         "z": 0.8,
         "yaw": 2.9878
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -803,6 +822,7 @@
         "z": 0.8,
         "yaw": 3.0334
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -819,6 +839,7 @@
         "z": 0.8,
         "yaw": 3.0611
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -835,6 +856,7 @@
         "z": 0.8,
         "yaw": 3.0592
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -851,6 +873,7 @@
         "z": 0.8,
         "yaw": 3.0147
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -867,6 +890,7 @@
         "z": 0.8,
         "yaw": 2.9162
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -883,6 +907,7 @@
         "z": 0.8,
         "yaw": 2.7655
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -899,6 +924,7 @@
         "z": 0.8,
         "yaw": 2.5933
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -915,6 +941,7 @@
         "z": 0.8,
         "yaw": 2.4472
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -931,6 +958,7 @@
         "z": 0.8,
         "yaw": 2.3562
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -947,6 +975,7 @@
         "z": 0.8,
         "yaw": 2.3206
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -963,6 +992,7 @@
         "z": 0.8,
         "yaw": 2.329
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -979,6 +1009,7 @@
         "z": 0.8,
         "yaw": 2.3691
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -995,6 +1026,7 @@
         "z": 0.8,
         "yaw": 2.4324
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1011,6 +1043,7 @@
         "z": 0.8,
         "yaw": 2.5131
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1027,6 +1060,7 @@
         "z": 0.8,
         "yaw": 2.6082
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1043,6 +1077,7 @@
         "z": 0.8,
         "yaw": 2.7167
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1059,6 +1094,7 @@
         "z": 0.8,
         "yaw": 2.8395
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1075,6 +1111,7 @@
         "z": 0.8,
         "yaw": 2.979
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1091,6 +1128,7 @@
         "z": 0.8,
         "yaw": 3.1395
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1107,6 +1145,7 @@
         "z": 0.8,
         "yaw": -2.9575
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1123,6 +1162,7 @@
         "z": 0.8,
         "yaw": -2.7419
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1139,6 +1179,7 @@
         "z": 0.8,
         "yaw": -2.4991
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1155,6 +1196,7 @@
         "z": 0.8,
         "yaw": -2.2415
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1171,6 +1213,7 @@
         "z": 0.8,
         "yaw": -1.9906
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1187,6 +1230,7 @@
         "z": 0.8,
         "yaw": -1.7672
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1203,6 +1247,7 @@
         "z": 0.8,
         "yaw": -1.5826
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1219,6 +1264,7 @@
         "z": 0.8,
         "yaw": -1.4387
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1235,6 +1281,7 @@
         "z": 0.8,
         "yaw": -1.333
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1251,6 +1298,7 @@
         "z": 0.8,
         "yaw": -1.2624
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1267,6 +1315,7 @@
         "z": 0.8,
         "yaw": -1.2252
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1283,6 +1332,7 @@
         "z": 0.8,
         "yaw": -1.2212
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1299,6 +1349,7 @@
         "z": 0.8,
         "yaw": -1.2491
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1315,6 +1366,7 @@
         "z": 0.8,
         "yaw": -1.3037
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1331,6 +1383,7 @@
         "z": 0.8,
         "yaw": -1.3709
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1347,6 +1400,7 @@
         "z": 0.8,
         "yaw": -1.4273
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1363,6 +1417,7 @@
         "z": 0.8,
         "yaw": -1.4495
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1379,6 +1434,7 @@
         "z": 0.8,
         "yaw": -1.4238
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1395,6 +1451,7 @@
         "z": 0.8,
         "yaw": -1.3522
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1411,6 +1468,7 @@
         "z": 0.8,
         "yaw": -1.2503
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1427,6 +1485,7 @@
         "z": 0.8,
         "yaw": -1.1415
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1443,6 +1502,7 @@
         "z": 0.8,
         "yaw": -1.05
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1459,6 +1519,7 @@
         "z": 0.8,
         "yaw": -0.9961
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1475,6 +1536,7 @@
         "z": 0.8,
         "yaw": -0.9998
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1491,6 +1553,7 @@
         "z": 0.8,
         "yaw": -1.0872
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1507,6 +1570,7 @@
         "z": 0.8,
         "yaw": -1.29
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1523,6 +1587,7 @@
         "z": 0.8,
         "yaw": -1.6002
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1539,6 +1604,7 @@
         "z": 0.8,
         "yaw": -1.9104
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1555,6 +1621,7 @@
         "z": 0.8,
         "yaw": -2.12
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1571,6 +1638,7 @@
         "z": 0.8,
         "yaw": -2.2279
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1587,6 +1655,7 @@
         "z": 0.8,
         "yaw": -2.266
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1603,6 +1672,7 @@
         "z": 0.8,
         "yaw": -2.2573
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1619,6 +1689,7 @@
         "z": 0.8,
         "yaw": -2.2135
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1635,6 +1706,7 @@
         "z": 0.8,
         "yaw": -2.1387
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1651,6 +1723,7 @@
         "z": 0.8,
         "yaw": -2.0314
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1667,6 +1740,7 @@
         "z": 0.8,
         "yaw": -1.8862
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1683,6 +1757,7 @@
         "z": 0.8,
         "yaw": -1.6945
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1699,6 +1774,7 @@
         "z": 0.8,
         "yaw": -1.4501
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1715,6 +1791,7 @@
         "z": 0.8,
         "yaw": -1.1595
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1731,6 +1808,7 @@
         "z": 0.8,
         "yaw": -0.8517
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1747,6 +1825,7 @@
         "z": 0.8,
         "yaw": -0.5655
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1763,6 +1842,7 @@
         "z": 0.8,
         "yaw": -0.324
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1779,6 +1859,7 @@
         "z": 0.8,
         "yaw": -0.1286
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1795,6 +1876,7 @@
         "z": 0.8,
         "yaw": 0.0292
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1811,6 +1893,7 @@
         "z": 0.8,
         "yaw": 0.1584
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1827,6 +1910,7 @@
         "z": 0.8,
         "yaw": 0.2658
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1843,6 +1927,7 @@
         "z": 0.8,
         "yaw": 0.3554
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1859,6 +1944,7 @@
         "z": 0.8,
         "yaw": 0.4293
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1875,6 +1961,7 @@
         "z": 0.8,
         "yaw": 0.4876
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1891,6 +1978,7 @@
         "z": 0.8,
         "yaw": 0.5292
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1907,6 +1995,7 @@
         "z": 0.8,
         "yaw": 0.5521
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1923,6 +2012,7 @@
         "z": 0.8,
         "yaw": 0.5546
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1939,6 +2029,7 @@
         "z": 0.8,
         "yaw": 0.5373
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1955,6 +2046,7 @@
         "z": 0.8,
         "yaw": 0.5045
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1971,6 +2063,7 @@
         "z": 0.8,
         "yaw": 0.4663
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -1987,6 +2080,7 @@
         "z": 0.8,
         "yaw": 0.4354
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2003,6 +2097,7 @@
         "z": 0.8,
         "yaw": 0.4236
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2019,6 +2114,7 @@
         "z": 0.8,
         "yaw": 0.4373
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2035,6 +2131,7 @@
         "z": 0.8,
         "yaw": 0.4767
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2051,6 +2148,7 @@
         "z": 0.8,
         "yaw": 0.5365
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2067,6 +2165,7 @@
         "z": 0.8,
         "yaw": 0.6067
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2083,6 +2182,7 @@
         "z": 0.8,
         "yaw": 0.6725
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2099,6 +2199,7 @@
         "z": 0.8,
         "yaw": 0.7147
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2115,6 +2216,7 @@
         "z": 0.8,
         "yaw": 0.7117
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2131,6 +2233,7 @@
         "z": 0.8,
         "yaw": 0.6449
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2147,6 +2250,7 @@
         "z": 0.8,
         "yaw": 0.5126
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2163,6 +2267,7 @@
         "z": 0.8,
         "yaw": 0.3467
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2179,6 +2284,7 @@
         "z": 0.8,
         "yaw": 0.1973
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2195,6 +2301,7 @@
         "z": 0.8,
         "yaw": 0.0937
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2211,6 +2318,7 @@
         "z": 0.8,
         "yaw": 0.0366
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2227,6 +2335,7 @@
         "z": 0.8,
         "yaw": 0.0156
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2243,6 +2352,7 @@
         "z": 0.8,
         "yaw": 0.0205
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2259,6 +2369,7 @@
         "z": 0.8,
         "yaw": 0.0445
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2275,6 +2386,7 @@
         "z": 0.8,
         "yaw": 0.0841
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2291,6 +2403,7 @@
         "z": 0.8,
         "yaw": 0.1383
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2307,6 +2420,7 @@
         "z": 0.8,
         "yaw": 0.2089
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2323,6 +2437,7 @@
         "z": 0.8,
         "yaw": 0.3007
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2339,6 +2454,7 @@
         "z": 0.8,
         "yaw": 0.4233
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2355,6 +2471,7 @@
         "z": 0.8,
         "yaw": 0.5946
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2371,6 +2488,7 @@
         "z": 0.8,
         "yaw": 0.8443
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2387,6 +2505,7 @@
         "z": 0.8,
         "yaw": 1.2039
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2403,6 +2522,7 @@
         "z": 0.8,
         "yaw": 1.6464
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2419,6 +2539,7 @@
         "z": 0.8,
         "yaw": 2.051
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2435,6 +2556,7 @@
         "z": 0.8,
         "yaw": 2.3437
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2451,6 +2573,7 @@
         "z": 0.8,
         "yaw": 2.5413
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2467,6 +2590,7 @@
         "z": 0.8,
         "yaw": 2.6773
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2483,6 +2607,7 @@
         "z": 0.8,
         "yaw": 2.7744
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2499,6 +2624,7 @@
         "z": 0.8,
         "yaw": 2.845
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2515,6 +2641,7 @@
         "z": 0.8,
         "yaw": 2.8956
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2531,6 +2658,7 @@
         "z": 0.8,
         "yaw": 2.9294
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2547,6 +2675,7 @@
         "z": 0.8,
         "yaw": 2.9472
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2563,6 +2692,7 @@
         "z": 0.8,
         "yaw": 2.9492
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2579,6 +2709,7 @@
         "z": 0.8,
         "yaw": 2.9357
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2595,6 +2726,7 @@
         "z": 0.8,
         "yaw": 2.9096
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2611,6 +2743,7 @@
         "z": 0.8,
         "yaw": 2.8775
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2627,6 +2760,7 @@
         "z": 0.8,
         "yaw": 2.8504
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2643,6 +2777,7 @@
         "z": 0.8,
         "yaw": 2.8398
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2659,6 +2794,7 @@
         "z": 0.8,
         "yaw": 2.8521
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2675,6 +2811,7 @@
         "z": 0.8,
         "yaw": 2.8864
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2691,6 +2828,7 @@
         "z": 0.8,
         "yaw": 2.9352
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2707,6 +2845,7 @@
         "z": 0.8,
         "yaw": 2.9878
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2723,6 +2862,7 @@
         "z": 0.8,
         "yaw": 3.0334
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2739,6 +2879,7 @@
         "z": 0.8,
         "yaw": 3.0611
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2755,6 +2896,7 @@
         "z": 0.8,
         "yaw": 3.0592
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2771,6 +2913,7 @@
         "z": 0.8,
         "yaw": 3.0147
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2787,6 +2930,7 @@
         "z": 0.8,
         "yaw": 2.9162
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2803,6 +2947,7 @@
         "z": 0.8,
         "yaw": 2.7655
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2819,6 +2964,7 @@
         "z": 0.8,
         "yaw": 2.5933
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2835,6 +2981,7 @@
         "z": 0.8,
         "yaw": 2.4472
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2851,6 +2998,7 @@
         "z": 0.8,
         "yaw": 2.3562
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2867,6 +3015,7 @@
         "z": 0.8,
         "yaw": 2.3206
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2883,6 +3032,7 @@
         "z": 0.8,
         "yaw": 2.329
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2899,6 +3049,7 @@
         "z": 0.8,
         "yaw": 2.3691
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2915,6 +3066,7 @@
         "z": 0.8,
         "yaw": 2.4324
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2931,6 +3083,7 @@
         "z": 0.8,
         "yaw": 2.5131
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2947,6 +3100,7 @@
         "z": 0.8,
         "yaw": 2.6082
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2963,6 +3117,7 @@
         "z": 0.8,
         "yaw": 2.7167
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2979,6 +3134,7 @@
         "z": 0.8,
         "yaw": 2.8395
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -2995,6 +3151,7 @@
         "z": 0.8,
         "yaw": 2.979
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3011,6 +3168,7 @@
         "z": 0.8,
         "yaw": 3.1395
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3027,6 +3185,7 @@
         "z": 0.8,
         "yaw": -2.9575
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3043,6 +3202,7 @@
         "z": 0.8,
         "yaw": -2.7419
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3059,6 +3219,7 @@
         "z": 0.8,
         "yaw": -2.4991
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3075,6 +3236,7 @@
         "z": 0.8,
         "yaw": -2.2415
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3091,6 +3253,7 @@
         "z": 0.8,
         "yaw": -1.9906
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3107,6 +3270,7 @@
         "z": 0.8,
         "yaw": -1.7672
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3123,6 +3287,7 @@
         "z": 0.8,
         "yaw": -1.5826
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3139,6 +3304,7 @@
         "z": 0.8,
         "yaw": -1.4387
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3155,6 +3321,7 @@
         "z": 0.8,
         "yaw": -1.333
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3171,6 +3338,7 @@
         "z": 0.8,
         "yaw": -1.2624
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3187,6 +3355,7 @@
         "z": 0.8,
         "yaw": -1.2252
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3203,6 +3372,7 @@
         "z": 0.8,
         "yaw": -1.2212
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3219,6 +3389,7 @@
         "z": 0.8,
         "yaw": -1.2491
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3235,6 +3406,7 @@
         "z": 0.8,
         "yaw": -1.3037
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3251,6 +3423,7 @@
         "z": 0.8,
         "yaw": -1.3709
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3267,6 +3440,7 @@
         "z": 0.8,
         "yaw": -1.4273
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3283,6 +3457,7 @@
         "z": 0.8,
         "yaw": -1.4495
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3299,6 +3474,7 @@
         "z": 0.8,
         "yaw": -1.4238
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3315,6 +3491,7 @@
         "z": 0.8,
         "yaw": -1.3522
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3331,6 +3508,7 @@
         "z": 0.8,
         "yaw": -1.2503
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3347,6 +3525,7 @@
         "z": 0.8,
         "yaw": -1.1415
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3363,6 +3542,7 @@
         "z": 0.8,
         "yaw": -1.05
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3379,6 +3559,7 @@
         "z": 0.8,
         "yaw": -0.9961
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3395,6 +3576,7 @@
         "z": 0.8,
         "yaw": -0.9998
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3411,6 +3593,7 @@
         "z": 0.8,
         "yaw": -1.0872
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3427,6 +3610,7 @@
         "z": 0.8,
         "yaw": -1.29
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3443,6 +3627,7 @@
         "z": 0.8,
         "yaw": -1.6002
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3459,6 +3644,7 @@
         "z": 0.8,
         "yaw": -1.9104
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3475,6 +3661,7 @@
         "z": 0.8,
         "yaw": -2.12
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3491,6 +3678,7 @@
         "z": 0.8,
         "yaw": -2.2279
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3507,6 +3695,7 @@
         "z": 0.8,
         "yaw": -2.266
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3523,6 +3712,7 @@
         "z": 0.8,
         "yaw": -2.2573
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3539,6 +3729,7 @@
         "z": 0.8,
         "yaw": -2.2135
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3555,6 +3746,7 @@
         "z": 0.8,
         "yaw": -2.1387
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3571,6 +3763,7 @@
         "z": 0.8,
         "yaw": -2.0314
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3587,6 +3780,7 @@
         "z": 0.8,
         "yaw": -1.8862
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3603,6 +3797,7 @@
         "z": 0.8,
         "yaw": -1.6945
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3619,6 +3814,7 @@
         "z": 0.8,
         "yaw": -1.4501
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3635,6 +3831,7 @@
         "z": 0.8,
         "yaw": -1.1595
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3651,6 +3848,7 @@
         "z": 0.8,
         "yaw": -0.8517
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3667,6 +3865,7 @@
         "z": 0.8,
         "yaw": -0.5655
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3683,6 +3882,7 @@
         "z": 0.8,
         "yaw": -0.324
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3699,6 +3899,7 @@
         "z": 0.8,
         "yaw": -0.1286
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3715,6 +3916,7 @@
         "z": 0.8,
         "yaw": 0.0292
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3731,6 +3933,7 @@
         "z": 0.8,
         "yaw": 0.1584
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3747,6 +3950,7 @@
         "z": 0.8,
         "yaw": 0.2658
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3763,6 +3967,7 @@
         "z": 0.8,
         "yaw": 0.3554
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3779,6 +3984,7 @@
         "z": 0.8,
         "yaw": 0.4293
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3795,6 +4001,7 @@
         "z": 0.8,
         "yaw": 0.4876
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3811,6 +4018,7 @@
         "z": 0.8,
         "yaw": 0.5292
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3827,6 +4035,7 @@
         "z": 0.8,
         "yaw": 0.5521
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3843,6 +4052,7 @@
         "z": 0.8,
         "yaw": 0.5546
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3859,6 +4069,7 @@
         "z": 0.8,
         "yaw": 0.5373
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3875,6 +4086,7 @@
         "z": 0.8,
         "yaw": 0.5045
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3891,6 +4103,7 @@
         "z": 0.8,
         "yaw": 0.4663
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3907,6 +4120,7 @@
         "z": 0.8,
         "yaw": 0.4354
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3923,6 +4137,7 @@
         "z": 0.8,
         "yaw": 0.4236
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3939,6 +4154,7 @@
         "z": 0.8,
         "yaw": 0.4373
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3955,6 +4171,7 @@
         "z": 0.8,
         "yaw": 0.4767
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3971,6 +4188,7 @@
         "z": 0.8,
         "yaw": 0.5365
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -3987,6 +4205,7 @@
         "z": 0.8,
         "yaw": 0.6067
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4003,6 +4222,7 @@
         "z": 0.8,
         "yaw": 0.6725
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4019,6 +4239,7 @@
         "z": 0.8,
         "yaw": 0.7147
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4035,6 +4256,7 @@
         "z": 0.8,
         "yaw": 0.7117
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4051,6 +4273,7 @@
         "z": 0.8,
         "yaw": 0.6449
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4067,6 +4290,7 @@
         "z": 0.8,
         "yaw": 0.5126
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4083,6 +4307,7 @@
         "z": 0.8,
         "yaw": 0.3467
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4099,6 +4324,7 @@
         "z": 0.8,
         "yaw": 0.1973
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4115,6 +4341,7 @@
         "z": 0.8,
         "yaw": 0.0937
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4131,6 +4358,7 @@
         "z": 0.8,
         "yaw": 0.0366
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4147,6 +4375,7 @@
         "z": 0.8,
         "yaw": 0.0156
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4163,6 +4392,7 @@
         "z": 0.8,
         "yaw": 0.0205
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4179,6 +4409,7 @@
         "z": 0.8,
         "yaw": 0.0445
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4195,6 +4426,7 @@
         "z": 0.8,
         "yaw": 0.0841
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4211,6 +4443,7 @@
         "z": 0.8,
         "yaw": 0.1383
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4227,6 +4460,7 @@
         "z": 0.8,
         "yaw": 0.2089
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4243,6 +4477,7 @@
         "z": 0.8,
         "yaw": 0.3007
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4259,6 +4494,7 @@
         "z": 0.8,
         "yaw": 0.4233
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4275,6 +4511,7 @@
         "z": 0.8,
         "yaw": 0.5946
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4291,6 +4528,7 @@
         "z": 0.8,
         "yaw": 0.8443
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4307,6 +4545,7 @@
         "z": 0.8,
         "yaw": 1.2039
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     },
     {
@@ -4323,6 +4562,7 @@
         "z": 0.8,
         "yaw": 1.6464
       },
+      "friction": 0.2,
       "physics_role": "mujoco_authoritative"
     }
   ],

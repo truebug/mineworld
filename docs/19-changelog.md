@@ -10,6 +10,23 @@
 
 ---
 
+## 2026-07-22 · demo_race v3：Ackermann（前轮转角 + 后驱）
+
+- 新 MJCF `diffbot_race_v3`：`steer_fl/fr` position + `wheel_rl/rr` motor；不再用差速坦克。
+- Gateway：`yaw_rate`→前轮转角（高速略收），`vx`→后轮扭矩；仅 `demo_race` 契约切 v3。
+- 手感：静止打方向不原地转；倒车转向有效；轻打是弯不是 180°甩尾。
+- 键位：`W` 油门 · `S` 刹车 · `X` 倒车 · `Q/E` 转向。
+- 私有/smoke 房只挂 1 台车；共享 `race` 仍 max 6。缓坡暂关（先稳转向）。
+- 验收：`ws_smoke_test --level-id demo_race --expect-objective` → smoke OK。
+
+## 2026-07-22 · demo_race v2：freejoint + 4 轮接触
+
+- `diffbot_race_v2`：取消 slide 底盘；`freejoint` + 软悬挂 + 4 球轮 hinge；油门→轮扭矩（差速转向）。
+- Gateway：`MujocoMech` 双路径（planar / free）；空闲赛车 paddock 停放，避免堵起跑格。
+- 转向：满油门时削减 throttle 以便内侧轮反转（否则 W+Q 几乎不转）。
+- 赛道：缓坡台阶（车道内侧）· 护栏低摩擦 · 时限 400 s；Godot Car Kit 仍 viewer-only。
+- 验收：`ws_smoke_test --level-id demo_race --expect-objective` → smoke OK。
+
 ## 2026-07-22 · demo_race 力驱动加速 + 宽道长回环
 
 - `diffbot_race`：velocity 伺服 → **motor 力/扭矩**；质量+阻尼给出 ~1.5 s 爬到 ~15 m/s。

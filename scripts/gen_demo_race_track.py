@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Generate a long curved demo_race track (planar MuJoCo walls + layout JSON).
+"""Generate a long curved demo_race track (MuJoCo walls + gentle ramps + layout).
 
-DiffBot is planar — no hills in physics or viewer dress (flat asphalt only).
+Race chassis v3 is Ackermann (steer + RWD) on freejoint contact wheels.
+Godot dress remains viewer-only.
 """
 from __future__ import annotations
 
@@ -12,9 +13,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 CONTRACT = REPO / "examples" / "contracts" / "demo_race.json"
 LAYOUT = REPO / "godot" / "spike" / "data" / "race_layout.json"
-MODEL_REF = "mechs/diffbot_race.xml"
+MODEL_REF = "mechs/diffbot_race_v3.xml"
 
-# Wide multi-lobe circuit (~750 m lap; motor chassis tops ~15 m/s).
+# Wide multi-lobe circuit (~750 m lap; wheel-torque tops ~15–20 m/s).
 SEMI_A = 110.0
 SEMI_B = 72.0
 LANE_HALF = 8.5
@@ -25,6 +26,8 @@ SPAWN_COUNT = 6
 SPAWN_SPACE_M = 3.6
 SPAWN_BACK_M = 5.0
 SPAWN_ROW_GAP_M = 3.8
+SPAWN_Z = 0.28
+RAMP_FRICTION = 1.6
 
 
 def _centerline(n: int) -> list[tuple[float, float]]:
@@ -71,10 +74,55 @@ def _wall_boxes(
                     "z": round(WALL_H * 0.5, 3),
                     "yaw": round(yaw, 4),
                 },
+                # Low friction so contact wheels glance instead of welding to walls.
+                "friction": 0.2,
                 "physics_role": "mujoco_authoritative",
             }
         )
     return out
+
+
+def _ramp_boxes(
+    pts: list[tuple[float, float]], indices: list[int]
+) -> list[dict]:
+    """Gentle stepped ramps along centerline (climbable by contact wheels)."""
+    n = len(pts)
+    boxes: list[dict] = []
+    # Three steps then a short plateau; half-sizes in meters.
+    steps = [
+        (3.5, 6.5, 0.04, 0.04),
+        (3.5, 6.5, 0.04, 0.08),
+        (3.5, 6.5, 0.04, 0.12),
+        (5.0, 6.5, 0.04, 0.12),
+    ]
+    for ri, idx in enumerate(indices):
+        x0, y0 = pts[idx % n]
+        x1, y1 = pts[(idx + 1) % n]
+        yaw = math.atan2(y1 - y0, x1 - x0)
+        c, s = math.cos(yaw), math.sin(yaw)
+        # Offset to inner half-lane so centerline chase stays clear.
+        nx, ny = -s, c
+        along = 0.0
+        for si, (hx, hy, hz, z_top) in enumerate(steps):
+            cx = x0 + c * (along + hx) + nx * (LANE_HALF * 0.55)
+            cy = y0 + s * (along + hx) + ny * (LANE_HALF * 0.55)
+            boxes.append(
+                {
+                    "id": f"ramp_{ri}_{si}",
+                    "shape": "box",
+                    "size": [hx * 2.0, hy * 2.0, hz * 2.0],
+                    "pose": {
+                        "x": round(cx, 3),
+                        "y": round(cy, 3),
+                        "z": round(z_top, 3),
+                        "yaw": round(yaw, 4),
+                    },
+                    "friction": RAMP_FRICTION,
+                    "physics_role": "mujoco_authoritative",
+                }
+            )
+            along += hx * 2.0
+    return boxes
 
 
 def _aabb_at(pt: tuple[float, float], half: float = 4.0) -> dict:
@@ -89,14 +137,21 @@ def _aabb_at(pt: tuple[float, float], half: float = 4.0) -> dict:
 def build() -> tuple[dict, dict]:
     """Return (contract, layout)."""
     pts = _centerline(SEGMENTS)
-    walls = _wall_boxes(pts, inner=False) + _wall_boxes(pts, inner=True)
-
     # Start near south (t≈3π/2 → index).
     start_i = int(SEGMENTS * 0.75) % SEGMENTS
     # Checkpoints at ~⅓ / ⅔ lap; finish just before start (force almost full lap).
     cp1_i = (start_i + SEGMENTS // 3) % SEGMENTS
     cp2_i = (start_i + 2 * SEGMENTS // 3) % SEGMENTS
     fin_i = (start_i + SEGMENTS - 3) % SEGMENTS
+    # Ramps mid-straight-ish: offset from CPs so smoke chase still clear.
+    ramp_is = [
+        (start_i + SEGMENTS // 6) % SEGMENTS,
+        (cp1_i + SEGMENTS // 8) % SEGMENTS,
+    ]
+    walls = _wall_boxes(pts, inner=False) + _wall_boxes(pts, inner=True)
+    # Optional climb pads (offset off centerline). Disabled for v3 ship —
+    # Ackermann + wall contact first; re-enable when chase/unstick is solid.
+    # walls += _ramp_boxes(pts, ramp_is)
 
     x0, y0 = pts[start_i]
     x1, y1 = pts[(start_i + 1) % SEGMENTS]
@@ -121,7 +176,7 @@ def build() -> tuple[dict, dict]:
                 "pose": {
                     "x": round(sx, 3),
                     "y": round(sy, 3),
-                    "z": 0.5,
+                    "z": SPAWN_Z,
                     "yaw": round(yaw0, 4),
                 },
                 "player_slot": i,
@@ -176,7 +231,7 @@ def build() -> tuple[dict, dict]:
             },
             "mw.il": {
                 "task_id": "obj_race_finish",
-                "time_limit_s": 240,
+                "time_limit_s": 400,
             },
             "mw.editor": {
                 "client_scene": "res://demo_race.tscn",

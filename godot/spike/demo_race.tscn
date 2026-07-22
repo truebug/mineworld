@@ -64,8 +64,8 @@ use_kenney_car = true
 metadata/mujoco_entity_id = "mech_player"
 metadata/contract_kind = "mech_spawn"
 metadata/player_slot = 0
-metadata/model_ref = "mechs/diffbot_race.xml"
-metadata/spawn_z = 0.5
+metadata/model_ref = "mechs/diffbot_race_v3.xml"
+metadata/spawn_z = 0.28
 
 [node name="FrontArrow" parent="MechPlayer" instance=ExtResource("16_arrow")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.55, 0)
@@ -102,5 +102,5 @@ theme_override_constants/margin_bottom = 8
 
 [node name="Label" type="Label" parent="Hud/Margin/PanelContainer/MarginContainer"]
 layout_mode = 2
-text = "MineWorld · demo_race (~300m · ~15m/s)
-WASD · QE · CP1→CP2→finish · max 6 · shared room"
+text = "MineWorld · demo_race (~755m · Ackermann)
+W gas · S brake · X reverse · QE steer · max 6"

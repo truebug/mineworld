@@ -95,6 +95,9 @@ async def smoke(
 
         race_wps: list[tuple[float, float]] = []
         race_wp_i = 0
+        race_stuck_n = 0
+        race_last_xy = (0.0, 0.0)
+        race_stuck_t0 = 0.0
         if level_id == "demo_race":
             _sx, _sy, finish_x, finish_y = load_race_finish()
             turn_x = finish_x
@@ -159,7 +162,11 @@ async def smoke(
                 joints = ent.get("joints") or {}
                 if "slide_x" in joints and "slide_y" in joints and "yaw_z" in joints:
                     saw_joints = True
+                if any(k.startswith("wheel_") for k in joints) or "root" in joints:
+                    saw_joints = True
                 if "left_wheel_joint" in joints and "right_wheel_joint" in joints:
+                    saw_wheels = True
+                if any(k.startswith("wheel_") for k in joints):
                     saw_wheels = True
                 print(
                     f"state tick={msg['tick']} x={ent['base_pose']['x']:.3f} "
@@ -177,14 +184,24 @@ async def smoke(
                     now = asyncio.get_event_loop().time()
                     if now - last_cmd >= 0.05:
                         x, y, yaw = entity_xy_yaw(msg["payload"])
+                        if now - race_stuck_t0 >= 0.5:
+                            moved = math.hypot(x - race_last_xy[0], y - race_last_xy[1])
+                            if moved < 0.7:
+                                race_stuck_n += 1
+                            else:
+                                race_stuck_n = max(0, race_stuck_n - 1)
+                            race_last_xy = (x, y)
+                            race_stuck_t0 = now
                         while race_wp_i < len(race_wps) - 1:
                             tx, ty = race_wps[race_wp_i]
-                            if math.hypot(tx - x, ty - y) < 6.0:
+                            if math.hypot(tx - x, ty - y) < 8.0:
                                 race_wp_i += 1
                             else:
                                 break
                         tgt = race_wps[min(race_wp_i, len(race_wps) - 1)]
-                        vx, vy, yr = race_chase_cmd(x, y, yaw, tgt, speed=1.0)
+                        vx, vy, yr = race_chase_cmd(
+                            x, y, yaw, tgt, speed=0.65, stuck=race_stuck_n >= 3
+                        )
                         await _send_vel(ws, session_id, vx, vy, yr)
                         last_cmd = now
 
@@ -243,8 +260,8 @@ def main() -> None:
     if args.expect_objective and args.level_id == "demo_city" and seconds < 120:
         seconds = 140.0
     if args.expect_objective and args.level_id == "demo_race" and seconds < 100:
-        # Long multi-lobe lap + motor accel (not instant velocity).
-        seconds = 180.0
+        # Contact-wheel lap ~2 min offline; allow wall-time slack for 6-mech room.
+        seconds = 240.0
     raise SystemExit(
         asyncio.run(
             smoke(

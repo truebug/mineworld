@@ -188,14 +188,18 @@ class MechState:
 class MujocoMech(MechState):
     """MuJoCo-backed mech. cmd writes ctrl, state reads MjData.
 
-    The chassis slide joints translate in the parent (world) frame (they
-    compose before the hinge), so the body-frame velocity command must be
-    rotated by the current yaw — same math as the fake integrator.
+    Supports:
+    - Planar slide + yaw (city/workshop / race v1 force-slide)
+    - Freejoint + contact wheels skid-steer (race v2)
+    - Freejoint + Ackermann steer + RWD (race v3): yaw_rate→steer, vx→drive
 
     F7: Room shares one MjData; joint/actuator names are prefixed
     ``{entity_id}/``. ``apply_ctrl`` runs per mech; Room calls ``mj_step``
-    once; then ``pull_state`` reads qpos and syncs F6 wheel kinematics.
+    once; then ``pull_state`` reads pose.
     """
+
+    # Race v3: |yaw_rate|=1 → this many radians of front steer.
+    _STEER_MAX_RAD = 0.55
 
     def __init__(
         self,
@@ -211,15 +215,6 @@ class MujocoMech(MechState):
         self._prefix = prefix
         jnt = lambda n: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, f"{prefix}{n}")
         act = lambda n: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{prefix}{n}")
-        self._qx = model.jnt_qposadr[jnt("slide_x")]
-        self._qy = model.jnt_qposadr[jnt("slide_y")]
-        self._qyaw = model.jnt_qposadr[jnt("yaw_z")]
-        self._dx = model.jnt_dofadr[jnt("slide_x")]
-        self._dy = model.jnt_dofadr[jnt("slide_y")]
-        self._dyaw = model.jnt_dofadr[jnt("yaw_z")]
-        self._act_vx = act("vx")
-        self._act_vy = act("vy")
-        self._act_yaw = act("yaw_rate")
         self._chassis = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, f"{prefix}chassis")
         self._wheel_left: tuple[str, int, int] | None = None
         self._wheel_right: tuple[str, int, int] | None = None
@@ -230,26 +225,93 @@ class MujocoMech(MechState):
         self._pos_acts: dict[str, int] = {}
         self._pos_qadr: dict[str, int] = {}
         self._pos_dadr: dict[str, int] = {}
+        self._wheel_acts: dict[str, int] = {}
+        self._steer_acts: dict[str, int] = {}
+        root_id = jnt("root")
+        self._free_chassis = root_id >= 0 and int(model.jnt_type[root_id]) == int(
+            mujoco.mjtJoint.mjJNT_FREE
+        )
+        self._force_chassis = False
+        self._act_vx = self._act_vy = self._act_yaw = -1
+        self._qx = self._qy = self._qyaw = 0
+        self._dx = self._dy = self._dyaw = 0
+        self._qadr_free = 0
+        self._dadr_free = 0
+        if self._free_chassis:
+            self._qadr_free = int(model.jnt_qposadr[root_id])
+            self._dadr_free = int(model.jnt_dofadr[root_id])
+            self._resolve_wheel_motors()
+            self._resolve_steer_actuators()
+        else:
+            self._qx = model.jnt_qposadr[jnt("slide_x")]
+            self._qy = model.jnt_qposadr[jnt("slide_y")]
+            self._qyaw = model.jnt_qposadr[jnt("yaw_z")]
+            self._dx = model.jnt_dofadr[jnt("slide_x")]
+            self._dy = model.jnt_dofadr[jnt("slide_y")]
+            self._dyaw = model.jnt_dofadr[jnt("yaw_z")]
+            self._act_vx = act("vx")
+            self._act_vy = act("vy")
+            self._act_yaw = act("yaw_rate")
+            self._force_chassis = (
+                int(model.actuator_biastype[self._act_vx])
+                == int(mujoco.mjtBias.mjBIAS_NONE)
+            )
         self._resolve_diff_drive()
         self._resolve_position_actuators()
-        # Motor chassis (race): ctrl is throttle [-1,1]; velocity chassis: m/s.
-        self._force_chassis = (
-            int(model.actuator_biastype[self._act_vx])
-            == int(mujoco.mjtBias.mjBIAS_NONE)
-        )
         self._substeps = max(1, int(round(DT / model.opt.timestep)))
         self.reset_pose({})
 
-    def _resolve_position_actuators(self) -> None:
-        """Map non-chassis actuators (arm/gripper) for joint_targets (V1b)."""
-        chassis = {"vx", "vy", "yaw_rate"}
+    def _resolve_wheel_motors(self) -> None:
+        """Map wheel_* motor actuators (drive torque)."""
         model = self._model
         for aid in range(model.nu):
             aname = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_ACTUATOR, aid) or ""
             if self._prefix and not aname.startswith(self._prefix):
                 continue
             short = aname[len(self._prefix) :] if self._prefix else aname
-            if short in chassis:
+            if short.startswith("wheel_") and int(model.actuator_biastype[aid]) == int(
+                mujoco.mjtBias.mjBIAS_NONE
+            ):
+                self._wheel_acts[short] = aid
+        LOG.info(
+            "free chassis entity=%s wheel_motors=%s",
+            self.entity_id,
+            sorted(self._wheel_acts),
+        )
+
+    def _resolve_steer_actuators(self) -> None:
+        """Map steer_* position actuators for Ackermann (race v3)."""
+        model = self._model
+        for aid in range(model.nu):
+            aname = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_ACTUATOR, aid) or ""
+            if self._prefix and not aname.startswith(self._prefix):
+                continue
+            short = aname[len(self._prefix) :] if self._prefix else aname
+            if short.startswith("steer_"):
+                self._steer_acts[short] = aid
+        if self._steer_acts:
+            LOG.info(
+                "ackermann entity=%s steer=%s drive=%s",
+                self.entity_id,
+                sorted(self._steer_acts),
+                sorted(self._wheel_acts),
+            )
+
+    def _resolve_position_actuators(self) -> None:
+        """Map non-chassis actuators (arm/gripper) for joint_targets (V1b)."""
+        skip_exact = {"vx", "vy", "yaw_rate"}
+        model = self._model
+        for aid in range(model.nu):
+            aname = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_ACTUATOR, aid) or ""
+            if self._prefix and not aname.startswith(self._prefix):
+                continue
+            short = aname[len(self._prefix) :] if self._prefix else aname
+            if (
+                short in skip_exact
+                or short.startswith("wheel_")
+                or short.startswith("susp_")
+                or short.startswith("steer_")
+            ):
                 continue
             jid = int(model.actuator_trnid[aid, 0])
             if jid < 0:
@@ -321,60 +383,122 @@ class MujocoMech(MechState):
         super().reset_pose(pose)
         if not hasattr(self, "_data"):
             return
-        self._data.qpos[self._qx] = self.x
-        self._data.qpos[self._qy] = self.y
-        self._data.qpos[self._qyaw] = self.yaw
-        # Clear this mech's dofs only (shared MjData).
-        self._data.qvel[self._dx] = 0.0
-        self._data.qvel[self._dy] = 0.0
-        self._data.qvel[self._dyaw] = 0.0
-        self._data.ctrl[self._act_vx] = 0.0
-        self._data.ctrl[self._act_vy] = 0.0
-        self._data.ctrl[self._act_yaw] = 0.0
-        self._wheel_angle_l = 0.0
-        self._wheel_angle_r = 0.0
-        if self._wheel_left is not None and self._wheel_right is not None:
-            self._data.qpos[self._wheel_left[1]] = 0.0
-            self._data.qpos[self._wheel_right[1]] = 0.0
-            self._data.qvel[self._wheel_left[2]] = 0.0
-            self._data.qvel[self._wheel_right[2]] = 0.0
-        mujoco.mj_forward(self._model, self._data)
+        d = self._data
+        m = self._model
+        if self._free_chassis:
+            q = self._qadr_free
+            v = self._dadr_free
+            d.qpos[q : q + 3] = [self.x, self.y, self.z]
+            yq = _yaw_to_quat(self.yaw)
+            d.qpos[q + 3 : q + 7] = [yq["qw"], yq["qx"], yq["qy"], yq["qz"]]
+            d.qvel[v : v + 6] = 0.0
+            for aid in self._wheel_acts.values():
+                d.ctrl[aid] = 0.0
+            for aid in self._steer_acts.values():
+                d.ctrl[aid] = 0.0
+            for jid in range(m.njnt):
+                jname = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_JOINT, jid) or ""
+                if self._prefix and not jname.startswith(self._prefix):
+                    continue
+                short = jname[len(self._prefix) :] if self._prefix else jname
+                if short == "root":
+                    continue
+                qa = int(m.jnt_qposadr[jid])
+                da = int(m.jnt_dofadr[jid])
+                d.qpos[qa] = 0.0
+                d.qvel[da] = 0.0
+        else:
+            d.qpos[self._qx] = self.x
+            d.qpos[self._qy] = self.y
+            d.qpos[self._qyaw] = self.yaw
+            d.qvel[self._dx] = 0.0
+            d.qvel[self._dy] = 0.0
+            d.qvel[self._dyaw] = 0.0
+            d.ctrl[self._act_vx] = 0.0
+            d.ctrl[self._act_vy] = 0.0
+            d.ctrl[self._act_yaw] = 0.0
+            self._wheel_angle_l = 0.0
+            self._wheel_angle_r = 0.0
+            if self._wheel_left is not None and self._wheel_right is not None:
+                d.qpos[self._wheel_left[1]] = 0.0
+                d.qpos[self._wheel_right[1]] = 0.0
+                d.qvel[self._wheel_left[2]] = 0.0
+                d.qvel[self._wheel_right[2]] = 0.0
+        mujoco.mj_forward(m, d)
 
     def apply_ctrl(self) -> None:
         """Write chassis actuators + held arm/gripper position setpoints."""
-        if not self.controlled:
-            self._data.ctrl[self._act_vx] = 0.0
-            self._data.ctrl[self._act_vy] = 0.0
-            self._data.ctrl[self._act_yaw] = 0.0
+        d = self._data
+        if self._free_chassis:
+            thr = max(-1.0, min(1.0, self.vx)) if self.controlled else 0.0
+            steer = max(-1.0, min(1.0, self.yaw_rate)) if self.controlled else 0.0
+            wx = float(d.qvel[self._dadr_free])
+            wy = float(d.qvel[self._dadr_free + 1])
+            yaw = self._free_yaw()
+            c, s = math.cos(yaw), math.sin(yaw)
+            speed = abs(c * wx + s * wy)
+            if speed > 18.0 and thr > 0.0:
+                thr *= max(0.0, 1.0 - (speed - 18.0) / 8.0)
+            if self._steer_acts:
+                # Ackermann (race v3): yaw_rate → front steer angle; vx → RWD.
+                # Soften max steer at speed so light Q/E is a bend, not a spin.
+                scale = 1.0 / (1.0 + 0.012 * speed * speed)
+                angle = steer * self._STEER_MAX_RAD * scale
+                for aid in self._steer_acts.values():
+                    d.ctrl[aid] = angle
+                for aid in self._wheel_acts.values():
+                    d.ctrl[aid] = thr
+            else:
+                # Skid-steer (race v2): keep for older MJCF.
+                thr_eff = thr * max(0.0, 1.0 - 0.62 * abs(steer))
+                steer_eff = max(-1.0, min(1.0, steer * 1.2))
+                left = max(-1.0, min(1.0, thr_eff - steer_eff))
+                right = max(-1.0, min(1.0, thr_eff + steer_eff))
+                for name, aid in self._wheel_acts.items():
+                    if name.endswith("_fl") or name.endswith("_rl"):
+                        d.ctrl[aid] = left
+                    else:
+                        d.ctrl[aid] = right
+        elif not self.controlled:
+            d.ctrl[self._act_vx] = 0.0
+            d.ctrl[self._act_vy] = 0.0
+            d.ctrl[self._act_yaw] = 0.0
         elif self._force_chassis:
-            # Body-frame throttle [-1,1] → world-frame motor forces; yaw torque
-            # falls off with speed so high-speed turns feel heavier.
             thr_x = max(-1.0, min(1.0, self.vx))
             thr_y = max(-1.0, min(1.0, self.vy))
             steer = max(-1.0, min(1.0, self.yaw_rate))
-            yaw = float(self._data.qpos[self._qyaw])
+            yaw = float(d.qpos[self._qyaw])
             c, s = math.cos(yaw), math.sin(yaw)
-            wx = float(self._data.qvel[self._dx])
-            wy = float(self._data.qvel[self._dy])
+            wx = float(d.qvel[self._dx])
+            wy = float(d.qvel[self._dy])
             speed = math.hypot(wx, wy)
             steer_scale = 1.0 / (1.0 + 0.04 * speed * speed)
-            self._data.ctrl[self._act_vx] = c * thr_x - s * thr_y
-            self._data.ctrl[self._act_vy] = s * thr_x + c * thr_y
-            self._data.ctrl[self._act_yaw] = steer * steer_scale
+            d.ctrl[self._act_vx] = c * thr_x - s * thr_y
+            d.ctrl[self._act_vy] = s * thr_x + c * thr_y
+            d.ctrl[self._act_yaw] = steer * steer_scale
         else:
-            yaw = float(self._data.qpos[self._qyaw])
+            yaw = float(d.qpos[self._qyaw])
             c, s = math.cos(yaw), math.sin(yaw)
-            self._data.ctrl[self._act_vx] = c * self.vx - s * self.vy
-            self._data.ctrl[self._act_vy] = s * self.vx + c * self.vy
-            self._data.ctrl[self._act_yaw] = self.yaw_rate
+            d.ctrl[self._act_vx] = c * self.vx - s * self.vy
+            d.ctrl[self._act_vy] = s * self.vx + c * self.vy
+            d.ctrl[self._act_yaw] = self.yaw_rate
         for name, aid in self._pos_acts.items():
             q = self.joint_targets.get(name)
             if q is None:
-                q = float(self._data.qpos[self._pos_qadr[name]])
-            self._data.ctrl[aid] = q
+                q = float(d.qpos[self._pos_qadr[name]])
+            d.ctrl[aid] = q
+
+    def _free_yaw(self) -> float:
+        """Yaw from freejoint quaternion (w,x,y,z)."""
+        q = self._data.qpos
+        a = self._qadr_free
+        w, x, y, z = float(q[a + 3]), float(q[a + 4]), float(q[a + 5]), float(q[a + 6])
+        return math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
 
     def _sync_wheels(self, dt: float) -> None:
-        """Overwrite wheel qpos/qvel from body velocity (kinematic DiffBot)."""
+        """Overwrite wheel qpos/qvel from body velocity (kinematic DiffBot only)."""
+        if self._free_chassis:
+            return
         if self._wheel_left is None or self._wheel_right is None or self._wheel_r <= 1e-6:
             return
         if not self.controlled:
@@ -404,11 +528,18 @@ class MujocoMech(MechState):
         """Read chassis pose from shared MjData after Room mj_step."""
         self._sync_wheels(dt)
         d = self._data
-        self.x = float(d.qpos[self._qx])
-        self.y = float(d.qpos[self._qy])
-        mujoco.mj_forward(self._model, d)
-        self.z = float(d.xpos[self._chassis][2])
-        self.yaw = float(d.qpos[self._qyaw])
+        if self._free_chassis:
+            a = self._qadr_free
+            self.x = float(d.qpos[a])
+            self.y = float(d.qpos[a + 1])
+            self.z = float(d.qpos[a + 2])
+            self.yaw = self._free_yaw()
+        else:
+            self.x = float(d.qpos[self._qx])
+            self.y = float(d.qpos[self._qy])
+            mujoco.mj_forward(self._model, d)
+            self.z = float(d.xpos[self._chassis][2])
+            self.yaw = float(d.qpos[self._qyaw])
 
     def step(self, dt: float) -> None:
         """Solo step (unused when Room owns shared mj_step); kept for tests."""
@@ -420,22 +551,52 @@ class MujocoMech(MechState):
     def to_entity_state(self) -> dict[str, Any]:
         q = _yaw_to_quat(self.yaw)
         d = self._data
-        joints = {
-            "slide_x": float(d.qpos[self._qx]),
-            "slide_y": float(d.qpos[self._qy]),
-            "yaw_z": float(d.qpos[self._qyaw]),
-        }
-        joint_vels = {
-            "slide_x": float(d.qvel[self._dx]),
-            "slide_y": float(d.qvel[self._dy]),
-            "yaw_z": float(d.qvel[self._dyaw]),
-        }
-        if self._wheel_left is not None and self._wheel_right is not None:
-            for meta in (self._wheel_left, self._wheel_right):
-                jname, qadr, dadr = meta
+        joints: dict[str, float] = {}
+        joint_vels: dict[str, float] = {}
+        if self._free_chassis:
+            a = self._qadr_free
+            v = self._dadr_free
+            joints["root"] = float(d.qpos[a + 2])
+            joint_vels["root"] = float(d.qvel[v])
+            vx_w = float(d.qvel[v])
+            vy_w = float(d.qvel[v + 1])
+            yaw_rate = float(d.qvel[v + 5])
+            m = self._model
+            for jid in range(m.njnt):
+                jname = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_JOINT, jid) or ""
+                if self._prefix and not jname.startswith(self._prefix):
+                    continue
                 short = jname[len(self._prefix) :] if self._prefix else jname
-                joints[short] = float(d.qpos[qadr])
-                joint_vels[short] = float(d.qvel[dadr])
+                if not (
+                    short.startswith("wheel_")
+                    or short.startswith("susp_")
+                    or short.startswith("steer_")
+                ):
+                    continue
+                qa = int(m.jnt_qposadr[jid])
+                da = int(m.jnt_dofadr[jid])
+                joints[short] = float(d.qpos[qa])
+                joint_vels[short] = float(d.qvel[da])
+        else:
+            joints = {
+                "slide_x": float(d.qpos[self._qx]),
+                "slide_y": float(d.qpos[self._qy]),
+                "yaw_z": float(d.qpos[self._qyaw]),
+            }
+            joint_vels = {
+                "slide_x": float(d.qvel[self._dx]),
+                "slide_y": float(d.qvel[self._dy]),
+                "yaw_z": float(d.qvel[self._dyaw]),
+            }
+            vx_w = float(d.qvel[self._dx])
+            vy_w = float(d.qvel[self._dy])
+            yaw_rate = float(d.qvel[self._dyaw])
+            if self._wheel_left is not None and self._wheel_right is not None:
+                for meta in (self._wheel_left, self._wheel_right):
+                    jname, qadr, dadr = meta
+                    short = jname[len(self._prefix) :] if self._prefix else jname
+                    joints[short] = float(d.qpos[qadr])
+                    joint_vels[short] = float(d.qvel[dadr])
         for name, qadr in self._pos_qadr.items():
             joints[name] = float(d.qpos[qadr])
             joint_vels[name] = float(d.qvel[self._pos_dadr[name]])
@@ -443,13 +604,15 @@ class MujocoMech(MechState):
             "entity_id": self.entity_id,
             "base_pose": {"x": self.x, "y": self.y, "z": self.z, "yaw": self.yaw, **q},
             "velocities": {
-                "vx": float(d.qvel[self._dx]),
-                "vy": float(d.qvel[self._dy]),
-                "vz": 0.0,
+                "vx": vx_w,
+                "vy": vy_w,
+                "vz": float(d.qvel[self._dadr_free + 2]) if self._free_chassis else 0.0,
+                "yaw_rate": yaw_rate,
             },
             "joints": joints,
             "joint_vels": joint_vels,
         }
+
 
 
 class DynamicProp:
@@ -1251,7 +1414,9 @@ class EchoGateway:
         self._contract_mtime = mtime
         if self.physics == "mujoco" and self.model_path is not None:
             level = str(self.contract.get("level_id") or "")
-            self._mj_models.pop(level, None)
+            for key in list(self._mj_models):
+                if str(key).startswith(f"{level}|"):
+                    self._mj_models.pop(key, None)
             self.mj_model = self._ensure_mj_model(self.contract)
         # Drop empty rooms so the next join recreates with the new contract.
         dead = [
@@ -1329,19 +1494,24 @@ class EchoGateway:
         return out
 
     def _ensure_mj_model(self, contract: dict[str, Any]) -> Any:
-        """Compile (or reuse) MjModel for contract.level_id.
+        """Compile (or reuse) MjModel for this contract spawn set.
 
-        Cache key includes seed so D9 city-block regen rebuilds air walls.
+        Cache key includes seed + spawn ids so private race (1 chassis) does
+        not reuse the shared 6-car world and vice versa.
         """
         level = str(contract.get("level_id") or "unknown")
         seed = contract.get("seed")
-        cached = self._mj_models.get(level)
-        if cached is not None and cached.get("seed") == seed:
-            return cached["model"]
+        spawn_ids = tuple(
+            str(s.get("id") or "") for s in (contract.get("mech_spawns") or [])
+        )
+        cache_key = f"{level}|{seed}|{','.join(spawn_ids)}"
+        cached = self._mj_models.get(cache_key)
+        if cached is not None:
+            return cached
         if self.model_path is None:
             raise SystemExit("mujoco model_path missing")
         model = self._build_mujoco_world(self.model_path, contract)
-        self._mj_models[level] = {"model": model, "seed": seed}
+        self._mj_models[cache_key] = model
         return model
 
     def _build_mujoco_world(
@@ -1361,6 +1531,13 @@ class EchoGateway:
         chassis = spec.worldbody.first_body()
         if chassis is not None and (chassis.name or "") == "chassis":
             spec.delete(chassis)
+        # Race free-wheel contact: enlarge ground render + bump friction for grip.
+        if str(contract.get("level_id") or "") == "demo_race":
+            for geom in spec.worldbody.geoms:
+                if (geom.name or "") == "ground":
+                    geom.size = [400.0, 400.0, 0.1]
+                    geom.friction = [1.5, 0.01, 0.001]
+                    break
 
         spawns = list(contract.get("mech_spawns") or [])
         if not spawns:
@@ -1395,7 +1572,18 @@ class EchoGateway:
             )
             geom.contype = 1
             geom.conaffinity = 1
-            geom.friction = list(OBSTACLE_FRICTION)
+            # Optional per-obstacle friction (ramps need grip; walls can stay default).
+            fr = ob.get("friction")
+            if isinstance(fr, (list, tuple)) and len(fr) >= 1:
+                geom.friction = [
+                    float(fr[0]),
+                    float(fr[1] if len(fr) > 1 else 0.02),
+                    float(fr[2] if len(fr) > 2 else 0.01),
+                ]
+            elif isinstance(fr, (int, float)):
+                geom.friction = [float(fr), 0.01, 0.001]
+            else:
+                geom.friction = list(OBSTACLE_FRICTION)
             appended += 1
 
         props = contract.get("dynamic_props") or []
@@ -1551,6 +1739,14 @@ class EchoGateway:
                 mech = MechState("mech_player")
             mech.reset_pose({})
             mechs["mech_player"] = mech
+        # Race: park idle chassis off-track so empty grid slots don't block the lane.
+        if str(contract.get("level_id") or "") == "demo_race":
+            for i, mech in enumerate(mechs.values()):
+                mech.reset_pose(
+                    {"x": 420.0 + float(i) * 4.0, "y": 420.0, "z": 0.28, "yaw": 0.0}
+                )
+                mech.controlled = False
+                mech.vx = mech.vy = mech.yaw_rate = 0.0
         if shared is not None and model is not None:
             for prop in contract.get("dynamic_props") or []:
                 if prop.get("physics_role", "mujoco_authoritative") != "mujoco_authoritative":
@@ -1580,6 +1776,17 @@ class EchoGateway:
             if mech is not None:
                 mech.controlled = False
                 mech.vx = mech.vy = mech.yaw_rate = 0.0
+                if str(room.contract.get("level_id") or "") == "demo_race":
+                    # Free the grid slot physically (park off-track).
+                    idx = list(room.mechs).index(session.controlled_entity_id)
+                    mech.reset_pose(
+                        {
+                            "x": 420.0 + float(idx) * 4.0,
+                            "y": 420.0,
+                            "z": 0.28,
+                            "yaw": 0.0,
+                        }
+                    )
         session.room = None
         session.controlled_entity_id = None
         session.joined = False
@@ -1819,10 +2026,14 @@ class EchoGateway:
             if not payload.get("room_id"):
                 room_id = CITY_ROOM_ID
         elif level_id == "demo_race":
-            # Oval race: shared room `race`, max 6 (MuJoCo chassis).
-            max_members = RACE_ROOM_MAX
+            # Shared oval `race` max 6; private/smoke rooms are solo.
             if not payload.get("room_id"):
                 room_id = RACE_ROOM_ID
+                max_members = RACE_ROOM_MAX
+            elif room_id == RACE_ROOM_ID:
+                max_members = RACE_ROOM_MAX
+            else:
+                max_members = 1
         elif room_id == CITY_ROOM_ID:
             max_members = CITY_ROOM_MAX
         elif room_id == RACE_ROOM_ID:
@@ -1831,6 +2042,11 @@ class EchoGateway:
             max_members = DEMO_ROOM_MAX
         else:
             max_members = 1
+
+        # Private race rooms: one chassis only (smoke / solo). Shared `race` keeps 6.
+        if level_id == "demo_race" and max_members == 1:
+            contract = json.loads(json.dumps(contract))
+            contract["mech_spawns"] = list(contract.get("mech_spawns") or [])[:1]
 
         player_name = str(payload.get("player_name") or "guest").strip() or "guest"
         profile: dict[str, Any] = {}

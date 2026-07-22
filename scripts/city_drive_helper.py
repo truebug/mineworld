@@ -72,8 +72,9 @@ def race_chase_cmd(
     target: tuple[float, float],
     *,
     speed: float = 1.0,
+    stuck: bool = False,
 ) -> tuple[float, float, float]:
-    """Body-frame throttle/steer [-1,1] toward a world XY waypoint (force chassis)."""
+    """Body-frame throttle/steer [-1,1] toward a world XY waypoint (wheel torque)."""
     tx, ty = target
     dx, dy = tx - x, ty - y
     dist = math.hypot(dx, dy)
@@ -81,9 +82,14 @@ def race_chase_cmd(
         return 0.0, 0.0, 0.0
     want = math.atan2(dy, dx)
     err = (want - yaw + math.pi) % (2 * math.pi) - math.pi
-    yaw_rate = max(-1.0, min(1.0, err * 2.4))
-    # Ease throttle when pointing away from the waypoint.
-    forward = max(0.2, math.cos(err))
+    if stuck:
+        # Reverse while steering (Ackermann cannot spot-turn).
+        return -0.65, 0.0, 1.0 if err >= 0.0 else -1.0
+    yaw_rate = max(-1.0, min(1.0, err * 2.2))
+    if abs(err) > 1.2:
+        return -0.25, 0.0, yaw_rate
+    turn_slow = 1.0 / (1.0 + 1.6 * abs(err))
+    forward = max(0.35, math.cos(err)) * turn_slow
     thr = max(-1.0, min(1.0, float(speed))) * forward
     return thr, 0.0, yaw_rate
 

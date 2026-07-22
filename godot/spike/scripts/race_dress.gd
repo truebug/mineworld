@@ -1,5 +1,5 @@
 ## Viewer dress for demo_race — Kenney Racing Kit fences replace orange box walls.
-## Physics walls stay MuJoCo boxes; road is flat (planar DiffBot).
+## Physics walls/ramps stay MuJoCo boxes; road is mostly flat + gentle steps.
 extends Node3D
 
 const LAYOUT_PATH := "res://data/race_layout.json"
@@ -26,7 +26,11 @@ func _ready() -> void:
 	for w in walls:
 		if typeof(w) != TYPE_DICTIONARY:
 			continue
+		var wid := str(w.get("id", ""))
+		if not wid.begins_with("wall_"):
+			continue
 		fence_n += _add_wall_fences(w)
+	_add_ramps(layout)
 	_add_triggers(layout)
 	_add_finish_flags(layout)
 	_add_trees(layout)
@@ -154,6 +158,36 @@ func _add_centerline(layout: Dictionary) -> void:
 			mat,
 			yaw
 		)
+
+
+func _add_ramps(layout: Dictionary) -> void:
+	"""Viewer boxes for MuJoCo stepped ramps (id ramp_*)."""
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.32, 0.33, 0.36)
+	mat.roughness = 0.9
+	var n := 0
+	for w in layout.get("walls", []):
+		if typeof(w) != TYPE_DICTIONARY:
+			continue
+		if not str(w.get("id", "")).begins_with("ramp_"):
+			continue
+		var pose: Variant = w.get("pose", {})
+		var size: Variant = w.get("size", [])
+		if typeof(pose) != TYPE_DICTIONARY or typeof(size) != TYPE_ARRAY or size.size() < 3:
+			continue
+		var sx := float(size[0])
+		var sy := float(size[1])
+		var sz := float(size[2])
+		_add_box(
+			str(w.get("id")),
+			Vector3(float(pose.get("x", 0.0)), float(pose.get("z", 0.0)), -float(pose.get("y", 0.0))),
+			Vector3(sx, sz, sy),
+			mat,
+			float(pose.get("yaw", 0.0)),
+		)
+		n += 1
+	if n:
+		print("[MW] race dress ramps=%d" % n)
 
 
 func _add_wall_fences(w: Dictionary) -> int:

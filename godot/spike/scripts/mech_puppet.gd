@@ -55,8 +55,8 @@ const KENNEY_CAR_BY_ENTITY := {
 ## Car forward is typically -Z; MW puppet forward is +X.
 const KENNEY_CAR_YAW := -PI * 0.5
 const KENNEY_CAR_SCALE := Vector3(0.9, 0.9, 0.9)
-## Authority pose is chassis center (~0.5 m); Kenney origin is ground.
-const KENNEY_CAR_Y := -0.42
+## Authority pose is chassis freejoint (~0.2 m); Kenney origin is ground.
+const KENNEY_CAR_Y := -0.18
 ## Industrial arm look (viewer_only; kinematics still follow MJCF pivots).
 const ARM_METAL := Color(0.62, 0.65, 0.7)
 const ARM_DARK := Color(0.2, 0.22, 0.26)
@@ -76,6 +76,8 @@ var _wall_at_last_state := 0.0
 var last_mw_x := 0.0
 var last_mw_y := 0.0
 var last_mw_yaw := 0.0
+var last_mw_vx := 0.0
+var last_mw_vy := 0.0
 var _cart_built := false
 var _arm_built := false
 var _kenney_car_id := ""
@@ -443,12 +445,24 @@ func _tint_mesh(mesh_inst: MeshInstance3D, color: Color) -> void:
 	mesh_inst.material_override = mat
 
 
+func body_forward_speed() -> float:
+	"""Body-frame +X speed from last authority sample (m/s)."""
+	return cos(last_mw_yaw) * last_mw_vx + sin(last_mw_yaw) * last_mw_vy
+
+
 func apply_state(entity: Dictionary, t_sim: float) -> void:
 	"""Push a new authority sample; t_sim must be monotonic for interpolation."""
 	var pose: Dictionary = entity.get("base_pose", {})
 	last_mw_x = float(pose.get("x", 0.0))
 	last_mw_y = float(pose.get("y", 0.0))
 	last_mw_yaw = float(pose.get("yaw", 0.0))
+	var vel: Variant = entity.get("velocities", {})
+	if typeof(vel) == TYPE_DICTIONARY:
+		last_mw_vx = float(vel.get("vx", 0.0))
+		last_mw_vy = float(vel.get("vy", 0.0))
+	else:
+		last_mw_vx = 0.0
+		last_mw_vy = 0.0
 	# Fallback if t_sim missing/zero but pose is moving — avoid span<=0 freeze.
 	if t_sim <= 0.0 and _next_time >= 0.0:
 		t_sim = _next_time + interp_delay

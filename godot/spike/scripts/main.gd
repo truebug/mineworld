@@ -12,7 +12,7 @@ extends Node3D
 
 const MOVE_SPEED := 1.0
 const TURN_SPEED := 1.0
-## demo_race: motor throttle/steer in [-1,1] (MuJoCo force chassis).
+## demo_race: throttle/steer in [-1,1] (Ackermann: vx→RWD, yaw_rate→front steer).
 const MOVE_SPEED_RACE := 1.0
 const TURN_SPEED_RACE := 1.0
 const STRAFE_SPEED_RACE := 0.35
@@ -20,7 +20,7 @@ const CMD_HZ := 20.0
 const _WEB_BLOCK_CODES := {
 	"KeyW": true, "KeyA": true, "KeyS": true, "KeyD": true,
 	"KeyQ": true, "KeyE": true, "KeyT": true, "KeyR": true,
-	"KeyV": true, "KeyC": true,
+	"KeyV": true, "KeyC": true, "KeyX": true,
 	"ArrowUp": true, "ArrowDown": true, "ArrowLeft": true, "ArrowRight": true,
 	"Space": true,
 }
@@ -1072,6 +1072,16 @@ func _read_joint_targets() -> Dictionary:
 	return _joint_targets.duplicate()
 
 
+func _race_forward_speed() -> float:
+	"""Body +X speed of the controlled race car (m/s)."""
+	if not _puppets.has(_controlled_entity_id):
+		return 0.0
+	var own = _puppets[_controlled_entity_id]
+	if own != null and own.has_method("body_forward_speed"):
+		return float(own.call("body_forward_speed"))
+	return 0.0
+
+
 func _send_velocity_cmd() -> void:
 	var vx := 0.0
 	var vy := 0.0
@@ -1085,6 +1095,7 @@ func _send_velocity_cmd() -> void:
 	var d := false
 	var q := false
 	var e := false
+	var x_rev := false
 	if _is_web:
 		w = _web_key("KeyW")
 		s = _web_key("KeyS")
@@ -1092,6 +1103,7 @@ func _send_velocity_cmd() -> void:
 		d = _web_key("KeyD")
 		q = _web_key("KeyQ")
 		e = _web_key("KeyE")
+		x_rev = _web_key("KeyX")
 	else:
 		w = _key_down(KEY_W)
 		s = _key_down(KEY_S)
@@ -1099,13 +1111,21 @@ func _send_velocity_cmd() -> void:
 		d = _key_down(KEY_D)
 		q = _key_down(KEY_Q)
 		e = _key_down(KEY_E)
+		x_rev = _key_down(KEY_X)
 	if level_id == "demo_race":
-		# W throttle / S brake-or-reverse / QE steer; light A/D strafe.
-		# Race MuJoCo motors interpret these as [-1,1] throttle (not m/s).
-		if w and not s:
+		# W gas / S brake / X reverse / QE steer; light A/D strafe.
+		# Race MuJoCo: vx[-1,1] → RWD torque; yaw_rate → front steer.
+		var fwd := _race_forward_speed()
+		if w and not s and not x_rev:
 			vx = spd
-		elif s and not w:
+		elif x_rev and not w:
 			vx = -spd
+		elif s and not w and not x_rev:
+			# Brake while rolling forward; hold still when nearly stopped.
+			if fwd > 0.8:
+				vx = -spd
+			else:
+				vx = 0.0
 		if a:
 			vy += strafe
 		if d:
@@ -1221,6 +1241,8 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
 	text += "\nWASD 平移 | QE 转向 | T 接管 | R 释放 | 左下角臂爪滑条"
+	if level_id == "demo_race":
+		text += "\nRace: W 油门 | S 刹车 | X 倒车 | Q/E 转向"
 	text += "\nV 相机 | 左键 peek 松手回中 | 右键粘性环视 | 中键/左右同按平移 | 滚轮缩放 | C 强制回中"
 	if _is_web:
 		text += "\n录制 → 右上角链接"
