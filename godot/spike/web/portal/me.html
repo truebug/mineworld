@@ -136,6 +136,11 @@
 		</div>
 		<div class="card">
 			<h2 data-i18n="me.lb">排行榜</h2>
+			<div class="cta-row" style="margin-bottom:10px;gap:8px;flex-wrap:wrap">
+				<button type="button" class="ghost lb-tab" data-level="" data-i18n="me.lb_all">总榜</button>
+				<button type="button" class="ghost lb-tab" data-level="demo_workshop">工坊</button>
+				<button type="button" class="ghost lb-tab" data-level="demo_city">训练场</button>
+			</div>
 			<ol class="lb" id="lb"><li data-i18n="me.loading">加载中…</li></ol>
 		</div>
 		<div class="card">
@@ -154,6 +159,7 @@
 		<div class="nav">
 			<a href="/portal/" data-i18n="me.landing">← 首页</a>
 			<a href="/recordings.html" data-i18n="me.recordings">录制</a>
+			<a id="il-export" href="/api/recordings/export.csv?level_id=demo_workshop&amp;task_id=obj_place_block&amp;outcome=success" data-i18n="me.il_export">导出工坊 IL CSV</a>
 			<button type="button" class="ghost" id="logout" data-i18n="me.logout">退出登录</button>
 		</div>
 		<p class="err" id="err"></p>
@@ -199,6 +205,12 @@
 				const p = data.player || {};
 				document.getElementById('who').textContent =
 					(p.display_name || p.player_id || '?') + ' · ' + (p.player_id || '');
+				const il = document.getElementById('il-export');
+				if (il && p.player_id) {
+					il.href =
+						'/api/recordings/export.csv?level_id=demo_workshop&task_id=obj_place_block&outcome=success&player_id=' +
+						encodeURIComponent(p.player_id);
+				}
 				const st = data.stats || {};
 				document.getElementById('s-pts').textContent = String(st.total_points || 0);
 				document.getElementById('s-runs').textContent = String(st.runs || 0);
@@ -251,26 +263,47 @@
 		fetch('/api/platform/leaderboard')
 			.then(function (r) { return r.json(); })
 			.then(function (data) {
-				const ol = document.getElementById('lb');
-				ol.innerHTML = '';
-				const entries = (data && data.entries) || [];
-				if (!entries.length) {
-					ol.innerHTML = '<li><span class="name">' + esc(t('me.empty_lb')) + '</span></li>';
-					return;
-				}
-				entries.slice(0, 10).forEach(function (e, i) {
-					const li = document.createElement('li');
-					const name = e.display_name || e.player_id || '?';
-					li.innerHTML =
-						'<span class="rank">' + (i + 1) + '.</span>' +
-						'<span class="name">' + esc(name) + '</span>' +
-						'<span class="pts">' + esc(e.total_points || 0) + '</span>';
-					ol.appendChild(li);
-				});
+				renderLb(data);
 			})
 			.catch(function () {
 				document.getElementById('lb').innerHTML = '<li>' + esc(t('me.lb_fail')) + '</li>';
 			});
+
+		function renderLb(data) {
+			const ol = document.getElementById('lb');
+			ol.innerHTML = '';
+			const entries = (data && data.entries) || [];
+			if (!entries.length) {
+				ol.innerHTML = '<li><span class="name">' + esc(t('me.empty_lb')) + '</span></li>';
+				return;
+			}
+			entries.slice(0, 10).forEach(function (e, i) {
+				const li = document.createElement('li');
+				const name = e.display_name || e.player_id || '?';
+				let pts = String(e.total_points || 0);
+				if (e.best_duration_sim_s != null && e.best_duration_sim_s !== '') {
+					pts += ' · ' + Number(e.best_duration_sim_s).toFixed(1) + 's';
+				}
+				li.innerHTML =
+					'<span class="rank">' + (i + 1) + '.</span>' +
+					'<span class="name">' + esc(name) + '</span>' +
+					'<span class="pts">' + esc(pts) + '</span>';
+				ol.appendChild(li);
+			});
+		}
+
+		document.querySelectorAll('.lb-tab').forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				const level = btn.getAttribute('data-level') || '';
+				const q = level ? ('?level_id=' + encodeURIComponent(level)) : '';
+				fetch('/api/platform/leaderboard' + q)
+					.then(function (r) { return r.json(); })
+					.then(renderLb)
+					.catch(function () {
+						document.getElementById('lb').innerHTML = '<li>' + esc(t('me.lb_fail')) + '</li>';
+					});
+			});
+		});
 
 		document.getElementById('logout').addEventListener('click', function () {
 			const tok = localStorage.getItem(TOKEN_KEY);

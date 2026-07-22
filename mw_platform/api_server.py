@@ -22,7 +22,7 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
@@ -65,11 +65,13 @@ class PlatformHandler(BaseHTTPRequestHandler):
         return self.headers.get(name)
 
     def do_GET(self) -> None:
-        path = unquote(urlparse(self.path).path)
+        parsed = urlparse(self.path)
+        path = unquote(parsed.path)
         if handle_platform_get(
             path,
             send_json=self._send_json,
             get_header=self._header,
+            query=parse_qs(parsed.query),
         ):
             return
         self._send_json({"error": "not_found"}, 404)

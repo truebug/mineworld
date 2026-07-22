@@ -56,9 +56,9 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| A1 | 工坊抓放产品化 | 稳定通关；失败可标；`cmd↔joints` 导出顺手 | [~] **进行中** · fail/time_limit + place 唯一终局已入 |
-| A2 | 天梯按关卡 | Hub/Portal 分 workshop·city（及后续） | [ ] |
-| A3 | 单人训练关模板 | 契约：目标区+时限+成败标签；复制 1～2 变体 | [ ] |
+| A1 | 工坊抓放产品化 | 稳定通关；失败可标；`cmd↔joints` 导出顺手 | [x] fail/time_limit · place 终局 · 提示/放置区 · IL 导出预设 |
+| A2 | 天梯按关卡 | Hub/Portal 分 workshop·city（及后续） | [x] `?level_id=` + Portal/Hub 分榜 |
+| A3 | 单人训练关模板 | 契约：目标区+时限+成败标签；复制 1～2 变体 | [x] `solo_il_place_v0` · `tutorial_place_near` / `_tight` |
 | A4 | Hub 导流文案 | 「今日去处」/门 A·B 对齐训练叙事 | [x] 首印象底座 |
 
 ### 本地下一刀（已完成切片 · 保留）

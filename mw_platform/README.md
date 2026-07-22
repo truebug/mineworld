@@ -30,7 +30,7 @@ Routes (excerpt):
 | POST | `/api/platform/login` | password → Bearer |
 | POST | `/api/platform/login/federated` | E2 stub: issuer+sub → Bearer |
 | GET | `/api/platform/me` | Bearer; includes `identity_links` |
-| GET | `/api/platform/leaderboard` | Top N totals |
+| GET | `/api/platform/leaderboard` | Top N totals；可选 `?level_id=` / `?limit=` |
 | POST | `/api/platform/scores` | Gateway score write (`X-Gateway-Key`) |
 | POST | `/api/platform/admin/identity-links` | Admin link external user |
 

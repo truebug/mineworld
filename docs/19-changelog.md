@@ -10,6 +10,18 @@
 
 ---
 
+## 2026-07-22 · A3 单人 IL 模板变体
+
+- 模板 id：`extensions.mw.il.template=solo_il_place_v0`（`demo_workshop` 同源）。
+- 变体：`tutorial_place_near`（近距/240s）· `tutorial_place_tight`（远距+紧 AABB/120s）；`scripts/a3_catalog_smoke.py`。
+- join：`level_id=tutorial_place_*`（Admin/URL 与既有契约目录）。
+
+## 2026-07-22 · A1 收口 + A2 分关天梯
+
+- A1：工坊进关提示 + 剩余时限 HUD；放置橙垫/路径指向工作台；Recordings `task_id` + IL 预设；Portal「导出工坊 IL CSV」。
+- A2：`GET /api/platform/leaderboard?level_id=`；Hub/Portal 总榜·工坊·训练场切换。
+- **Next = A3** 训练关模板变体。
+
 ## 2026-07-22 · A1 起步：超时 fail + place 唯一终局
 
 - Gateway：`extensions.mw.il.task_id` 外的 `reach_region` 为 milestone（推箱不弹 SUCCESS）；`time_limit_s` → `objective_failed` + `outcome=fail`。

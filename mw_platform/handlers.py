@@ -54,8 +54,10 @@ def handle_platform_get(
     *,
     send_json: SendJson,
     get_header: GetHeader,
+    query: dict[str, list[str]] | None = None,
 ) -> bool:
     """Return True if request was handled."""
+    qs = query or {}
     if path == "/api/platform/health":
         send_json({"ok": True, "auth_enabled": auth_enabled(), "db": db_url()}, 200)
         return True
@@ -81,8 +83,17 @@ def handle_platform_get(
         return True
     if path == "/api/platform/leaderboard":
         store = get_store()
-        rows = store.leaderboard(limit=10)  # type: ignore[attr-defined]
-        send_json({"ok": True, "entries": rows}, 200)
+        limit_raw = (qs.get("limit") or ["10"])[0]
+        try:
+            limit = int(limit_raw)
+        except ValueError:
+            limit = 10
+        level_id = (qs.get("level_id") or [""])[0].strip() or None
+        rows = store.leaderboard(limit=limit, level_id=level_id)  # type: ignore[attr-defined]
+        send_json(
+            {"ok": True, "entries": rows, "level_id": level_id or ""},
+            200,
+        )
         return True
     if path == "/api/platform/players":
         key = get_header("X-Admin-Key") or get_header("x-admin-key")

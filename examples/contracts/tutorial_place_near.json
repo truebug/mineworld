@@ -1,7 +1,7 @@
 {
   "contract_version": "0.1",
-  "level_id": "demo_workshop",
-  "seed": 7,
+  "level_id": "tutorial_place_near",
+  "seed": 4505,
   "frame": "mineworld_zup_m",
   "sim": {
     "dt": 0.02
@@ -50,8 +50,8 @@
         0.06
       ],
       "pose": {
-        "x": 7.0,
-        "y": 1.5,
+        "x": 13.5,
+        "y": -6.5,
         "z": 0.03,
         "yaw": 0.0
       },
@@ -207,22 +207,24 @@
     "poc",
     "workshop",
     "il",
-    "arm_gripper"
+    "arm_gripper",
+    "tutorial",
+    "easy"
   ],
   "extensions": {
     "mw.il": {
       "task_id": "obj_place_block",
-      "difficulty": "poc",
+      "difficulty": "easy",
       "control_modes": [
         "velocity",
         "joint_targets"
       ],
-      "time_limit_s": 180,
+      "time_limit_s": 240,
       "template": "solo_il_place_v0"
     },
     "mw.editor": {
       "client_scene": "res://demo_workshop.tscn",
-      "notes": "prop_crate stow; prop_block grasp→place on workbench (IL primary)."
+      "notes": "A3 variant: block near workbench; longer time_limit."
     }
   }
 }

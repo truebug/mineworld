@@ -215,25 +215,50 @@ class SQLitePlayerStore(PlayerStore):
             ).fetchone()
         return {"created": True, "row": dict(row) if row else {}}
 
-    def leaderboard(self, *, limit: int = 10) -> list[dict[str, Any]]:
-        """Aggregate total points per player (Top N)."""
+    def leaderboard(self, *, limit: int = 10, level_id: str | None = None) -> list[dict[str, Any]]:
+        """Aggregate points per player; optional filter by level_id (A2)."""
         lim = max(1, min(50, int(limit)))
+        lid = (level_id or "").strip()
         with self._conn() as conn:
-            rows = conn.execute(
-                """
-                SELECT player_id,
-                       MAX(display_name) AS display_name,
-                       SUM(points) AS total_points,
-                       COUNT(*) AS runs
-                FROM scores
-                WHERE points > 0
-                GROUP BY player_id
-                ORDER BY total_points DESC, runs ASC
-                LIMIT ?
-                """,
-                (lim,),
-            ).fetchall()
-        return [dict(r) for r in rows]
+            if lid:
+                rows = conn.execute(
+                    """
+                    SELECT player_id,
+                           MAX(display_name) AS display_name,
+                           SUM(points) AS total_points,
+                           COUNT(*) AS runs,
+                           MIN(CASE WHEN outcome = 'success' THEN duration_sim_s END)
+                             AS best_duration_sim_s
+                    FROM scores
+                    WHERE points > 0 AND level_id = ?
+                    GROUP BY player_id
+                    ORDER BY total_points DESC,
+                             best_duration_sim_s ASC NULLS LAST,
+                             runs ASC
+                    LIMIT ?
+                    """,
+                    (lid, lim),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT player_id,
+                           MAX(display_name) AS display_name,
+                           SUM(points) AS total_points,
+                           COUNT(*) AS runs
+                    FROM scores
+                    WHERE points > 0
+                    GROUP BY player_id
+                    ORDER BY total_points DESC, runs ASC
+                    LIMIT ?
+                    """,
+                    (lim,),
+                ).fetchall()
+        out = [dict(r) for r in rows]
+        if lid:
+            for row in out:
+                row["level_id"] = lid
+        return out
 
     def player_stats(self, player_id: str) -> dict[str, Any]:
         """Totals for one player."""
@@ -538,7 +563,7 @@ class PostgresPlayerStore(PlayerStore):
     def record_score(self, **kwargs: Any) -> dict[str, Any]:
         raise NotImplementedError
 
-    def leaderboard(self, *, limit: int = 10) -> list[dict[str, Any]]:
+    def leaderboard(self, *, limit: int = 10, level_id: str | None = None) -> list[dict[str, Any]]:
         raise NotImplementedError
 
     def player_stats(self, player_id: str) -> dict[str, Any]:

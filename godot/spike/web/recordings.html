@@ -126,16 +126,20 @@
     <label style="color:var(--muted);font-size:13px">level
       <select id="f-level"><option value="">all</option></select>
     </label>
+    <label style="color:var(--muted);font-size:13px">task
+      <select id="f-task"><option value="">all</option></select>
+    </label>
     <label style="color:var(--muted);font-size:13px">outcome
       <select id="f-outcome">
         <option value="">all</option>
-        <option value="success">success</option>
+        <option value="success" selected>success</option>
         <option value="fail">fail</option>
         <option value="abort">abort</option>
         <option value="disconnect">disconnect</option>
       </select>
     </label>
-    <a id="export-link" class="actions" href="/api/recordings/export.csv?outcome=success" style="padding:6px 10px;border:1px solid var(--line);border-radius:6px;color:var(--text);text-decoration:none;background:var(--panel)">Export CSV</a>
+    <button type="button" id="preset-il" style="padding:6px 10px;border:1px solid var(--line);border-radius:6px;color:var(--text);background:var(--panel);cursor:pointer">IL 工坊预设</button>
+    <a id="export-link" class="actions" href="/api/recordings/export.csv?level_id=demo_workshop&amp;task_id=obj_place_block&amp;outcome=success" style="padding:6px 10px;border:1px solid var(--line);border-radius:6px;color:var(--text);text-decoration:none;background:var(--panel)">Export CSV</a>
   </div>
   <main>
     <aside id="list"></aside>
@@ -149,6 +153,7 @@
   const detailEl = document.getElementById("detail");
   const countEl = document.getElementById("count");
   const levelSel = document.getElementById("f-level");
+  const taskSel = document.getElementById("f-task");
   const outcomeSel = document.getElementById("f-outcome");
   const exportLink = document.getElementById("export-link");
   let selected = null;
@@ -170,6 +175,7 @@
   function syncExportHref() {
     const q = new URLSearchParams();
     if (levelSel.value) q.set("level_id", levelSel.value);
+    if (taskSel.value) q.set("task_id", taskSel.value);
     q.set("outcome", outcomeSel.value || "success");
     exportLink.href = "/api/recordings/export.csv?" + q.toString();
   }
@@ -177,6 +183,7 @@
   function filteredSessions() {
     return allSessions.filter((s) => {
       if (levelSel.value && (s.level_id || "") !== levelSel.value) return false;
+      if (taskSel.value && (s.task_id || "") !== taskSel.value) return false;
       if (outcomeSel.value && (s.outcome || "") !== outcomeSel.value) return false;
       return true;
     });
@@ -213,11 +220,15 @@
     const data = await res.json();
     allSessions = data.sessions || [];
     const levels = [...new Set(allSessions.map((s) => s.level_id).filter(Boolean))].sort();
+    const tasks = [...new Set(allSessions.map((s) => s.task_id).filter(Boolean))].sort();
     levelSel.innerHTML = '<option value="">all</option>' +
       levels.map((l) => '<option value="' + l + '">' + l + "</option>").join("");
+    taskSel.innerHTML = '<option value="">all</option>' +
+      tasks.map((t) => '<option value="' + t + '">' + t + "</option>").join("");
     if (!allSessions.length) {
       countEl.textContent = "0 sessions";
       listEl.innerHTML = "<p style='color:var(--muted);padding:8px'>暂无录制。跑一局游戏后会写入 recordings/sessions/。</p>";
+      syncExportHref();
       return;
     }
     renderList();
@@ -234,7 +245,20 @@
   }
 
   levelSel.addEventListener("change", renderList);
+  taskSel.addEventListener("change", renderList);
   outcomeSel.addEventListener("change", renderList);
+  document.getElementById("preset-il").addEventListener("click", () => {
+    levelSel.value = "demo_workshop";
+    if (![...taskSel.options].some((o) => o.value === "obj_place_block")) {
+      const opt = document.createElement("option");
+      opt.value = "obj_place_block";
+      opt.textContent = "obj_place_block";
+      taskSel.appendChild(opt);
+    }
+    taskSel.value = "obj_place_block";
+    outcomeSel.value = "success";
+    renderList();
+  });
 
   function extractTracks(frames) {
     const tracks = {};

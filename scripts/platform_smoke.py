@@ -85,9 +85,31 @@ def main() -> int:
     if not lb or lb[0]["player_id"] != "demo" or int(lb[0]["total_points"]) != 200:
         print("FAIL: leaderboard", lb, file=sys.stderr)
         return 1
+    lb_ws = store.leaderboard(limit=5, level_id="demo_workshop")
+    if not lb_ws or int(lb_ws[0]["total_points"]) != 200:
+        print("FAIL: leaderboard workshop", lb_ws, file=sys.stderr)
+        return 1
+    lb_city = store.leaderboard(limit=5, level_id="demo_city")
+    if lb_city:
+        print("FAIL: empty city board expected", lb_city, file=sys.stderr)
+        return 1
+
+    store.record_score(
+        session_id="sess-city",
+        player_id="demo",
+        level_id="demo_city",
+        outcome="success",
+        points=100,
+        duration_sim_s=40.0,
+        display_name="Demo Pilot",
+    )
+    lb_city2 = store.leaderboard(limit=5, level_id="demo_city")
+    if not lb_city2 or int(lb_city2[0]["total_points"]) != 100:
+        print("FAIL: leaderboard city", lb_city2, file=sys.stderr)
+        return 1
 
     stats = store.player_stats("demo")
-    if int(stats.get("total_points") or 0) != 200:
+    if int(stats.get("total_points") or 0) != 300:
         print("FAIL: player_stats", stats, file=sys.stderr)
         return 1
     hist = store.player_scores("demo", limit=5)

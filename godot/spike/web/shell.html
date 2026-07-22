@@ -532,6 +532,11 @@ body.mw-play.mw-no-joints #mw-joints {
 		</div>
 		<div id="mw-hub-lb" aria-label="Leaderboard">
 			<div class="mw-lb-title" data-i18n="hub.lb">排行榜</div>
+			<select id="mw-hub-lb-level" aria-label="Leaderboard level" style="width:100%;margin:4px 0 6px;font:inherit;font-size:11px;background:#1a2030;color:#c8d0dc;border:1px solid #3a4558;border-radius:4px;padding:2px 4px">
+				<option value="">总榜</option>
+				<option value="demo_workshop">工坊</option>
+				<option value="demo_city">训练场</option>
+			</select>
 			<ol id="mw-hub-lb-list"><li>…</li></ol>
 		</div>
 		<div id="mw-success" aria-live="polite">
@@ -904,11 +909,14 @@ const engine = new Engine(GODOT_CONFIG);
 
 		async function refreshLeaderboard() {
 			const list = document.getElementById('mw-hub-lb-list');
+			const levelSel = document.getElementById('mw-hub-lb-level');
 			if (!list) {
 				return;
 			}
 			try {
-				const r = await fetch('/api/platform/leaderboard');
+				const level = levelSel ? levelSel.value : '';
+				const q = level ? ('?level_id=' + encodeURIComponent(level)) : '';
+				const r = await fetch('/api/platform/leaderboard' + q);
 				const data = await r.json();
 				const entries = (data && data.entries) || [];
 				list.innerHTML = '';
@@ -929,6 +937,10 @@ const engine = new Engine(GODOT_CONFIG);
 			}
 		}
 		window.MW_REFRESH_LEADERBOARD = refreshLeaderboard;
+		const lbLevel = document.getElementById('mw-hub-lb-level');
+		if (lbLevel) {
+			lbLevel.addEventListener('change', refreshLeaderboard);
+		}
 		refreshLeaderboard();
 		setInterval(refreshLeaderboard, 15000);
 

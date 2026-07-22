@@ -58,11 +58,11 @@ const FLOOR_PADS: Array = [
 	{"x": 26.0, "z": 4.0}, {"x": 26.0, "z": -4.0},
 ]
 
-## Fake nav glow path in Godot XZ (MW spawn 4,0 → crate 8,0 → bin 26,0). Viewer-only.
+## Fake nav glow path in Godot XZ (MW spawn → block → place pad). Viewer-only.
 const PATH_WAYPOINTS: Array = [
 	Vector2(4.0, 0.0),
-	Vector2(8.0, 0.0),
-	Vector2(26.0, 0.0),
+	Vector2(7.0, -1.5),
+	Vector2(15.0, 8.0),
 ]
 const PATH_Y := 0.03
 const PATH_WIDTH := 0.38
@@ -71,9 +71,10 @@ const PATH_GAP := 0.28
 
 
 func _place_all() -> void:
-	"""Place floor pads + neon path + props; keep concrete Ground as base (viewer_only)."""
+	"""Place floor pads + neon path + place pad + props; keep concrete Ground as base."""
 	var floor_n := _place_floor_pads()
 	var path_n := _place_neon_path()
+	_place_place_pad()
 	var n := 0
 	for item in PLACEMENTS:
 		if typeof(item) != TYPE_DICTIONARY:
@@ -83,6 +84,33 @@ func _place_all() -> void:
 		if _spawn_asset(name, float(d.get("x", 0.0)), float(d.get("z", 0.0)), float(d.get("yaw", 0.0)), float(d.get("s", 1.0)), n):
 			n += 1
 	print("[MW] workshop dress floor_pads=%d path_segs=%d props=%d (viewer_only)" % [floor_n, path_n, n])
+
+
+func _place_place_pad() -> void:
+	"""Viewer-only orange AABB hint for trigger_place (MW y→Godot −z)."""
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(1.0, 0.45, 0.12, 0.35)
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(3.6, 0.04, 1.6)
+	var mi := MeshInstance3D.new()
+	mi.name = "PlacePad"
+	mi.mesh = mesh
+	mi.material_override = mat
+	# MW trigger_place center ~(15, -8, 1.16) → Godot (15, 1.16, 8)
+	mi.position = Vector3(15.0, 1.02, 8.0)
+	add_child(mi)
+	var label := Label3D.new()
+	label.name = "PlacePadLabel"
+	label.text = "放置区"
+	label.font_size = 48
+	label.modulate = Color(1.0, 0.85, 0.4)
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.position = Vector3(15.0, 1.55, 8.0)
+	MWFonts.apply_label3d(label)
+	add_child(label)
 
 
 func _place_neon_path() -> int:

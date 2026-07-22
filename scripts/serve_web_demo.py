@@ -206,11 +206,12 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
     def _get_header(self, name: str) -> str | None:
         return self.headers.get(name)
 
-    def _try_platform_get(self, path: str) -> bool:
+    def _try_platform_get(self, path: str, query: dict | None = None) -> bool:
         return handle_platform_get(
             path,
             send_json=self._send_json,
             get_header=self._get_header,
+            query=query,
         )
 
     def _try_platform_post(self, path: str) -> bool:
@@ -226,7 +227,7 @@ class CoopCoepHandler(SimpleHTTPRequestHandler):
         path = unquote(parsed.path)
 
         if path.startswith("/api/platform/"):
-            if self._try_platform_get(path):
+            if self._try_platform_get(path, parse_qs(parsed.query)):
                 return
             self._send_json({"error": "not_found"}, 404)
             return

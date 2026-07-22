@@ -84,6 +84,9 @@ const _JOINT_SPECS := [
 func _ready() -> void:
 	_is_web = OS.has_feature("web")
 	_profile = _load_profile()
+	var q_level := _resolve_level_override()
+	if q_level != "":
+		level_id = q_level
 	MWTransition.notify_arrived()
 	_replay_session = _resolve_replay_id()
 	ws.hello_received.connect(_on_hello)
@@ -152,6 +155,31 @@ func _sync_web_joints_ui() -> void:
 		+ "})(%s);" % show,
 		true
 	)
+
+
+func _resolve_level_override() -> String:
+	"""Web: ?level= / ?level_id= overrides exported level (A3 tutorial variants)."""
+	if not _is_web:
+		return ""
+	return str(JavaScriptBridge.eval(
+		"(function(){try{var q=new URLSearchParams(location.search);"
+		+ "return q.get('level')||q.get('level_id')||''}catch(e){return ''}})()",
+		true
+	)).strip_edges()
+
+
+func _is_place_il_level() -> bool:
+	"""Workshop place IL + A3 tutorial_place_* variants."""
+	return level_id == "demo_workshop" or level_id.begins_with("tutorial_place")
+
+
+func _place_il_time_limit_s() -> float:
+	"""Match extensions.mw.il.time_limit_s for HUD countdown."""
+	if level_id == "tutorial_place_near":
+		return 240.0
+	if level_id == "tutorial_place_tight":
+		return 120.0
+	return 180.0
 
 
 func _resolve_replay_id() -> String:
@@ -671,6 +699,12 @@ func _on_scene(payload: Dictionary) -> void:
 	_controlled = false
 	_mission_done = false
 	_status_line = ""
+	if _is_place_il_level():
+		var lim := int(_place_il_time_limit_s())
+		_status_line = MWi18n.t(
+			"工坊 · 夹小料块 → 放到工作台橙区并张开夹爪（时限 %ds）",
+			"Workshop · grasp block → place on orange pad, open gripper (%ds)"
+		) % lim
 	var ext: Dictionary = payload.get("extensions", {})
 	if typeof(ext) == TYPE_DICTIONARY:
 		var mw: Variant = ext.get("mw", {})
@@ -1088,8 +1122,13 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		text += "input: document→godot | heldW=%s\n" % _web_key("KeyW")
 	if _status_line != "":
 		text += "%s\n" % _status_line
+	if _is_place_il_level() and not _mission_done and t_sim > 0.0:
+		var left := _place_il_time_limit_s() - t_sim
+		if left < 0.0:
+			left = 0.0
+		text += MWi18n.t("剩余 %.0fs", "left %.0fs") % left + "\n"
 	if _mission_done:
-		text += "MISSION COMPLETE — reach zone OK\n"
+		text += MWi18n.t("任务结束 — Esc 回母港", "MISSION DONE — Esc to hangar") + "\n"
 	if _hello:
 		text += "protocol: %s | dt=%.2f sim=%dHz state=%dHz\n" % [
 			_hello.get("protocol_version", "?"),
