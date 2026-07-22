@@ -32,7 +32,8 @@
 | Racing Kit 1.x（子集） | [kenney.nl/assets/racing-kit](https://kenney.nl/assets/racing-kit) | CC0 | `demo_race` viewer 护栏/旗/树；`godot/spike/assets/kenney_racing/` | 无 | 2026-07-22 |
 | Car Kit 3.1（子集） | [kenney.nl/assets/car-kit](https://kenney.nl/assets/car-kit) | CC0 | `demo_race` viewer 车皮；`godot/spike/assets/kenney_car/` | 无 | 2026-07-22 |
 | Metal Toolbox（2K） | [polyhaven.com/a/metal_toolbox](https://polyhaven.com/a/metal_toolbox) | CC0 | 资产保留；Hub 大厅不再摆（尺度过碎） | 无 | 2026-07-22 |
-| Covered Car（2K） | [polyhaven.com/a/covered_car](https://polyhaven.com/a/covered_car) | CC0 | Hub 门 A 湾侧英雄展陈（篷布轿车）；`godot/spike/assets/polyhaven_covered_car/` | 无（可署名 Poly Haven） | 2026-07-22 |
+| Covered Car（2K） | [polyhaven.com/a/covered_car](https://polyhaven.com/a/covered_car) | CC0 | 资产保留；Hub 不再摆（篷布遮挡细部） | 无 | 2026-07-22 |
+| Gothic Statue（2K） | [polyhaven.com/a/gothic_statue](https://polyhaven.com/a/gothic_statue) | CC0 | Hub 门 A 湾侧英雄展陈（石像）；`godot/spike/assets/polyhaven_gothic_statue/` | 无（可署名 Poly Haven） | 2026-07-22 |
 
 ### 候选（未入库 · demo_race 皮）
 

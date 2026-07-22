@@ -826,30 +826,44 @@ func _place_props(root: Node3D) -> void:
 
 
 func _place_hero_prop(root: Node3D) -> void:
-	"""Poly Haven covered car by Door A bay — hangar-scale PBR hero (not the tiny toolbox)."""
-	const PATH := "res://assets/polyhaven_covered_car/covered_car_2k.gltf"
+	"""Poly Haven gothic statue by Door A — carved stone folds for Web PBR fidelity."""
+	const PATH := "res://assets/polyhaven_gothic_statue/gothic_statue_2k.gltf"
 	if not ResourceLoader.exists(PATH):
 		return
 	var packed := load(PATH) as PackedScene
 	if packed == null:
 		return
+	# Simple plinth so the sculpture reads as a gallery piece.
+	var plinth := MeshInstance3D.new()
+	plinth.name = "HeroStatuePlinth"
+	var box := BoxMesh.new()
+	box.size = Vector3(1.15, 0.28, 1.15)
+	plinth.mesh = box
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.22, 0.24, 0.28)
+	mat.roughness = 0.55
+	mat.metallic = 0.15
+	plinth.material_override = mat
+	root.add_child(plinth)
+	plinth.position = Vector3(HALL_HALF_X - 5.2, 0.14, 8.2)
+
 	var node := packed.instantiate() as Node3D
-	node.name = "HeroCoveredCar"
+	node.name = "HeroGothicStatue"
 	root.add_child(node)
-	# East wall, south of Door A bay — readable from mid-ring, clears enter path.
-	node.position = Vector3(HALL_HALF_X - 5.2, 0.0, 8.2)
-	node.rotation_degrees.y = -18.0
+	# Feet on plinth top (~0.28).
+	node.position = Vector3(HALL_HALF_X - 5.2, 0.28, 8.2)
+	node.rotation_degrees.y = -110.0
 	node.scale = Vector3(1.0, 1.0, 1.0)
 	var tag := Label3D.new()
 	MWFonts.apply_label3d(tag)
-	tag.text = MWi18n.t("篷布轿车 · Poly Haven CC0", "Covered car · Poly Haven CC0")
+	tag.text = MWi18n.t("哥特石像 · Poly Haven CC0", "Gothic statue · Poly Haven CC0")
 	tag.font_size = 36
 	tag.outline_size = 6
 	tag.pixel_size = 0.01
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	tag.modulate = Color(0.88, 0.92, 0.98, 0.92)
+	tag.modulate = Color(0.9, 0.93, 0.98, 0.92)
 	node.add_child(tag)
-	tag.position = Vector3(0, 2.05, 0)
+	tag.position = Vector3(0, 1.95, 0)
 
 
 func _spawn(parent: Node3D, asset: String, x: float, z: float, yaw_deg: float, s: float) -> void:
