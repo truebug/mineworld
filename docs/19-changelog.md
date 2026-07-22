@@ -10,6 +10,11 @@
 
 ---
 
+## 2026-07-22 · E5d 北翼按 role 挂 curated 展柜
+
+- Hub：`classroom` 东·北墙、`gallery` 西·北墙、`lab`/`foresight` 西墙；缩略屏 + Label3D；翼站 lore 显示张数。
+- 仍 TYPE B（F → stub/enter URL）；不迁 PMS 物理。Playground 随本刀发版。
+
 ## 2026-07-22 · A3 单人 IL 模板变体
 
 - 模板 id：`extensions.mw.il.template=solo_il_place_v0`（`demo_workshop` 同源）。

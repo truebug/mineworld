@@ -193,21 +193,90 @@ func _place_cd_stations() -> void:
 
 
 func _place_exhibits() -> void:
-	"""E4: tall wall boards from exhibits.v0.json — F opens external Space URL."""
+	"""E5d: north-wing boards grouped by role (classroom / gallery / lab / foresight)."""
 	var exhibits := _load_exhibits()
-	# North wing (TYPE B) — large screens flank the Design / gallery bay.
-	var slots: Array = [
-		{"pos": Vector3(-14.5, 0, -WALL_Z + 1.35), "yaw": 0.0},
-		{"pos": Vector3(14.5, 0, -WALL_Z + 1.35), "yaw": 0.0},
-	]
-	var i := 0
+	var by_role: Dictionary = {
+		"classroom": [],
+		"gallery": [],
+		"lab": [],
+		"foresight": [],
+	}
 	for ex in exhibits:
 		if typeof(ex) != TYPE_DICTIONARY:
 			continue
-		if i >= slots.size():
-			break
-		var slot: Dictionary = slots[i]
-		i += 1
+		var role := str(ex.get("role", "gallery")).strip_edges()
+		if not by_role.has(role):
+			role = "gallery"
+		(by_role[role] as Array).append(ex)
+
+	# Classroom wing (east-north): courses along north wall.
+	_mount_role_row(
+		by_role["classroom"] as Array,
+		4.2,
+		18.6,
+		-WALL_Z + 1.35,
+		0.0,
+		Color(0.42, 0.72, 0.95),
+		0.52,
+	)
+	# Gallery wing (west-north): scene exhibits.
+	_mount_role_row(
+		by_role["gallery"] as Array,
+		-4.2,
+		-18.6,
+		-WALL_Z + 1.35,
+		0.0,
+		Color(0.88, 0.68, 0.32),
+		0.55,
+	)
+	# Foresight: continue west row inward if gallery slots remain unused — place on west wall.
+	_mount_role_row(
+		by_role["foresight"] as Array,
+		-WALL_X + 1.4,
+		-WALL_X + 1.4,
+		-16.5,
+		90.0,
+		Color(0.95, 0.55, 0.28),
+		0.5,
+		true,
+	)
+	# Lab: west wall north of Edge Dock narrative.
+	_mount_role_row(
+		by_role["lab"] as Array,
+		-WALL_X + 1.4,
+		-WALL_X + 1.4,
+		-11.5,
+		90.0,
+		Color(0.4, 0.88, 0.62),
+		0.5,
+		true,
+	)
+
+
+func _mount_role_row(
+	items: Array,
+	x0: float,
+	x1: float,
+	z: float,
+	yaw: float,
+	accent: Color,
+	board_scale: float,
+	along_z: bool = false,
+) -> void:
+	"""Place exhibit boards evenly between x0..x1 (or along Z when along_z)."""
+	var n := items.size()
+	if n <= 0:
+		return
+	for i in range(n):
+		var ex: Dictionary = items[i]
+		var t := 0.0 if n == 1 else float(i) / float(n - 1)
+		var pos: Vector3
+		if along_z:
+			# x0/x1 unused as range; x fixed; z spreads from z toward less-negative.
+			var z1 := z + float(n - 1) * 2.4
+			pos = Vector3(x0, 0.0, lerpf(z, z1, t))
+		else:
+			pos = Vector3(lerpf(x0, x1, t), 0.0, z)
 		var eid := str(ex.get("id", "exhibit_%d" % i))
 		var title := MWi18n.t(
 			str(ex.get("title_zh", ex.get("title", "展柜"))),
@@ -215,24 +284,26 @@ func _place_exhibits() -> void:
 		)
 		var url := str(ex.get("url", "")).strip_edges()
 		var space_id := str(ex.get("space_id", "")).strip_edges()
+		var role := str(ex.get("role", "")).strip_edges()
 		var lore := MWi18n.t(
 			str(ex.get("lore_zh", ex.get("lore", "外部 Space 卡片。"))),
 			str(ex.get("lore_en", ex.get("lore", "External Space card."))),
 		)
 		var line := MWi18n.t(
-			"%s\n%s\n（按 F 打开卡片 · space_id=%s）",
-			"%s\n%s\n(F opens card · space_id=%s)",
-		) % [title, lore, space_id if space_id != "" else "—"]
+			"[%s] %s\n%s\n（按 F 打开 · space_id=%s）",
+			"[%s] %s\n%s\n(F opens · space_id=%s)",
+		) % [role if role != "" else "card", title, lore, space_id if space_id != "" else "—"]
 		_exhibit_board(
 			eid,
-			slot["pos"],
-			float(slot["yaw"]),
+			pos,
+			yaw,
 			MWi18n.t("F · %s", "F · %s") % title,
 			line,
-			Color(0.45, 0.9, 0.75),
+			accent,
 			url,
 			title,
 			space_id,
+			board_scale,
 		)
 
 
@@ -246,8 +317,10 @@ func _exhibit_board(
 	url: String = "",
 	title: String = "",
 	space_id: String = "",
+	board_scale: float = 1.0,
 ) -> void:
-	"""Tall PMS card info screen (much larger than kiosk pedestals)."""
+	"""Tall PMS card info screen (scale down for dense north-wing rows)."""
+	var s := clampf(board_scale, 0.35, 1.0)
 	var root := Node3D.new()
 	root.name = "Exhibit_%s" % id
 	add_child(root)
@@ -259,13 +332,21 @@ func _exhibit_board(
 	glow.emission_enabled = true
 	glow.emission = accent
 	glow.emission_energy_multiplier = 1.8
-	# Plinth
-	_box_child(root, Vector3(0, 0.2, 0.15), Vector3(3.2, 0.4, 1.2), body)
-	# Tall frame + screen face (~4.5 m high overall)
-	_box_child(root, Vector3(0, 2.6, 0.0), Vector3(3.0, 4.6, 0.45), body)
-	_box_child(root, Vector3(0, 2.7, 0.28), Vector3(2.55, 4.0, 0.1), glow)
-	_box_child(root, Vector3(0, 4.85, 0.3), Vector3(2.4, 0.14, 0.14), trim)
-	_box_child(root, Vector3(0, 0.55, 0.32), Vector3(2.4, 0.1, 0.12), glow)
+	_box_child(root, Vector3(0, 0.2 * s, 0.15 * s), Vector3(3.2 * s, 0.4 * s, 1.2 * s), body)
+	_box_child(root, Vector3(0, 2.6 * s, 0.0), Vector3(3.0 * s, 4.6 * s, 0.45 * s), body)
+	_box_child(root, Vector3(0, 2.7 * s, 0.28 * s), Vector3(2.55 * s, 4.0 * s, 0.1 * s), glow)
+	_box_child(root, Vector3(0, 4.85 * s, 0.3 * s), Vector3(2.4 * s, 0.14 * s, 0.14 * s), trim)
+	_box_child(root, Vector3(0, 0.55 * s, 0.32 * s), Vector3(2.4 * s, 0.1 * s, 0.12 * s), glow)
+	# Short title plate above plinth (readable at distance).
+	var tag := Label3D.new()
+	tag.name = "Title"
+	tag.text = title if title != "" else id
+	tag.font_size = int(42.0 * s)
+	tag.modulate = accent.lightened(0.25)
+	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	tag.position = Vector3(0.0, 5.2 * s, 0.35 * s)
+	MWFonts.apply_label3d(tag)
+	root.add_child(tag)
 	interactables.append({
 		"node": root,
 		"id": id,
@@ -276,15 +357,18 @@ func _exhibit_board(
 		"space_id": space_id,
 	})
 
-
 func _place_room_shell_stations() -> void:
-	"""H10: gallery / classroom corridor pads (lore; exhibits hold real URLs)."""
+	"""H10: gallery / classroom corridor pads — point at role-grouped E5d boards."""
+	var counts := _exhibit_role_counts()
 	_station(
 		"room_gallery",
 		Vector3(-8.0, 0, -WALL_Z + 1.2),
 		0.0,
 		MWi18n.t("F · 展厅翼", "F · Gallery"),
-		MWi18n.t("展厅翼 — 卡片通道。\n展柜可开 Space；无本仓仿真。", "Gallery wing — card corridor.\nExhibits open Spaces; no Hub MuJoCo."),
+		MWi18n.t(
+			"展厅翼 — 场景/厨房展柜 ×%d（西墙前瞻 ×%d）。\n走近橙屏按 F 开 Space。",
+			"Gallery — scene/kitchen boards ×%d (west foresight ×%d).\nApproach orange screen · F opens Space."
+		) % [int(counts.get("gallery", 0)), int(counts.get("foresight", 0))],
 		Color(0.75, 0.65, 0.4),
 	)
 	_station(
@@ -292,9 +376,24 @@ func _place_room_shell_stations() -> void:
 		Vector3(9.5, 0, -WALL_Z + 1.2),
 		0.0,
 		MWi18n.t("F · 教室翼", "F · Classroom"),
-		MWi18n.t("教室翼 — 课件走廊。\n未绑 URL 时仅说明；真卡片用展柜。", "Classroom wing.\nStub lore until Space URL linked."),
+		MWi18n.t(
+			"教室翼 — 课程卡 ×%d（实验室西墙 ×%d）。\n走近蓝屏按 F 开课件 Space。",
+			"Classroom — course cards ×%d (lab west wall ×%d).\nApproach blue screen · F opens Space."
+		) % [int(counts.get("classroom", 0)), int(counts.get("lab", 0))],
 		Color(0.45, 0.7, 0.85),
 	)
+
+
+func _exhibit_role_counts() -> Dictionary:
+	"""Count curated exhibits by role for wing lore."""
+	var out := {"classroom": 0, "gallery": 0, "lab": 0, "foresight": 0}
+	for ex in _load_exhibits():
+		if typeof(ex) != TYPE_DICTIONARY:
+			continue
+		var role := str(ex.get("role", "gallery"))
+		if out.has(role):
+			out[role] = int(out[role]) + 1
+	return out
 
 
 func _place_arena_station() -> void:
