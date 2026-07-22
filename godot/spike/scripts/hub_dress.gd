@@ -826,31 +826,30 @@ func _place_props(root: Node3D) -> void:
 
 
 func _place_hero_prop(root: Node3D) -> void:
-	"""Poly Haven metal toolbox near mid-ring beacon (Web PBR fidelity demo)."""
-	const PATH := "res://assets/polyhaven_metal_toolbox/metal_toolbox_2k.gltf"
+	"""Poly Haven covered car by Door A bay — hangar-scale PBR hero (not the tiny toolbox)."""
+	const PATH := "res://assets/polyhaven_covered_car/covered_car_2k.gltf"
 	if not ResourceLoader.exists(PATH):
 		return
 	var packed := load(PATH) as PackedScene
 	if packed == null:
 		return
 	var node := packed.instantiate() as Node3D
-	node.name = "HeroMetalToolbox"
+	node.name = "HeroCoveredCar"
 	root.add_child(node)
-	# Beacon sits at ~(5,0,0) in HubLife; place just SW so it reads in first look.
-	node.position = Vector3(3.55, 0.0, 1.35)
-	node.rotation_degrees.y = -35.0
-	# Model is ~0.4 m wide; slight scale so it reads from mid-hall.
-	node.scale = Vector3(1.35, 1.35, 1.35)
+	# East wall, south of Door A bay — readable from mid-ring, clears enter path.
+	node.position = Vector3(HALL_HALF_X - 5.2, 0.0, 8.2)
+	node.rotation_degrees.y = -18.0
+	node.scale = Vector3(1.0, 1.0, 1.0)
 	var tag := Label3D.new()
 	MWFonts.apply_label3d(tag)
-	tag.text = MWi18n.t("金属工具箱 · Poly Haven CC0", "Metal toolbox · Poly Haven CC0")
-	tag.font_size = 28
-	tag.outline_size = 5
-	tag.pixel_size = 0.008
+	tag.text = MWi18n.t("篷布轿车 · Poly Haven CC0", "Covered car · Poly Haven CC0")
+	tag.font_size = 36
+	tag.outline_size = 6
+	tag.pixel_size = 0.01
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	tag.modulate = Color(0.85, 0.9, 0.95, 0.9)
+	tag.modulate = Color(0.88, 0.92, 0.98, 0.92)
 	node.add_child(tag)
-	tag.position = Vector3(0, 0.85, 0)
+	tag.position = Vector3(0, 2.05, 0)
 
 
 func _spawn(parent: Node3D, asset: String, x: float, z: float, yaw_deg: float, s: float) -> void:

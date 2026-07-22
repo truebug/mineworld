@@ -31,7 +31,8 @@
 | Noto Sans SC Regular（子集 TTF） | [fontsource](https://github.com/fontsource/font-files) · [Noto CJK](https://github.com/notofonts/noto-cjk) | SIL OFL 1.1 | Hub `Label3D`/HUD 中文；`godot/spike/assets/fonts/`（见 OFL.txt） | 保留 OFL | 2026-07-21 |
 | Racing Kit 1.x（子集） | [kenney.nl/assets/racing-kit](https://kenney.nl/assets/racing-kit) | CC0 | `demo_race` viewer 护栏/旗/树；`godot/spike/assets/kenney_racing/` | 无 | 2026-07-22 |
 | Car Kit 3.1（子集） | [kenney.nl/assets/car-kit](https://kenney.nl/assets/car-kit) | CC0 | `demo_race` viewer 车皮；`godot/spike/assets/kenney_car/` | 无 | 2026-07-22 |
-| Metal Toolbox（2K） | [polyhaven.com/a/metal_toolbox](https://polyhaven.com/a/metal_toolbox) | CC0 | Hub 中央碑旁英雄静物（PBR）；`godot/spike/assets/polyhaven_metal_toolbox/` | 无（可署名 Poly Haven） | 2026-07-22 |
+| Metal Toolbox（2K） | [polyhaven.com/a/metal_toolbox](https://polyhaven.com/a/metal_toolbox) | CC0 | 资产保留；Hub 大厅不再摆（尺度过碎） | 无 | 2026-07-22 |
+| Covered Car（2K） | [polyhaven.com/a/covered_car](https://polyhaven.com/a/covered_car) | CC0 | Hub 门 A 湾侧英雄展陈（篷布轿车）；`godot/spike/assets/polyhaven_covered_car/` | 无（可署名 Poly Haven） | 2026-07-22 |
 
 ### 候选（未入库 · demo_race 皮）
 
