@@ -287,11 +287,10 @@ func _place_mini_city(root: Node3D) -> void:
 	_city_stack(root, "S2", Vector3(34, 0, 28), 4, hull, amber)
 	_city_stack(root, "S3", Vector3(-20, 0, 26), 3, hull_hi, panel)
 	_city_stack(root, "S4", Vector3(20, 0, 26), 3, hull_hi, panel)
-	# Mid-ring fillers for density.
-	_city_stack(root, "M1", Vector3(-22, 0, -12), 3, hull, panel)
-	_city_stack(root, "M2", Vector3(22, 0, -10), 4, hull_hi, panel)
+	# Mid-ring fillers (south / flanks only — north half kept clear for E5d boards).
 	_city_stack(root, "M3", Vector3(-26, 0, 8), 3, hull, amber)
 	_city_stack(root, "M4", Vector3(26, 0, 6), 3, hull, panel)
+	# Removed M1/M2 at (-22,-12)/(22,-10): they stood in front of north-wing cards.
 	# Sky bridges.
 	_box(root, "BridgeN", Vector3(0, 8.0, -HALL_HALF_Z - 6), Vector3(4.5, 0.7, 18.0), hull_hi)
 	_box(root, "BridgeNGlow", Vector3(0, 8.0, -HALL_HALF_Z - 6), Vector3(0.4, 0.25, 18.0), panel)
