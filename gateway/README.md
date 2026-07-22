@@ -89,5 +89,6 @@ Legacy：GDevelop `gdevelop/demo0`（存档，见 `docs/adr/003-client-engine-go
 - `scripts/stow_crate_smoke.py` — V3a 箱子推入料箱 → `objective_complete`
 - `scripts/grasp_lift_smoke.py` — P1a 摩擦夹取抬起 `prop_block`（里程碑）
 - `scripts/grasp_place_smoke.py` — IL：夹取 → 放到工作台 → `obj_place_block`
+- `scripts/a1_fail_smoke.py` — A1：`time_limit_s` → `outcome=fail` / `objective_failed`
 - `scripts/il_smoke.py` — V-IL：录制版 stow + export 过滤断言 ≥1 行
 - Web：`POST /api/recordings/reindex` · `GET /api/recordings/export.csv?level_id=&task_id=&outcome=`（经 `serve_web_demo.py`）
