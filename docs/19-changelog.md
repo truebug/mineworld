@@ -15,6 +15,7 @@
 - `diffbot_race`：velocity 伺服 → **motor 力/扭矩**；质量+阻尼给出 ~1.5 s 爬到 ~15 m/s。
 - 输入：W 油门 / S 刹车倒车 / QE 转向（高速转向衰减）；指令为 [-1,1] throttle。
 - 赛道：3 瓣回环 · ~755 m · 车道半宽 8.5 m · 时限 240 s。
+- Playground：`MW_BUILD=20260722-142708`。
 
 ## 2026-07-22 · demo_race 加大 + 去假起伏
 
