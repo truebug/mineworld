@@ -110,7 +110,7 @@ func _add_kerb_and_boards(layout: Dictionary) -> void:
 		# brake boards before corner: 50/100/150 m, right side of travel
 		for dist in [50, 100, 150]:
 			var back := int(round(dist / step_m))
-			var bi := (ci - back + n * 4) % n
+			var bi: int = (ci - back + n * 4) % n
 			var bp: Vector2 = pts[bi]
 			var bt := (Vector2(pts[(bi + 1) % n]) - Vector2(pts[(bi - 1 + n) % n])).normalized()
 			var bn := Vector2(-bt.y, bt.x)
