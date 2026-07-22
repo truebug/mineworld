@@ -1,0 +1,39 @@
+<mujoco model="diffbot_race">
+  <!--
+    Race chassis: same planar DiffBot as diffbot_planar, higher velocity ctrlrange
+    for high-speed circuit (demo_race). Wheels still F6 kinematic from Gateway.
+  -->
+  <option timestep="0.002" integrator="RK4" gravity="0 0 -9.81"/>
+
+  <default>
+    <geom contype="1" conaffinity="1" friction="0.8 0.02 0.01"/>
+  </default>
+
+  <worldbody>
+    <body name="chassis" pos="0 0 0.5">
+      <joint name="slide_x" type="slide" axis="1 0 0" damping="0.15"/>
+      <joint name="slide_y" type="slide" axis="0 1 0" damping="0.15"/>
+      <joint name="yaw_z" type="hinge" axis="0 0 1" damping="0.04"/>
+      <inertial pos="0 0 0" mass="12.0" diaginertia="0.15 0.25 0.3"/>
+      <geom name="chassis_box" type="box" size="0.5 0.5 0.25"
+            rgba="0.15 0.55 0.95 1"/>
+      <geom name="caster_frontal_wheel" type="sphere" size="0.15" pos="0.35 0.0 -0.25" mass="0" contype="0" conaffinity="0" rgba="1 1 1 1"/>
+      <geom name="caster_rear_wheel" type="sphere" size="0.15" pos="-0.35 0.0 -0.25" mass="0" contype="0" conaffinity="0" rgba="1 1 1 1"/>
+      <body name="left_wheel" pos="0.0 -0.5 -0.25">
+        <joint name="left_wheel_joint" type="hinge" axis="0 1 0" damping="0.01"/>
+        <geom name="left_wheel_geom" type="cylinder" size="0.15 0.1" quat="0.7071 0.7071 0 0" mass="0.05" contype="0" conaffinity="0" rgba="0 0 0 1"/>
+      </body>
+      <body name="right_wheel" pos="0.0 0.5 -0.25">
+        <joint name="right_wheel_joint" type="hinge" axis="0 1 0" damping="0.01"/>
+        <geom name="right_wheel_geom" type="cylinder" size="0.15 0.1" quat="0.7071 0.7071 0 0" mass="0.05" contype="0" conaffinity="0" rgba="0 0 0 1"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- High-speed circuit: ~10 m/s body frame (was ±3 on planar training bots). -->
+    <velocity name="vx" joint="slide_x" kv="160" forcerange="-800 800" ctrlrange="-12 12"/>
+    <velocity name="vy" joint="slide_y" kv="160" forcerange="-800 800" ctrlrange="-12 12"/>
+    <velocity name="yaw_rate" joint="yaw_z" kv="80" forcerange="-300 300" ctrlrange="-8 8"/>
+  </actuator>
+</mujoco>

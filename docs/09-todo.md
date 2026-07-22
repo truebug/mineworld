@@ -26,8 +26,8 @@
 ## Now（建议下一刀）
 
 > **北极星**：太空机器人学院 + 竞技场（[00](00-vision.md) · [README](../README.md)）。  
-> **工程策略**：数据价值优先 —— Phase A 做深工坊 IL → Phase B 成绩/对决壳 → Phase C 才开新机体/格斗/船机。  
-> Hub **不上 MuJoCo**（FakeMech + bounds clamp）。公网 Demo **不阻塞** Phase A。
+> **工程策略**：数据价值优先 —— Phase A 做深工坊 IL → **Phase B 成绩/对决壳（Now）** → Phase C 才开新机体/格斗/船机。  
+> Hub **不上 MuJoCo**（FakeMech + bounds clamp）。公网 Demo **不阻塞** Phase B。
 
 ### 三阶段（摘要）
 
@@ -74,8 +74,19 @@
 | Hub-look | 学院暖港首印象 | 中央碑+灯带+中环 NPC+巡逻 | [x] |
 | E5c | PMS 课程/展柜候选入库 | `exhibits.v0.json` 按 demos 索引筛选（classroom/gallery/lab/foresight）；见 [21 §PMS catalog](21-ecosystem-federation.md) | [x] 元数据；enter URL 待 Spaces 核验 |
 | E5d | Hub 北翼挂载 curated 列表 | 教室走廊 / 展柜按 `role` 分组展示（仍 TYPE B，不迁物理） | [x] classroom/gallery 北墙 + lab/foresight 西墙 |
-| E6–E8 | PMS 参观者壳 | 见 [21 §P1b](21-ecosystem-federation.md) | [ ] 可穿插，不替代 A1 |
-| E9 | Hub 公网插值/降频 | 远端不瞬移；开壳降 WS | [ ] |
+| E6–E8 | PMS 参观者壳 | 见 [21 §P1b](21-ecosystem-federation.md)；E8 薄壳已挂 E9 降频钩子 | [ ] E6/E7 待 PMS API；E8 侧栏文档后补 |
+| E9 | Hub 公网插值/降频 | 远端不瞬移；开壳降 WS | [x] 插值限速+自机预测；`presence_throttle`；薄参观壳 |
+
+### Phase B · Now（成绩竞技壳 · B1 Done）
+
+> E9 + B1（`demo_race` 高速长弯）已落地并 playground 发版。不必等 E6–E8 / PMS。  
+> **Next = B2 薄 1v1** → B3 房间模式（`solo | duel | shared_ffa`）。
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| B1 | 计时竞速关 | 契约时限/检查点；通关写时长榜（复用 A2 `level_id`） | [x] `demo_race` ~530 m · room=`race` · max 6 · MuJoCo · 门 E · 已发版 |
+| B2 | 薄 1v1 | 双人同房目标竞速或推箱对决；事件可录 | [ ] **Next** |
+| B3 | 房间模式字段 | join/`extensions.mw.mode`：`solo \| duel \| shared_ffa` | [~] race 已标 `shared_ffa`；通用字段后补 |
 
 ---
 

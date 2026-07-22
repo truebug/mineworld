@@ -1,0 +1,3266 @@
+{
+  "contract_version": "0.1",
+  "level_id": "demo_race",
+  "seed": 2,
+  "frame": "mineworld_zup_m",
+  "sim": {
+    "dt": 0.02
+  },
+  "mech_spawns": [
+    {
+      "id": "mech_player",
+      "model_ref": "mechs/diffbot_race.xml",
+      "pose": {
+        "x": -6.226,
+        "y": -64.961,
+        "z": 0.5,
+        "yaw": -0.0912
+      },
+      "player_slot": 0,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "mech_player_b",
+      "model_ref": "mechs/diffbot_race.xml",
+      "pose": {
+        "x": -6.125,
+        "y": -63.866,
+        "z": 0.5,
+        "yaw": -0.0912
+      },
+      "player_slot": 1,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "mech_player_c",
+      "model_ref": "mechs/diffbot_race.xml",
+      "pose": {
+        "x": -6.025,
+        "y": -62.77,
+        "z": 0.5,
+        "yaw": -0.0912
+      },
+      "player_slot": 2,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "mech_player_d",
+      "model_ref": "mechs/diffbot_race.xml",
+      "pose": {
+        "x": -5.925,
+        "y": -61.675,
+        "z": 0.5,
+        "yaw": -0.0912
+      },
+      "player_slot": 3,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "mech_player_e",
+      "model_ref": "mechs/diffbot_race.xml",
+      "pose": {
+        "x": -5.825,
+        "y": -60.579,
+        "z": 0.5,
+        "yaw": -0.0912
+      },
+      "player_slot": 4,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "mech_player_f",
+      "model_ref": "mechs/diffbot_race.xml",
+      "pose": {
+        "x": -5.724,
+        "y": -59.484,
+        "z": 0.5,
+        "yaw": -0.0912
+      },
+      "player_slot": 5,
+      "control_mode": "velocity",
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
+  "dynamic_props": [],
+  "static_obstacles": [
+    {
+      "id": "wall_out_000",
+      "shape": "box",
+      "size": [
+        5.842567244410787,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 96.393,
+        "y": 6.207,
+        "z": 1.1,
+        "yaw": 0.8065
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_001",
+      "shape": "box",
+      "size": [
+        5.343226881576938,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 99.048,
+        "y": 9.536,
+        "z": 1.1,
+        "yaw": 1.0001
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_002",
+      "shape": "box",
+      "size": [
+        4.88326117628472,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 100.508,
+        "y": 12.564,
+        "z": 1.1,
+        "yaw": 1.2608
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_003",
+      "shape": "box",
+      "size": [
+        4.651644916187452,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 100.925,
+        "y": 15.189,
+        "z": 1.1,
+        "yaw": 1.579
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_004",
+      "shape": "box",
+      "size": [
+        4.760274147901355,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 100.482,
+        "y": 17.682,
+        "z": 1.1,
+        "yaw": 1.9075
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_005",
+      "shape": "box",
+      "size": [
+        5.1549523519721925,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 99.045,
+        "y": 20.395,
+        "z": 1.1,
+        "yaw": 2.1902
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_006",
+      "shape": "box",
+      "size": [
+        5.672869324027381,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 96.405,
+        "y": 23.319,
+        "z": 1.1,
+        "yaw": 2.4062
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_007",
+      "shape": "box",
+      "size": [
+        6.158578380931197,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 92.587,
+        "y": 26.239,
+        "z": 1.1,
+        "yaw": 2.5633
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_008",
+      "shape": "box",
+      "size": [
+        6.514207875032478,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 87.814,
+        "y": 28.972,
+        "z": 1.1,
+        "yaw": 2.6761
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_009",
+      "shape": "box",
+      "size": [
+        6.69967569032569,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 82.373,
+        "y": 31.434,
+        "z": 1.1,
+        "yaw": 2.756
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_010",
+      "shape": "box",
+      "size": [
+        6.719952272319468,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 76.538,
+        "y": 33.619,
+        "z": 1.1,
+        "yaw": 2.8105
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_011",
+      "shape": "box",
+      "size": [
+        6.611078545468538,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 70.538,
+        "y": 35.568,
+        "z": 1.1,
+        "yaw": 2.8448
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_012",
+      "shape": "box",
+      "size": [
+        6.4262803141175295,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 64.536,
+        "y": 37.345,
+        "z": 1.1,
+        "yaw": 2.863
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_013",
+      "shape": "box",
+      "size": [
+        6.222292988631708,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 58.634,
+        "y": 39.012,
+        "z": 1.1,
+        "yaw": 2.8698
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_014",
+      "shape": "box",
+      "size": [
+        6.046962665211274,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 52.876,
+        "y": 40.612,
+        "z": 1.1,
+        "yaw": 2.8712
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_015",
+      "shape": "box",
+      "size": [
+        5.9303386841071175,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 47.264,
+        "y": 42.159,
+        "z": 1.1,
+        "yaw": 2.8742
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_016",
+      "shape": "box",
+      "size": [
+        5.881537302985493,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 41.769,
+        "y": 43.632,
+        "z": 1.1,
+        "yaw": 2.8853
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_017",
+      "shape": "box",
+      "size": [
+        5.891655400373553,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 36.341,
+        "y": 44.986,
+        "z": 1.1,
+        "yaw": 2.9089
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_018",
+      "shape": "box",
+      "size": [
+        5.940223019216306,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 30.928,
+        "y": 46.161,
+        "z": 1.1,
+        "yaw": 2.9465
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_019",
+      "shape": "box",
+      "size": [
+        6.001885060699129,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 25.488,
+        "y": 47.094,
+        "z": 1.1,
+        "yaw": 2.9966
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_020",
+      "shape": "box",
+      "size": [
+        6.051624280471194,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 20.007,
+        "y": 47.729,
+        "z": 1.1,
+        "yaw": 3.0559
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_021",
+      "shape": "box",
+      "size": [
+        6.068628112963319,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 14.493,
+        "y": 48.024,
+        "z": 1.1,
+        "yaw": 3.1203
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_022",
+      "shape": "box",
+      "size": [
+        6.039362849097377,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 8.981,
+        "y": 47.964,
+        "z": 1.1,
+        "yaw": -3.0983
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_023",
+      "shape": "box",
+      "size": [
+        5.9600226077671525,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 3.509,
+        "y": 47.563,
+        "z": 1.1,
+        "yaw": -3.0382
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_024",
+      "shape": "box",
+      "size": [
+        5.838210893606709,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -1.892,
+        "y": 46.866,
+        "z": 1.1,
+        "yaw": -2.9879
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_025",
+      "shape": "box",
+      "size": [
+        5.693749281526976,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -7.216,
+        "y": 45.946,
+        "z": 1.1,
+        "yaw": -2.9526
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_026",
+      "shape": "box",
+      "size": [
+        5.558460788662001,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -12.496,
+        "y": 44.894,
+        "z": 1.1,
+        "yaw": -2.9372
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_027",
+      "shape": "box",
+      "size": [
+        5.474020126767989,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -17.796,
+        "y": 43.815,
+        "z": 1.1,
+        "yaw": -2.9443
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_028",
+      "shape": "box",
+      "size": [
+        5.485613854479646,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -23.2,
+        "y": 42.812,
+        "z": 1.1,
+        "yaw": -2.9721
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_029",
+      "shape": "box",
+      "size": [
+        5.629407410331035,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -28.788,
+        "y": 41.974,
+        "z": 1.1,
+        "yaw": -3.0128
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_030",
+      "shape": "box",
+      "size": [
+        5.916693315934678,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -34.626,
+        "y": 41.344,
+        "z": 1.1,
+        "yaw": -3.0544
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_031",
+      "shape": "box",
+      "size": [
+        6.323798006285168,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -40.766,
+        "y": 40.907,
+        "z": 1.1,
+        "yaw": -3.0854
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_032",
+      "shape": "box",
+      "size": [
+        6.794534199707591,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -47.246,
+        "y": 40.586,
+        "z": 1.1,
+        "yaw": -3.0986
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_033",
+      "shape": "box",
+      "size": [
+        7.252374107484928,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -54.069,
+        "y": 40.267,
+        "z": 1.1,
+        "yaw": -3.0914
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_034",
+      "shape": "box",
+      "size": [
+        7.615277417767318,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -61.172,
+        "y": 39.81,
+        "z": 1.1,
+        "yaw": -3.0638
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_035",
+      "shape": "box",
+      "size": [
+        7.809314331945808,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -68.408,
+        "y": 39.069,
+        "z": 1.1,
+        "yaw": -3.0162
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_036",
+      "shape": "box",
+      "size": [
+        7.780643594631043,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -75.546,
+        "y": 37.92,
+        "z": 1.1,
+        "yaw": -2.9476
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_037",
+      "shape": "box",
+      "size": [
+        7.506302727815831,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -82.278,
+        "y": 36.277,
+        "z": 1.1,
+        "yaw": -2.855
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_038",
+      "shape": "box",
+      "size": [
+        7.00416118623184,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -88.253,
+        "y": 34.124,
+        "z": 1.1,
+        "yaw": -2.7315
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_039",
+      "shape": "box",
+      "size": [
+        6.342305956062741,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -93.121,
+        "y": 31.541,
+        "z": 1.1,
+        "yaw": -2.5662
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_040",
+      "shape": "box",
+      "size": [
+        5.64647618217373,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -96.611,
+        "y": 28.732,
+        "z": 1.1,
+        "yaw": -2.3443
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_041",
+      "shape": "box",
+      "size": [
+        5.093665426878673,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -98.673,
+        "y": 25.969,
+        "z": 1.1,
+        "yaw": -2.0569
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_042",
+      "shape": "box",
+      "size": [
+        4.854972250259461,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -99.561,
+        "y": 23.349,
+        "z": 1.1,
+        "yaw": -1.7235
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_043",
+      "shape": "box",
+      "size": [
+        4.9750753223548365,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -99.526,
+        "y": 20.578,
+        "z": 1.1,
+        "yaw": -1.4001
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_044",
+      "shape": "box",
+      "size": [
+        5.322072003571268,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -98.498,
+        "y": 17.362,
+        "z": 1.1,
+        "yaw": -1.1362
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_045",
+      "shape": "box",
+      "size": [
+        5.694366148858701,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -96.368,
+        "y": 13.774,
+        "z": 1.1,
+        "yaw": -0.9425
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_046",
+      "shape": "box",
+      "size": [
+        5.931286265761047,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -93.258,
+        "y": 10.061,
+        "z": 1.1,
+        "yaw": -0.808
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_047",
+      "shape": "box",
+      "size": [
+        5.945109868452077,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -89.461,
+        "y": 6.42,
+        "z": 1.1,
+        "yaw": -0.721
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_048",
+      "shape": "box",
+      "size": [
+        5.7160202346277,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -85.324,
+        "y": 2.946,
+        "z": 1.1,
+        "yaw": -0.6748
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_049",
+      "shape": "box",
+      "size": [
+        5.28123775363281,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -81.164,
+        "y": -0.364,
+        "z": 1.1,
+        "yaw": -0.6694
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_050",
+      "shape": "box",
+      "size": [
+        4.724730818233885,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -77.23,
+        "y": -3.602,
+        "z": 1.1,
+        "yaw": -0.71
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_051",
+      "shape": "box",
+      "size": [
+        4.165183510883533,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -73.692,
+        "y": -6.925,
+        "z": 1.1,
+        "yaw": -0.8038
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_052",
+      "shape": "box",
+      "size": [
+        3.7325884378938685,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -70.698,
+        "y": -10.497,
+        "z": 1.1,
+        "yaw": -0.9492
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_053",
+      "shape": "box",
+      "size": [
+        3.518724806856218,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -68.401,
+        "y": -14.336,
+        "z": 1.1,
+        "yaw": -1.1179
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_054",
+      "shape": "box",
+      "size": [
+        3.5218963558082854,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -66.831,
+        "y": -18.237,
+        "z": 1.1,
+        "yaw": -1.2585
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_055",
+      "shape": "box",
+      "size": [
+        3.6597179862809286,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -65.778,
+        "y": -21.972,
+        "z": 1.1,
+        "yaw": -1.3322
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_056",
+      "shape": "box",
+      "size": [
+        3.8454799116709144,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -64.927,
+        "y": -25.463,
+        "z": 1.1,
+        "yaw": -1.3308
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_057",
+      "shape": "box",
+      "size": [
+        4.037968630405266,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -64.008,
+        "y": -28.727,
+        "z": 1.1,
+        "yaw": -1.2642
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_058",
+      "shape": "box",
+      "size": [
+        4.240524442478888,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -62.83,
+        "y": -31.801,
+        "z": 1.1,
+        "yaw": -1.1491
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_059",
+      "shape": "box",
+      "size": [
+        4.475780166202834,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -61.244,
+        "y": -34.73,
+        "z": 1.1,
+        "yaw": -1.0045
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_060",
+      "shape": "box",
+      "size": [
+        4.758205446537873,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -59.118,
+        "y": -37.547,
+        "z": 1.1,
+        "yaw": -0.8503
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_061",
+      "shape": "box",
+      "size": [
+        5.079222006371856,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -56.348,
+        "y": -40.251,
+        "z": 1.1,
+        "yaw": -0.7027
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_062",
+      "shape": "box",
+      "size": [
+        5.410296121501053,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -52.886,
+        "y": -42.8,
+        "z": 1.1,
+        "yaw": -0.5718
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_063",
+      "shape": "box",
+      "size": [
+        5.716930352646918,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -48.755,
+        "y": -45.138,
+        "z": 1.1,
+        "yaw": -0.4619
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_064",
+      "shape": "box",
+      "size": [
+        5.972560654625227,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -44.038,
+        "y": -47.226,
+        "z": 1.1,
+        "yaw": -0.3736
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_065",
+      "shape": "box",
+      "size": [
+        6.166416507810365,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -38.844,
+        "y": -49.057,
+        "z": 1.1,
+        "yaw": -0.3054
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_066",
+      "shape": "box",
+      "size": [
+        6.304702602315849,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -33.289,
+        "y": -50.653,
+        "z": 1.1,
+        "yaw": -0.2548
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_067",
+      "shape": "box",
+      "size": [
+        6.406554566859181,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -27.467,
+        "y": -52.057,
+        "z": 1.1,
+        "yaw": -0.2188
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_068",
+      "shape": "box",
+      "size": [
+        6.496603480311703,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -21.449,
+        "y": -53.314,
+        "z": 1.1,
+        "yaw": -0.1932
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_069",
+      "shape": "box",
+      "size": [
+        6.5962303787733205,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -15.279,
+        "y": -54.457,
+        "z": 1.1,
+        "yaw": -0.1731
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_070",
+      "shape": "box",
+      "size": [
+        6.7159766553431215,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -8.98,
+        "y": -55.492,
+        "z": 1.1,
+        "yaw": -0.1527
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_071",
+      "shape": "box",
+      "size": [
+        6.851453439084698,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -2.565,
+        "y": -56.393,
+        "z": 1.1,
+        "yaw": -0.1269
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_072",
+      "shape": "box",
+      "size": [
+        6.983896812126222,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 3.949,
+        "y": -57.105,
+        "z": 1.1,
+        "yaw": -0.0912
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_073",
+      "shape": "box",
+      "size": [
+        7.0847709539405965,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 10.527,
+        "y": -57.546,
+        "z": 1.1,
+        "yaw": -0.0429
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_074",
+      "shape": "box",
+      "size": [
+        7.122728842245249,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 17.1,
+        "y": -57.621,
+        "z": 1.1,
+        "yaw": 0.0199
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_075",
+      "shape": "box",
+      "size": [
+        7.071222792018276,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 23.56,
+        "y": -57.24,
+        "z": 1.1,
+        "yaw": 0.0984
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_076",
+      "shape": "box",
+      "size": [
+        6.915478486133322,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 29.756,
+        "y": -56.332,
+        "z": 1.1,
+        "yaw": 0.1939
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_077",
+      "shape": "box",
+      "size": [
+        6.657708165394581,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 35.516,
+        "y": -54.864,
+        "z": 1.1,
+        "yaw": 0.3076
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_078",
+      "shape": "box",
+      "size": [
+        6.31917725093203,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 40.666,
+        "y": -52.855,
+        "z": 1.1,
+        "yaw": 0.4405
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_079",
+      "shape": "box",
+      "size": [
+        5.9372971330071955,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 45.065,
+        "y": -50.373,
+        "z": 1.1,
+        "yaw": 0.5924
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_080",
+      "shape": "box",
+      "size": [
+        5.55599723955809,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 48.643,
+        "y": -47.523,
+        "z": 1.1,
+        "yaw": 0.7596
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_081",
+      "shape": "box",
+      "size": [
+        5.209844652737704,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 51.421,
+        "y": -44.407,
+        "z": 1.1,
+        "yaw": 0.933
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_082",
+      "shape": "box",
+      "size": [
+        4.908129715924858,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 53.492,
+        "y": -41.096,
+        "z": 1.1,
+        "yaw": 1.0976
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_083",
+      "shape": "box",
+      "size": [
+        4.6306746601504996,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 54.989,
+        "y": -37.621,
+        "z": 1.1,
+        "yaw": 1.2352
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_084",
+      "shape": "box",
+      "size": [
+        4.343277179227147,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 56.075,
+        "y": -33.999,
+        "z": 1.1,
+        "yaw": 1.3271
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_085",
+      "shape": "box",
+      "size": [
+        4.028228226115216,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 56.959,
+        "y": -30.232,
+        "z": 1.1,
+        "yaw": 1.3548
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_086",
+      "shape": "box",
+      "size": [
+        3.718229472546018,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 57.933,
+        "y": -26.297,
+        "z": 1.1,
+        "yaw": 1.2995
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_087",
+      "shape": "box",
+      "size": [
+        3.5179580032230016,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 59.395,
+        "y": -22.207,
+        "z": 1.1,
+        "yaw": 1.1518
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_088",
+      "shape": "box",
+      "size": [
+        3.5723677117914137,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 61.73,
+        "y": -18.186,
+        "z": 1.1,
+        "yaw": 0.9392
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_089",
+      "shape": "box",
+      "size": [
+        3.948666064316455,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 64.976,
+        "y": -14.619,
+        "z": 1.1,
+        "yaw": 0.7335
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_090",
+      "shape": "box",
+      "size": [
+        4.559935265040232,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 68.897,
+        "y": -11.592,
+        "z": 1.1,
+        "yaw": 0.5901
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_091",
+      "shape": "box",
+      "size": [
+        5.240050358399337,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 73.325,
+        "y": -8.875,
+        "z": 1.1,
+        "yaw": 0.5154
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_092",
+      "shape": "box",
+      "size": [
+        5.833813045039353,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 78.146,
+        "y": -6.212,
+        "z": 1.1,
+        "yaw": 0.4952
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_093",
+      "shape": "box",
+      "size": [
+        6.228467473727351,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 83.175,
+        "y": -3.422,
+        "z": 1.1,
+        "yaw": 0.5169
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_094",
+      "shape": "box",
+      "size": [
+        6.360038648349682,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 88.128,
+        "y": -0.412,
+        "z": 1.1,
+        "yaw": 0.5745
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_out_095",
+      "shape": "box",
+      "size": [
+        6.216610774287484,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 92.655,
+        "y": 2.827,
+        "z": 1.1,
+        "yaw": 0.6687
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_000",
+      "shape": "box",
+      "size": [
+        5.842567244410787,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 105.056,
+        "y": -2.097,
+        "z": 1.1,
+        "yaw": 0.8065
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_001",
+      "shape": "box",
+      "size": [
+        5.343226881576938,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 109.146,
+        "y": 3.053,
+        "z": 1.1,
+        "yaw": 1.0001
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_002",
+      "shape": "box",
+      "size": [
+        4.88326117628472,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 111.935,
+        "y": 8.903,
+        "z": 1.1,
+        "yaw": 1.2608
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_003",
+      "shape": "box",
+      "size": [
+        4.651644916187452,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 112.925,
+        "y": 15.287,
+        "z": 1.1,
+        "yaw": 1.579
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_004",
+      "shape": "box",
+      "size": [
+        4.760274147901355,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 111.808,
+        "y": 21.647,
+        "z": 1.1,
+        "yaw": 1.9075
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_005",
+      "shape": "box",
+      "size": [
+        5.1549523519721925,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 108.816,
+        "y": 27.361,
+        "z": 1.1,
+        "yaw": 2.1902
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_006",
+      "shape": "box",
+      "size": [
+        5.672869324027381,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 104.456,
+        "y": 32.217,
+        "z": 1.1,
+        "yaw": 2.4062
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_007",
+      "shape": "box",
+      "size": [
+        6.158578380931197,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 99.146,
+        "y": 36.287,
+        "z": 1.1,
+        "yaw": 2.5633
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_008",
+      "shape": "box",
+      "size": [
+        6.514207875032478,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 93.201,
+        "y": 39.695,
+        "z": 1.1,
+        "yaw": 2.6761
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_009",
+      "shape": "box",
+      "size": [
+        6.69967569032569,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 86.886,
+        "y": 42.553,
+        "z": 1.1,
+        "yaw": 2.756
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_010",
+      "shape": "box",
+      "size": [
+        6.719952272319468,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 80.439,
+        "y": 44.967,
+        "z": 1.1,
+        "yaw": 2.8105
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_011",
+      "shape": "box",
+      "size": [
+        6.611078545468538,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 74.048,
+        "y": 47.043,
+        "z": 1.1,
+        "yaw": 2.8448
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_012",
+      "shape": "box",
+      "size": [
+        6.4262803141175295,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 67.836,
+        "y": 48.882,
+        "z": 1.1,
+        "yaw": 2.863
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_013",
+      "shape": "box",
+      "size": [
+        6.222292988631708,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 61.855,
+        "y": 50.571,
+        "z": 1.1,
+        "yaw": 2.8698
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_014",
+      "shape": "box",
+      "size": [
+        6.046962665211274,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 56.081,
+        "y": 52.176,
+        "z": 1.1,
+        "yaw": 2.8712
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_015",
+      "shape": "box",
+      "size": [
+        5.9303386841071175,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 50.435,
+        "y": 53.732,
+        "z": 1.1,
+        "yaw": 2.8742
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_016",
+      "shape": "box",
+      "size": [
+        5.881537302985493,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 44.811,
+        "y": 55.24,
+        "z": 1.1,
+        "yaw": 2.8853
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_017",
+      "shape": "box",
+      "size": [
+        5.891655400373553,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 39.108,
+        "y": 56.662,
+        "z": 1.1,
+        "yaw": 2.9089
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_018",
+      "shape": "box",
+      "size": [
+        5.940223019216306,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 33.254,
+        "y": 57.934,
+        "z": 1.1,
+        "yaw": 2.9465
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_019",
+      "shape": "box",
+      "size": [
+        6.001885060699129,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 27.222,
+        "y": 58.969,
+        "z": 1.1,
+        "yaw": 2.9966
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_020",
+      "shape": "box",
+      "size": [
+        6.051624280471194,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 21.033,
+        "y": 59.685,
+        "z": 1.1,
+        "yaw": 3.0559
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_021",
+      "shape": "box",
+      "size": [
+        6.068628112963319,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 14.75,
+        "y": 60.021,
+        "z": 1.1,
+        "yaw": 3.1203
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_022",
+      "shape": "box",
+      "size": [
+        6.039362849097377,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 8.461,
+        "y": 59.952,
+        "z": 1.1,
+        "yaw": -3.0983
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_023",
+      "shape": "box",
+      "size": [
+        5.9600226077671525,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 2.27,
+        "y": 59.499,
+        "z": 1.1,
+        "yaw": -3.0382
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_024",
+      "shape": "box",
+      "size": [
+        5.838210893606709,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -3.729,
+        "y": 58.725,
+        "z": 1.1,
+        "yaw": -2.9879
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_025",
+      "shape": "box",
+      "size": [
+        5.693749281526976,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -9.471,
+        "y": 57.732,
+        "z": 1.1,
+        "yaw": -2.9526
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_026",
+      "shape": "box",
+      "size": [
+        5.558460788662001,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -14.932,
+        "y": 56.644,
+        "z": 1.1,
+        "yaw": -2.9372
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_027",
+      "shape": "box",
+      "size": [
+        5.474020126767989,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -20.148,
+        "y": 55.582,
+        "z": 1.1,
+        "yaw": -2.9443
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_028",
+      "shape": "box",
+      "size": [
+        5.485613854479646,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -25.224,
+        "y": 54.64,
+        "z": 1.1,
+        "yaw": -2.9721
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_029",
+      "shape": "box",
+      "size": [
+        5.629407410331035,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -30.329,
+        "y": 53.875,
+        "z": 1.1,
+        "yaw": -3.0128
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_030",
+      "shape": "box",
+      "size": [
+        5.916693315934678,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -35.671,
+        "y": 53.299,
+        "z": 1.1,
+        "yaw": -3.0544
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_031",
+      "shape": "box",
+      "size": [
+        6.323798006285168,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -41.44,
+        "y": 52.888,
+        "z": 1.1,
+        "yaw": -3.0854
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_032",
+      "shape": "box",
+      "size": [
+        6.794534199707591,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -47.762,
+        "y": 52.575,
+        "z": 1.1,
+        "yaw": -3.0986
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_033",
+      "shape": "box",
+      "size": [
+        7.252374107484928,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -54.671,
+        "y": 52.252,
+        "z": 1.1,
+        "yaw": -3.0914
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_034",
+      "shape": "box",
+      "size": [
+        7.615277417767318,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -62.104,
+        "y": 51.773,
+        "z": 1.1,
+        "yaw": -3.0638
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_035",
+      "shape": "box",
+      "size": [
+        7.809314331945808,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -69.909,
+        "y": 50.975,
+        "z": 1.1,
+        "yaw": -3.0162
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_036",
+      "shape": "box",
+      "size": [
+        7.780643594631043,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -77.859,
+        "y": 49.695,
+        "z": 1.1,
+        "yaw": -2.9476
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_037",
+      "shape": "box",
+      "size": [
+        7.506302727815831,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -85.67,
+        "y": 47.787,
+        "z": 1.1,
+        "yaw": -2.855
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_038",
+      "shape": "box",
+      "size": [
+        7.00416118623184,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -93.037,
+        "y": 45.129,
+        "z": 1.1,
+        "yaw": -2.7315
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_039",
+      "shape": "box",
+      "size": [
+        6.342305956062741,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -99.651,
+        "y": 41.609,
+        "z": 1.1,
+        "yaw": -2.5662
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_040",
+      "shape": "box",
+      "size": [
+        5.64647618217373,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -105.196,
+        "y": 37.116,
+        "z": 1.1,
+        "yaw": -2.3443
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_041",
+      "shape": "box",
+      "size": [
+        5.093665426878673,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -109.283,
+        "y": 31.576,
+        "z": 1.1,
+        "yaw": -2.0569
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_042",
+      "shape": "box",
+      "size": [
+        4.854972250259461,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -111.421,
+        "y": 25.174,
+        "z": 1.1,
+        "yaw": -1.7235
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_043",
+      "shape": "box",
+      "size": [
+        4.9750753223548365,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -111.352,
+        "y": 18.54,
+        "z": 1.1,
+        "yaw": -1.4001
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_044",
+      "shape": "box",
+      "size": [
+        5.322072003571268,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -109.383,
+        "y": 12.31,
+        "z": 1.1,
+        "yaw": -1.1362
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_045",
+      "shape": "box",
+      "size": [
+        5.694366148858701,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -106.076,
+        "y": 6.721,
+        "z": 1.1,
+        "yaw": -0.9425
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_046",
+      "shape": "box",
+      "size": [
+        5.931286265761047,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -101.933,
+        "y": 1.77,
+        "z": 1.1,
+        "yaw": -0.808
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_047",
+      "shape": "box",
+      "size": [
+        5.945109868452077,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -97.382,
+        "y": -2.594,
+        "z": 1.1,
+        "yaw": -0.721
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_048",
+      "shape": "box",
+      "size": [
+        5.7160202346277,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -92.821,
+        "y": -6.424,
+        "z": 1.1,
+        "yaw": -0.6748
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_049",
+      "shape": "box",
+      "size": [
+        5.28123775363281,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -88.61,
+        "y": -9.775,
+        "z": 1.1,
+        "yaw": -0.6694
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_050",
+      "shape": "box",
+      "size": [
+        4.724730818233885,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -85.051,
+        "y": -12.703,
+        "z": 1.1,
+        "yaw": -0.71
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_051",
+      "shape": "box",
+      "size": [
+        4.165183510883533,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -82.333,
+        "y": -15.252,
+        "z": 1.1,
+        "yaw": -0.8038
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_052",
+      "shape": "box",
+      "size": [
+        3.7325884378938685,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -80.454,
+        "y": -17.484,
+        "z": 1.1,
+        "yaw": -0.9492
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_053",
+      "shape": "box",
+      "size": [
+        3.518724806856218,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -79.191,
+        "y": -19.587,
+        "z": 1.1,
+        "yaw": -1.1179
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_054",
+      "shape": "box",
+      "size": [
+        3.5218963558082854,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -78.251,
+        "y": -21.923,
+        "z": 1.1,
+        "yaw": -1.2585
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_055",
+      "shape": "box",
+      "size": [
+        3.6597179862809286,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -77.439,
+        "y": -24.808,
+        "z": 1.1,
+        "yaw": -1.3322
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_056",
+      "shape": "box",
+      "size": [
+        3.8454799116709144,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -76.583,
+        "y": -28.316,
+        "z": 1.1,
+        "yaw": -1.3308
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_057",
+      "shape": "box",
+      "size": [
+        4.037968630405266,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -75.449,
+        "y": -32.349,
+        "z": 1.1,
+        "yaw": -1.2642
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_058",
+      "shape": "box",
+      "size": [
+        4.240524442478888,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -73.779,
+        "y": -36.713,
+        "z": 1.1,
+        "yaw": -1.1491
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_059",
+      "shape": "box",
+      "size": [
+        4.475780166202834,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -71.371,
+        "y": -41.167,
+        "z": 1.1,
+        "yaw": -1.0045
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_060",
+      "shape": "box",
+      "size": [
+        4.758205446537873,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -68.136,
+        "y": -45.464,
+        "z": 1.1,
+        "yaw": -0.8503
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_061",
+      "shape": "box",
+      "size": [
+        5.079222006371856,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -64.103,
+        "y": -49.408,
+        "z": 1.1,
+        "yaw": -0.7027
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_062",
+      "shape": "box",
+      "size": [
+        5.410296121501053,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -59.38,
+        "y": -52.891,
+        "z": 1.1,
+        "yaw": -0.5718
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_063",
+      "shape": "box",
+      "size": [
+        5.716930352646918,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -54.104,
+        "y": -55.881,
+        "z": 1.1,
+        "yaw": -0.4619
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_064",
+      "shape": "box",
+      "size": [
+        5.972560654625227,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -48.417,
+        "y": -58.399,
+        "z": 1.1,
+        "yaw": -0.3736
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_065",
+      "shape": "box",
+      "size": [
+        6.166416507810365,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -42.452,
+        "y": -60.502,
+        "z": 1.1,
+        "yaw": -0.3054
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_066",
+      "shape": "box",
+      "size": [
+        6.304702602315849,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -36.313,
+        "y": -62.266,
+        "z": 1.1,
+        "yaw": -0.2548
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_067",
+      "shape": "box",
+      "size": [
+        6.406554566859181,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -30.072,
+        "y": -63.771,
+        "z": 1.1,
+        "yaw": -0.2188
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_068",
+      "shape": "box",
+      "size": [
+        6.496603480311703,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -23.754,
+        "y": -65.091,
+        "z": 1.1,
+        "yaw": -0.1932
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_069",
+      "shape": "box",
+      "size": [
+        6.5962303787733205,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -17.345,
+        "y": -66.277,
+        "z": 1.1,
+        "yaw": -0.1731
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_070",
+      "shape": "box",
+      "size": [
+        6.7159766553431215,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -10.805,
+        "y": -67.352,
+        "z": 1.1,
+        "yaw": -0.1527
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_071",
+      "shape": "box",
+      "size": [
+        6.851453439084698,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": -4.083,
+        "y": -68.297,
+        "z": 1.1,
+        "yaw": -0.1269
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_072",
+      "shape": "box",
+      "size": [
+        6.983896812126222,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 2.856,
+        "y": -69.056,
+        "z": 1.1,
+        "yaw": -0.0912
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_073",
+      "shape": "box",
+      "size": [
+        7.0847709539405965,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 10.012,
+        "y": -69.535,
+        "z": 1.1,
+        "yaw": -0.0429
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_074",
+      "shape": "box",
+      "size": [
+        7.122728842245249,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 17.339,
+        "y": -69.619,
+        "z": 1.1,
+        "yaw": 0.0199
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_075",
+      "shape": "box",
+      "size": [
+        7.071222792018276,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 24.739,
+        "y": -69.182,
+        "z": 1.1,
+        "yaw": 0.0984
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_076",
+      "shape": "box",
+      "size": [
+        6.915478486133322,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 32.068,
+        "y": -68.107,
+        "z": 1.1,
+        "yaw": 0.1939
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_077",
+      "shape": "box",
+      "size": [
+        6.657708165394581,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 39.149,
+        "y": -66.301,
+        "z": 1.1,
+        "yaw": 0.3076
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_078",
+      "shape": "box",
+      "size": [
+        6.31917725093203,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 45.783,
+        "y": -63.709,
+        "z": 1.1,
+        "yaw": 0.4405
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_079",
+      "shape": "box",
+      "size": [
+        5.9372971330071955,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 51.765,
+        "y": -60.329,
+        "z": 1.1,
+        "yaw": 0.5924
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_080",
+      "shape": "box",
+      "size": [
+        5.55599723955809,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 56.907,
+        "y": -56.225,
+        "z": 1.1,
+        "yaw": 0.7596
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_081",
+      "shape": "box",
+      "size": [
+        5.209844652737704,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 61.062,
+        "y": -51.553,
+        "z": 1.1,
+        "yaw": 0.933
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_082",
+      "shape": "box",
+      "size": [
+        4.908129715924858,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 64.173,
+        "y": -46.564,
+        "z": 1.1,
+        "yaw": 1.0976
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_083",
+      "shape": "box",
+      "size": [
+        4.6306746601504996,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 66.32,
+        "y": -41.573,
+        "z": 1.1,
+        "yaw": 1.2352
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_084",
+      "shape": "box",
+      "size": [
+        4.343277179227147,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 67.721,
+        "y": -36.894,
+        "z": 1.1,
+        "yaw": 1.3271
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_085",
+      "shape": "box",
+      "size": [
+        4.028228226115216,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 68.68,
+        "y": -32.804,
+        "z": 1.1,
+        "yaw": 1.3548
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_086",
+      "shape": "box",
+      "size": [
+        3.718229472546018,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 69.494,
+        "y": -29.513,
+        "z": 1.1,
+        "yaw": 1.2995
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_087",
+      "shape": "box",
+      "size": [
+        3.5179580032230016,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 70.357,
+        "y": -27.089,
+        "z": 1.1,
+        "yaw": 1.1518
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_088",
+      "shape": "box",
+      "size": [
+        3.5723677117914137,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 71.414,
+        "y": -25.271,
+        "z": 1.1,
+        "yaw": 0.9392
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_089",
+      "shape": "box",
+      "size": [
+        3.948666064316455,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 73.01,
+        "y": -23.533,
+        "z": 1.1,
+        "yaw": 0.7335
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_090",
+      "shape": "box",
+      "size": [
+        4.559935265040232,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 75.575,
+        "y": -21.562,
+        "z": 1.1,
+        "yaw": 0.5901
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_091",
+      "shape": "box",
+      "size": [
+        5.240050358399337,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 79.24,
+        "y": -19.316,
+        "z": 1.1,
+        "yaw": 0.5154
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_092",
+      "shape": "box",
+      "size": [
+        5.833813045039353,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 83.849,
+        "y": -16.77,
+        "z": 1.1,
+        "yaw": 0.4952
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_093",
+      "shape": "box",
+      "size": [
+        6.228467473727351,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 89.105,
+        "y": -13.854,
+        "z": 1.1,
+        "yaw": 0.5169
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_094",
+      "shape": "box",
+      "size": [
+        6.360038648349682,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 94.649,
+        "y": -10.485,
+        "z": 1.1,
+        "yaw": 0.5745
+      },
+      "physics_role": "mujoco_authoritative"
+    },
+    {
+      "id": "wall_in_095",
+      "shape": "box",
+      "size": [
+        6.216610774287484,
+        1.0,
+        2.2
+      ],
+      "pose": {
+        "x": 100.095,
+        "y": -6.588,
+        "z": 1.1,
+        "yaw": 0.6687
+      },
+      "physics_role": "mujoco_authoritative"
+    }
+  ],
+  "objectives": [
+    {
+      "id": "obj_cp1",
+      "type": "reach_region",
+      "target": "trigger_cp1",
+      "description": "Checkpoint 1",
+      "params": {
+        "terminal": false
+      }
+    },
+    {
+      "id": "obj_cp2",
+      "type": "reach_region",
+      "target": "trigger_cp2",
+      "description": "Checkpoint 2",
+      "params": {
+        "terminal": false,
+        "requires": [
+          "obj_cp1"
+        ]
+      }
+    },
+    {
+      "id": "obj_race_finish",
+      "type": "reach_region",
+      "target": "trigger_finish",
+      "description": "Finish after nearly full lap",
+      "params": {
+        "terminal": true,
+        "requires": [
+          "obj_cp1",
+          "obj_cp2"
+        ]
+      }
+    }
+  ],
+  "triggers": [
+    {
+      "id": "trigger_cp1",
+      "type": "aabb",
+      "min": [
+        88.35,
+        27.91,
+        0.0
+      ],
+      "max": [
+        98.35,
+        37.91,
+        2.5
+      ]
+    },
+    {
+      "id": "trigger_cp2",
+      "type": "aabb",
+      "min": [
+        -103.98,
+        29.89,
+        0.0
+      ],
+      "max": [
+        -93.98,
+        39.89,
+        2.5
+      ]
+    },
+    {
+      "id": "trigger_finish",
+      "type": "aabb",
+      "min": [
+        -24.99,
+        -65.31,
+        0.0
+      ],
+      "max": [
+        -13.99,
+        -54.31,
+        2.5
+      ]
+    }
+  ],
+  "tags": [
+    "race",
+    "timed",
+    "shared_ffa",
+    "mujoco",
+    "long_circuit"
+  ],
+  "extensions": {
+    "mw": {
+      "default_room_id": "race",
+      "max_members": 6,
+      "mode": "shared_ffa"
+    },
+    "mw.il": {
+      "task_id": "obj_race_finish",
+      "time_limit_s": 300
+    },
+    "mw.editor": {
+      "client_scene": "res://demo_race.tscn",
+      "layout": "res://data/race_layout.json"
+    }
+  }
+}

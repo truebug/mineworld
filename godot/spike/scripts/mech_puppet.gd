@@ -24,6 +24,7 @@ const TEAM_COLORS := {
 	"mech_player_c": Color(0.35, 0.82, 0.45),
 	"mech_player_d": Color(0.85, 0.75, 0.25),
 	"mech_player_e": Color(0.75, 0.4, 0.9),
+	"mech_player_f": Color(0.95, 0.35, 0.55),
 }
 const TEAM_TAGS := {
 	"mech_player": "A",
@@ -31,6 +32,7 @@ const TEAM_TAGS := {
 	"mech_player_c": "C",
 	"mech_player_d": "D",
 	"mech_player_e": "E",
+	"mech_player_f": "F",
 }
 const WHEEL_COLOR := Color(0.0, 0.0, 0.0)
 const CASTER_COLOR := Color(1.0, 1.0, 1.0)

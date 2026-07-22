@@ -10,6 +10,29 @@
 
 ---
 
+## 2026-07-22 · E9 + B1 落库 / playground 发版
+
+- 入库：E9（Hub 插值/`presence_throttle`/参观壳）+ B1 `demo_race`（高速长弯 · max 6 · MuJoCo）。
+- Playground 发版：`MW_BUILD=`（发版时回填）· `wss://playground.dev.databall.tech/ws` · 双服务重启。
+- **Next = B2 薄 1v1**；E6–E7 可穿插。
+
+## 2026-07-22 · demo_race 高速加长曲率赛道
+
+- 中心线 ~530 m 波浪椭圆 + 内外墙；CP1→CP2→终点（`params.requires`）；`diffbot_race` ctrl ±12（≈10 m/s）。
+- 起伏：Godot 视觉 ribbon（平面底盘无真实爬坡）；生成器 `scripts/gen_demo_race_track.py`。
+
+## 2026-07-22 · B1 demo_race 赛车场（max 6 · MuJoCo）
+
+- 契约 `demo_race`：椭圆空气墙 + 南起点/北终点；共享房 `race` max 6；`time_limit_s=180`；计分同 city 时长公式。
+- Godot `demo_race.tscn` + `race_dress.gd`；Hub 门 E 走近进入；lobby / 排行榜 tab。
+- Gateway：`RACE_ROOM_*`；smoke：`--level-id demo_race --expect-objective`（建议 `--physics mujoco`）。
+
+## 2026-07-22 · E9 Hub 公网插值/降频
+
+- 远端：`avatar_puppet` 限速插值 + 短外推 + 大跳 snap；自机 `local_predict`。
+- Gateway：`cmd.action=presence_throttle`（`full|low|paused`）；Hub 房 state 降频/keepalive。
+- Web：薄参观壳 `#mw-visitor-shell`（iframe + 关闭）；开壳暂停 Hub WS；`scripts/e9_presence_throttle_smoke.py`。
+
 ## 2026-07-22 · E5d 北翼按 role 挂 curated 展柜
 
 - Hub：`classroom` 东·北墙、`gallery` 西·北墙、`lab`/`foresight` 西墙；缩略屏 + Label3D；翼站 lore 显示张数。

@@ -14,7 +14,7 @@ def compute_points(
     """Return points for a finished session (0 if not scored).
 
     Workshop (demo_workshop / tutorial*): success → 100.
-    City / racing (demo_city): success → max(10, 200 - floor(duration * 2)).
+    City / racing (demo_city / demo_race): success → max(10, 200 - floor(duration * 2)).
     Hub and non-success → 0.
     """
     if outcome != "success":
@@ -24,7 +24,7 @@ def compute_points(
         return 0
     if lid in ("demo_workshop",) or lid.startswith("tutorial"):
         return 100
-    if lid in ("demo_city",):
+    if lid in ("demo_city", "demo_race"):
         # Faster clear → higher score; floor at 10.
         return max(10, 200 - int(duration_sim_s * 2.0))
     # Unknown playable level: small success credit.

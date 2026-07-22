@@ -6,8 +6,10 @@ extends Node3D
 const MOVE_SPEED := 2.8
 const TURN_SPEED := 2.2
 const CMD_HZ := 20.0
+const CMD_HZ_LOW := 5.0
 const WORKSHOP_SCENE := "res://demo_workshop.tscn"
 const CITY_SCENE := "res://demo_city.tscn"
+const RACE_SCENE := "res://demo_race.tscn"
 const LOBBY_SCENE := "res://demo_lobby.tscn"
 const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const _WEB_BLOCK_CODES := {
@@ -73,6 +75,10 @@ var _arena_state_i := 0
 ## H7c: Design / Edge stub status cycles (no editor / no edge link).
 var _design_state_i := 0
 var _edge_state_i := 0
+## E9: full | low | paused — open visitor shell throttles Hub WS.
+var _presence_throttle := "full"
+var _presence_throttle_sent := ""
+var _presence_shell_open := false
 const ARENA_STATES := [
 	{"mode": "1v1", "looking": false},
 	{"mode": "1v1", "looking": true},
@@ -447,8 +453,8 @@ func _on_scene(payload: Dictionary) -> void:
 	ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
 	_link_banner = ""
 	_lore_body = MWi18n.t(
-		"驾驶员 %s · 母港\n东翼本仓 A/B · 北翼卡片 C · 西翼边缘 D · 南翼竞技 E",
-		"Pilot %s · Hangar Core\nEast A/B · North C · West Edge D · South Arena E"
+		"驾驶员 %s · 母港\n东翼本仓 A/B · 北翼卡片 C · 西翼边缘 D · 南翼赛车 E",
+		"Pilot %s · Hangar Core\nEast A/B · North C · West Edge D · South Race E"
 	) % str(_profile.get("nickname", "Guest"))
 	_compose_and_push_tips()
 
@@ -471,6 +477,9 @@ func _ensure_puppets(entities: Array) -> void:
 		if eid == _controlled_entity_id:
 			node.set("accent", Color(str(_profile.get("accent", "#4aa3ff"))))
 			node.set("display_name", str(_profile.get("nickname", "Guest")))
+			# E9: own avatar local prediction between 20 Hz (or throttled) samples.
+			node.set("local_predict", true)
+			node.set("interp_delay", 0.03)
 		add_child(node)
 		_puppets[eid] = node
 		if eid == _controlled_entity_id:
@@ -502,7 +511,11 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 			if typeof(mw) == TYPE_DICTIONARY and bool(mw.get("occupied", false)):
 				is_occ = true
 		puppet.visible = is_occ or eid == _controlled_entity_id
-		if puppet.visible and puppet.has_method("push_state"):
+		# Paused shell: keep own pose; freeze remote catch-up (gateway also drops state).
+		var push_ok := puppet.visible and puppet.has_method("push_state")
+		if push_ok and _presence_throttle == "paused" and eid != _controlled_entity_id:
+			push_ok = false
+		if push_ok:
 			puppet.call("push_state", entity, t_sim)
 		# Nametag only when nearby (or self) — cuts clutter with many pilots.
 		var tag := puppet.get_node_or_null("NameTag") as Node3D
@@ -675,7 +688,7 @@ func _compose_and_push_tips() -> void:
 			+ "（点击折叠）",
 			"WASD strafe | Q/E turn | F interact\n"
 			+ "LMB peek · RMB sticky look · MMB/L+R pan · wheel zoom · C recenter · V camera\n"
-			+ "Doors: A Workshop · B Training · C Cards · D Edge · E Arena\n"
+			+ "Doors: A Workshop · B Training · C Cards · D Edge · E Race\n"
 			+ "(click to collapse)"
 		)
 	)
@@ -717,6 +730,8 @@ func _process(delta: float) -> void:
 	"""Match play-level controls: WASD strafe + QE turn; arrows pan camera (Web)."""
 	if _entering_door:
 		return
+	if _is_web:
+		_poll_visitor_shell()
 	if _door_grace > 0.0:
 		_door_grace = maxf(0.0, _door_grace - delta)
 	_check_doors()
@@ -724,7 +739,7 @@ func _process(delta: float) -> void:
 	_update_interact_prompt()
 	if _is_web:
 		# During grace, ignore sticky DOM keys left over from the play level.
-		if _door_grace > 0.0:
+		if _door_grace > 0.0 or _presence_throttle == "paused":
 			_held_codes.clear()
 		else:
 			_sync_mw_keys()
@@ -743,8 +758,13 @@ func _process(delta: float) -> void:
 	_sync_first_person_mesh()
 	if _is_web:
 		_poll_web_nick()
+	var cmd_hz := CMD_HZ
+	if _presence_throttle == "low":
+		cmd_hz = CMD_HZ_LOW
+	elif _presence_throttle == "paused":
+		cmd_hz = 2.0
 	_cmd_timer += delta
-	if _cmd_timer < 1.0 / CMD_HZ:
+	if _cmd_timer < 1.0 / cmd_hz:
 		return
 	_cmd_timer = 0.0
 	if _door_grace > 0.0:
@@ -794,36 +814,40 @@ func _send_velocity_cmd() -> void:
 	var vx := 0.0
 	var vy := 0.0
 	var yaw_rate := 0.0
-	if _is_web:
-		if _web_key("KeyW"):
-			vx += MOVE_SPEED
-		if _web_key("KeyS"):
-			vx -= MOVE_SPEED
-		if _web_key("KeyA"):
-			vy += MOVE_SPEED
-		if _web_key("KeyD"):
-			vy -= MOVE_SPEED
-		if _web_key("KeyQ"):
-			yaw_rate += TURN_SPEED
-		if _web_key("KeyE"):
-			yaw_rate -= TURN_SPEED
-	else:
-		if Input.is_physical_key_pressed(KEY_W) or Input.is_key_pressed(KEY_W):
-			vx += MOVE_SPEED
-		if Input.is_physical_key_pressed(KEY_S) or Input.is_key_pressed(KEY_S):
-			vx -= MOVE_SPEED
-		if Input.is_physical_key_pressed(KEY_A) or Input.is_key_pressed(KEY_A):
-			vy += MOVE_SPEED
-		if Input.is_physical_key_pressed(KEY_D) or Input.is_key_pressed(KEY_D):
-			vy -= MOVE_SPEED
-		if Input.is_physical_key_pressed(KEY_Q) or Input.is_key_pressed(KEY_Q):
-			yaw_rate += TURN_SPEED
-		if Input.is_physical_key_pressed(KEY_E) or Input.is_key_pressed(KEY_E):
-			yaw_rate -= TURN_SPEED
-		if vx == 0.0 and vy == 0.0 and yaw_rate == 0.0:
-			vx = Input.get_axis("move_back", "move_forward") * MOVE_SPEED
-			vy = Input.get_axis("strafe_left", "strafe_right") * -MOVE_SPEED
-			yaw_rate = Input.get_axis("turn_cw", "turn_ccw") * TURN_SPEED
+	if _presence_throttle != "paused":
+		if _is_web:
+			if _web_key("KeyW"):
+				vx += MOVE_SPEED
+			if _web_key("KeyS"):
+				vx -= MOVE_SPEED
+			if _web_key("KeyA"):
+				vy += MOVE_SPEED
+			if _web_key("KeyD"):
+				vy -= MOVE_SPEED
+			if _web_key("KeyQ"):
+				yaw_rate += TURN_SPEED
+			if _web_key("KeyE"):
+				yaw_rate -= TURN_SPEED
+		else:
+			if Input.is_physical_key_pressed(KEY_W) or Input.is_key_pressed(KEY_W):
+				vx += MOVE_SPEED
+			if Input.is_physical_key_pressed(KEY_S) or Input.is_key_pressed(KEY_S):
+				vx -= MOVE_SPEED
+			if Input.is_physical_key_pressed(KEY_A) or Input.is_key_pressed(KEY_A):
+				vy += MOVE_SPEED
+			if Input.is_physical_key_pressed(KEY_D) or Input.is_key_pressed(KEY_D):
+				vy -= MOVE_SPEED
+			if Input.is_physical_key_pressed(KEY_Q) or Input.is_key_pressed(KEY_Q):
+				yaw_rate += TURN_SPEED
+			if Input.is_physical_key_pressed(KEY_E) or Input.is_key_pressed(KEY_E):
+				yaw_rate -= TURN_SPEED
+			if vx == 0.0 and vy == 0.0 and yaw_rate == 0.0:
+				vx = Input.get_axis("move_back", "move_forward") * MOVE_SPEED
+				vy = Input.get_axis("strafe_left", "strafe_right") * -MOVE_SPEED
+				yaw_rate = Input.get_axis("turn_cw", "turn_ccw") * TURN_SPEED
+	var own := _own_avatar()
+	if own != null and own.has_method("set_local_cmd"):
+		own.call("set_local_cmd", vx, vy, yaw_rate)
 	if _session_id == "":
 		return
 	ws.send_cmd({
@@ -834,6 +858,40 @@ func _send_velocity_cmd() -> void:
 		"yaw_rate": yaw_rate,
 	})
 	_controlled = true
+
+
+func set_presence_throttle(level: String) -> void:
+	"""E9: full | low | paused — client cmd rate + gateway state divisor."""
+	var next := level if level in ["full", "low", "paused"] else "full"
+	_presence_throttle = next
+	_flush_presence_throttle()
+
+
+func _flush_presence_throttle() -> void:
+	"""Send throttle cmd once session exists (and when level changes)."""
+	if _session_id == "":
+		return
+	if _presence_throttle_sent == _presence_throttle:
+		return
+	_presence_throttle_sent = _presence_throttle
+	ws.send_cmd({
+		"action": "presence_throttle",
+		"entity_id": _controlled_entity_id,
+		"level": _presence_throttle,
+	})
+
+
+func _poll_visitor_shell() -> void:
+	"""Sync throttle with thin in-page visitor shell (E9 / E8 hook)."""
+	var open := str(JavaScriptBridge.eval(
+		"(function(){try{return window._MW_VISITOR_SHELL_OPEN?'1':'0'}catch(e){return '0'}})()",
+		true
+	)) == "1"
+	if open != _presence_shell_open:
+		_presence_shell_open = open
+		set_presence_throttle("paused" if open else "full")
+	else:
+		_flush_presence_throttle()
 
 
 func _door_a_context() -> String:
@@ -851,10 +909,10 @@ func _door_a_context() -> String:
 
 
 func _check_doors() -> void:
-	"""Enter a route when own avatar is close to an open door (A/B only).
+	"""Enter a route when own avatar is close to an open door (A/B/E).
 
 	Requires a short grace + walking clear of the bay once so Esc→Hub does not
-	immediately bounce back into workshop/city (sticky keys / bay spawn).
+	immediately bounce back into workshop/city/race (sticky keys / bay spawn).
 	"""
 	if _hub_floor != 1 or _door_grace > 0.0:
 		return
@@ -869,8 +927,12 @@ func _check_doors() -> void:
 		door_city != null
 		and own.global_position.distance_to(door_city.global_position) < DOOR_ENTER_DIST
 	)
+	var near_e := (
+		door_stub_e != null
+		and own.global_position.distance_to(door_stub_e.global_position) < DOOR_ENTER_DIST
+	)
 	if not _doors_armed:
-		if not near_a and not near_b:
+		if not near_a and not near_b and not near_e:
 			_doors_armed = true
 		return
 	if near_a:
@@ -878,6 +940,9 @@ func _check_doors() -> void:
 		return
 	if near_b:
 		_enter_level(CITY_SCENE)
+		return
+	if near_e:
+		_enter_level(RACE_SCENE)
 
 
 func _update_door_context() -> void:
@@ -903,8 +968,8 @@ func _update_door_context() -> void:
 			"Door D · Edge Dock — F for link stub."
 		)],
 		[door_stub_e, "e", MWi18n.t(
-			"门 E · 竞技场 — 走近按 F 切换 1v1/组队。",
-			"Door E · Arena — F for match stub."
+			"门 E · 赛车场 — 走近进入（MuJoCo · 最多 6 人 · 计时冲线）。",
+			"Door E · Race oval — walk in (MuJoCo · max 6 · timed finish)."
 		)],
 	]
 	for row in candidates:
@@ -1086,18 +1151,26 @@ func _open_exhibit_url(url: String, title: String, space_id: String = "") -> voi
 		if origin != "":
 			resolved = origin + resolved
 	if _is_web:
-		var payload := JSON.stringify({"url": resolved, "space_id": space_id})
+		var payload := JSON.stringify({
+			"url": resolved,
+			"title": title,
+			"space_id": space_id,
+		})
+		# Prefer in-page shell (pauses Hub WS); fall back to new tab + visibility throttle.
 		JavaScriptBridge.eval(
-			"(function(){try{var p=%s;window.open(p.url,'_blank','noopener,noreferrer');"
+			"(function(){try{var p=%s;"
+			+ "if(typeof window.MW_OPEN_VISITOR_SHELL==='function'){window.MW_OPEN_VISITOR_SHELL(p);}"
+			+ "else{window.open(p.url,'_blank','noopener,noreferrer');"
 			+ "if(p.space_id){var u=new URL(location.href);u.searchParams.set('space_id',p.space_id);"
-			+ "history.replaceState({},'',u.pathname+u.search+u.hash);}}catch(e){}})()" % payload,
+			+ "history.replaceState({},'',u.pathname+u.search+u.hash);}}"
+			+ "}catch(e){}})()" % payload,
 			true
 		)
 		_last_door_key = ""
 		_refresh_tips(
 			MWi18n.t(
-				"已打开「%s」· 母港已写入 space_id=%s\n回母港后进门 A，本局将归因该卡片。",
-				"Opened «%s» · hangar stamped space_id=%s\nReturn → door A; this run attributes the card."
+				"已打开「%s」· 母港已写入 space_id=%s\n关壳后恢复母港（开壳时 Hub WS 降频）。",
+				"Opened «%s» · hangar stamped space_id=%s\nClose shell to resume (Hub WS throttled while open)."
 			) % [title, space_id if space_id != "" else "—"]
 		)
 	else:
@@ -1227,6 +1300,10 @@ func _enter_level(scene_path: String) -> void:
 		label = MWi18n.t("机甲训练场", "Training")
 		accent = "#4aa3ff"
 		play_room = "city"
+	elif scene_path.find("race") >= 0:
+		label = MWi18n.t("赛车场", "Race")
+		accent = "#e85a7a"
+		play_room = "race"
 	if _is_web:
 		var q_js := (
 			"(function(){try{var u=new URL(location.href);"

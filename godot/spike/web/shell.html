@@ -488,6 +488,55 @@ body.mw-play.mw-no-joints #mw-joints {
 	opacity: 0.9;
 	text-align: right;
 }
+
+/* E9 thin visitor shell (E8 iframe hook): pauses Hub WS while open. */
+#mw-visitor-shell {
+	display: none;
+	position: fixed;
+	inset: 0;
+	z-index: 2147483647;
+	flex-direction: column;
+	background: #0a0e14;
+}
+#mw-visitor-shell.open {
+	display: flex;
+}
+#mw-visitor-shell .mw-vs-bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 14px;
+	background: #121820;
+	border-bottom: 1px solid #2a3545;
+	flex: 0 0 auto;
+}
+#mw-visitor-shell .mw-vs-title {
+	flex: 1 1 auto;
+	font: 600 14px/1.3 ui-sans-serif, system-ui, sans-serif;
+	color: #d8e2ee;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+#mw-visitor-shell .mw-vs-close {
+	flex: 0 0 auto;
+	padding: 6px 12px;
+	border: 1px solid #3a4a5c;
+	border-radius: 6px;
+	background: #1a2430;
+	color: #c8d4e0;
+	font: 13px/1 ui-sans-serif, system-ui, sans-serif;
+	cursor: pointer;
+}
+#mw-visitor-shell .mw-vs-close:hover {
+	background: #243040;
+}
+#mw-visitor-shell iframe {
+	flex: 1 1 auto;
+	width: 100%;
+	border: 0;
+	background: #05070c;
+}
 		</style>
 		$GODOT_HEAD_INCLUDE
 	</head>
@@ -536,6 +585,7 @@ body.mw-play.mw-no-joints #mw-joints {
 				<option value="">总榜</option>
 				<option value="demo_workshop">工坊</option>
 				<option value="demo_city">训练场</option>
+				<option value="demo_race">赛车场</option>
 			</select>
 			<ol id="mw-hub-lb-list"><li>…</li></ol>
 		</div>
@@ -563,6 +613,13 @@ body.mw-play.mw-no-joints #mw-joints {
 			<label>elbow <input id="mw-j-arm_elbow" type="range" min="-2.4" max="0.2" step="0.02" value="0"><span class="mw-j-val" data-for="arm_elbow">0.00</span></label>
 			<label>gripper <input id="mw-j-gripper" type="range" min="0" max="0.05" step="0.001" value="0"><span class="mw-j-val" data-for="gripper">0.000</span></label>
 		</div>
+		<div id="mw-visitor-shell" aria-hidden="true">
+			<div class="mw-vs-bar">
+				<div class="mw-vs-title" id="mw-vs-title">Space</div>
+				<button type="button" class="mw-vs-close" id="mw-vs-close" data-i18n="hub.vs_close">关闭 · 回母港</button>
+			</div>
+			<iframe id="mw-vs-frame" title="Visitor space" referrerpolicy="no-referrer"></iframe>
+		</div>
 
 		<script src="/mw_i18n.js"></script>
 		<script src="$GODOT_URL"></script>
@@ -585,6 +642,63 @@ const engine = new Engine(GODOT_CONFIG);
 			e.preventDefault();
 		}
 	}, true);
+})();
+
+(function () {
+	/* E9: thin visitor shell — open pauses Hub presence WS (Godot polls flag). */
+	window._MW_VISITOR_SHELL_OPEN = false;
+	window.MW_OPEN_VISITOR_SHELL = function (opts) {
+		const shell = document.getElementById('mw-visitor-shell');
+		const frame = document.getElementById('mw-vs-frame');
+		const titleEl = document.getElementById('mw-vs-title');
+		if (!shell || !frame) {
+			return;
+		}
+		const url = opts && opts.url ? String(opts.url) : '';
+		const title = opts && opts.title ? String(opts.title) : 'Space';
+		const spaceId = opts && opts.space_id ? String(opts.space_id) : '';
+		if (!url) {
+			return;
+		}
+		if (titleEl) {
+			titleEl.textContent = title;
+		}
+		frame.src = url;
+		shell.classList.add('open');
+		shell.setAttribute('aria-hidden', 'false');
+		window._MW_VISITOR_SHELL_OPEN = true;
+		if (spaceId) {
+			try {
+				const u = new URL(location.href);
+				u.searchParams.set('space_id', spaceId);
+				history.replaceState({}, '', u.pathname + u.search + u.hash);
+			} catch (e) { /* ignore */ }
+		}
+	};
+	window.MW_CLOSE_VISITOR_SHELL = function () {
+		const shell = document.getElementById('mw-visitor-shell');
+		const frame = document.getElementById('mw-vs-frame');
+		if (frame) {
+			frame.src = 'about:blank';
+		}
+		if (shell) {
+			shell.classList.remove('open');
+			shell.setAttribute('aria-hidden', 'true');
+		}
+		window._MW_VISITOR_SHELL_OPEN = false;
+	};
+	const vsClose = document.getElementById('mw-vs-close');
+	if (vsClose) {
+		vsClose.addEventListener('click', function () {
+			window.MW_CLOSE_VISITOR_SHELL();
+		});
+	}
+	document.addEventListener('keydown', function (e) {
+		if (e.key === 'Escape' && window._MW_VISITOR_SHELL_OPEN) {
+			window.MW_CLOSE_VISITOR_SHELL();
+			e.preventDefault();
+		}
+	});
 })();
 
 (function () {

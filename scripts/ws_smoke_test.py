@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import sys
 import uuid
 from pathlib import Path
@@ -17,7 +18,15 @@ import websockets
 _SCRIPTS = Path(__file__).resolve().parent
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
-from city_drive_helper import entity_xy, load_city_finish, manhattan_cmd  # noqa: E402
+from city_drive_helper import (  # noqa: E402
+    entity_xy,
+    entity_xy_yaw,
+    load_city_finish,
+    load_race_finish,
+    load_race_waypoints,
+    manhattan_cmd,
+    race_chase_cmd,
+)
 
 
 async def _send_vel(
@@ -56,9 +65,9 @@ async def smoke(
         session_id = hello["session_id"]
         print("hello ok", session_id, hello["payload"])
 
-        # Private room so shared `city` occupancy does not block smoke.
+        # Private room so shared city/race occupancy does not block smoke.
         join_payload: dict = {"level_id": level_id, "player_name": "smoke"}
-        if level_id == "demo_city":
+        if level_id in ("demo_city", "demo_race"):
             join_payload["room_id"] = f"smoke-{uuid.uuid4().hex[:8]}"
 
         await ws.send(
@@ -84,16 +93,28 @@ async def smoke(
             )
         )
 
-        _sx, _sy, finish_x, finish_y = load_city_finish()
-        turn_x = finish_x
+        race_wps: list[tuple[float, float]] = []
+        race_wp_i = 0
+        if level_id == "demo_race":
+            _sx, _sy, finish_x, finish_y = load_race_finish()
+            turn_x = finish_x
+            if expect_objective:
+                race_wps = load_race_waypoints()
+                print(
+                    f"note: demo_race chase {len(race_wps)} wps → finish=({finish_x:.1f},{finish_y:.1f})"
+                )
+        else:
+            _sx, _sy, finish_x, finish_y = load_city_finish()
+            turn_x = finish_x
         if expect_objective and level_id == "demo_city":
             print(
                 f"note: demo_city Manhattan → finish=({finish_x:.1f},{finish_y:.1f})"
             )
-        elif expect_objective:
+        elif expect_objective and level_id != "demo_race":
             await _send_vel(ws, session_id, 1.0, 0.0, yaw_rate)
-        else:
-            await _send_vel(ws, session_id, 1.0, 0.0, yaw_rate)
+        elif not expect_objective:
+            spd = 8.0 if level_id == "demo_race" else 1.0
+            await _send_vel(ws, session_id, spd, 0.0, yaw_rate)
 
         saw_take = False
         saw_objective = False
@@ -113,6 +134,15 @@ async def smoke(
                 if et == "player_take_control":
                     saw_take = True
                 if et == "objective_complete":
+                    oid = str(msg["payload"].get("objective_id", ""))
+                    detail = msg["payload"].get("detail") or {}
+                    kind = str(detail.get("kind", "")) if isinstance(detail, dict) else ""
+                    # Race: only terminal finish counts (CP milestones fire earlier).
+                    if level_id == "demo_race" and (
+                        kind == "milestone" or oid != "obj_race_finish"
+                    ):
+                        print("event", et, oid, "(milestone — continue)")
+                        continue
                     saw_objective = True
                     if expect_objective:
                         break
@@ -142,6 +172,20 @@ async def smoke(
                         x, y = entity_xy(msg["payload"])
                         vx, vy = manhattan_cmd(x, y, finish_x, finish_y, turn_x=turn_x)
                         await _send_vel(ws, session_id, vx, vy, 0.0)
+                        last_cmd = now
+                elif expect_objective and level_id == "demo_race" and race_wps:
+                    now = asyncio.get_event_loop().time()
+                    if now - last_cmd >= 0.05:
+                        x, y, yaw = entity_xy_yaw(msg["payload"])
+                        while race_wp_i < len(race_wps) - 1:
+                            tx, ty = race_wps[race_wp_i]
+                            if math.hypot(tx - x, ty - y) < 6.0:
+                                race_wp_i += 1
+                            else:
+                                break
+                        tgt = race_wps[min(race_wp_i, len(race_wps) - 1)]
+                        vx, vy, yr = race_chase_cmd(x, y, yaw, tgt, speed=9.0)
+                        await _send_vel(ws, session_id, vx, vy, yr)
                         last_cmd = now
 
         if expect_objective:
@@ -183,13 +227,13 @@ def main() -> None:
     parser.add_argument(
         "--expect-objective",
         action="store_true",
-        help="Drive until objective_complete (demo_city: Manhattan SW→NE)",
+        help="Drive until objective_complete (demo_city / demo_race Manhattan)",
     )
     parser.add_argument(
         "--yaw-rate",
         type=float,
         default=None,
-        help="Override yaw_rate (default 0.2; ignored for demo_city --expect-objective)",
+        help="Override yaw_rate (default 0.2; ignored for city/race --expect-objective)",
     )
     args = parser.parse_args()
     yaw = args.yaw_rate
@@ -198,6 +242,9 @@ def main() -> None:
     seconds = args.seconds
     if args.expect_objective and args.level_id == "demo_city" and seconds < 120:
         seconds = 140.0
+    if args.expect_objective and args.level_id == "demo_race" and seconds < 100:
+        # ~530 m lap @ ~9 m/s plus corners.
+        seconds = 120.0
     raise SystemExit(
         asyncio.run(
             smoke(

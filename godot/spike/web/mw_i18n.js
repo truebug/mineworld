@@ -15,6 +15,7 @@
 		'hub.alone': { zh: '独自', en: 'alone' },
 		'hub.nick': { zh: '昵称', en: 'Nickname' },
 		'hub.me': { zh: '我的战绩', en: 'My record' },
+		'hub.vs_close': { zh: '关闭 · 回母港', en: 'Close · hangar' },
 		'hub.admin': { zh: '管理', en: 'Admin' },
 		'hub.map': { zh: '母港图 · 东A橙 · 西B蓝 · 北C · 西偏北D · 南E', en: 'Hub map · A orange · B blue · C north · D NW · E south' },
 		'hub.lb': { zh: '排行榜', en: 'Leaderboard' },

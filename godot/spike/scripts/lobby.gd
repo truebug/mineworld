@@ -4,6 +4,7 @@ extends Control
 
 const WORKSHOP_SCENE := "res://demo_workshop.tscn"
 const CITY_SCENE := "res://demo_city.tscn"
+const RACE_SCENE := "res://demo_race.tscn"
 const HUB_SCENE := "res://demo_hub.tscn"
 
 
@@ -32,6 +33,18 @@ func _on_city_pressed() -> void:
 			true
 		)
 	MWTransition.go(CITY_SCENE, "Training", "#4aa3ff")
+
+
+func _on_race_pressed() -> void:
+	"""Enter shared race oval (room=race, max 6, MuJoCo)."""
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval(
+			"(function(){try{var u=new URL(location.href);"
+			+ "u.searchParams.set('room','race');"
+			+ "history.replaceState({},'',u.pathname+u.search+u.hash);}catch(e){}})()",
+			true
+		)
+	MWTransition.go(RACE_SCENE, "Race", "#e85a7a")
 
 
 func _on_hub_pressed() -> void:

@@ -180,9 +180,13 @@
         "entity_id": { "$ref": "common.v0.json#/$defs/entity_id" },
         "action": {
           "type": "string",
-          "description": "Known: take_control | release_control. Custom snake_case allowed.",
+          "description": "Known: take_control | release_control | presence_throttle. Custom snake_case allowed.",
           "pattern": "^[a-z][a-z0-9_]*$",
-          "examples": ["take_control", "release_control"]
+          "examples": ["take_control", "release_control", "presence_throttle"]
+        },
+        "level": {
+          "type": "string",
+          "description": "presence_throttle: full | low | paused (Hub state downclock)."
         },
         "control_mode": { "$ref": "common.v0.json#/$defs/control_mode" },
         "vx": { "type": "number" },

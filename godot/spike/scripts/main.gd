@@ -12,6 +12,9 @@ extends Node3D
 
 const MOVE_SPEED := 1.0
 const TURN_SPEED := 1.0
+## demo_race DiffBot race chassis (ctrlrange ±12).
+const MOVE_SPEED_RACE := 10.0
+const TURN_SPEED_RACE := 3.2
 const CMD_HZ := 20.0
 const _WEB_BLOCK_CODES := {
 	"KeyW": true, "KeyA": true, "KeyS": true, "KeyD": true,
@@ -114,7 +117,7 @@ func _ready() -> void:
 		# Hide arm UI before/with play chrome (city has no arm joints).
 		_sync_web_joints_ui()
 		var play_js := "true"
-		var no_joints := "true" if level_id == "demo_city" else "false"
+		var no_joints := "true" if _is_chassis_play() else "false"
 		JavaScriptBridge.eval(
 			(
 				"if(typeof window.MW_SET_SHELL_UI==='function'){"
@@ -148,7 +151,7 @@ func _sync_web_joints_ui() -> void:
 	"""Hide arm/gripper DOM on city (DiffBot has no arm joints)."""
 	if not _is_web:
 		return
-	var show := "false" if level_id == "demo_city" else "true"
+	var show := "false" if _is_chassis_play() else "true"
 	JavaScriptBridge.eval(
 		"(function(show){document.body.classList.toggle('mw-no-joints',!show);"
 		+ "var e=document.getElementById('mw-joints');if(e){e.style.display=show?'':'none';}"
@@ -171,6 +174,21 @@ func _resolve_level_override() -> String:
 func _is_place_il_level() -> bool:
 	"""Workshop place IL + A3 tutorial_place_* variants."""
 	return level_id == "demo_workshop" or level_id.begins_with("tutorial_place")
+
+
+func _is_chassis_play() -> bool:
+	"""City / race DiffBot levels — no arm joints UI."""
+	return level_id == "demo_city" or level_id == "demo_race"
+
+
+func _move_speed() -> float:
+	"""Forward/strafe cmd scale (race uses high-speed chassis)."""
+	return MOVE_SPEED_RACE if level_id == "demo_race" else MOVE_SPEED
+
+
+func _turn_speed() -> float:
+	"""Yaw rate cmd scale."""
+	return TURN_SPEED_RACE if level_id == "demo_race" else TURN_SPEED
 
 
 func _place_il_time_limit_s() -> float:
@@ -609,6 +627,7 @@ func _resolve_room_id() -> String:
 	Do not rely on `window.MINEWORLD_ROOM=...; location.reload()` — reload clears
 	window vars. Prefer http://host/?room=city for training yard e2e.
 	demo_city defaults to shared room `city` when omitted.
+	demo_race defaults to shared room `race` when omitted.
 	"""
 	if _is_web:
 		var from_q := str(JavaScriptBridge.eval(
@@ -627,6 +646,8 @@ func _resolve_room_id() -> String:
 		return room_id
 	if level_id == "demo_city":
 		return "city"
+	if level_id == "demo_race":
+		return "race"
 	return room_id
 
 
@@ -818,8 +839,9 @@ func _on_gateway_error(payload: Dictionary) -> void:
 	var code := str(payload.get("code", "?"))
 	_last_error = "%s: %s" % [code, payload.get("message", "")]
 	push_warning("[MW] gateway error: %s" % payload)
-	if code == "ROOM_FULL" and level_id == "demo_city":
-		_status_line = MWi18n.t("训练场已满（最多 5 人），返回母港", "Training yard full (max 5) — back to Hub")
+	if code == "ROOM_FULL" and _is_chassis_play():
+		var max_n := 6 if level_id == "demo_race" else 5
+		_status_line = MWi18n.t("房间已满（最多 %d 人），返回母港", "Room full (max %d) — back to Hub") % max_n
 		_update_hud()
 		call_deferred("_bounce_yard_full_to_hub")
 		return
@@ -827,7 +849,7 @@ func _on_gateway_error(payload: Dictionary) -> void:
 
 
 func _bounce_yard_full_to_hub() -> void:
-	"""ROOM_FULL on demo_city → leave play scene without sticking in empty yard."""
+	"""ROOM_FULL on shared chassis rooms → leave play scene without sticking."""
 	if ws != null:
 		ws.close_link()
 	if _is_web:
@@ -845,7 +867,7 @@ func _bounce_yard_full_to_hub() -> void:
 	_held_codes.clear()
 	MWTransition.go(
 		"res://demo_hub.tscn",
-		MWi18n.t("训练场已满", "Yard full"),
+		MWi18n.t("房间已满", "Room full"),
 		"#4aa3ff"
 	)
 
@@ -967,7 +989,7 @@ func _ensure_joint_sliders() -> void:
 	if _is_web or _joint_panel != null:
 		return
 	# City DiffBot has no arm — skip desktop panel too.
-	if level_id == "demo_city":
+	if _is_chassis_play():
 		return
 	_joint_panel = CanvasLayer.new()
 	_joint_panel.name = "JointSliders"
@@ -1035,37 +1057,39 @@ func _send_velocity_cmd() -> void:
 	var vx := 0.0
 	var vy := 0.0
 	var yaw_rate := 0.0
+	var spd := _move_speed()
+	var turn := _turn_speed()
 	if _is_web:
 		# WASD plane + QE yaw (holonomic DiffBot).
 		if _web_key("KeyW"):
-			vx += MOVE_SPEED
+			vx += spd
 		if _web_key("KeyS"):
-			vx -= MOVE_SPEED
+			vx -= spd
 		if _web_key("KeyA"):
-			vy += MOVE_SPEED
+			vy += spd
 		if _web_key("KeyD"):
-			vy -= MOVE_SPEED
+			vy -= spd
 		if _web_key("KeyQ"):
-			yaw_rate += TURN_SPEED
+			yaw_rate += turn
 		if _web_key("KeyE"):
-			yaw_rate -= TURN_SPEED
+			yaw_rate -= turn
 	else:
 		if _key_down(KEY_W):
-			vx += MOVE_SPEED
+			vx += spd
 		if _key_down(KEY_S):
-			vx -= MOVE_SPEED
+			vx -= spd
 		if _key_down(KEY_A):
-			vy += MOVE_SPEED
+			vy += spd
 		if _key_down(KEY_D):
-			vy -= MOVE_SPEED
+			vy -= spd
 		if _key_down(KEY_Q):
-			yaw_rate += TURN_SPEED
+			yaw_rate += turn
 		if _key_down(KEY_E):
-			yaw_rate -= TURN_SPEED
+			yaw_rate -= turn
 		if vx == 0.0 and vy == 0.0 and yaw_rate == 0.0:
-			vx = Input.get_axis("move_back", "move_forward") * MOVE_SPEED
-			vy = Input.get_axis("strafe_left", "strafe_right") * -MOVE_SPEED
-			yaw_rate = Input.get_axis("turn_cw", "turn_ccw") * TURN_SPEED
+			vx = Input.get_axis("move_back", "move_forward") * spd
+			vy = Input.get_axis("strafe_left", "strafe_right") * -spd
+			yaw_rate = Input.get_axis("turn_cw", "turn_ccw") * turn
 	if vx != 0.0 or vy != 0.0 or yaw_rate != 0.0:
 		print("[MW] cmd vx=%.1f vy=%.1f yaw_rate=%.1f entity=%s" % [vx, vy, yaw_rate, _controlled_entity_id])
 	var payload := {
@@ -1075,8 +1099,8 @@ func _send_velocity_cmd() -> void:
 		"vy": vy,
 		"yaw_rate": yaw_rate,
 	}
-	# Workshop arm only — city DiffBot rejects arm_* (UNKNOWN_JOINT spam).
-	if level_id != "demo_city":
+	# Workshop arm only — city/race DiffBot rejects arm_* (UNKNOWN_JOINT spam).
+	if not _is_chassis_play():
 		payload["joint_targets"] = _read_joint_targets()
 	ws.send_cmd(payload)
 

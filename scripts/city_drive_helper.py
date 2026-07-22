@@ -1,18 +1,24 @@
-"""Closed-loop helpers to reach demo_city finish (SW spawn → NE goal)."""
+"""Closed-loop helpers to reach finish AABB (city / race contracts)."""
 
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
 REPO = Path(__file__).resolve().parents[1]
-CONTRACT_PATH = REPO / "examples" / "contracts" / "demo_city.json"
+CITY_CONTRACT = REPO / "examples" / "contracts" / "demo_city.json"
+RACE_CONTRACT = REPO / "examples" / "contracts" / "demo_race.json"
+RACE_LAYOUT = REPO / "godot" / "spike" / "data" / "race_layout.json"
 
 
-def load_city_finish() -> tuple[float, float, float, float]:
-    """Return (spawn_x, spawn_y, finish_x, finish_y) from current contract."""
-    contract = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
+def load_finish(
+    contract_path: Path | None = None,
+) -> tuple[float, float, float, float]:
+    """Return (spawn_x, spawn_y, finish_x, finish_y) from contract."""
+    path = contract_path or CITY_CONTRACT
+    contract = json.loads(path.read_text(encoding="utf-8"))
     spawns = contract.get("mech_spawns") or []
     sp = (spawns[0] or {}).get("pose") or {}
     trigger = next(
@@ -29,6 +35,61 @@ def load_city_finish() -> tuple[float, float, float, float]:
     return float(sp.get("x", 0.0)), float(sp.get("y", 0.0)), fx, fy
 
 
+def load_city_finish() -> tuple[float, float, float, float]:
+    """Compat: demo_city finish."""
+    return load_finish(CITY_CONTRACT)
+
+
+def load_race_finish() -> tuple[float, float, float, float]:
+    """demo_race finish gate center."""
+    return load_finish(RACE_CONTRACT)
+
+
+def load_race_waypoints() -> list[tuple[float, float]]:
+    """Centerline points ordered from start → … → finish (almost full lap)."""
+    layout = json.loads(RACE_LAYOUT.read_text(encoding="utf-8"))
+    cl = layout.get("centerline") or []
+    start_i = int(layout.get("start_index", 0))
+    finish_i = int(layout.get("finish_index", max(0, len(cl) - 1)))
+    n = len(cl)
+    if n == 0:
+        return []
+    out: list[tuple[float, float]] = []
+    i = start_i
+    for _ in range(n + 1):
+        p = cl[i % n]
+        out.append((float(p["x"]), float(p["y"])))
+        if i % n == finish_i and len(out) > 3:
+            break
+        i += 1
+    return out
+
+
+def race_chase_cmd(
+    x: float,
+    y: float,
+    yaw: float,
+    target: tuple[float, float],
+    *,
+    speed: float = 9.0,
+) -> tuple[float, float, float]:
+    """Body-frame vx/vy + yaw_rate toward a world XY waypoint."""
+    tx, ty = target
+    dx, dy = tx - x, ty - y
+    dist = math.hypot(dx, dy)
+    if dist < 1e-3:
+        return 0.0, 0.0, 0.0
+    want = math.atan2(dy, dx)
+    err = (want - yaw + math.pi) % (2 * math.pi) - math.pi
+    yaw_rate = max(-3.5, min(3.5, err * 2.8))
+    c, s = math.cos(yaw), math.sin(yaw)
+    world_vx = speed * dx / dist
+    world_vy = speed * dy / dist
+    body_vx = c * world_vx + s * world_vy
+    body_vy = -s * world_vx + c * world_vy
+    return body_vx, body_vy, yaw_rate
+
+
 def manhattan_cmd(
     x: float,
     y: float,
@@ -37,10 +98,7 @@ def manhattan_cmd(
     *,
     turn_x: float | None = None,
 ) -> tuple[float, float]:
-    """Body-frame vx/vy with yaw≈0: east then north (or to finish).
-
-    Path: drive +x to east street (turn_x), then +y to finish_y, then nudge to finish.
-    """
+    """Body-frame vx/vy with yaw≈0: east then north (or to finish)."""
     tx = finish_x if turn_x is None else turn_x
     if abs(x - tx) > 1.2:
         return (1.0 if tx > x else -1.0), 0.0
@@ -52,9 +110,31 @@ def manhattan_cmd(
     return max(-1.0, min(1.0, dx / scale)), max(-1.0, min(1.0, dy / scale))
 
 
-def entity_xy(state_payload: dict[str, Any], entity_id: str = "mech_player") -> tuple[float, float]:
+def entity_xy(
+    state_payload: dict[str, Any], entity_id: str = "mech_player"
+) -> tuple[float, float]:
     """Extract base_pose x,y from a state payload."""
     entities = state_payload.get("entities") or []
-    ent = next((e for e in entities if e.get("entity_id") == entity_id), entities[0] if entities else {})
+    ent = next(
+        (e for e in entities if e.get("entity_id") == entity_id),
+        entities[0] if entities else {},
+    )
     pose = ent.get("base_pose") or {}
     return float(pose.get("x", 0.0)), float(pose.get("y", 0.0))
+
+
+def entity_xy_yaw(
+    state_payload: dict[str, Any], entity_id: str = "mech_player"
+) -> tuple[float, float, float]:
+    """Extract base_pose x,y,yaw from a state payload."""
+    entities = state_payload.get("entities") or []
+    ent = next(
+        (e for e in entities if e.get("entity_id") == entity_id),
+        entities[0] if entities else {},
+    )
+    pose = ent.get("base_pose") or {}
+    return (
+        float(pose.get("x", 0.0)),
+        float(pose.get("y", 0.0)),
+        float(pose.get("yaw", 0.0)),
+    )

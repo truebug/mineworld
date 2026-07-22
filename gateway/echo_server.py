@@ -63,6 +63,8 @@ DEMO_ROOM_ID = "demo"
 DEMO_ROOM_MAX = 2
 CITY_ROOM_ID = "city"
 CITY_ROOM_MAX = 5
+RACE_ROOM_ID = "race"
+RACE_ROOM_MAX = 6
 HUB_ROOM_ID = "hub"
 HUB_ROOM_MAX = 8
 
@@ -647,6 +649,8 @@ class Session:
     ## E3: optional PMS/Space attribution (empty = native MineWorld level).
     space_id: str | None = None
     route_kind: str = "mineworld_level"
+    ## E9 Hub: state broadcast divisor vs STATE_EVERY (1=full, 4=low, 0=paused).
+    presence_state_divisor: int = 1
 
     @property
     def mech(self) -> MechState | None:
@@ -972,6 +976,15 @@ def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
 
         if not point_in_aabb(px, py, pz, mn, mx):
             continue
+        requires = params.get("requires") or []
+        if isinstance(requires, list) and requires:
+            missing = [
+                str(r)
+                for r in requires
+                if str(r) not in session.completed_objectives
+            ]
+            if missing:
+                continue
         open_min = params.get("gripper_open_min")
         if open_min is not None:
             mech = session.mech
@@ -1650,6 +1663,9 @@ class EchoGateway:
 
     async def _handle_cmd(self, session: Session, payload: dict[str, Any]) -> None:
         """Accept cmds only for the session's assigned entity."""
+        if str(payload.get("action") or "") == "presence_throttle":
+            self._apply_presence_throttle(session, payload)
+            return
         mech = session.mech
         if mech is None or not session.joined:
             return
@@ -1680,6 +1696,38 @@ class EchoGateway:
             )
             return
         session.pending_events.extend(events)
+
+    def _apply_presence_throttle(
+        self, session: Session, payload: dict[str, Any]
+    ) -> None:
+        """E9: Hub-only state downclock while visitor shell is open."""
+        if session.room is None or not session.joined:
+            return
+        if not is_hub_contract(session.contract):
+            return
+        level = str(payload.get("level") or "full").strip().lower()
+        mapping = {"full": 1, "low": 4, "paused": 0}
+        session.presence_state_divisor = mapping.get(level, 1)
+        mech = session.mech
+        if session.presence_state_divisor == 0 and mech is not None:
+            mech.vx = mech.vy = mech.yaw_rate = 0.0
+        LOG.info(
+            "session=%s presence_throttle=%s divisor=%d",
+            session.session_id,
+            level,
+            session.presence_state_divisor,
+        )
+
+    def _should_send_state(self, session: Session, tick: int) -> bool:
+        """Gate state frames per session (Hub presence_throttle)."""
+        div = int(session.presence_state_divisor)
+        if div == 1:
+            return True
+        slot = tick // STATE_EVERY_N_TICKS
+        if div <= 0:
+            # Keepalive ~0.5 Hz so the tab does not look disconnected.
+            return slot % max(1, STATE_HZ // 2) == 0
+        return slot % div == 0
 
     async def _handle_join(self, session: Session, payload: dict[str, Any]) -> None:
         self._maybe_reload_contract()
@@ -1728,7 +1776,7 @@ class EchoGateway:
             )
             return
 
-        # Private room when omitted (= W2.3 isolation), except hub / city defaults.
+        # Private room when omitted (= W2.3 isolation), except hub / city / race defaults.
         room_id = str(payload.get("room_id") or session.session_id)
         hub = is_hub_contract(contract)
         if hub:
@@ -1740,8 +1788,15 @@ class EchoGateway:
             max_members = CITY_ROOM_MAX
             if not payload.get("room_id"):
                 room_id = CITY_ROOM_ID
+        elif level_id == "demo_race":
+            # Oval race: shared room `race`, max 6 (MuJoCo chassis).
+            max_members = RACE_ROOM_MAX
+            if not payload.get("room_id"):
+                room_id = RACE_ROOM_ID
         elif room_id == CITY_ROOM_ID:
             max_members = CITY_ROOM_MAX
+        elif room_id == RACE_ROOM_ID:
+            max_members = RACE_ROOM_MAX
         elif room_id == DEMO_ROOM_ID:
             max_members = DEMO_ROOM_MAX
         else:
@@ -1860,7 +1915,12 @@ class EchoGateway:
 
         # First member into an existing empty room already reset via _make_room_mechs.
         # Public rooms (demo / hub): only reset when the room was empty.
-        public_room = hub or room_id in (DEMO_ROOM_ID, CITY_ROOM_ID, HUB_ROOM_ID)
+        public_room = hub or room_id in (
+            DEMO_ROOM_ID,
+            CITY_ROOM_ID,
+            RACE_ROOM_ID,
+            HUB_ROOM_ID,
+        )
         if (not public_room) or len([s for s in room.members.values() if s.joined]) == 0:
             spawn = next(
                 (s for s in (room.contract.get("mech_spawns") or []) if s.get("id") == entity_id),
@@ -2050,7 +2110,10 @@ class EchoGateway:
                                     payload=ev,
                                 ),
                             )
-                        if room.tick % STATE_EVERY_N_TICKS == 0:
+                        if (
+                            room.tick % STATE_EVERY_N_TICKS == 0
+                            and self._should_send_state(session, room.tick)
+                        ):
                             await send_json(
                                 session.ws,
                                 envelope(

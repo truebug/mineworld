@@ -11,12 +11,18 @@ const MESH_YAW_DEG := 90.0
 const SPEED_IDLE := 0.25
 const SPEED_SPRINT := 2.4
 const ANIM_BLEND := 0.15
+## E9: public-net feel — cap catch-up / extrap so remotes don't "fly".
+const MAX_GROUND_SPEED := 4.0
+const MAX_EXTRAP_S := 0.28
+const SNAP_DIST := 3.5
 
 @export var entity_id: String = "avatar_0"
 @export var accent: Color = Color(0.25, 0.72, 0.95)
 
 var interp_delay := 0.05
 var display_name := ""
+## Own avatar: short body-frame prediction between authority samples.
+var local_predict := false
 
 var _prev_pos := Vector3.ZERO
 var _prev_yaw := 0.0
@@ -39,6 +45,9 @@ var _skin_letter := ""
 var _mesh_root: Node3D = null
 var _anim: AnimationPlayer = null
 var _anim_playing := ""
+var _cmd_vx := 0.0
+var _cmd_vy := 0.0
+var _cmd_yaw_rate := 0.0
 
 @onready var _label: Label3D = $NameTag
 
@@ -220,6 +229,13 @@ func set_display(name_text: String, accent_hex: String = "") -> void:
 			_ensure_skin(false)
 
 
+func set_local_cmd(vx: float, vy: float, yaw_rate: float) -> void:
+	"""Cache last velocity cmd for local_predict (body frame, MW)."""
+	_cmd_vx = vx
+	_cmd_vy = vy
+	_cmd_yaw_rate = yaw_rate
+
+
 func push_state(entity: Dictionary, t_sim: float) -> void:
 	"""Buffer authority pose (MW Z-up → Godot Y-up)."""
 	var pose: Variant = entity.get("base_pose", {})
@@ -245,37 +261,107 @@ func push_state(entity: Dictionary, t_sim: float) -> void:
 		global_position = godot_pos
 		rotation.y = yaw
 		_last_render_pos = godot_pos
+		_apply_profile_ext(entity)
 		return
+	# Large authority jumps (join / soft-push stack): snap, don't lerp across the map.
+	var jump := Vector2(godot_pos.x - _next_pos.x, godot_pos.z - _next_pos.z).length()
+	if jump > SNAP_DIST:
+		_prev_pos = godot_pos
+		_next_pos = godot_pos
+		_prev_yaw = yaw
+		_next_yaw = yaw
+		_prev_time = t_sim
+		_next_time = t_sim
+		global_position = godot_pos
+		rotation.y = yaw
+		_last_render_pos = godot_pos
+		_apply_profile_ext(entity)
+		return
+	# Own avatar: soft-correct toward authority so prediction does not rubber-band hard.
+	if local_predict:
+		var err := Vector2(godot_pos.x - global_position.x, godot_pos.z - global_position.z)
+		if err.length() < SNAP_DIST:
+			_prev_pos = global_position
+			_prev_yaw = rotation.y
+			_prev_time = t_sim - maxf(interp_delay, 0.04)
+			_next_pos = godot_pos
+			_next_yaw = yaw
+			_next_time = t_sim
+			_apply_profile_ext(entity)
+			return
 	_prev_pos = _next_pos
 	_prev_yaw = _next_yaw
 	_prev_time = _next_time
 	_next_pos = godot_pos
 	_next_yaw = yaw
 	_next_time = t_sim
+	_apply_profile_ext(entity)
+
+
+func _apply_profile_ext(entity: Dictionary) -> void:
+	"""Optional display_name / accent from extensions.mw."""
 	var ext: Variant = entity.get("extensions", {})
-	if typeof(ext) == TYPE_DICTIONARY:
-		var mw: Variant = ext.get("mw", {})
-		if typeof(mw) == TYPE_DICTIONARY:
-			var dn := str(mw.get("display_name", ""))
-			var ac := str(mw.get("accent", ""))
-			if dn != "" or ac != "":
-				set_display(dn if dn != "" else display_name, ac)
+	if typeof(ext) != TYPE_DICTIONARY:
+		return
+	var mw: Variant = ext.get("mw", {})
+	if typeof(mw) != TYPE_DICTIONARY:
+		return
+	var dn := str(mw.get("display_name", ""))
+	var ac := str(mw.get("accent", ""))
+	if dn != "" or ac != "":
+		set_display(dn if dn != "" else display_name, ac)
 
 
-func _process(_delta: float) -> void:
-	"""Interpolate pose; drive idle/walk/sprint from ground speed."""
+func _process(delta: float) -> void:
+	"""Interpolate / rate-limited extrap; optional local predict for self."""
 	if not _has_state:
 		return
+	var dt := maxf(delta, 1e-4)
+	if local_predict:
+		_step_local_predict(dt)
 	var wall_now := Time.get_ticks_msec() / 1000.0
 	var render_t := _sim_now + (wall_now - _wall_at_last_state) - interp_delay
 	var span := _next_time - _prev_time
-	var alpha := 1.0 if span <= 1e-6 else clampf((render_t - _prev_time) / span, 0.0, 1.0)
-	global_position = _prev_pos.lerp(_next_pos, alpha)
-	rotation.y = lerp_angle(_prev_yaw, _next_yaw, alpha)
+	var target := _next_pos
+	var target_yaw := _next_yaw
+	if span > 1e-6:
+		var alpha := (render_t - _prev_time) / span
+		if alpha <= 1.0:
+			target = _prev_pos.lerp(_next_pos, clampf(alpha, 0.0, 1.0))
+			target_yaw = lerp_angle(_prev_yaw, _next_yaw, clampf(alpha, 0.0, 1.0))
+		else:
+			var sample_vel := (_next_pos - _prev_pos) / span
+			var spd := Vector2(sample_vel.x, sample_vel.z).length()
+			if spd > MAX_GROUND_SPEED and spd > 1e-6:
+				sample_vel *= MAX_GROUND_SPEED / spd
+			var past := minf((alpha - 1.0) * span, MAX_EXTRAP_S)
+			target = _next_pos + sample_vel * past
+			target_yaw = _next_yaw
+	target.y = height_offset
+	# Per-frame catch-up cap (remotes); own predict already stepped.
+	if not local_predict:
+		var delta_pos := target - global_position
+		var flat := Vector2(delta_pos.x, delta_pos.z)
+		var flat_len := flat.length()
+		if flat_len > SNAP_DIST:
+			global_position = target
+		else:
+			var max_step := MAX_GROUND_SPEED * dt * 1.35
+			if flat_len > max_step and flat_len > 1e-6:
+				flat *= max_step / flat_len
+				global_position.x += flat.x
+				global_position.z += flat.y
+				global_position.y = target.y
+			else:
+				global_position = target
+		rotation.y = lerp_angle(rotation.y, target_yaw, clampf(dt * 12.0, 0.0, 1.0))
+	else:
+		# Soft pull toward interpolated authority while predicting.
+		global_position = global_position.lerp(target, clampf(dt * 8.0, 0.0, 1.0))
+		rotation.y = lerp_angle(rotation.y, target_yaw, clampf(dt * 10.0, 0.0, 1.0))
 	var move := global_position - _last_render_pos
 	_last_render_pos = global_position
 	var dist := Vector2(move.x, move.z).length()
-	var dt := maxf(_delta, 1e-4)
 	_speed_smooth = lerpf(_speed_smooth, dist / dt, 0.28)
 	if _speed_smooth < SPEED_IDLE:
 		_play_anim("idle")
@@ -283,3 +369,19 @@ func _process(_delta: float) -> void:
 		_play_anim("sprint")
 	else:
 		_play_anim("walk")
+
+
+func _step_local_predict(dt: float) -> void:
+	"""Integrate last cmd in FakeMech body frame (visual only)."""
+	var yaw := rotation.y
+	var c := cos(yaw)
+	var s := sin(yaw)
+	var d_mw_x := (c * _cmd_vx - s * _cmd_vy) * dt
+	var d_mw_y := (s * _cmd_vx + c * _cmd_vy) * dt
+	global_position.x += d_mw_x
+	global_position.z -= d_mw_y
+	global_position.y = height_offset
+	rotation.y += _cmd_yaw_rate * dt
+	last_mw_x = global_position.x
+	last_mw_y = -global_position.z
+	last_mw_yaw = rotation.y

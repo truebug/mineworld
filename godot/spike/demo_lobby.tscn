@@ -62,6 +62,11 @@ custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "City (cruise / push box)"
 
+[node name="BtnRace" type="Button" parent="Center"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Race oval (MuJoCo · max 6 · timed)"
+
 [node name="Hint" type="Label" parent="Center"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.58, 0.62, 1)
@@ -73,3 +78,4 @@ autowrap_mode = 2
 [connection signal="pressed" from="BtnHub" to="." method="_on_hub_pressed"]
 [connection signal="pressed" from="BtnWorkshop" to="." method="_on_workshop_pressed"]
 [connection signal="pressed" from="BtnCity" to="." method="_on_city_pressed"]
+[connection signal="pressed" from="BtnRace" to="." method="_on_race_pressed"]

@@ -126,8 +126,8 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 |----|------|------|
 | E6 | Portal 已登录身份 → PMS 换「参观者」token | 短时 token；不可当完整账号滥用 |
 | E7 | 拉可访问卡片列表（URL + 运行中/待机/离线 + 说明 HTML 元数据） | 域名白名单（如 `*.spaces.databall.tech`） |
-| E8 | 浏览器内壳：中央 iframe（mjviser / rerun / gzweb…）+ 侧栏文档 + 关闭 | 关壳卸 iframe、恢复母港输入；打开时降频/暂停 Hub WS |
-| E9 | Hub 公网手感：远端插值外推限速；自机可选本地预测 | 减轻「飞快 / 跳帧」（延迟+Web 卡顿，非 Hub MuJoCo 算力） |
+| E8 | 浏览器内壳：中央 iframe（mjviser / rerun / gzweb…）+ 侧栏文档 + 关闭 | 关壳卸 iframe、恢复母港输入；打开时降频/暂停 Hub WS · **薄壳已落地**（`#mw-visitor-shell`）；侧栏文档 / PMS 换票仍待 |
+| E9 | Hub 公网手感：远端插值外推限速；自机可选本地预测 | **Done**：`avatar_puppet` 限速插值/外推 + 自机预测；`presence_throttle` full/low/paused；开壳暂停 Hub state |
 
 进卡流程（目标态）：
 
