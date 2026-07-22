@@ -14,6 +14,7 @@
 
 - 圈长 ~430 m · 车道半宽 6 m；去掉 `viewer_heights` 起伏带（平面车不再埋沟）。
 - 路面改平坦 asphalt strip；镜头略拉远。
+- Playground：`MW_BUILD=20260722-141310`。
 
 ## 2026-07-22 · demo_race Kenney Car Kit 车皮
 
