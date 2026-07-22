@@ -14,6 +14,7 @@
 
 - 子集入库 `godot/spike/assets/kenney_car/`（race / race-future / sedan-sports / hatchback-sports / police / taxi）。
 - `mech_puppet.use_kenney_car`：viewer-only 换皮；权威仍 `diffbot_race`；A–F 各一款 + 队标。
+- Playground：`MW_BUILD=20260722-140617`。
 - 下一刀仍是 **B2 薄 1v1**。
 
 ## 2026-07-22 · demo_race Kenney Racing Kit 护栏
