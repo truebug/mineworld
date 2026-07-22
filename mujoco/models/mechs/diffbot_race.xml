@@ -31,9 +31,9 @@
   </worldbody>
 
   <actuator>
-    <!-- High-speed circuit: ~10 m/s body frame (was ±3 on planar training bots). -->
-    <velocity name="vx" joint="slide_x" kv="160" forcerange="-800 800" ctrlrange="-12 12"/>
-    <velocity name="vy" joint="slide_y" kv="160" forcerange="-800 800" ctrlrange="-12 12"/>
-    <velocity name="yaw_rate" joint="yaw_z" kv="80" forcerange="-300 300" ctrlrange="-8 8"/>
+    <!-- High-speed circuit: ~15 m/s body frame. -->
+    <velocity name="vx" joint="slide_x" kv="200" forcerange="-1200 1200" ctrlrange="-18 18"/>
+    <velocity name="vy" joint="slide_y" kv="200" forcerange="-1200 1200" ctrlrange="-18 18"/>
+    <velocity name="yaw_rate" joint="yaw_z" kv="100" forcerange="-400 400" ctrlrange="-10 10"/>
   </actuator>
 </mujoco>

@@ -12,8 +12,8 @@ extends Node3D
 
 const MOVE_SPEED := 1.0
 const TURN_SPEED := 1.0
-## demo_race DiffBot race chassis (ctrlrange ±12).
-const MOVE_SPEED_RACE := 10.0
+## demo_race DiffBot race chassis (ctrlrange ±18 ≈ 15 m/s).
+const MOVE_SPEED_RACE := 15.0
 const TURN_SPEED_RACE := 3.2
 const CMD_HZ := 20.0
 const _WEB_BLOCK_CODES := {
@@ -743,6 +743,7 @@ func _on_scene(payload: Dictionary) -> void:
 
 func _ensure_puppets(entities: Array) -> void:
 	"""Create/update puppets for mechs and dynamic_props in the scene list."""
+	var live_mechs: Dictionary = {}
 	for entity in entities:
 		if typeof(entity) != TYPE_DICTIONARY:
 			continue
@@ -755,6 +756,7 @@ func _ensure_puppets(entities: Array) -> void:
 			continue
 		if kind != "mech":
 			continue
+		live_mechs[eid] = true
 		if not _puppets.has(eid):
 			var copy: Node3D = mech.duplicate()
 			copy.name = "Mech_%s" % eid
@@ -766,12 +768,28 @@ func _ensure_puppets(entities: Array) -> void:
 		puppet.set("entity_id", eid)
 		if puppet.has_method("apply_team_look"):
 			puppet.apply_team_look()
+		puppet.visible = true
 	# Keep template entity_id in sync when we were assigned mech_player_b.
 	if _puppets.has(_controlled_entity_id):
 		var p = _puppets[_controlled_entity_id]
 		p.set("entity_id", _controlled_entity_id)
 		if p.has_method("apply_team_look"):
 			p.apply_team_look()
+	if level_id == "demo_race" and not live_mechs.is_empty():
+		_prune_race_puppets(live_mechs)
+
+
+func _prune_race_puppets(live_mechs: Dictionary) -> void:
+	"""Hide DiffBots for empty race slots (avoids stacked ghost grid)."""
+	for eid in _puppets.keys():
+		var node = _puppets[eid]
+		if node == null or not str(eid).begins_with("mech_"):
+			continue
+		if live_mechs.has(eid):
+			continue
+		if eid == _controlled_entity_id:
+			continue
+		node.visible = false
 
 
 func _ensure_prop_puppet(eid: String, size_arr: Variant = null) -> void:

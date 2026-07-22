@@ -71,7 +71,7 @@ def race_chase_cmd(
     yaw: float,
     target: tuple[float, float],
     *,
-    speed: float = 9.0,
+    speed: float = 14.0,
 ) -> tuple[float, float, float]:
     """Body-frame vx/vy + yaw_rate toward a world XY waypoint."""
     tx, ty = target
@@ -81,7 +81,7 @@ def race_chase_cmd(
         return 0.0, 0.0, 0.0
     want = math.atan2(dy, dx)
     err = (want - yaw + math.pi) % (2 * math.pi) - math.pi
-    yaw_rate = max(-3.5, min(3.5, err * 2.8))
+    yaw_rate = max(-4.5, min(4.5, err * 3.0))
     c, s = math.cos(yaw), math.sin(yaw)
     world_vx = speed * dx / dist
     world_vy = speed * dy / dist

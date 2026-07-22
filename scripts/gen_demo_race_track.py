@@ -15,14 +15,17 @@ CONTRACT = REPO / "examples" / "contracts" / "demo_race.json"
 LAYOUT = REPO / "godot" / "spike" / "data" / "race_layout.json"
 MODEL_REF = "mechs/diffbot_race.xml"
 
-# ~500 m centerline (stadium ellipse + radial wobble for big curves).
-SEMI_A = 95.0
-SEMI_B = 58.0
-LANE_HALF = 5.5
-WALL_THICK = 1.0
-WALL_H = 2.2
-SEGMENTS = 96
+# Readable but longer circuit (~300 m lap @ ~15 m/s ≈ 20 s).
+SEMI_A = 55.0
+SEMI_B = 34.0
+LANE_HALF = 5.0
+WALL_THICK = 0.9
+WALL_H = 1.6
+SEGMENTS = 80
 SPAWN_COUNT = 6
+SPAWN_SPACE_M = 2.5
+SPAWN_BACK_M = 4.0
+SPAWN_ROW_GAP_M = 3.2
 
 
 def _centerline(n: int) -> list[tuple[float, float]]:
@@ -30,7 +33,7 @@ def _centerline(n: int) -> list[tuple[float, float]]:
     pts: list[tuple[float, float]] = []
     for i in range(n):
         t = 2.0 * math.pi * i / n
-        wobble = 1.0 + 0.14 * math.sin(3.0 * t) + 0.07 * math.sin(5.0 * t + 0.6)
+        wobble = 1.0 + 0.08 * math.sin(3.0 * t) + 0.04 * math.sin(5.0 * t + 0.6)
         x = SEMI_A * math.cos(t) * wobble
         y = SEMI_B * math.sin(t) * wobble
         pts.append((x, y))
@@ -90,8 +93,8 @@ def _viewer_heights(pts: list[tuple[float, float]]) -> list[dict]:
     n = len(pts)
     for i, (x, y) in enumerate(pts):
         t = 2.0 * math.pi * i / n
-        # Gentle hills: ±1.2 m visual only.
-        h = 0.55 + 0.65 * math.sin(2.0 * t) + 0.35 * math.sin(4.0 * t + 0.8)
+        # Visual hills ±2 m (planar DiffBot physics stays flat).
+        h = 0.7 + 1.1 * math.sin(2.0 * t) + 0.55 * math.sin(4.0 * t + 0.8)
         samples.append({"x": round(x, 2), "y": round(y, 2), "h": round(h, 3)})
     return samples
 
@@ -117,9 +120,13 @@ def build() -> tuple[dict, dict]:
     spawns = []
     for i in range(SPAWN_COUNT):
         sid = "mech_player" if i == 0 else f"mech_player_{chr(ord('b') + i - 1)}"
-        # Behind start a bit, spread along normal.
-        sx = x0 - tx * 6.0 + nx * (i - 2.5) * 1.1
-        sy = y0 - ty * 6.0 + ny * (i - 2.5) * 1.1
+        # 2×3 grid behind the line, inside the lane (not outside the outer wall).
+        row = i // 3
+        col = i % 3
+        back = SPAWN_BACK_M + row * SPAWN_ROW_GAP_M
+        lateral = (col - 1) * SPAWN_SPACE_M
+        sx = x0 - tx * back + nx * lateral
+        sy = y0 - ty * back + ny * lateral
         spawns.append(
             {
                 "id": sid,
@@ -182,7 +189,7 @@ def build() -> tuple[dict, dict]:
             },
             "mw.il": {
                 "task_id": "obj_race_finish",
-                "time_limit_s": 300,
+                "time_limit_s": 180,
             },
             "mw.editor": {
                 "client_scene": "res://demo_race.tscn",

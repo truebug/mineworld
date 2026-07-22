@@ -13,6 +13,8 @@ extends Node3D
 ## Workshop lookalike: hide A/B tag and platformer arrow.
 @export var show_team_tag: bool = true
 @export var show_front_arrow: bool = true
+## Race chassis has no arm in MJCF — skip industrial arm mesh.
+@export var show_arm: bool = true
 ## If alpha > 0, overrides TEAM_COLORS chassis tint (e.g. industrial orange).
 @export var chassis_tint_override: Color = Color(0, 0, 0, 0)
 var interp_delay := 0.05
@@ -69,7 +71,8 @@ var _finger_r: Node3D
 
 func _ready() -> void:
 	ensure_planar_cart_visual()
-	_ensure_arm_visual()
+	if show_arm:
+		_ensure_arm_visual()
 	_ensure_front_arrow()
 	apply_team_look()
 
@@ -193,7 +196,8 @@ func ensure_planar_cart_visual() -> void:
 
 	_cart_built = true
 	_arm_built = false
-	_ensure_arm_visual()
+	if show_arm:
+		_ensure_arm_visual()
 
 
 func _ensure_arm_visual() -> void:
@@ -310,7 +314,7 @@ func _arm_add_box(
 
 func _apply_arm_joints(joints: Variant) -> void:
 	"""Drive arm Node3Ds from state.joints (MW hinge Z→Godot Y; MW Y→Godot -Z)."""
-	if typeof(joints) != TYPE_DICTIONARY:
+	if not show_arm or typeof(joints) != TYPE_DICTIONARY:
 		return
 	_ensure_arm_visual()
 	if _arm_yaw == null:

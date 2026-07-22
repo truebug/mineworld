@@ -84,7 +84,7 @@
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| B1 | 计时竞速关 | 契约时限/检查点；通关写时长榜（复用 A2 `level_id`） | [x] `demo_race` ~530 m · room=`race` · max 6 · MuJoCo · 门 E · 已发版 |
+| B1 | 计时竞速关 | 契约时限/检查点；通关写时长榜（复用 A2 `level_id`） | [x] `demo_race` ~292 m · ≈15 m/s · room=`race` · max 6 · 已发版 |
 | B2 | 薄 1v1 | 双人同房目标竞速或推箱对决；事件可录 | [ ] **Next** |
 | B3 | 房间模式字段 | join/`extensions.mw.mode`：`solo \| duel \| shared_ffa` | [~] race 已标 `shared_ffa`；通用字段后补 |
 

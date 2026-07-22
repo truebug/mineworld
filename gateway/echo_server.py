@@ -1971,8 +1971,17 @@ class EchoGateway:
             )
 
         entities = []
+        claimed = {
+            s.controlled_entity_id
+            for s in room.members.values()
+            if s.joined and not s.closed and s.controlled_entity_id
+        }
+        # Race: only show occupied slots (empty DiffBots stacked at spawn looked broken).
+        race_only_claimed = level_id == "demo_race"
         for spawn in room.contract.get("mech_spawns") or []:
             sid = spawn["id"]
+            if race_only_claimed and sid not in claimed:
+                continue
             entities.append(
                 {
                     "entity_id": sid,
@@ -2040,7 +2049,18 @@ class EchoGateway:
                 room.step_physics(DT)
                 # P1a: friction grasp only (no sticky kinematic weld).
                 room.tick += 1
-                entities = [m.to_entity_state() for m in room.mechs.values()] + [
+                claimed = {
+                    s.controlled_entity_id
+                    for s in members
+                    if s.controlled_entity_id
+                }
+                race_only = str(room.contract.get("level_id") or "") == "demo_race"
+                mech_states = []
+                for m in room.mechs.values():
+                    if race_only and m.entity_id not in claimed:
+                        continue
+                    mech_states.append(m.to_entity_state())
+                entities = mech_states + [
                     p.to_entity_state() for p in room.props.values()
                 ]
                 self._attach_occupant_profiles(room, entities)

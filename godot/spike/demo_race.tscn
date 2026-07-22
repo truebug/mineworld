@@ -8,10 +8,10 @@
 [ext_resource type="Script" path="res://scripts/race_dress.gd" id="18_dress"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
-sky_top_color = Color(0.2, 0.35, 0.55, 1)
-sky_horizon_color = Color(0.55, 0.62, 0.72, 1)
-ground_bottom_color = Color(0.12, 0.12, 0.14, 1)
-ground_horizon_color = Color(0.35, 0.36, 0.4, 1)
+sky_top_color = Color(0.35, 0.55, 0.78, 1)
+sky_horizon_color = Color(0.72, 0.78, 0.88, 1)
+ground_bottom_color = Color(0.18, 0.19, 0.21, 1)
+ground_horizon_color = Color(0.42, 0.44, 0.48, 1)
 
 [sub_resource type="Sky" id="sky"]
 sky_material = SubResource("sky_mat")
@@ -20,8 +20,8 @@ sky_material = SubResource("sky_mat")
 background_mode = 2
 sky = SubResource("sky")
 ambient_light_source = 2
-ambient_light_color = Color(0.8, 0.85, 0.92, 1)
-ambient_light_energy = 0.55
+ambient_light_color = Color(0.85, 0.88, 0.95, 1)
+ambient_light_energy = 0.7
 
 [node name="DemoRace" type="Node3D"]
 script = ExtResource("1_main")
@@ -38,11 +38,14 @@ shadow_enabled = true
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("17_camrig")
 target_path = NodePath("../MechPlayer")
-distance = 48.0
-min_distance = 12.0
-max_distance = 120.0
-pitch = -0.78
-yaw = 0.25
+distance = 28.0
+min_distance = 10.0
+max_distance = 80.0
+pitch = -0.72
+yaw = 0.2
+chase_distance = 16.0
+min_chase_distance = 8.0
+max_chase_distance = 42.0
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
 
@@ -54,10 +57,13 @@ metadata/physics_role = "viewer_only"
 script = ExtResource("3_puppet")
 entity_id = "mech_player"
 interp_delay = 0.05
+show_team_tag = true
+show_front_arrow = true
+show_arm = false
 metadata/mujoco_entity_id = "mech_player"
 metadata/contract_kind = "mech_spawn"
 metadata/player_slot = 0
-metadata/model_ref = "mechs/diffbot_planar.xml"
+metadata/model_ref = "mechs/diffbot_race.xml"
 metadata/spawn_z = 0.5
 
 [node name="FrontArrow" parent="MechPlayer" instance=ExtResource("16_arrow")]
@@ -95,5 +101,5 @@ theme_override_constants/margin_bottom = 8
 
 [node name="Label" type="Label" parent="Hud/Margin/PanelContainer/MarginContainer"]
 layout_mode = 2
-text = "MineWorld · demo_race circuit (~530m)
-WASD · QE · CP1→CP2→finish · max 6 · high speed"
+text = "MineWorld · demo_race (~300m · ~15m/s)
+WASD · QE · CP1→CP2→finish · max 6 · shared room"

@@ -7,7 +7,7 @@
 | `platform/identity_link.v0.json` | E2 身份映射样例（issuer + external_sub → player_id） |
 | `platform/session_attribution.v0.json` | E3 会话归因样例（space_id / route_kind） |
 | `contracts/demo_city.json` | 次要：随机街区空气墙 + 终点；楼宇由 `block_layout.json` 摆 |
-| `contracts/demo_race.json` | Phase B1：椭圆赛车场 · 共享房 `race` · max 6 · MuJoCo 空气墙 + 计时冲线 |
+| `contracts/demo_race.json` | Phase B1：~292 m 曲率赛道 · 共享房 `race` · max 6 · ≈15 m/s · MuJoCo |
 | `contracts/tutorial_01.json` | POC 教程关场景契约（对齐 scene-contract.v0） |
 | `ws/hello.json` · `cmd_velocity.json` · `cmd_joint_targets.json` · `cmd_velocity_and_joints.json` · `state_full.json` | WS 消息样例 |
 | `recordings/sample_header.json` · `sample_frames.jsonl` | 录制样例 |

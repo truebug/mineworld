@@ -10,6 +10,13 @@
 
 ---
 
+## 2026-07-22 · demo_race 可视修复 + 提速中圈
+
+- 根因：~530 m 远看像小环；空槽幽灵车叠堆；工坊臂误画。
+- 修复：只广播已入座；2×3 发车格；无臂底盘；橙护墙。
+- 手感：~292 m 圈 · ctrl ±18（≈15 m/s）· 可视起伏 ribbon（物理仍平面）。
+- 下一刀素材：Kenney [Racing Kit](https://kenney.nl/assets/racing-kit) / [Car Kit](https://kenney.nl/assets/car-kit)（CC0 glTF）做护栏/路牌/车皮。
+
 ## 2026-07-22 · E9 + B1 落库 / playground 发版
 
 - 入库：E9（Hub 插值/`presence_throttle`/参观壳）+ B1 `demo_race`（高速长弯 · max 6 · MuJoCo）。
@@ -18,12 +25,12 @@
 
 ## 2026-07-22 · demo_race 高速加长曲率赛道
 
-- 中心线 ~530 m 波浪椭圆 + 内外墙；CP1→CP2→终点（`params.requires`）；`diffbot_race` ctrl ±12（≈10 m/s）。
-- 起伏：Godot 视觉 ribbon（平面底盘无真实爬坡）；生成器 `scripts/gen_demo_race_track.py`。
+- 中心线波浪椭圆 + 内外墙；CP1→CP2→终点（`params.requires`）；`diffbot_race` ctrl ±12（≈10 m/s）。
+- 生成器 `scripts/gen_demo_race_track.py`（后续已缩圈，见上条）。
 
 ## 2026-07-22 · B1 demo_race 赛车场（max 6 · MuJoCo）
 
-- 契约 `demo_race`：椭圆空气墙 + 南起点/北终点；共享房 `race` max 6；`time_limit_s=180`；计分同 city 时长公式。
+- 契约 `demo_race`：空气墙 + 计时冲线；共享房 `race` max 6；计分同 city 时长公式。
 - Godot `demo_race.tscn` + `race_dress.gd`；Hub 门 E 走近进入；lobby / 排行榜 tab。
 - Gateway：`RACE_ROOM_*`；smoke：`--level-id demo_race --expect-objective`（建议 `--physics mujoco`）。
 
