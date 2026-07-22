@@ -13,7 +13,7 @@
 ## 2026-07-22 · E9 + B1 落库 / playground 发版
 
 - 入库：E9（Hub 插值/`presence_throttle`/参观壳）+ B1 `demo_race`（高速长弯 · max 6 · MuJoCo）。
-- Playground 发版：`MW_BUILD=`（发版时回填）· `wss://playground.dev.databall.tech/ws` · 双服务重启。
+- Playground 发版：`MW_BUILD=20260722-130156` · `wss://playground.dev.databall.tech/ws` · 双服务 active。
 - **Next = B2 薄 1v1**；E6–E7 可穿插。
 
 ## 2026-07-22 · demo_race 高速加长曲率赛道
