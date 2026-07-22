@@ -116,7 +116,7 @@ func _place_stations() -> void:
 		MWi18n.t("F · 导览台", "F · Welcome"),
 		MWi18n.t(
 			"欢迎来到机甲学院母港。\n东橙 A 工坊 · 西蓝 B 训练 · 北 C 卡片 · 南 E 竞技(建设中) · 东南 R 赛车\n跟随地面灯带前往。",
-			"Welcome to Mech Academy Hangar.\nA Workshop · B Training · C Cards · E Arena.\nFollow the floor lights."
+			"Welcome to Mech Academy Hangar.\nA Workshop · B Training · C Cards · E Arena(WIP) · SE R Race.\nFollow the floor lights."
 		),
 		Color(0.95, 0.7, 0.35),
 	)
@@ -797,7 +797,7 @@ func _place_patrols() -> void:
 			Vector3(4.0, 0, 12.0),
 		],
 		[
-			MWi18n.t("南边赛车场……", "Race oval to the south…"),
+			MWi18n.t("东南赛车场……", "Race oval to the southeast…"),
 			MWi18n.t("先热身再进关。", "Warm up before entering."),
 			MWi18n.t("嗨——欢迎。", "Hey — welcome."),
 		],

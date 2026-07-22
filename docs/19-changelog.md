@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-07-22 · Hub 门 E/R 分离：竞技场 WIP，赛车场独立
+
+- 门 E「竞技场」改为建设中占位：不再可进入，文案改为机甲格斗（1v1 / 团队对战）规划；F 四态 stub 保留。
+- 南翼东侧新立门 R「赛车场」（22.5, 14）→ `demo_race`；门光晕/接近提示/lore 文案同步。
+- 背景：竞技场愿景为机甲格斗而非赛车，此前门 E 名不符实。
+
 ## 2026-07-22 · Hub 假活跃 / 电梯 / 名牌
 
 - 中环 NPC：软会话气泡淡入淡出轮换；巡逻停靠 dwell + 气泡；F 可推进下一句。
@@ -554,8 +560,3 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 - Web 首屏：`shell.html` 品牌字标（MineWorld / Dungeon Gate）+ 进度条；隐藏 Godot 默认 splash 图。
 - 过场：`MW_TRANSITION` DOM 淡入淡出（~280ms）；Autoload `MWTransition.go` / `notify_arrived` 覆盖 Hub 门、Esc 回 Hub、文本菜单。
-## 2026-07-22 · Hub 门 E/R 分离：竞技场 WIP，赛车场独立
-
-- 门 E「竞技场」改为建设中占位：不再可进入，文案改为机甲格斗（1v1 / 团队对战）规划；F 四态 stub 保留。
-- 南翼东侧新立门 R「赛车场」（22.5, 14）→ `demo_race`；门光晕/接近提示/lore 文案同步。
-- 背景：竞技场愿景为机甲格斗而非赛车，此前门 E 名不符实。
