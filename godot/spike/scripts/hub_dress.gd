@@ -886,8 +886,8 @@ func _hide_greybox() -> void:
 		world, "DoorStubE",
 		Vector3(0.0, 1.6, HALL_HALF_Z - 1.5),
 		MWi18n.t("E 竞技场", "E Arena"),
-		Color(0.85, 0.45, 0.3, 0.75),
-		40,
+		Color(1.0, 0.55, 0.35),
+		64,
 	)
 
 
@@ -950,12 +950,22 @@ func _place_door_glows() -> void:
 	var world := get_parent().get_node_or_null("World") as Node3D
 	if world == null:
 		return
-	var a := _glow_at(world, Vector3(HALL_HALF_X - 0.35, 1.6, 0.0), Color(1.0, 0.45, 0.1), Vector3(0.12, 3.2, 3.0))
-	var b := _glow_at(world, Vector3(-HALL_HALF_X + 0.35, 1.6, 0.0), Color(0.2, 0.65, 1.0), Vector3(0.12, 3.2, 3.0))
-	_glow_at(world, Vector3(0.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.75, 0.85, 0.95), Vector3(2.6, 2.8, 0.12))
-	_glow_at(world, Vector3(-HALL_HALF_X + 0.35, 1.6, -10.0), Color(0.45, 0.75, 0.6), Vector3(0.12, 2.8, 2.4))
-	_glow_at(world, Vector3(0.0, 1.6, HALL_HALF_Z - 0.35), Color(1.0, 0.4, 0.2), Vector3(2.6, 2.8, 0.12))
-	_start_glow_pulse([a, b])
+	var a := _glow_at(
+		world, "DoorGlowA", Vector3(HALL_HALF_X - 0.35, 1.6, 0.0), Color(1.0, 0.45, 0.1), Vector3(0.12, 3.2, 3.0)
+	)
+	var b := _glow_at(
+		world, "DoorGlowB", Vector3(-HALL_HALF_X + 0.35, 1.6, 0.0), Color(0.2, 0.65, 1.0), Vector3(0.12, 3.2, 3.0)
+	)
+	_glow_at(
+		world, "DoorGlowC", Vector3(0.0, 1.6, -HALL_HALF_Z + 0.35), Color(0.75, 0.85, 0.95), Vector3(2.6, 2.8, 0.12)
+	)
+	_glow_at(
+		world, "DoorGlowD", Vector3(-HALL_HALF_X + 0.35, 1.6, -10.0), Color(0.45, 0.75, 0.6), Vector3(0.12, 2.8, 2.4)
+	)
+	var e := _glow_at(
+		world, "DoorGlowE", Vector3(0.0, 1.6, HALL_HALF_Z - 0.35), Color(1.0, 0.4, 0.2), Vector3(2.6, 2.8, 0.12)
+	)
+	_start_glow_pulse([a, b, e])
 
 
 func _place_guide_paths(root: Node3D) -> void:
@@ -1041,9 +1051,14 @@ func _start_glow_pulse(nodes: Array) -> void:
 	add_child(driver)
 
 
-func _glow_at(parent: Node3D, pos: Vector3, color: Color, size: Vector3) -> MeshInstance3D:
+func _glow_at(parent: Node3D, glow_name: String, pos: Vector3, color: Color, size: Vector3) -> MeshInstance3D:
 	"""Emissive portal marker; returns mesh for optional pulse."""
+	var existing := parent.get_node_or_null(glow_name) as MeshInstance3D
+	if existing != null:
+		existing.position = pos
+		return existing
 	var mi := MeshInstance3D.new()
+	mi.name = glow_name
 	var box := BoxMesh.new()
 	box.size = size
 	mi.mesh = box
@@ -1054,6 +1069,9 @@ func _glow_at(parent: Node3D, pos: Vector3, color: Color, size: Vector3) -> Mesh
 	mat.emission_energy_multiplier = 1.8
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mi.material_override = mat
+	# Idle pulse baseline; hub.gd boosts when player approaches.
+	mi.set_meta("glow_base", 1.8)
+	mi.set_meta("glow_color", color)
 	parent.add_child(mi)
 	mi.position = pos
 	return mi

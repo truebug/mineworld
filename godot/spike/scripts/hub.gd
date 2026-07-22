@@ -62,8 +62,12 @@ var _lore_body := ""
 var _door_context := ""
 var _link_banner := "Connecting to gateway…"
 var _last_door_key := ""
+## Nearest enterable door in HINT range: "" | "a" | "b" | "e".
+var _approach_key := ""
 const DOOR_ENTER_DIST := 2.4
 const DOOR_STUB_DIST := 3.2
+## Wider than enter: glow + label + tip when walking toward A/B/E.
+const DOOR_HINT_DIST := 5.5
 ## Matches hub_dress FLOOR2_Y — thin elevator ride (viewer offset).
 const FLOOR2_Y := 8.5
 
@@ -736,6 +740,7 @@ func _process(delta: float) -> void:
 		_door_grace = maxf(0.0, _door_grace - delta)
 	_check_doors()
 	_update_door_context()
+	_update_door_approach_fx()
 	_update_interact_prompt()
 	if _is_web:
 		# During grace, ignore sticky DOM keys left over from the play level.
@@ -899,12 +904,12 @@ func _door_a_context() -> String:
 	var space_id := _resolve_space_id()
 	if space_id != "":
 		return MWi18n.t(
-			"门 A · 仿真工坊 — 归因 space_id=%s\n进入后本局录制/积分会带上该卡片。",
-			"Door A · Workshop — space_id=%s\nSession recording/scores will attribute this card."
+			"门 A · 仿真工坊 — 走近进入\n归因 space_id=%s · 本局录制/积分带上该卡片。",
+			"Door A · Workshop — walk in\nspace_id=%s · session recording/scores attribute this card."
 		) % space_id
 	return MWi18n.t(
-		"门 A · 仿真工坊 — 进入本仓精细遥操 / IL。",
-		"Door A · Workshop — native teleop / IL."
+		"门 A · 仿真工坊 — 走近进入 · 精细遥操 / IL。",
+		"Door A · Workshop — walk in · teleop / IL."
 	)
 
 
@@ -956,8 +961,8 @@ func _update_door_context() -> void:
 	var candidates: Array = [
 		[door_workshop, "a:%s" % _resolve_space_id(), _door_a_context()],
 		[door_city, "b", MWi18n.t(
-			"门 B · 机甲训练场 — 进入本仓城市场景。",
-			"Door B · Training Yard — native city drive."
+			"门 B · 机甲训练场 — 走近进入 · 城市场景。",
+			"Door B · Training Yard — walk in · city drive."
 		)],
 		[door_stub_c, "c", MWi18n.t(
 			"门 C · 设计室 — 卡片通道。走近按 F 看状态。",
@@ -986,6 +991,129 @@ func _update_door_context() -> void:
 	_last_door_key = best_key
 	_door_context = best_msg
 	_compose_and_push_tips()
+
+
+func _update_door_approach_fx() -> void:
+	"""Brighten A/B/E portal glow + door label when walking into HINT range."""
+	if _hub_floor != 1:
+		_clear_door_approach_fx()
+		return
+	var own := _own_avatar()
+	if own == null or not own.visible:
+		_clear_door_approach_fx()
+		return
+	var best_key := ""
+	var best_dist := DOOR_HINT_DIST
+	var best_door: Node3D = null
+	var best_glow_name := ""
+	var rows: Array = [
+		[door_workshop, "a", "DoorGlowA"],
+		[door_city, "b", "DoorGlowB"],
+		[door_stub_e, "e", "DoorGlowE"],
+	]
+	for row in rows:
+		var node: Node3D = row[0]
+		if node == null:
+			continue
+		var d := own.global_position.distance_to(node.global_position)
+		if d < best_dist:
+			best_dist = d
+			best_key = str(row[1])
+			best_door = node
+			best_glow_name = str(row[2])
+	if best_key == _approach_key:
+		return
+	_clear_door_approach_fx()
+	_approach_key = best_key
+	if best_key == "" or best_door == null:
+		return
+	_set_door_label_approach(best_door, true)
+	_set_door_glow_approach(best_glow_name, true)
+	_ensure_approach_hint(best_door, true)
+
+
+func _clear_door_approach_fx() -> void:
+	"""Reset label/glow/hint for previous approach target."""
+	if _approach_key == "":
+		return
+	var door: Node3D = null
+	var glow_name := ""
+	match _approach_key:
+		"a":
+			door = door_workshop
+			glow_name = "DoorGlowA"
+		"b":
+			door = door_city
+			glow_name = "DoorGlowB"
+		"e":
+			door = door_stub_e
+			glow_name = "DoorGlowE"
+	if door != null:
+		_set_door_label_approach(door, false)
+		_ensure_approach_hint(door, false)
+	if glow_name != "":
+		_set_door_glow_approach(glow_name, false)
+	_approach_key = ""
+
+
+func _set_door_label_approach(door: Node3D, on: bool) -> void:
+	"""Scale / brighten DoorLabel when approach is active."""
+	var label := door.get_node_or_null("DoorLabel") as Label3D
+	if label == null:
+		for child in door.get_children():
+			if child is Label3D:
+				label = child as Label3D
+				break
+	if label == null:
+		return
+	if on:
+		if not label.has_meta("approach_font"):
+			label.set_meta("approach_font", label.font_size)
+			label.set_meta("approach_mod", label.modulate)
+		label.font_size = int(label.get_meta("approach_font")) + 16
+		var base_mod: Color = label.get_meta("approach_mod")
+		label.modulate = Color(
+			minf(1.0, base_mod.r * 1.15 + 0.1),
+			minf(1.0, base_mod.g * 1.15 + 0.1),
+			minf(1.0, base_mod.b * 1.15 + 0.1),
+			1.0
+		)
+	elif label.has_meta("approach_font"):
+		label.font_size = int(label.get_meta("approach_font"))
+		label.modulate = label.get_meta("approach_mod") as Color
+
+
+func _set_door_glow_approach(glow_name: String, on: bool) -> void:
+	"""Extra emission boost picked up by hub_glow_pulse."""
+	var world := get_node_or_null("World") as Node3D
+	if world == null:
+		return
+	var mi := world.get_node_or_null(glow_name) as MeshInstance3D
+	if mi == null:
+		return
+	mi.set_meta("approach_boost", 2.4 if on else 0.0)
+
+
+func _ensure_approach_hint(door: Node3D, on: bool) -> void:
+	"""Floating 'walk in' cue above the door bay."""
+	var hint := door.get_node_or_null("ApproachHint") as Label3D
+	if not on:
+		if hint != null:
+			hint.visible = false
+		return
+	if hint == null:
+		hint = Label3D.new()
+		hint.name = "ApproachHint"
+		door.add_child(hint)
+		hint.position = Vector3(0, 3.1, 0)
+		hint.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		hint.font_size = 48
+		hint.outline_size = 6
+		hint.pixel_size = 0.01
+		hint.modulate = Color(1.0, 0.95, 0.7, 1.0)
+		MWFonts.apply_label3d(hint)
+	hint.text = MWi18n.t("▶ 走进进入", "▶ Walk in")
+	hint.visible = true
 
 
 func _update_interact_prompt() -> void:

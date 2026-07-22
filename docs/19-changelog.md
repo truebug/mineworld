@@ -10,6 +10,11 @@
 
 ---
 
+## 2026-07-22 · Hub 门 A/B/E 走近反馈
+
+- 走近约 5.5 m：门标放大、霓虹门光增亮、门上方「▶ 走进进入」；E 门标/霓虹与 A/B 同级。
+- 左栏 lore 统一写「走近进入」；进门仍自动（无需按键）。
+
 ## 2026-07-22 · demo_race v3：Ackermann（前轮转角 + 后驱）
 
 - 新 MJCF `diffbot_race_v3`：`steer_fl/fr` position + `wheel_rl/rr` motor；不再用差速坦克。
