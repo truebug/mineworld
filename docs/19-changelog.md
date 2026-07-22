@@ -15,6 +15,7 @@
 - 根因：~530 m 远看像小环；空槽幽灵车叠堆；工坊臂误画。
 - 修复：只广播已入座；2×3 发车格；无臂底盘；橙护墙。
 - 手感：~292 m 圈 · ctrl ±18（≈15 m/s）· 可视起伏 ribbon（物理仍平面）。
+- Playground：`MW_BUILD=20260722-132021` · 双服务 active。
 - 下一刀素材：Kenney [Racing Kit](https://kenney.nl/assets/racing-kit) / [Car Kit](https://kenney.nl/assets/car-kit)（CC0 glTF）做护栏/路牌/车皮。
 
 ## 2026-07-22 · E9 + B1 落库 / playground 发版
