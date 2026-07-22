@@ -14,6 +14,7 @@
 
 - 走近约 5.5 m：门标放大、霓虹门光增亮、门上方「▶ 走进进入」；E 门标/霓虹与 A/B 同级。
 - 左栏 lore 统一写「走近进入」；进门仍自动（无需按键）。
+- Playground：`MW_BUILD=20260722-172033` · web/gateway active。
 
 ## 2026-07-22 · demo_race v3：Ackermann（前轮转角 + 后驱）
 
