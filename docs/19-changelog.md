@@ -18,6 +18,7 @@
 - 键位：`W` 油门 · `S` 刹车 · `X` 倒车 · `Q/E` 转向。
 - 私有/smoke 房只挂 1 台车；共享 `race` 仍 max 6。缓坡暂关（先稳转向）。
 - 验收：`ws_smoke_test --level-id demo_race --expect-objective` → smoke OK。
+- Playground：`MW_BUILD=20260722-155436` · 双服务 active。
 
 ## 2026-07-22 · demo_race v2：freejoint + 4 轮接触
 
