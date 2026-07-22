@@ -2,14 +2,16 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Proposal · 待实施 |
-| **日期** | 2026-07-21 |
+| **状态** | Proposal · **后置**（现网 Demo 已另通 playground） |
+| **日期** | 2026-07-21 · 续记 2026-07-22 |
 | **目标机** | 腾讯云 CVM **2C8G** · 域名 **databall.cloud**（ICP 已备） |
 | **范围** | W2.1 静态 HTTPS · W2.2 `wss` 反代 · W2.4 最小运维说明 |
 | **关联** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) · [20-platform-portal.md](20-platform-portal.md) · [09-todo.md](09-todo.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) |
 | **非目标** | K8s / Worker 池（T4.1）/ 真机公网透传 / 多机 MuJoCo 农场 |
 
-> 本文供后续 session/agent **按清单实施**。先单机 Demo，再扩 CDN / 限流 / 仿真并发。  
+> **现网公网（已验收，不走本文拓扑）**：`playground.dev.databall.tech`  
+> `浏览器 → AWS ALB → WGateway → WireGuard → 腾讯 CVM`（`mineworld-web` / `mineworld-gateway`；`wss://…/ws`）。  
+> 本文是 **`databall.cloud` ICP 品牌域名** 的单机 Caddy 方案；**不阻塞** Phase A（A1–A3）。  
 > 铁律：页面 HTTPS ⇒ Gateway 必须 **wss**；Gateway/Admin **只绑 127.0.0.1**，TLS 终结在反代。
 
 ---

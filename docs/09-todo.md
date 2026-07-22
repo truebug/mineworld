@@ -5,10 +5,10 @@
 | **状态** | Living |
 | **日期** | 2026-07-22 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | 愿景：学院 + 竞技场（[00](00-vision.md) · README）；工程近端 **Phase A 训练飞轮**；公网 W2 待 DNS（见 [23](23-public-deploy.md)） |
+| **目标** | 愿景：学院 + 竞技场（[00](00-vision.md) · README）；工程近端 **Phase A 训练飞轮**；公网 Demo 已通 playground（见下）；`databall.cloud` 为后置 ICP 域名（[23](23-public-deploy.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
-| **公网部署建议** | **[23-public-deploy.md](23-public-deploy.md)**（databall.cloud · 2C8G） |
+| **公网** | 现网 playground · **[23](23-public-deploy.md)**（`databall.cloud` 后置） |
 | **融合路线** | [14-godot-mujoco-fusion.md](14-godot-mujoco-fusion.md) |
 | **阶段评审** | [12-status-review.md](12-status-review.md) |
 | **跑偏与纠偏** | [15-course-correction.md](15-course-correction.md) |
@@ -27,7 +27,7 @@
 
 > **北极星**：太空机器人学院 + 竞技场（[00](00-vision.md) · [README](../README.md)）。  
 > **工程策略**：数据价值优先 —— Phase A 做深工坊 IL → Phase B 成绩/对决壳 → Phase C 才开新机体/格斗/船机。  
-> Hub **不上 MuJoCo**（FakeMech + bounds clamp）。公网 W2 仍待 DNS。
+> Hub **不上 MuJoCo**（FakeMech + bounds clamp）。公网 Demo **不阻塞** Phase A。
 
 ### 三阶段（摘要）
 
@@ -37,15 +37,20 @@
 | **B · 成绩竞技壳** | 计时竞速；薄 1v1；`solo \| duel \| shared_ffa` | 计时榜 + 对决事件可录 |
 | **C · 品类扩张** | 新机体 / 视觉 / 船机 / 格斗 | 先答 schema·模型·标签再做皮 |
 
-### 公网（阻塞）
+### 公网
+
+> **现网（已通）**：`https://playground.dev.databall.tech` · `wss://…/ws`  
+> 链路：浏览器 → AWS ALB → WGateway → WireGuard → 腾讯 CVM（`mineworld-web` / `mineworld-gateway`）。  
+> **`databall.cloud`（W2.0–2.4）**：ICP 品牌域名后置方案，见 [23](23-public-deploy.md)；**不**阻塞 A1–A3。
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
-| W2-doc | 公网实施建议书 | [23](23-public-deploy.md) 入库 | [x] |
-| W2.0 | DNS：`databall.cloud` A→CVM | dig/nslookup 有地址 | [ ] 阻塞 W2.1 |
-| W2.1 | 静态 HTTPS（databall.cloud） | 证书有效可进 Portal/Hub | [ ] |
-| W2.2 | Gateway `wss` 反代 | 浏览器 hello→join→state | [ ] |
-| W2.4 | 最小运维说明 | 安全组/进程/密钥/重启 | [ ] §4–§10 of 23 |
+| PG | playground 公网 Demo | HTTPS + wss 可进 Hub/工坊 | [x] 现网 |
+| W2-doc | `databall.cloud` 单机建议书 | [23](23-public-deploy.md) 入库 | [x] |
+| W2.0 | DNS：`databall.cloud` A→CVM | dig/nslookup 有地址 | [ ] 后置，非阻塞 |
+| W2.1 | 静态 HTTPS（databall.cloud） | 证书有效可进 Portal/Hub | [ ] 后置 |
+| W2.2 | Gateway `wss` 反代 | 浏览器 hello→join→state | [ ] 后置（playground 已覆盖同类验收） |
+| W2.4 | 最小运维说明 | 安全组/进程/密钥/重启 | [~] 私有 `ops.local.md` / playground 运维 |
 
 ### Phase A · Now（本地主线）
 

@@ -10,6 +10,11 @@
 
 ---
 
+## 2026-07-22 · 公网纠偏：playground 已通，W2 非阻塞
+
+- 现网：`playground.dev.databall.tech`（ALB→WGateway→WG→CVM）；HTTPS + wss 已覆盖 Demo 验收。
+- [09](09-todo.md) / [AGENTS](../AGENTS.md) / [23](23-public-deploy.md)：`databall.cloud` W2.0–2.4 标为后置；**Next = A1→A2→A3**，不因 DNS 卡住。
+
 ## 2026-07-22 · PMS demos → 学院课程/展柜目录
 
 - 自数聚球 `demos/README.md`（23 卡）筛选：classroom / gallery / lab / foresight；空模板与 Go2/DISCOVERSE 后置。

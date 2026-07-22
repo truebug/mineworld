@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub（母港 · H12a–g）+ Portal + E1–E5 + W1 + R3 + H8–H12 + PL2 + IL-place 飞轮 Done. **Role：数聚球 3D 传送门前台** — `docs/21-ecosystem-federation.md`. **Hub 布局** — `docs/24-hub-mothership.md`（FakeMech；不上 Hub MuJoCo）。**Now：W2 公网** — `docs/23-public-deploy.md`（databall.cloud；待 DNS）。Changelog: `docs/19-changelog.md`. Platform: `docs/20-platform-portal.md`, `mw_platform/`. Identity map: `docs/22-identity-mapping.md`.
+MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authority over WebSocket, for simulation gameplay and teleoperation data capture. Docs are Chinese SSOT. POC + Hub（母港 · H12a–g）+ Portal + E1–E5 + W1 + R3 + H8–H12 + PL2 + IL-place 飞轮 Done. **Role：数聚球 3D 传送门前台** — `docs/21-ecosystem-federation.md`. **Hub 布局** — `docs/24-hub-mothership.md`（FakeMech；不上 Hub MuJoCo）。**公网 Demo 已通**：`playground.dev.databall.tech`（AWS ALB→WGateway→WG→腾讯 CVM）；`databall.cloud`（`docs/23-public-deploy.md`）为 ICP 后置，不阻塞 Phase A。**Now：A1→A2→A3** 工坊训练飞轮。Changelog: `docs/19-changelog.md`. Platform: `docs/20-platform-portal.md`, `mw_platform/`. Identity map: `docs/22-identity-mapping.md`.
 
 ## Project Structure & Module Organization
 
