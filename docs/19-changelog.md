@@ -16,6 +16,7 @@
 - 电梯：候梯琥珀灯 → 到达绿灯 + tip；L2 DOM「本周训练」简报（只读榜），L1 仍用排行榜。
 - 名牌：自机常显（含 FP）；远端 8 m 内才显；短码 `昵称 · #ABCD`（大写末 4）。
 - Hub 英雄静物：门 A 湾侧 **Covered Car**（CC0 · ~4.4 m · 2K PBR）；中央碑旁小工具箱已撤展。
+- Playground： · web/gateway active。
 
 ## 2026-07-22 · Hub 门 A/B/E 走近反馈
 
