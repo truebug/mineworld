@@ -209,43 +209,42 @@ func _place_exhibits() -> void:
 			role = "gallery"
 		(by_role[role] as Array).append(ex)
 
-	# Classroom wing (east-north): courses along north wall.
+	# Classroom wing (east-north): keep clear of NE corner clutter.
 	_mount_role_row(
 		by_role["classroom"] as Array,
-		4.2,
-		18.6,
+		4.5,
+		15.5,
 		-WALL_Z + 1.35,
 		0.0,
 		Color(0.42, 0.72, 0.95),
 		0.52,
 	)
-	# Gallery wing (west-north): scene exhibits.
+	# Gallery wing (west-north): keep clear of NW corner / door B bay.
 	_mount_role_row(
 		by_role["gallery"] as Array,
-		-4.2,
-		-18.6,
+		-4.5,
+		-15.5,
 		-WALL_Z + 1.35,
 		0.0,
 		Color(0.88, 0.68, 0.32),
 		0.55,
 	)
-	# Foresight: continue west row inward if gallery slots remain unused — place on west wall.
+	# Foresight + lab on west wall, inset slightly so boards sit in front of wall.
 	_mount_role_row(
 		by_role["foresight"] as Array,
-		-WALL_X + 1.4,
-		-WALL_X + 1.4,
-		-16.5,
+		-WALL_X + 2.0,
+		-WALL_X + 2.0,
+		-16.0,
 		90.0,
 		Color(0.95, 0.55, 0.28),
 		0.5,
 		true,
 	)
-	# Lab: west wall north of Edge Dock narrative.
 	_mount_role_row(
 		by_role["lab"] as Array,
-		-WALL_X + 1.4,
-		-WALL_X + 1.4,
-		-11.5,
+		-WALL_X + 2.0,
+		-WALL_X + 2.0,
+		-12.0,
 		90.0,
 		Color(0.4, 0.88, 0.62),
 		0.5,

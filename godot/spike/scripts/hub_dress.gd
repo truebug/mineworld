@@ -459,7 +459,7 @@ func _place_solid_hall(root: Node3D) -> void:
 	var split := 4.5
 	_wall_ring(root, "WallLow", wall_low, 0.0, split)
 	_wall_ring(root, "WallHi", wall_hi, split, 4.0)  ## ends ~8.5m; glass ribbon to ceiling
-	_place_wall_energy_ribs(root)
+	# Wall energy ribs removed — they clipped E5d exhibit boards on north/west walls.
 	# Ceiling rim with two open skylight bays (stars visible looking up)
 	var y_c := CEILING_Y
 	var span_x := HALL_HALF_X * 2.0 + 1.0
@@ -820,11 +820,7 @@ func _place_props(root: Node3D) -> void:
 	var hx := HALL_HALF_X
 	var hz := HALL_HALF_Z
 	var props: Array = [
-		# Tall wall screens (PMS card wing accents)
-		{"a": "screen-panel-wide.glb", "x": hx - 1.4, "z": -8.0, "yaw": -90.0, "s": 2.4},
-		{"a": "screen-panel-wide.glb", "x": -hx + 1.4, "z": -8.0, "yaw": 90.0, "s": 2.4},
-		{"a": "screen-panel-wide.glb", "x": hx - 1.4, "z": 6.0, "yaw": -90.0, "s": 2.2},
-		{"a": "screen-panel-wide.glb", "x": -hx + 1.4, "z": 6.0, "yaw": 90.0, "s": 2.2},
+		# Tall wall screens removed — E5d curated boards own north/west card walls.
 		# SE corner reserved for elevator showcase — no machine there
 		{"a": "machine-fortified.glb", "x": -hx + 2.0, "z": hz - 2.0, "yaw": 180.0},
 		{"a": "cone.glb", "x": 5.0, "z": -hz + 1.5, "yaw": 0.0},
