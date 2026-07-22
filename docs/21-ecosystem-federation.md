@@ -101,6 +101,22 @@ MineWorld `docs/00` 已点名 `pms-system/platform/viser-gateway`；本文件把
 |---------|------|------|
 | E4 | Hub 展柜 stub：走近 + F → 打开配置的 Space/卡片 URL（新标签或 iframe 壳） | **Done** — stub 页可回 Hub |
 | E5 | 展柜元数据契约 v0（JSON：id、title、url、kind=pms_space） | **Done** 薄 — `examples/hub/exhibits.v0.json` |
+| E5c | 自 PROD demos 索引筛选学院目录 | **Done** 元数据 — 见下表 + `exhibits.v0.json`（`role`） |
+
+### PMS catalog · 机甲学院课程 / 展柜筛选（2026-07-22）
+
+> 源：数聚球 `projects/demos/README.md`（用户 `3e54a687-…` · 23 卡）。铁律：进 Hub 北翼只做入口；**不**把 Gazebo/Viser/真机栈迁入本仓 Gateway。
+
+| Hub `role` | space_id（优先） | 用途 |
+|------------|------------------|------|
+| **classroom** | `sim-sdf-gzweb` → `sim-ros2-gzweb` → `sim-robot-urdf` → `sim-museum` | 仿真入门链 + 博物馆课 |
+| **classroom** | `sim-office-map` → `sim-office-nav-target` → `sim-office-nav-sem` | 办公室导航进阶（同世界递进） |
+| **gallery** | `sim-office` · `sim-warehouse` · `sim-kitchen-a/b` | 场景浏览 + 厨房操作展柜（IL 叙事互补） |
+| **lab** | `lab-act-model` · `lab-smolvla` · `lab-remote-control` | ACT / SmolVLA / JetRover — 小脑与边缘坞示范 |
+| **foresight** | `sim-maze` · `sim-boat` | Phase B「找路」/ Phase C 船机 — 只展不迁 |
+| **deferred** | Go2 Walk 三卡 · DISCOVERSE · `cpustandard`/`gpustandard`/`prodlabarm` | 四足/3DGS 后置；空模板不进目录 |
+
+`enter_url` 约定：`https://spaces.databall.tech/enter/{space_id}`（需 Spaces 侧核验；E7 列表 API 可覆盖状态与真实入口）。
 
 ### P1b · 下一刀：参观者壳 + Hub 手感（已共识 · 待做）
 

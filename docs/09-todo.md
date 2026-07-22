@@ -67,6 +67,8 @@
 | City-share | 训练场共享房 max 5 | 默认 `room=city`；满员回母港 | [x] |
 | City-wall | 训练场空气墙=楼宇占地 | footprint = KayKit×scale；seed 热更重建 MjModel | [x] |
 | Hub-look | 学院暖港首印象 | 中央碑+灯带+中环 NPC+巡逻 | [x] |
+| E5c | PMS 课程/展柜候选入库 | `exhibits.v0.json` 按 demos 索引筛选（classroom/gallery/lab/foresight）；见 [21 §PMS catalog](21-ecosystem-federation.md) | [x] 元数据；enter URL 待 Spaces 核验 |
+| E5d | Hub 北翼挂载 curated 列表 | 教室走廊 / 展柜按 `role` 分组展示（仍 TYPE B，不迁物理） | [ ] 依赖 E6–E8 或静态子集 |
 | E6–E8 | PMS 参观者壳 | 见 [21 §P1b](21-ecosystem-federation.md) | [ ] 可穿插，不替代 A1 |
 | E9 | Hub 公网插值/降频 | 远端不瞬移；开壳降 WS | [ ] |
 

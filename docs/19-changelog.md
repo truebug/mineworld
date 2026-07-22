@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-07-22 · PMS demos → 学院课程/展柜目录
+
+- 自数聚球 `demos/README.md`（23 卡）筛选：classroom / gallery / lab / foresight；空模板与 Go2/DISCOVERSE 后置。
+- `examples/hub/exhibits.v0.json`（及 Godot 副本）换成真实 `space_id`；[21](21-ecosystem-federation.md) §PMS catalog；[09](09-todo.md) E5c Done · E5d 待挂载。
+- **Next 仍为 A1**；E5d 穿插依赖 E6–E8，不替代工坊 IL。
+
 ## 2026-07-22 · 愿景：学院 + 竞技场 / 三阶段排期
 
 - README 英/中写入 Space Robot Academy + Arena 与数据飞轮叙事。
