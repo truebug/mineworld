@@ -115,7 +115,7 @@ func _place_stations() -> void:
 		-35.0,
 		MWi18n.t("F · 导览台", "F · Welcome"),
 		MWi18n.t(
-			"欢迎来到机甲学院母港。\n东橙 A 工坊 · 西蓝 B 训练 · 北 C 卡片 · 南 E 竞技\n跟随地面灯带前往。",
+			"欢迎来到机甲学院母港。\n东橙 A 工坊 · 西蓝 B 训练 · 北 C 卡片 · 南 E 竞技(建设中) · 东南 R 赛车\n跟随地面灯带前往。",
 			"Welcome to Mech Academy Hangar.\nA Workshop · B Training · C Cards · E Arena.\nFollow the floor lights."
 		),
 		Color(0.95, 0.7, 0.35),
@@ -402,7 +402,7 @@ func _place_arena_station() -> void:
 		Vector3(0.0, 0, WALL_Z - 2.4),
 		180.0,
 		MWi18n.t("F · 竞技场门", "F · Arena Gate"),
-		MWi18n.t("竞技场门 — 排名对战（权威后置）。\n按 F：1v1 ↔ 组队 · 切换排队。", "Arena Gate — ranked bouts later.\nF: cycle 1v1/party · looking."),
+		MWi18n.t("竞技场门 — 建设中：机甲格斗（1v1 / 团队对战）规划中。\n按 F：1v1 ↔ 组队 · 切换模式预览。", "Arena Gate — under construction: mech combat (1v1 / team) planned.\nF: cycle 1v1/party · preview modes."),
 		Color(1.0, 0.45, 0.28),
 	)
 

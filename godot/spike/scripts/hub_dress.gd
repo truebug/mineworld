@@ -927,9 +927,16 @@ func _hide_greybox() -> void:
 	_ensure_marker(
 		world, "DoorStubE",
 		Vector3(0.0, 1.6, HALL_HALF_Z - 1.5),
-		MWi18n.t("E 竞技场", "E Arena"),
-		Color(1.0, 0.55, 0.35),
-		64,
+		MWi18n.t("E 竞技场（建设中）", "E Arena (WIP)"),
+		Color(0.85, 0.6, 0.45, 0.85),
+		48,
+	)
+	_ensure_marker(
+		world, "DoorRace",
+		Vector3(HALL_HALF_X - 1.5, 1.6, HALL_HALF_Z - 6.0),
+		MWi18n.t("R 赛车场", "R Race Oval"),
+		Color(1.0, 0.4, 0.55),
+		56,
 	)
 
 
@@ -1004,10 +1011,13 @@ func _place_door_glows() -> void:
 	_glow_at(
 		world, "DoorGlowD", Vector3(-HALL_HALF_X + 0.35, 1.6, -10.0), Color(0.45, 0.75, 0.6), Vector3(0.12, 2.8, 2.4)
 	)
-	var e := _glow_at(
-		world, "DoorGlowE", Vector3(0.0, 1.6, HALL_HALF_Z - 0.35), Color(1.0, 0.4, 0.2), Vector3(2.6, 2.8, 0.12)
+	_glow_at(
+		world, "DoorGlowE", Vector3(0.0, 1.6, HALL_HALF_Z - 0.35), Color(0.55, 0.42, 0.3), Vector3(2.6, 2.8, 0.12)
 	)
-	_start_glow_pulse([a, b, e])
+	var r := _glow_at(
+		world, "DoorGlowR", Vector3(HALL_HALF_X - 0.35, 1.6, HALL_HALF_Z - 6.0), Color(1.0, 0.4, 0.55), Vector3(0.12, 2.8, 2.6)
+	)
+	_start_glow_pulse([a, b, r])
 
 
 func _place_guide_paths(root: Node3D) -> void:

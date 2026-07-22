@@ -66,7 +66,8 @@
 | B | 机甲训练场 | Training Yard | 西 | A |
 | C | 设计室 | Design Lab | 北 | B（后置） |
 | D | 边缘任务坞 | Edge Dock | 西北 | C（后置） |
-| E | 竞技场门 | Arena Gate | 南 | A 壳 |
+| E | 竞技场门 | Arena Gate（建设中，机甲格斗规划） | 南 | A 壳（不可进） |
+| R | 赛车场 | Race Oval | 东南 | A 本仓（→ demo_race） |
 
 3D `Label3D` 与左栏 lore：按 `mw_lang` **只显示一种语言**（默认中文，无中英叠行）。  
 Portal / shell：`localStorage.mw_lang` = `zh`（默认）| `en`；右上角切换（Hub 重载以刷新 Label3D）。  

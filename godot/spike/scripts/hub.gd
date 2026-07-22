@@ -36,6 +36,7 @@ const _WEB_BLOCK_CODES := {
 @onready var door_stub_c: Node3D = $World/DoorStubC
 @onready var door_stub_d: Node3D = $World/DoorStubD
 @onready var door_stub_e: Node3D = $World/DoorStubE
+@onready var door_race: Node3D = $World/DoorRace
 @onready var hub_life: Node3D = $HubLife
 @onready var map_title: Label = $HUD/MapPanel/MapVBox/MapTitle
 
@@ -462,8 +463,8 @@ func _on_scene(payload: Dictionary) -> void:
 	ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
 	_link_banner = ""
 	_lore_body = MWi18n.t(
-		"驾驶员 %s · 母港\n东翼本仓 A/B · 北翼卡片 C · 西翼边缘 D · 南翼赛车 E",
-		"Pilot %s · Hangar Core\nEast A/B · North C · West Edge D · South Race E"
+		"驾驶员 %s · 母港\n东翼本仓 A/B · 北翼卡片 C · 西翼边缘 D · 南翼 E 竞技(建设中) · R 赛车",
+		"Pilot %s · Hangar Core\nEast A/B · North C · West Edge D · South E Arena(WIP) · R Race"
 	) % str(_profile.get("nickname", "Guest"))
 	_compose_and_push_tips()
 
@@ -693,11 +694,11 @@ func _compose_and_push_tips() -> void:
 		MWi18n.t(
 			"WASD 平移 | Q/E 转向 | F 交互\n"
 			+ "左键 peek 回中 · 右键粘性环视 · 中键/左右同按平移 · 滚轮缩放 · C 强制回中 · V 相机\n"
-			+ "门：A 工坊 · B 训练 · C 卡片 · D 边缘 · E 竞技\n"
+			+ "门：A 工坊 · B 训练 · C 卡片 · D 边缘 · E 竞技(建设中) · R 赛车\n"
 			+ "（点击折叠）",
 			"WASD strafe | Q/E turn | F interact\n"
 			+ "LMB peek · RMB sticky look · MMB/L+R pan · wheel zoom · C recenter · V camera\n"
-			+ "Doors: A Workshop · B Training · C Cards · D Edge · E Race\n"
+			+ "Doors: A Workshop · B Training · C Cards · D Edge · E Arena(WIP) · R Race\n"
 			+ "(click to collapse)"
 		)
 	)
@@ -936,12 +937,12 @@ func _check_doors() -> void:
 		door_city != null
 		and own.global_position.distance_to(door_city.global_position) < DOOR_ENTER_DIST
 	)
-	var near_e := (
-		door_stub_e != null
-		and own.global_position.distance_to(door_stub_e.global_position) < DOOR_ENTER_DIST
+	var near_r := (
+		door_race != null
+		and own.global_position.distance_to(door_race.global_position) < DOOR_ENTER_DIST
 	)
 	if not _doors_armed:
-		if not near_a and not near_b and not near_e:
+		if not near_a and not near_b and not near_r:
 			_doors_armed = true
 		return
 	if near_a:
@@ -950,7 +951,7 @@ func _check_doors() -> void:
 	if near_b:
 		_enter_level(CITY_SCENE)
 		return
-	if near_e:
+	if near_r:
 		_enter_level(RACE_SCENE)
 
 
@@ -977,8 +978,12 @@ func _update_door_context() -> void:
 			"Door D · Edge Dock — F for link stub."
 		)],
 		[door_stub_e, "e", MWi18n.t(
-			"门 E · 赛车场 — 走近进入（MuJoCo · 最多 6 人 · 计时冲线）。",
-			"Door E · Race oval — walk in (MuJoCo · max 6 · timed finish)."
+			"门 E · 竞技场 — 建设中。机甲格斗（1v1 / 团队对战）规划中，走近按 F 看模式。",
+			"Door E · Arena — under construction. Mech combat (1v1 / team) planned; F for modes."
+		)],
+		[door_race, "r", MWi18n.t(
+			"门 R · 赛车场 — 走近进入（MuJoCo · 最多 6 人 · 计时冲线）。",
+			"Door R · Race oval — walk in (MuJoCo · max 6 · timed finish)."
 		)],
 	]
 	for row in candidates:
@@ -1013,7 +1018,7 @@ func _update_door_approach_fx() -> void:
 	var rows: Array = [
 		[door_workshop, "a", "DoorGlowA"],
 		[door_city, "b", "DoorGlowB"],
-		[door_stub_e, "e", "DoorGlowE"],
+		[door_race, "r", "DoorGlowR"],
 	]
 	for row in rows:
 		var node: Node3D = row[0]
@@ -1049,9 +1054,9 @@ func _clear_door_approach_fx() -> void:
 		"b":
 			door = door_city
 			glow_name = "DoorGlowB"
-		"e":
-			door = door_stub_e
-			glow_name = "DoorGlowE"
+		"r":
+			door = door_race
+			glow_name = "DoorGlowR"
 	if door != null:
 		_set_door_label_approach(door, false)
 		_ensure_approach_hint(door, false)
@@ -1205,8 +1210,8 @@ func _use_arena_gate() -> void:
 	var lfm := MWi18n.t("排队中 ✓", "Looking ✓") if bool(st.get("looking", false)) else MWi18n.t("未排队", "not queued")
 	_refresh_tips(
 		MWi18n.t(
-			"竞技场门\n模式: %s · %s\n\n1v1 / 组队占位；匹配与权威后置。\n再按 F 循环。",
-			"Arena Gate\nMode: %s · %s\n\n1v1 / party stub; matchmaking later.\nF again to cycle."
+			"竞技场门（建设中）\n模式: %s · %s\n\n机甲格斗：1v1 / 团队对战规划中；匹配与权威后置。\n再按 F 循环。",
+			"Arena Gate (WIP)\nMode: %s · %s\n\nMech combat: 1v1 / team planned; matchmaking later.\nF again to cycle."
 		) % [mode, lfm]
 	)
 
