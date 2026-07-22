@@ -34,6 +34,9 @@ func _ready() -> void:
 	_add_triggers(layout)
 	_add_finish_flags(layout)
 	_add_kerb_and_boards(layout)
+	_add_grass_verges(layout)
+	_add_runoff_zones(layout)
+	_add_grandstands(layout)
 	_add_trees(layout)
 	print(
 		"[MW] race dress walls=%d fence_pieces=%d lap≈%sm"
@@ -384,6 +387,114 @@ func _add_trees(layout: Dictionary) -> void:
 		var asset := "treeLarge.glb" if i % 3 == 0 else "treeSmall.glb"
 		var s := 4.0 if asset == "treeLarge.glb" else 3.4
 		_spawn_asset(asset, "tree_%d" % i, Vector3(px, 0.0, -py), ang, Vector3(s, s, s))
+
+
+func _grass_mat() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.24, 0.42, 0.22)
+	m.roughness = 0.95
+	return m
+
+
+func _add_grass_verges(layout: Dictionary) -> void:
+	"""Green verge ribbon hugging the lane outer edges (lawn look)."""
+	var pts: Array = _pts_xy(layout.get("centerline", []))
+	var n := pts.size()
+	if n < 3:
+		return
+	var lane_half := float(layout.get("lane_half_m", 6.0))
+	var verge_w := 2.4
+	var mat := _grass_mat()
+	for i in range(n):
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[(i + 1) % n]
+		var d := b - a
+		var length := d.length()
+		if length < 0.3:
+			continue
+		var tangent := d / length
+		var normal := Vector2(-tangent.y, tangent.x)
+		var yaw := tangent.angle()
+		for side in [-1, 1]:
+			var off := (a + b) * 0.5 + normal * (lane_half + verge_w * 0.5 + 0.2) * float(side)
+			_add_box("verge", Vector3(off.x, 0.012, -off.y),
+				Vector3(length + 0.3, 0.024, verge_w), mat, yaw)
+			# Green belt: clipped hedge at the verge outer edge.
+			if i % 3 == 0:
+				var hedge := StandardMaterial3D.new()
+				hedge.albedo_color = Color(0.16, 0.34, 0.16)
+				hedge.roughness = 1.0
+				var hp := (a + b) * 0.5 + normal * (lane_half + verge_w + 0.6) * float(side)
+				_add_box("hedge", Vector3(hp.x, 0.35, -hp.y),
+					Vector3(length * 0.85, 0.7, 0.5), hedge, yaw)
+
+
+func _add_runoff_zones(layout: Dictionary) -> void:
+	"""Safety aprons at corner exits: light gravel pads + red/white tire walls."""
+	var pts: Array = _pts_xy(layout.get("centerline", []))
+	var n := pts.size()
+	var corners := _corner_indices(pts)
+	var lane_half := float(layout.get("lane_half_m", 6.0))
+	var gravel := StandardMaterial3D.new()
+	gravel.albedo_color = Color(0.62, 0.58, 0.5)
+	gravel.roughness = 1.0
+	var red := StandardMaterial3D.new()
+	red.albedo_color = Color(0.8, 0.1, 0.1)
+	var white := StandardMaterial3D.new()
+	white.albedo_color = Color(0.9, 0.9, 0.9)
+	for ci in corners:
+		var apex: Vector2 = pts[ci]
+		var tangent := (Vector2(pts[(ci + 1) % n]) - Vector2(pts[(ci - 1 + n) % n])).normalized()
+		var normal := Vector2(-tangent.y, tangent.x)
+		# Outside of the corner: normal pointing away from next-pt turn direction.
+		var side := 1.0
+		var exit_pt: Vector2 = pts[(ci + 4) % n]
+		if (exit_pt - apex).dot(normal) < 0.0:
+			side = -1.0
+		# Gravel trap: wide pad beyond verge on corner exit.
+		for k in range(4):
+			var c := apex + tangent * float(k) * 3.0 + normal * (lane_half + 4.4) * side
+			_add_box("runoff", Vector3(c.x, 0.008, -c.y),
+				Vector3(3.2, 0.016, 6.0), gravel, tangent.angle())
+		# Tire wall: alternating red/white stacks at the far edge.
+		for k in range(5):
+			var w := apex + tangent * (float(k) * 1.2 - 1.2) + normal * (lane_half + 8.0) * side
+			_add_box("tirewall", Vector3(w.x, 0.45, -w.y),
+				Vector3(1.1, 0.9, 0.6), red if k % 2 == 0 else white, tangent.angle())
+
+
+func _add_grandstands(layout: Dictionary) -> void:
+	"""Procedural stands near start/finish: 3-tier steps + billboard backdrop."""
+	var pts: Array = _pts_xy(layout.get("centerline", []))
+	var lane_half := float(layout.get("lane_half_m", 6.0))
+	var finish_idx := int(layout.get("finish_index", 0)) % maxi(pts.size(), 1)
+	var f: Vector2 = pts[finish_idx]
+	var tangent := (Vector2(pts[(finish_idx + 1) % pts.size()])
+		- Vector2(pts[(finish_idx - 1 + pts.size()) % pts.size()])).normalized()
+	var normal := Vector2(-tangent.y, tangent.x)
+	var yaw := tangent.angle()
+	var step_mats := [Color(0.32, 0.34, 0.4), Color(0.38, 0.4, 0.46), Color(0.44, 0.46, 0.52)]
+	var seat_mats := [Color(0.85, 0.25, 0.2), Color(0.2, 0.45, 0.85), Color(0.95, 0.8, 0.2)]
+	for side in [-1, 1]:
+		var base := f + normal * (lane_half + 9.5) * float(side)
+		for tier in range(3):
+			var c := base + normal * float(tier) * 1.6 * float(side)
+			var y := 0.5 + float(tier) * 0.9
+			var m := StandardMaterial3D.new()
+			m.albedo_color = step_mats[tier]
+			_add_box("stand", Vector3(c.x, y * 0.5, -c.y),
+				Vector3(14.0, y, 1.6), m, yaw)
+			# seat dots
+			for k in range(7):
+				var sc := c + tangent * (float(k) * 2.0 - 6.0)
+				var sm := StandardMaterial3D.new()
+				sm.albedo_color = seat_mats[(k + tier) % 3]
+				_add_box("seat", Vector3(sc.x, y + 0.25, -sc.y),
+					Vector3(0.5, 0.5, 0.5), sm, yaw)
+		# billboard backdrop behind the stand
+		_spawn_asset("billboardLow.glb", "billboard_%d" % (1 if side > 0 else 0),
+			Vector3((base + normal * 6.5 * float(side)).x, 0.0, -(base + normal * 6.5 * float(side)).y),
+			yaw + (PI if side > 0 else 0.0), Vector3(3.0, 3.0, 3.0))
 
 
 func _spawn_asset(
