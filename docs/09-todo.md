@@ -3,9 +3,9 @@
 | 字段 | 值 |
 |------|-----|
 | **状态** | Living |
-| **日期** | 2026-07-21 |
+| **日期** | 2026-07-22 |
 | **仓库** | https://github.com/truebug/mineworld |
-| **目标** | E1–E5 / W1 / R3 / H8–H12 / PL2 / IL Done；本地 H-bounds / E3b / IL-place′ Done；**公网 W2 待 DNS**（见 [23](23-public-deploy.md)） |
+| **目标** | 愿景：学院 + 竞技场（[00](00-vision.md) · README）；工程近端 **Phase A 训练飞轮**；公网 W2 待 DNS（见 [23](23-public-deploy.md)） |
 | **架构讨论** | [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) |
 | **Web/多人路线** | [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) |
 | **公网部署建议** | **[23-public-deploy.md](23-public-deploy.md)**（databall.cloud · 2C8G） |
@@ -25,8 +25,17 @@
 
 ## Now（建议下一刀）
 
-> Hub H12 外观先冻结（圆顶/球仓可接受）。**公网 W2 仍待 DNS**，本地另开产品刀。  
-> Hub **不上 MuJoCo**（FakeMech + bounds clamp）。
+> **北极星**：太空机器人学院 + 竞技场（[00](00-vision.md) · [README](../README.md)）。  
+> **工程策略**：数据价值优先 —— Phase A 做深工坊 IL → Phase B 成绩/对决壳 → Phase C 才开新机体/格斗/船机。  
+> Hub **不上 MuJoCo**（FakeMech + bounds clamp）。公网 W2 仍待 DNS。
+
+### 三阶段（摘要）
+
+| 阶段 | 焦点 | 验收意象 |
+|------|------|----------|
+| **A · 学院训练飞轮** | 工坊抓→放稳定；榜按关卡；1～2 单人训练变体 | 10 分钟通关上榜 + 可训 CSV |
+| **B · 成绩竞技壳** | 计时竞速；薄 1v1；`solo \| duel \| shared_ffa` | 计时榜 + 对决事件可录 |
+| **C · 品类扩张** | 新机体 / 视觉 / 船机 / 格斗 | 先答 schema·模型·标签再做皮 |
 
 ### 公网（阻塞）
 
@@ -38,7 +47,16 @@
 | W2.2 | Gateway `wss` 反代 | 浏览器 hello→join→state | [ ] |
 | W2.4 | 最小运维说明 | 安全组/进程/密钥/重启 | [ ] §4–§10 of 23 |
 
-### 本地下一刀（公网之外 · 建议优先级）
+### Phase A · Now（本地主线）
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| A1 | 工坊抓放产品化 | 稳定通关；失败可标；`cmd↔joints` 导出顺手 | [ ] **Next** |
+| A2 | 天梯按关卡 | Hub/Portal 分 workshop·city（及后续） | [ ] |
+| A3 | 单人训练关模板 | 契约：目标区+时限+成败标签；复制 1～2 变体 | [ ] |
+| A4 | Hub 导流文案 | 「今日去处」/门 A·B 对齐训练叙事 | [x] 首印象底座 |
+
+### 本地下一刀（已完成切片 · 保留）
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
@@ -48,7 +66,8 @@
 | QA-export | 本地 Web 验收清单 | [25](25-qa-local-export.md) + `h_bounds_e3b_smoke.py` | [x] |
 | City-share | 训练场共享房 max 5 | 默认 `room=city`；满员回母港 | [x] |
 | City-wall | 训练场空气墙=楼宇占地 | footprint = KayKit×scale；seed 热更重建 MjModel | [x] |
-| E6–E8 | PMS 参观者壳 | 见 [21 §P1b](21-ecosystem-federation.md) | [ ] **Next** |
+| Hub-look | 学院暖港首印象 | 中央碑+灯带+中环 NPC+巡逻 | [x] |
+| E6–E8 | PMS 参观者壳 | 见 [21 §P1b](21-ecosystem-federation.md) | [ ] 可穿插，不替代 A1 |
 | E9 | Hub 公网插值/降频 | 远端不瞬移；开壳降 WS | [ ] |
 
 ---
