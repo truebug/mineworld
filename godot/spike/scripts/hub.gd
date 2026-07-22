@@ -151,8 +151,8 @@ func _start_hub_session() -> void:
 			camera_rig.view_mode_changed.connect(_on_camera_view_changed)
 	if map_title != null:
 		map_title.text = MWi18n.t(
-			"母港图 · 东A橙 · 西B蓝 · 北C · 西偏北D · 南E",
-			"Hub map · A orange · B blue · C north · D NW · E south"
+			"母港图 · 东A橙 · 西B蓝 · 北C · 西偏北D · 南E建设中 · 东南R赛车",
+			"Hub map · A orange · B blue · C north · D NW · E Arena WIP · SE R Race"
 		)
 	_apply_cjk_fonts()
 	_link_banner = MWi18n.t("正在连接网关…", "Connecting to gateway…")

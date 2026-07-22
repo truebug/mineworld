@@ -35,7 +35,8 @@ func _draw() -> void:
 	_draw_door(inner, sx, sy, -half_x * 0.86, 0.0, Color(0.3, 0.7, 1.0))
 	_draw_door(inner, sx, sy, 0.0, -half_y * 0.83, Color(0.85, 0.9, 1.0))
 	_draw_door(inner, sx, sy, -half_x * 0.86, -half_y * 0.4, Color(0.55, 0.85, 0.7))
-	_draw_door(inner, sx, sy, 0.0, half_y * 0.83, Color(1.0, 0.45, 0.25))
+	_draw_door(inner, sx, sy, 0.0, half_y * 0.83, Color(0.55, 0.42, 0.3))  ## E Arena WIP
+	_draw_door(inner, sx, sy, half_x * 0.86, half_y * 0.55, Color(1.0, 0.4, 0.55))  ## R Race
 	# Mezzanine footprint (south half) + elevator tick — display-only.
 	var mz_a := _map_pt(inner, sx, sy, -half_x + 1.0, 1.2)
 	var mz_b := _map_pt(inner, sx, sy, half_x - 1.0, half_y - 0.8)
