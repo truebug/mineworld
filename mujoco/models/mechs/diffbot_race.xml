@@ -1,7 +1,7 @@
 <mujoco model="diffbot_race">
   <!--
-    Race chassis: same planar DiffBot as diffbot_planar, higher velocity ctrlrange
-    for high-speed circuit (demo_race). Wheels still F6 kinematic from Gateway.
+    Race chassis: planar DiffBot with motor (force/torque) actuators so
+    mass+damping give throttle acceleration (demo_race). Wheels F6 kinematic.
   -->
   <option timestep="0.002" integrator="RK4" gravity="0 0 -9.81"/>
 
@@ -11,10 +11,11 @@
 
   <worldbody>
     <body name="chassis" pos="0 0 0.5">
-      <joint name="slide_x" type="slide" axis="1 0 0" damping="0.15"/>
-      <joint name="slide_y" type="slide" axis="0 1 0" damping="0.15"/>
-      <joint name="yaw_z" type="hinge" axis="0 0 1" damping="0.04"/>
-      <inertial pos="0 0 0" mass="12.0" diaginertia="0.15 0.25 0.3"/>
+      <!-- Damping ≈ terminal ~15 m/s at full throttle (F≈850 → v=F/d). -->
+      <joint name="slide_x" type="slide" axis="1 0 0" damping="55"/>
+      <joint name="slide_y" type="slide" axis="0 1 0" damping="70"/>
+      <joint name="yaw_z" type="hinge" axis="0 0 1" damping="12"/>
+      <inertial pos="0 0 0" mass="24.0" diaginertia="0.35 0.55 0.7"/>
       <geom name="chassis_box" type="box" size="0.5 0.5 0.25"
             rgba="0.15 0.55 0.95 1"/>
       <geom name="caster_frontal_wheel" type="sphere" size="0.15" pos="0.35 0.0 -0.25" mass="0" contype="0" conaffinity="0" rgba="1 1 1 1"/>
@@ -31,9 +32,9 @@
   </worldbody>
 
   <actuator>
-    <!-- High-speed circuit: ~15 m/s body frame. -->
-    <velocity name="vx" joint="slide_x" kv="200" forcerange="-1200 1200" ctrlrange="-18 18"/>
-    <velocity name="vy" joint="slide_y" kv="200" forcerange="-1200 1200" ctrlrange="-18 18"/>
-    <velocity name="yaw_rate" joint="yaw_z" kv="100" forcerange="-400 400" ctrlrange="-10 10"/>
+    <!-- ctrl ∈ [-1,1] = throttle / strafe / steer; gear → Newtons / N·m. -->
+    <motor name="vx" joint="slide_x" gear="850" ctrlrange="-1 1"/>
+    <motor name="vy" joint="slide_y" gear="320" ctrlrange="-1 1"/>
+    <motor name="yaw_rate" joint="yaw_z" gear="160" ctrlrange="-1 1"/>
   </actuator>
 </mujoco>

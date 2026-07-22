@@ -232,6 +232,11 @@ class MujocoMech(MechState):
         self._pos_dadr: dict[str, int] = {}
         self._resolve_diff_drive()
         self._resolve_position_actuators()
+        # Motor chassis (race): ctrl is throttle [-1,1]; velocity chassis: m/s.
+        self._force_chassis = (
+            int(model.actuator_biastype[self._act_vx])
+            == int(mujoco.mjtBias.mjBIAS_NONE)
+        )
         self._substeps = max(1, int(round(DT / model.opt.timestep)))
         self.reset_pose({})
 
@@ -336,11 +341,26 @@ class MujocoMech(MechState):
         mujoco.mj_forward(self._model, self._data)
 
     def apply_ctrl(self) -> None:
-        """Write chassis velocity + held arm/gripper position actuators."""
+        """Write chassis actuators + held arm/gripper position setpoints."""
         if not self.controlled:
             self._data.ctrl[self._act_vx] = 0.0
             self._data.ctrl[self._act_vy] = 0.0
             self._data.ctrl[self._act_yaw] = 0.0
+        elif self._force_chassis:
+            # Body-frame throttle [-1,1] → world-frame motor forces; yaw torque
+            # falls off with speed so high-speed turns feel heavier.
+            thr_x = max(-1.0, min(1.0, self.vx))
+            thr_y = max(-1.0, min(1.0, self.vy))
+            steer = max(-1.0, min(1.0, self.yaw_rate))
+            yaw = float(self._data.qpos[self._qyaw])
+            c, s = math.cos(yaw), math.sin(yaw)
+            wx = float(self._data.qvel[self._dx])
+            wy = float(self._data.qvel[self._dy])
+            speed = math.hypot(wx, wy)
+            steer_scale = 1.0 / (1.0 + 0.04 * speed * speed)
+            self._data.ctrl[self._act_vx] = c * thr_x - s * thr_y
+            self._data.ctrl[self._act_vy] = s * thr_x + c * thr_y
+            self._data.ctrl[self._act_yaw] = steer * steer_scale
         else:
             yaw = float(self._data.qpos[self._qyaw])
             c, s = math.cos(yaw), math.sin(yaw)
@@ -354,15 +374,25 @@ class MujocoMech(MechState):
             self._data.ctrl[aid] = q
 
     def _sync_wheels(self, dt: float) -> None:
-        """Overwrite wheel qpos/qvel from body vx / yaw_rate (kinematic DiffBot)."""
+        """Overwrite wheel qpos/qvel from body velocity (kinematic DiffBot)."""
         if self._wheel_left is None or self._wheel_right is None or self._wheel_r <= 1e-6:
             return
         if not self.controlled:
             w_l = w_r = 0.0
         else:
             half_l = 0.5 * self._track
-            w_l = (self.vx - self.yaw_rate * half_l) / self._wheel_r
-            w_r = (self.vx + self.yaw_rate * half_l) / self._wheel_r
+            if self._force_chassis:
+                yaw = float(self._data.qpos[self._qyaw])
+                c, s = math.cos(yaw), math.sin(yaw)
+                wx = float(self._data.qvel[self._dx])
+                wy = float(self._data.qvel[self._dy])
+                body_vx = c * wx + s * wy
+                yaw_rate = float(self._data.qvel[self._dyaw])
+            else:
+                body_vx = self.vx
+                yaw_rate = self.yaw_rate
+            w_l = (body_vx - yaw_rate * half_l) / self._wheel_r
+            w_r = (body_vx + yaw_rate * half_l) / self._wheel_r
         self._wheel_angle_l += w_l * dt
         self._wheel_angle_r += w_r * dt
         self._data.qpos[self._wheel_left[1]] = self._wheel_angle_l

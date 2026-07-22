@@ -113,7 +113,7 @@ async def smoke(
         elif expect_objective and level_id != "demo_race":
             await _send_vel(ws, session_id, 1.0, 0.0, yaw_rate)
         elif not expect_objective:
-            spd = 8.0 if level_id == "demo_race" else 1.0
+            spd = 1.0
             await _send_vel(ws, session_id, spd, 0.0, yaw_rate)
 
         saw_take = False
@@ -184,7 +184,7 @@ async def smoke(
                             else:
                                 break
                         tgt = race_wps[min(race_wp_i, len(race_wps) - 1)]
-                        vx, vy, yr = race_chase_cmd(x, y, yaw, tgt, speed=9.0)
+                        vx, vy, yr = race_chase_cmd(x, y, yaw, tgt, speed=1.0)
                         await _send_vel(ws, session_id, vx, vy, yr)
                         last_cmd = now
 
@@ -243,8 +243,8 @@ def main() -> None:
     if args.expect_objective and args.level_id == "demo_city" and seconds < 120:
         seconds = 140.0
     if args.expect_objective and args.level_id == "demo_race" and seconds < 100:
-        # ~530 m lap @ ~9 m/s plus corners.
-        seconds = 120.0
+        # Long multi-lobe lap + motor accel (not instant velocity).
+        seconds = 180.0
     raise SystemExit(
         asyncio.run(
             smoke(

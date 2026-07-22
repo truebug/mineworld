@@ -71,9 +71,9 @@ def race_chase_cmd(
     yaw: float,
     target: tuple[float, float],
     *,
-    speed: float = 14.0,
+    speed: float = 1.0,
 ) -> tuple[float, float, float]:
-    """Body-frame vx/vy + yaw_rate toward a world XY waypoint."""
+    """Body-frame throttle/steer [-1,1] toward a world XY waypoint (force chassis)."""
     tx, ty = target
     dx, dy = tx - x, ty - y
     dist = math.hypot(dx, dy)
@@ -81,13 +81,11 @@ def race_chase_cmd(
         return 0.0, 0.0, 0.0
     want = math.atan2(dy, dx)
     err = (want - yaw + math.pi) % (2 * math.pi) - math.pi
-    yaw_rate = max(-4.5, min(4.5, err * 3.0))
-    c, s = math.cos(yaw), math.sin(yaw)
-    world_vx = speed * dx / dist
-    world_vy = speed * dy / dist
-    body_vx = c * world_vx + s * world_vy
-    body_vy = -s * world_vx + c * world_vy
-    return body_vx, body_vy, yaw_rate
+    yaw_rate = max(-1.0, min(1.0, err * 2.4))
+    # Ease throttle when pointing away from the waypoint.
+    forward = max(0.2, math.cos(err))
+    thr = max(-1.0, min(1.0, float(speed))) * forward
+    return thr, 0.0, yaw_rate
 
 
 def manhattan_cmd(

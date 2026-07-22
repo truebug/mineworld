@@ -12,9 +12,10 @@ extends Node3D
 
 const MOVE_SPEED := 1.0
 const TURN_SPEED := 1.0
-## demo_race DiffBot race chassis (ctrlrange ±18 ≈ 15 m/s).
-const MOVE_SPEED_RACE := 15.0
-const TURN_SPEED_RACE := 3.2
+## demo_race: motor throttle/steer in [-1,1] (MuJoCo force chassis).
+const MOVE_SPEED_RACE := 1.0
+const TURN_SPEED_RACE := 1.0
+const STRAFE_SPEED_RACE := 0.35
 const CMD_HZ := 20.0
 const _WEB_BLOCK_CODES := {
 	"KeyW": true, "KeyA": true, "KeyS": true, "KeyD": true,
@@ -1077,32 +1078,67 @@ func _send_velocity_cmd() -> void:
 	var yaw_rate := 0.0
 	var spd := _move_speed()
 	var turn := _turn_speed()
+	var strafe := STRAFE_SPEED_RACE if level_id == "demo_race" else spd
+	var w := false
+	var s := false
+	var a := false
+	var d := false
+	var q := false
+	var e := false
 	if _is_web:
-		# WASD plane + QE yaw (holonomic DiffBot).
-		if _web_key("KeyW"):
-			vx += spd
-		if _web_key("KeyS"):
-			vx -= spd
-		if _web_key("KeyA"):
-			vy += spd
-		if _web_key("KeyD"):
-			vy -= spd
-		if _web_key("KeyQ"):
+		w = _web_key("KeyW")
+		s = _web_key("KeyS")
+		a = _web_key("KeyA")
+		d = _web_key("KeyD")
+		q = _web_key("KeyQ")
+		e = _web_key("KeyE")
+	else:
+		w = _key_down(KEY_W)
+		s = _key_down(KEY_S)
+		a = _key_down(KEY_A)
+		d = _key_down(KEY_D)
+		q = _key_down(KEY_Q)
+		e = _key_down(KEY_E)
+	if level_id == "demo_race":
+		# W throttle / S brake-or-reverse / QE steer; light A/D strafe.
+		# Race MuJoCo motors interpret these as [-1,1] throttle (not m/s).
+		if w and not s:
+			vx = spd
+		elif s and not w:
+			vx = -spd
+		if a:
+			vy += strafe
+		if d:
+			vy -= strafe
+		if q:
 			yaw_rate += turn
-		if _web_key("KeyE"):
+		if e:
+			yaw_rate -= turn
+	elif _is_web:
+		if w:
+			vx += spd
+		if s:
+			vx -= spd
+		if a:
+			vy += spd
+		if d:
+			vy -= spd
+		if q:
+			yaw_rate += turn
+		if e:
 			yaw_rate -= turn
 	else:
-		if _key_down(KEY_W):
+		if w:
 			vx += spd
-		if _key_down(KEY_S):
+		if s:
 			vx -= spd
-		if _key_down(KEY_A):
+		if a:
 			vy += spd
-		if _key_down(KEY_D):
+		if d:
 			vy -= spd
-		if _key_down(KEY_Q):
+		if q:
 			yaw_rate += turn
-		if _key_down(KEY_E):
+		if e:
 			yaw_rate -= turn
 		if vx == 0.0 and vy == 0.0 and yaw_rate == 0.0:
 			vx = Input.get_axis("move_back", "move_forward") * spd

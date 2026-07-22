@@ -14,27 +14,27 @@ CONTRACT = REPO / "examples" / "contracts" / "demo_race.json"
 LAYOUT = REPO / "godot" / "spike" / "data" / "race_layout.json"
 MODEL_REF = "mechs/diffbot_race.xml"
 
-# Larger flat circuit (~430 m lap @ ~15 m/s ≈ 29 s).
-SEMI_A = 82.0
-SEMI_B = 50.0
-LANE_HALF = 6.0
+# Wide multi-lobe circuit (~750 m lap; motor chassis tops ~15 m/s).
+SEMI_A = 110.0
+SEMI_B = 72.0
+LANE_HALF = 8.5
 WALL_THICK = 0.9
 WALL_H = 1.6
-SEGMENTS = 96
+SEGMENTS = 120
 SPAWN_COUNT = 6
-SPAWN_SPACE_M = 2.8
-SPAWN_BACK_M = 4.5
-SPAWN_ROW_GAP_M = 3.4
+SPAWN_SPACE_M = 3.6
+SPAWN_BACK_M = 5.0
+SPAWN_ROW_GAP_M = 3.8
 
 
 def _centerline(n: int) -> list[tuple[float, float]]:
-    """Closed wavy ellipse centerline (MW XY)."""
+    """Closed 3-lobe elongated circuit (more corners / longer lap)."""
     pts: list[tuple[float, float]] = []
     for i in range(n):
         t = 2.0 * math.pi * i / n
-        wobble = 1.0 + 0.08 * math.sin(3.0 * t) + 0.04 * math.sin(5.0 * t + 0.6)
-        x = SEMI_A * math.cos(t) * wobble
-        y = SEMI_B * math.sin(t) * wobble
+        lobe = 1.0 + 0.38 * math.cos(3.0 * t) + 0.1 * math.cos(6.0 * t + 0.5)
+        x = SEMI_A * lobe * math.cos(t)
+        y = SEMI_B * lobe * math.sin(t)
         pts.append((x, y))
     return pts
 
@@ -130,9 +130,9 @@ def build() -> tuple[dict, dict]:
             }
         )
 
-    trig_cp1 = {"id": "trigger_cp1", "type": "aabb", **_aabb_at(pts[cp1_i], 6.5)}
-    trig_cp2 = {"id": "trigger_cp2", "type": "aabb", **_aabb_at(pts[cp2_i], 6.5)}
-    trig_fin = {"id": "trigger_finish", "type": "aabb", **_aabb_at(pts[fin_i], 7.0)}
+    trig_cp1 = {"id": "trigger_cp1", "type": "aabb", **_aabb_at(pts[cp1_i], 8.0)}
+    trig_cp2 = {"id": "trigger_cp2", "type": "aabb", **_aabb_at(pts[cp2_i], 8.0)}
+    trig_fin = {"id": "trigger_finish", "type": "aabb", **_aabb_at(pts[fin_i], 8.5)}
 
     contract = {
         "contract_version": "0.1",
@@ -176,7 +176,7 @@ def build() -> tuple[dict, dict]:
             },
             "mw.il": {
                 "task_id": "obj_race_finish",
-                "time_limit_s": 180,
+                "time_limit_s": 240,
             },
             "mw.editor": {
                 "client_scene": "res://demo_race.tscn",
