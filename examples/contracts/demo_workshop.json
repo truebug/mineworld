@@ -139,7 +139,8 @@
     "mw.il": {
       "task_id": "obj_place_block",
       "difficulty": "poc",
-      "control_modes": ["velocity", "joint_targets"]
+      "control_modes": ["velocity", "joint_targets"],
+      "time_limit_s": 180
     },
     "mw.editor": {
       "client_scene": "res://demo_workshop.tscn",

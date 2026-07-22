@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-07-22 · A1 起步：超时 fail + place 唯一终局
+
+- Gateway：`extensions.mw.il.task_id` 外的 `reach_region` 为 milestone（推箱不弹 SUCCESS）；`time_limit_s` → `objective_failed` + `outcome=fail`。
+- 工坊契约 `time_limit_s=180`；Godot 里程碑提示；`scripts/a1_fail_smoke.py`。
+- 公网纠偏见上条：playground 已通，不阻塞 A1。
+
 ## 2026-07-22 · 公网纠偏：playground 已通，W2 非阻塞
 
 - 现网：`playground.dev.databall.tech`（ALB→WGateway→WG→CVM）；HTTPS + wss 已覆盖 Demo 验收。

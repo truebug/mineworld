@@ -670,6 +670,36 @@ def contract_mw(contract: dict[str, Any]) -> dict[str, Any]:
     return mw if isinstance(mw, dict) else {}
 
 
+def contract_mw_il(contract: dict[str, Any]) -> dict[str, Any]:
+    """Return extensions['mw.il'] bag (empty dict if missing)."""
+    ext = contract.get("extensions")
+    if not isinstance(ext, dict):
+        return {}
+    il = ext.get("mw.il")
+    return il if isinstance(il, dict) else {}
+
+
+def _il_primary_task_id(contract: dict[str, Any]) -> str | None:
+    """Primary IL task_id from extensions.mw.il (terminal success objective)."""
+    tid = contract_mw_il(contract).get("task_id")
+    if tid is None:
+        return None
+    s = str(tid).strip()
+    return s or None
+
+
+def _il_time_limit_s(contract: dict[str, Any]) -> float | None:
+    """Optional sim-time limit (seconds) from extensions.mw.il.time_limit_s."""
+    raw = contract_mw_il(contract).get("time_limit_s")
+    if raw is None:
+        return None
+    try:
+        limit = float(raw)
+    except (TypeError, ValueError):
+        return None
+    return limit if limit > 0 else None
+
+
 def _hub_walkable_aabbs(
     bounds: dict[str, Any], half_x: float, half_y: float
 ) -> list[dict[str, float]]:
@@ -881,10 +911,14 @@ def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
 
     ``reach_region`` may set ``params.gripper_open_min`` so the subject must be
     released (place on bench/bin), not held closed over the AABB.
+
+    When ``extensions.mw.il.task_id`` is set, only that objective sets
+    ``outcome=success``; other ``reach_region`` hits are milestones (A1).
     """
     events: list[dict[str, Any]] = []
-    if session.room is None:
+    if session.room is None or session.outcome:
         return events
+    primary = _il_primary_task_id(session.contract)
     triggers = {t["id"]: t for t in (session.contract.get("triggers") or []) if t.get("id")}
     for obj in session.contract.get("objectives") or []:
         obj_id = obj.get("id")
@@ -944,28 +978,73 @@ def evaluate_objectives(session: Session) -> list[dict[str, Any]]:
             if mech is None or not _gripper_command_open(mech, float(open_min)):
                 continue
         session.completed_objectives.add(obj_id)
-        session.outcome = "success"
+        terminal = params.get("terminal")
+        if terminal is None:
+            terminal = primary is None or str(obj_id) == primary
+        else:
+            terminal = bool(terminal)
+        detail: dict[str, Any] = {
+            "trigger_id": trig["id"],
+            "subject_id": entity_id,
+        }
+        if terminal:
+            session.outcome = "success"
+        else:
+            detail["kind"] = "milestone"
         events.append(
             {
                 "event_type": "objective_complete",
                 "objective_id": obj_id,
                 "entity_id": entity_id,
-                "detail": {
-                    "trigger_id": trig["id"],
-                    "subject_id": entity_id,
-                },
+                "detail": detail,
             }
         )
         LOG.info(
-            "session=%s objective_complete id=%s subject=%s at (%.2f, %.2f, %.2f)",
+            "session=%s objective_complete id=%s subject=%s terminal=%s at (%.2f, %.2f, %.2f)",
             session.session_id,
             obj_id,
             entity_id,
+            terminal,
             px,
             py,
             pz,
         )
     return events
+
+
+def evaluate_time_limit(session: Session) -> list[dict[str, Any]]:
+    """A1: emit objective_failed + outcome=fail when sim time exceeds mw.il.time_limit_s."""
+    if session.room is None or session.outcome:
+        return []
+    limit = _il_time_limit_s(session.contract)
+    if limit is None:
+        return []
+    t_sim = float(session.room.tick) * DT
+    if t_sim < limit:
+        return []
+    oid = _il_primary_task_id(session.contract) or "time_limit"
+    session.outcome = "fail"
+    LOG.info(
+        "session=%s objective_failed id=%s time_limit=%.1fs t_sim=%.1fs",
+        session.session_id,
+        oid,
+        limit,
+        t_sim,
+    )
+    return [
+        {
+            "event_type": "objective_failed",
+            "objective_id": oid,
+            "detail": {
+                "kind": "time_limit",
+                "limit_s": limit,
+                "t_sim": round(t_sim, 3),
+                "level_id": str(
+                    session.level_id or session.contract.get("level_id") or ""
+                ),
+            },
+        }
+    ]
 
 
 def envelope(
@@ -1164,12 +1243,17 @@ class EchoGateway:
             duration = float(session.room.tick) * DT
         if outcome == "success":
             self._report_score(session, duration)
+        elif outcome == "fail":
+            # Idempotent: may already have posted from sim_loop on time_limit.
+            self._report_score(session, duration)
 
     def _report_score(self, session: Session, duration_sim_s: float) -> None:
         """SC2: post points to platform API (idempotent by session_id)."""
         pid = str((session.profile or {}).get("id") or "").strip()
         level_id = str(session.level_id or session.contract.get("level_id") or "")
         task_id = session.contract.get("task_id")
+        if not task_id:
+            task_id = _il_primary_task_id(session.contract)
         if not task_id:
             tags = (session.contract.get("extensions") or {}).get("mw") or {}
             if isinstance(tags, dict):
@@ -1178,7 +1262,7 @@ class EchoGateway:
             session_id=session.session_id,
             player_id=pid,
             level_id=level_id,
-            outcome="success",
+            outcome=str(session.outcome or "success"),
             duration_sim_s=duration_sim_s,
             task_id=str(task_id) if task_id else None,
             display_name=session.player_name,
@@ -1908,33 +1992,43 @@ class EchoGateway:
                     tick_events = list(session.pending_events)
                     session.pending_events.clear()
                     objective_events = evaluate_objectives(session)
+                    objective_events.extend(evaluate_time_limit(session))
                     if objective_events:
                         duration = float(room.tick) * DT
                         level_id = str(
                             session.level_id or session.contract.get("level_id") or ""
                         )
                         for ev in objective_events:
-                            if ev.get("event_type") != "objective_complete":
-                                continue
+                            et = ev.get("event_type")
                             detail = ev.get("detail")
                             if not isinstance(detail, dict):
                                 detail = {}
                                 ev["detail"] = detail
-                            detail["level_id"] = level_id
-                            # Terminal place/stow only (grasp_lift is milestone).
-                            if detail.get("kind") == "grasp_lift" or not session.outcome:
-                                continue
-                            if session.recorder is not None:
-                                oid = str(ev.get("objective_id") or "")
-                                if oid:
-                                    session.recorder.set_task_id(oid)
-                            pts = compute_points(
-                                level_id=level_id,
-                                outcome="success",
-                                duration_sim_s=duration,
-                            )
-                            detail["points"] = pts
-                            self._report_score(session, duration)
+                            detail.setdefault("level_id", level_id)
+                            if et == "objective_complete":
+                                # Terminal place only (grasp_lift / milestone skip score).
+                                if detail.get("kind") in ("grasp_lift", "milestone"):
+                                    continue
+                                if session.outcome != "success":
+                                    continue
+                                if session.recorder is not None:
+                                    oid = str(ev.get("objective_id") or "")
+                                    if oid:
+                                        session.recorder.set_task_id(oid)
+                                pts = compute_points(
+                                    level_id=level_id,
+                                    outcome="success",
+                                    duration_sim_s=duration,
+                                )
+                                detail["points"] = pts
+                                self._report_score(session, duration)
+                            elif et == "objective_failed":
+                                if session.recorder is not None:
+                                    oid = str(ev.get("objective_id") or "")
+                                    if oid:
+                                        session.recorder.set_task_id(oid)
+                                detail["points"] = 0
+                                self._report_score(session, duration)
                         tick_events.extend(objective_events)
                         if session.recorder is not None and session.outcome:
                             session.recorder.set_outcome(session.outcome)

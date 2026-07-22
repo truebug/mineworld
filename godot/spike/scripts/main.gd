@@ -748,12 +748,18 @@ func _on_event(payload: Dictionary) -> void:
 			var detail: Dictionary = detail_v if typeof(detail_v) == TYPE_DICTIONARY else {}
 			var kind := str(detail.get("kind", ""))
 			var oid := str(payload.get("objective_id", "?"))
-			# grasp_lift is a milestone — keep control for place/stow.
-			if kind == "grasp_lift" or oid == "obj_lift_block":
-				_status_line = MWi18n.t(
-					"已夹起 · 放到工作台并张开夹爪",
-					"Lifted · place on bench and open gripper"
-				)
+			# grasp_lift / stow milestones — keep control for place.
+			if kind == "grasp_lift" or kind == "milestone" or oid == "obj_lift_block":
+				if oid == "obj_stow_crate" or kind == "milestone":
+					_status_line = MWi18n.t(
+						"料箱已入区 · 继续：夹料块放到工作台",
+						"Crate stowed · next: place block on bench"
+					)
+				else:
+					_status_line = MWi18n.t(
+						"已夹起 · 放到工作台并张开夹爪",
+						"Lifted · place on bench and open gripper"
+					)
 				_update_hud()
 				return
 			_mission_done = true
