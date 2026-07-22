@@ -18,6 +18,7 @@
 - R4 特效：重刹/高速急转胎痕（FIFO 220 条）+ 刹车烟尘粒子；race 插值延迟 50→30ms。全部 viewer-only。
 - R5 赛道：弯心红白路缘带 + 弯前 50/100/150m 刹车牌（按 centerline 曲率自动布点）。
 - 验收：无头 drive 冒烟 PASS（半油门+半转向 3s 位移 8.1m、转向 0.44rad）。
+- Playground： · web/gateway active。
 
 ## 2026-07-22 · 赛车场环境丰富化（viewer-only）
 
