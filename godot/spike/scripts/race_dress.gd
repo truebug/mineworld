@@ -1,5 +1,5 @@
 ## Viewer dress for demo_race — Kenney Racing Kit fences replace orange box walls.
-## Physics walls stay MuJoCo boxes; hills / asphalt remain procedural.
+## Physics walls stay MuJoCo boxes; road is flat (planar DiffBot).
 extends Node3D
 
 const LAYOUT_PATH := "res://data/race_layout.json"
@@ -13,13 +13,13 @@ const CURB_NATIVE_LEN := 1.0
 
 
 func _ready() -> void:
-	"""Build asphalt, ribbons, Kenney fences, finish flags, sparse trees."""
+	"""Build flat asphalt lane, Kenney fences, finish flags, sparse trees."""
 	var layout := _load_layout()
 	if layout.is_empty():
 		push_warning("[MW] race dress: missing %s" % LAYOUT_PATH)
 		return
 	_add_ground(layout)
-	_add_height_ribbons(layout)
+	_add_flat_lane(layout)
 	_add_centerline(layout)
 	var walls: Array = layout.get("walls", [])
 	var fence_n := 0
@@ -73,9 +73,9 @@ func _layout_bounds(layout: Dictionary) -> Rect2:
 
 
 func _add_ground(layout: Dictionary) -> void:
-	"""Bright pad covering the circuit with margin."""
+	"""Pad covering the circuit with margin."""
 	var b := _layout_bounds(layout)
-	var margin := 18.0
+	var margin := 28.0
 	var mi := MeshInstance3D.new()
 	mi.name = "Asphalt"
 	var mesh := PlaneMesh.new()
@@ -89,27 +89,25 @@ func _add_ground(layout: Dictionary) -> void:
 	add_child(mi)
 
 
-func _add_height_ribbons(layout: Dictionary) -> void:
-	"""Cosmetic undulating road strip (viewer_only; DiffBot stays planar)."""
-	var heights: Array = layout.get("viewer_heights", [])
-	if heights.size() < 3:
+func _add_flat_lane(layout: Dictionary) -> void:
+	"""Flat darker road strip along centerline (no fake hills)."""
+	var pts: Array = layout.get("centerline", [])
+	if pts.size() < 3:
 		return
+	var lane_w := float(layout.get("lane_half_m", 6.0)) * 2.0 + 0.4
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.16, 0.17, 0.2)
 	mat.roughness = 0.92
-	var n := heights.size()
+	var n := pts.size()
 	for i in range(n):
-		var a: Dictionary = heights[i]
-		var b: Dictionary = heights[(i + 1) % n]
+		var a: Dictionary = pts[i]
+		var b: Dictionary = pts[(i + 1) % n]
 		var ax := float(a.get("x", 0.0))
 		var ay := float(a.get("y", 0.0))
-		var ah := float(a.get("h", 0.4))
 		var bx := float(b.get("x", 0.0))
 		var by := float(b.get("y", 0.0))
-		var bh := float(b.get("h", 0.4))
 		var mx := 0.5 * (ax + bx)
 		var my := 0.5 * (ay + by)
-		var mh := 0.5 * (ah + bh)
 		var dx := bx - ax
 		var dy := by - ay
 		var length := Vector2(dx, dy).length()
@@ -117,9 +115,9 @@ func _add_height_ribbons(layout: Dictionary) -> void:
 			continue
 		var yaw := atan2(dy, dx)
 		_add_box(
-			"ribbon_%d" % i,
-			Vector3(mx, mh * 0.5, -my),
-			Vector3(length + 0.25, maxf(mh, 0.2), 8.5),
+			"lane_%d" % i,
+			Vector3(mx, 0.03, -my),
+			Vector3(length + 0.3, 0.06, lane_w),
 			mat,
 			yaw
 		)
@@ -127,16 +125,16 @@ func _add_height_ribbons(layout: Dictionary) -> void:
 
 func _add_centerline(layout: Dictionary) -> void:
 	"""Dashed white lane marks along centerline samples."""
-	var heights: Array = layout.get("viewer_heights", [])
-	if heights.size() < 4:
+	var pts: Array = layout.get("centerline", [])
+	if pts.size() < 4:
 		return
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.92, 0.93, 0.95)
 	mat.roughness = 0.85
-	var n := heights.size()
+	var n := pts.size()
 	for i in range(0, n, 2):
-		var a: Dictionary = heights[i]
-		var b: Dictionary = heights[(i + 1) % n]
+		var a: Dictionary = pts[i]
+		var b: Dictionary = pts[(i + 1) % n]
 		var ax := float(a.get("x", 0.0))
 		var ay := float(a.get("y", 0.0))
 		var bx := float(b.get("x", 0.0))
@@ -151,7 +149,7 @@ func _add_centerline(layout: Dictionary) -> void:
 		var yaw := atan2(dy, dx)
 		_add_box(
 			"stripe_%d" % i,
-			Vector3(mx, 0.04, -my),
+			Vector3(mx, 0.07, -my),
 			Vector3(length * 0.55, 0.05, 0.35),
 			mat,
 			yaw
@@ -268,15 +266,15 @@ func _add_trees(layout: Dictionary) -> void:
 	var b := _layout_bounds(layout)
 	var cx := b.position.x + b.size.x * 0.5
 	var cy := b.position.y + b.size.y * 0.5
-	var rx := b.size.x * 0.5 + 10.0
-	var ry := b.size.y * 0.5 + 10.0
-	var n := 14
+	var rx := b.size.x * 0.5 + 14.0
+	var ry := b.size.y * 0.5 + 14.0
+	var n := 18
 	for i in range(n):
 		var ang := TAU * float(i) / float(n) + 0.35
 		var px := cx + cos(ang) * rx
 		var py := cy + sin(ang) * ry
 		var asset := "treeLarge.glb" if i % 3 == 0 else "treeSmall.glb"
-		var s := 3.5 if asset == "treeLarge.glb" else 3.0
+		var s := 4.0 if asset == "treeLarge.glb" else 3.4
 		_spawn_asset(asset, "tree_%d" % i, Vector3(px, 0.0, -py), ang, Vector3(s, s, s))
 
 

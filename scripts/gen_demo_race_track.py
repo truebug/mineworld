@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Generate a long curved demo_race track (planar MuJoCo walls + layout JSON).
 
-DiffBot is planar — no real hills in physics. Layout may include viewer-only
-height samples for Godot dress undulation.
+DiffBot is planar — no hills in physics or viewer dress (flat asphalt only).
 """
 from __future__ import annotations
 
@@ -15,17 +14,17 @@ CONTRACT = REPO / "examples" / "contracts" / "demo_race.json"
 LAYOUT = REPO / "godot" / "spike" / "data" / "race_layout.json"
 MODEL_REF = "mechs/diffbot_race.xml"
 
-# Readable but longer circuit (~300 m lap @ ~15 m/s ≈ 20 s).
-SEMI_A = 55.0
-SEMI_B = 34.0
-LANE_HALF = 5.0
+# Larger flat circuit (~430 m lap @ ~15 m/s ≈ 29 s).
+SEMI_A = 82.0
+SEMI_B = 50.0
+LANE_HALF = 6.0
 WALL_THICK = 0.9
 WALL_H = 1.6
-SEGMENTS = 80
+SEGMENTS = 96
 SPAWN_COUNT = 6
-SPAWN_SPACE_M = 2.5
-SPAWN_BACK_M = 4.0
-SPAWN_ROW_GAP_M = 3.2
+SPAWN_SPACE_M = 2.8
+SPAWN_BACK_M = 4.5
+SPAWN_ROW_GAP_M = 3.4
 
 
 def _centerline(n: int) -> list[tuple[float, float]]:
@@ -87,18 +86,6 @@ def _aabb_at(pt: tuple[float, float], half: float = 4.0) -> dict:
     }
 
 
-def _viewer_heights(pts: list[tuple[float, float]]) -> list[dict]:
-    """Cosmetic elevation samples for Godot (physics stays flat)."""
-    samples: list[dict] = []
-    n = len(pts)
-    for i, (x, y) in enumerate(pts):
-        t = 2.0 * math.pi * i / n
-        # Visual hills ±2 m (planar DiffBot physics stays flat).
-        h = 0.7 + 1.1 * math.sin(2.0 * t) + 0.55 * math.sin(4.0 * t + 0.8)
-        samples.append({"x": round(x, 2), "y": round(y, 2), "h": round(h, 3)})
-    return samples
-
-
 def build() -> tuple[dict, dict]:
     """Return (contract, layout)."""
     pts = _centerline(SEGMENTS)
@@ -143,9 +130,9 @@ def build() -> tuple[dict, dict]:
             }
         )
 
-    trig_cp1 = {"id": "trigger_cp1", "type": "aabb", **_aabb_at(pts[cp1_i], 5.0)}
-    trig_cp2 = {"id": "trigger_cp2", "type": "aabb", **_aabb_at(pts[cp2_i], 5.0)}
-    trig_fin = {"id": "trigger_finish", "type": "aabb", **_aabb_at(pts[fin_i], 5.5)}
+    trig_cp1 = {"id": "trigger_cp1", "type": "aabb", **_aabb_at(pts[cp1_i], 6.5)}
+    trig_cp2 = {"id": "trigger_cp2", "type": "aabb", **_aabb_at(pts[cp2_i], 6.5)}
+    trig_fin = {"id": "trigger_finish", "type": "aabb", **_aabb_at(pts[fin_i], 7.0)}
 
     contract = {
         "contract_version": "0.1",
@@ -215,7 +202,6 @@ def build() -> tuple[dict, dict]:
             {"id": t["id"], "min": t["min"], "max": t["max"]}
             for t in (trig_cp1, trig_cp2, trig_fin)
         ],
-        "viewer_heights": _viewer_heights(pts),
         "start_index": start_i,
         "finish_index": fin_i,
     }
