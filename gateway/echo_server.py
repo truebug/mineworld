@@ -96,6 +96,12 @@ class MechState:
     yaw_rate: float = 0.0
     controlled: bool = False
     joint_targets: dict[str, float] = field(default_factory=dict)
+    # drive control_mode (race): analog channels in [-1,1]/[0,1].
+    control_mode: str = "velocity"
+    throttle: float = 0.0
+    brake: float = 0.0
+    steer: float = 0.0
+    handbrake: float = 0.0
 
     def reset_pose(self, pose: dict[str, Any]) -> None:
         self.x = float(pose.get("x", 0.0))
@@ -131,6 +137,7 @@ class MechState:
         if action == "release_control":
             self.controlled = False
             self.vx = self.vy = self.yaw_rate = 0.0
+            self.throttle = self.brake = self.steer = self.handbrake = 0.0
             events.append(
                 {
                     "event_type": "player_release_control",
@@ -143,10 +150,19 @@ class MechState:
         if not self.controlled:
             return events
         mode = payload.get("control_mode", "velocity")
+        self.control_mode = str(mode)
         if mode == "velocity":
             self.vx = float(payload.get("vx", 0.0))
             self.vy = float(payload.get("vy", 0.0))
             self.yaw_rate = float(payload.get("yaw_rate", 0.0))
+        elif mode == "drive":
+            # Analog driving: throttle/brake [0,1] (throttle<0 = reverse),
+            # steer [-1,1] (+ = left), handbrake [0,1] (reserved).
+            clamp = lambda v, lo, hi: max(lo, min(hi, float(v)))
+            self.throttle = clamp(payload.get("throttle", 0.0), -1.0, 1.0)
+            self.brake = clamp(payload.get("brake", 0.0), 0.0, 1.0)
+            self.steer = clamp(payload.get("steer", 0.0), -1.0, 1.0)
+            self.handbrake = clamp(payload.get("handbrake", 0.0), 0.0, 1.0)
         if "joint_targets" in payload:
             self._apply_joint_targets(payload.get("joint_targets"))
         return events
@@ -213,6 +229,7 @@ class MujocoMech(MechState):
         self._model = model
         self._data = data
         self._prefix = prefix
+        self.drive_cfg: dict[str, float] = dict(DRIVE_DEFAULTS)
         jnt = lambda n: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, f"{prefix}{n}")
         act = lambda n: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, f"{prefix}{n}")
         self._chassis = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, f"{prefix}chassis")
@@ -440,14 +457,28 @@ class MujocoMech(MechState):
             if speed > 18.0 and thr > 0.0:
                 thr *= max(0.0, 1.0 - (speed - 18.0) / 8.0)
             if self._steer_acts:
-                # Ackermann (race v3): yaw_rate → front steer angle; vx → RWD.
-                # Soften max steer at speed so light Q/E is a bend, not a spin.
-                scale = 1.0 / (1.0 + 0.012 * speed * speed)
-                angle = steer * self._STEER_MAX_RAD * scale
+                cfg = self.drive_cfg
+                if self.control_mode == "drive":
+                    # R1 drive model: analog throttle/brake/steer channels.
+                    thr = max(-1.0, min(1.0, self.throttle)) if self.controlled else 0.0
+                    brk = max(0.0, min(1.0, self.brake)) if self.controlled else 0.0
+                    steer = max(-1.0, min(1.0, self.steer)) if self.controlled else 0.0
+                    if thr < 0.0:
+                        thr *= float(cfg["reverse_gain"])
+                    v_max = float(cfg["v_max"])
+                    if speed > v_max and thr > 0.0:
+                        thr *= max(0.0, 1.0 - (speed - v_max) / float(cfg["v_taper"]))
+                    # Brake: signed counter-torque opposing current motion.
+                    if brk > 0.0 and speed > 0.05:
+                        thr -= math.copysign(brk * float(cfg["brake_torque"]), c * wx + s * wy if speed > 1e-3 else 1.0)
+                # else: legacy velocity cmd (vx → RWD, yaw_rate → steer);
+                # thr/steer already set and tapered above the branch.
+                scale = 1.0 / (1.0 + float(cfg["steer_speed_gain"]) * speed * speed)
+                angle = steer * float(cfg["steer_max_rad"]) * scale
                 for aid in self._steer_acts.values():
                     d.ctrl[aid] = angle
                 for aid in self._wheel_acts.values():
-                    d.ctrl[aid] = thr
+                    d.ctrl[aid] = max(-2.0, min(2.0, thr))
             else:
                 # Skid-steer (race v2): keep for older MJCF.
                 thr_eff = thr * max(0.0, 1.0 - 0.62 * abs(steer))
@@ -874,6 +905,29 @@ def contract_mw_il(contract: dict[str, Any]) -> dict[str, Any]:
         return {}
     il = ext.get("mw.il")
     return il if isinstance(il, dict) else {}
+
+
+DRIVE_DEFAULTS: dict[str, float] = {
+    "steer_max_rad": 0.55,     # front steer angle at steer=±1 (low speed)
+    "steer_speed_gain": 0.012, # speed²-adaptive steer softening
+    "v_max": 18.0,             # throttle taper start (m/s)
+    "v_taper": 8.0,            # taper width beyond v_max
+    "brake_torque": 1.6,       # brake counter-torque gain (vs throttle 1.0)
+    "reverse_gain": 0.5,       # reverse throttle scale
+}
+
+
+def contract_mw_drive(contract: dict[str, Any]) -> dict[str, float]:
+    """extensions.mw.drive merged over DRIVE_DEFAULTS (R1 drive model)."""
+    out = dict(DRIVE_DEFAULTS)
+    raw = contract_mw(contract).get("drive")
+    if isinstance(raw, dict):
+        for key in DRIVE_DEFAULTS:
+            try:
+                out[key] = float(raw.get(key, out[key]))
+            except (TypeError, ValueError):
+                pass
+    return out
 
 
 def _il_primary_task_id(contract: dict[str, Any]) -> str | None:
@@ -1721,11 +1775,13 @@ class EchoGateway:
             shared = mujoco.MjData(model)
             substeps = max(1, int(round(DT / model.opt.timestep)))
             grasp_eq = self._grasp_eq_map(model, contract)
+        drive_cfg = contract_mw_drive(contract)
         for spawn in contract.get("mech_spawns") or []:
             eid = str(spawn.get("id", "mech_player"))
             pose = spawn.get("pose") or {}
             if shared is not None and model is not None:
                 mech = MujocoMech(eid, model, shared, prefix=f"{eid}/")
+                mech.drive_cfg = drive_cfg
             else:
                 mech = MechState(eid)
             mech.reset_pose(pose)
@@ -1735,6 +1791,7 @@ class EchoGateway:
         if not mechs:
             if shared is not None and model is not None:
                 mech = MujocoMech("mech_player", model, shared, prefix="mech_player/")
+                mech.drive_cfg = drive_cfg
             else:
                 mech = MechState("mech_player")
             mech.reset_pose({})

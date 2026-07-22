@@ -37,6 +37,8 @@ shadow_enabled = true
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("17_camrig")
+speed_fov_enabled = true
+follow_lag = 6.0
 target_path = NodePath("../MechPlayer")
 distance = 34.0
 min_distance = 12.0
@@ -56,7 +58,7 @@ metadata/physics_role = "viewer_only"
 [node name="MechPlayer" type="Node3D" parent="."]
 script = ExtResource("3_puppet")
 entity_id = "mech_player"
-interp_delay = 0.05
+interp_delay = 0.03
 show_team_tag = true
 show_front_arrow = false
 show_arm = false

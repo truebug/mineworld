@@ -4260,7 +4260,15 @@
     "mw": {
       "default_room_id": "race",
       "max_members": 6,
-      "mode": "shared_ffa"
+      "mode": "shared_ffa",
+      "drive": {
+        "steer_max_rad": 0.55,
+        "steer_speed_gain": 0.012,
+        "v_max": 18.0,
+        "v_taper": 8.0,
+        "brake_torque": 1.6,
+        "reverse_gain": 0.5
+      }
     },
     "mw.il": {
       "task_id": "obj_race_finish",

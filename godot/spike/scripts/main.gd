@@ -16,6 +16,13 @@ const TURN_SPEED := 1.0
 const MOVE_SPEED_RACE := 1.0
 const TURN_SPEED_RACE := 1.0
 const STRAFE_SPEED_RACE := 0.35
+## R2 analog drive (keyboard time-for-axis; gamepad native axis).
+const DRV_THROTTLE_UP := 2.5   # /s ramp to full gas
+const DRV_THROTTLE_DOWN := 4.0 # /s decay on release
+const DRV_BRAKE_UP := 5.0      # /s ramp to full brake
+const DRV_BRAKE_DOWN := 6.0
+const DRV_STEER_UP := 3.0      # /s toward lock
+const DRV_STEER_CENTER := 5.0  # /s auto-center on release
 const CMD_HZ := 20.0
 const _WEB_BLOCK_CODES := {
 	"KeyW": true, "KeyA": true, "KeyS": true, "KeyD": true,
@@ -37,6 +44,12 @@ const _WEB_BLOCK_CODES := {
 
 var _session_id := ""
 var _hello: Dictionary = {}
+var _drv_throttle := 0.0
+var _drv_brake := 0.0
+var _drv_steer := 0.0
+var _lap_splits: Array = []
+var _lap_start_t := -1.0
+var _last_state_t := 0.0
 var _last_error := ""
 var _cmd_timer := 0.0
 var _last_log_tick := -1
@@ -823,6 +836,19 @@ func _on_event(payload: Dictionary) -> void:
 			var kind := str(detail.get("kind", ""))
 			var oid := str(payload.get("objective_id", "?"))
 			# grasp_lift / stow milestones — keep control for place.
+			if level_id == "demo_race" and oid.begins_with("obj_cp"):
+				# R3 sector split: sim time since last checkpoint.
+				var t_now := _last_state_t
+				if _lap_start_t >= 0.0:
+					_lap_splits.append("%s %.1fs" % [oid.trim_prefix("obj_"), t_now - _lap_start_t])
+					if _lap_splits.size() > 3:
+						_lap_splits.pop_front()
+				_lap_start_t = t_now
+				_update_hud()
+				return
+			if oid == "obj_race_finish" and _lap_start_t >= 0.0:
+				_lap_splits.append("lap %.1fs" % (_last_state_t - _lap_start_t))
+				_lap_start_t = -1.0
 			if kind == "grasp_lift" or kind == "milestone" or oid == "obj_lift_block":
 				if oid == "obj_stow_crate" or kind == "milestone":
 					_status_line = MWi18n.t(
@@ -1082,6 +1108,147 @@ func _race_forward_speed() -> float:
 	return 0.0
 
 
+func _bar(v: float, width: int = 10) -> String:
+	"""ASCII fill bar for 0..1 channel."""
+	var n := int(round(clampf(v, 0.0, 1.0) * width))
+	return "[" + "#".repeat(n) + "-".repeat(width - n) + "]"
+
+
+func _steer_bar(v: float) -> String:
+	"""ASCII steer indicator: L <<0>> R around center."""
+	var cells := ["L", "<", "<", "<", "0", ">", ">", ">", "R"]
+	var idx := int(round((clampf(v, -1.0, 1.0) + 1.0) * 4.0))
+	var out := ""
+	for i in cells.size():
+		out += ("(%s)" % cells[i]) if i == idx else cells[i]
+	return out
+
+
+func _approachf(cur: float, target: float, up: float, down: float, dt: float) -> float:
+	"""Rate-limited approach: `up` toward ±target, `down` back toward 0."""
+	if target != 0.0:
+		return move_toward(cur, target, up * dt)
+	return move_toward(cur, 0.0, down * dt)
+
+
+func _update_drive_channels(w: bool, s: bool, q: bool, e: bool, x_rev: bool) -> void:
+	"""Keyboard: hold-to-ramp, release-to-decay; gamepad axis wins when live."""
+	var dt := 1.0 / CMD_HZ
+	var pad_thr := Input.get_axis("move_back", "move_forward")
+	var pad_steer := Input.get_axis("turn_ccw", "turn_cw")
+	if absf(pad_thr) > 0.15 or absf(pad_steer) > 0.15:
+		_drv_throttle = clampf(pad_thr, -1.0, 1.0)
+		_drv_brake = 0.0
+		_drv_steer = clampf(-pad_steer, -1.0, 1.0)
+		return
+	var fwd := _race_forward_speed()
+	if w and not s and not x_rev:
+		_drv_throttle = _approachf(_drv_throttle, 1.0, DRV_THROTTLE_UP, DRV_THROTTLE_DOWN, dt)
+	elif x_rev and not w and fwd < 1.0:
+		# Reverse gate: only when nearly stopped (NFS-style shift protection).
+		_drv_throttle = _approachf(_drv_throttle, -1.0, DRV_THROTTLE_UP, DRV_THROTTLE_DOWN, dt)
+	else:
+		_drv_throttle = _approachf(_drv_throttle, 0.0, DRV_THROTTLE_UP, DRV_THROTTLE_DOWN, dt)
+	if s and not w and not x_rev:
+		_drv_brake = _approachf(_drv_brake, 1.0, DRV_BRAKE_UP, DRV_BRAKE_DOWN, dt)
+	else:
+		_drv_brake = _approachf(_drv_brake, 0.0, DRV_BRAKE_UP, DRV_BRAKE_DOWN, dt)
+	var steer_target := 0.0
+	if q:
+		steer_target += 1.0
+	if e:
+		steer_target -= 1.0
+	_drv_steer = _approachf(_drv_steer, steer_target, DRV_STEER_UP, DRV_STEER_CENTER, dt)
+
+
+var _race_smoke: GPUParticles3D = null
+var _tire_marks: Array = []
+var _tire_mark_acc := 0.0
+const TIRE_MARK_MAX := 220
+
+
+func _ensure_race_fx() -> void:
+	"""R4 viewer-only brake smoke; never feeds physics."""
+	if _race_smoke != null or level_id != "demo_race":
+		return
+	var own := _own_mech()
+	if own == null:
+		return
+	var p := GPUParticles3D.new()
+	p.name = "RaceBrakeSmoke"
+	p.amount = 24
+	p.lifetime = 0.6
+	p.emitting = false
+	var mat := ParticleProcessMaterial.new()
+	mat.direction = Vector3(0, 1, 0)
+	mat.spread = 40.0
+	mat.initial_velocity_min = 0.6
+	mat.initial_velocity_max = 1.4
+	mat.gravity = Vector3(0, 0.6, 0)
+	mat.scale_min = 0.15
+	mat.scale_max = 0.4
+	mat.color = Color(0.75, 0.75, 0.78, 0.55)
+	p.process_material = mat
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.3, 0.3)
+	p.draw_pass_1 = quad
+	p.position = Vector3(-0.4, 0.12, 0)
+	own.add_child(p)
+	_race_smoke = p
+
+
+func _update_race_fx() -> void:
+	var spd := absf(_race_forward_speed())
+	var hard_brake := _drv_brake > 0.35 and spd > 4.0
+	var hard_turn := absf(_drv_steer) > 0.75 and spd > 10.0
+	if _race_smoke != null:
+		_race_smoke.emitting = hard_brake or hard_turn
+	if hard_brake or hard_turn:
+		_drop_tire_mark()
+
+
+func _drop_tire_mark() -> void:
+	"""Flat dark quad under the car; capped FIFO, viewer-only."""
+	_tire_mark_acc += 1.0 / CMD_HZ
+	if _tire_mark_acc < 0.08:
+		return
+	_tire_mark_acc = 0.0
+	var own := _own_mech()
+	if own == null:
+		return
+	var mi := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.55, 0.22)
+	quad.orientation = PlaneMesh.FACE_Y
+	mi.mesh = quad
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.08, 0.08, 0.09, 0.5)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mi.material_override = mat
+	add_child(mi)
+	mi.global_position = own.global_position + Vector3(0, 0.02, 0)
+	mi.global_rotation.y = own.global_rotation.y
+	_tire_marks.append(mi)
+	if _tire_marks.size() > TIRE_MARK_MAX:
+		var old_mi: MeshInstance3D = _tire_marks.pop_front()
+		if is_instance_valid(old_mi):
+			old_mi.queue_free()
+
+
+func _send_drive_cmd() -> void:
+	if _controlled_entity_id == "":
+		return
+	ws.send_cmd({
+		"entity_id": _controlled_entity_id,
+		"control_mode": "drive",
+		"throttle": snappedf(_drv_throttle, 0.01),
+		"brake": snappedf(_drv_brake, 0.01),
+		"steer": snappedf(_drv_steer, 0.01),
+		"handbrake": 0.0,
+	})
+
+
 func _send_velocity_cmd() -> void:
 	var vx := 0.0
 	var vy := 0.0
@@ -1113,27 +1280,14 @@ func _send_velocity_cmd() -> void:
 		e = _key_down(KEY_E)
 		x_rev = _key_down(KEY_X)
 	if level_id == "demo_race":
-		# W gas / S brake / X reverse / QE steer; light A/D strafe.
-		# Race MuJoCo: vx[-1,1] → RWD torque; yaw_rate → front steer.
-		var fwd := _race_forward_speed()
-		if w and not s and not x_rev:
-			vx = spd
-		elif x_rev and not w:
-			vx = -spd
-		elif s and not w and not x_rev:
-			# Brake while rolling forward; hold still when nearly stopped.
-			if fwd > 0.8:
-				vx = -spd
-			else:
-				vx = 0.0
-		if a:
-			vy += strafe
-		if d:
-			vy -= strafe
-		if q:
-			yaw_rate += turn
-		if e:
-			yaw_rate -= turn
+		# R2 analog drive → control_mode "drive" (see gateway DRIVE_DEFAULTS).
+		_update_drive_channels(w, s, q, e, x_rev)
+		_ensure_race_fx()
+		_update_race_fx()
+		if camera_rig != null and camera_rig.has_method("set_drive_speed"):
+			camera_rig.set_drive_speed(_race_forward_speed())
+		_send_drive_cmd()
+		return
 	elif _is_web:
 		if w:
 			vx += spd
@@ -1236,12 +1390,19 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		]
 		text += "frame: %s | features: %s\n" % [_hello.get("frame", "?"), _hello.get("features", [])]
 	if tick >= 0:
+		_last_state_t = t_sim
 		text += "tick=%d t_sim=%.2f\n" % [tick, t_sim]
 		text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [own.position.x, own.position.z, own.rotation.y]
 	if _last_error != "":
 		text += "\n! gateway error: %s" % _last_error
 	text += "\nWASD 平移 | QE 转向 | T 接管 | R 释放 | 左下角臂爪滑条"
 	if level_id == "demo_race":
+		var kmh := absf(_race_forward_speed()) * 3.6
+		text += "\n车速 %3.0f km/h | 油门 %s | 刹车 %s\n转向 %s" % [
+			kmh, _bar(_drv_throttle), _bar(_drv_brake), _steer_bar(_drv_steer),
+		]
+		if _lap_splits.size() > 0:
+			text += "\n" + " | ".join(_lap_splits)
 		text += "\nRace: W 油门 | S 刹车 | X 倒车 | Q/E 转向"
 	text += "\nV 相机 | 左键 peek 松手回中 | 右键粘性环视 | 中键/左右同按平移 | 滚轮缩放 | C 强制回中"
 	if _is_web:

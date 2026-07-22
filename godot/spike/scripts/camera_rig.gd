@@ -26,6 +26,11 @@ const CHASE_PITCH_DEFAULT := -0.38
 @export var min_chase_distance := 2.0
 @export var max_chase_distance := 9.0
 @export var chase_recenter_speed := 7.0
+## R3 speed FX (race): FOV widens + follow lags behind target at speed.
+@export var speed_fov_enabled := false
+@export var speed_fov_ref := 18.0   ## m/s at full boost
+@export var speed_fov_boost := 12.0 ## degrees added at ref speed
+@export var follow_lag := 0.0       ## 0 = rigid; ~6 gives elastic chase
 
 @onready var camera: Camera3D = $Camera3D
 var _target: Node3D = null
@@ -40,6 +45,10 @@ var _fp_pitch := 0.0
 ## Chase: mouse orbit relative to "behind head" (radians).
 var _chase_yaw := 0.0
 var _chase_pitch := CHASE_PITCH_DEFAULT
+var _drive_speed := 0.0
+var _base_fov := 0.0
+var _follow_pos := Vector3.ZERO
+var _follow_init := false
 ## Sticky/home look (RMB commits; LMB peek springs back here; C resets).
 var _c_orbit_yaw := 0.5
 var _c_orbit_pitch := -0.6
@@ -305,6 +314,10 @@ func _spring_to_committed(delta: float) -> void:
 			pitch = lerpf(pitch, _c_orbit_pitch, k)
 
 
+func set_drive_speed(v: float) -> void:
+	_drive_speed = v
+
+
 func _process(delta: float) -> void:
 	"""Desktop arrow pan + peek spring; Web scenes also call pan_axes from key bridge."""
 	if not OS.has_feature("web"):
@@ -324,11 +337,23 @@ func _process(delta: float) -> void:
 
 	if _target == null:
 		return
-	if view_mode == ViewMode.FIRST:
-		global_position = _target.global_position
-	else:
-		global_position = _target.global_position + look_offset
+	var anchor := _target.global_position
+	if view_mode != ViewMode.FIRST:
+		anchor += look_offset
+	if follow_lag > 0.0:
+		if not _follow_init:
+			_follow_pos = anchor
+			_follow_init = true
+		var k := clampf(follow_lag * delta, 0.0, 1.0)
+		_follow_pos = _follow_pos.lerp(anchor, k)
+		anchor = _follow_pos
+	global_position = anchor
 	_update_camera()
+	if speed_fov_enabled and camera != null:
+		if _base_fov <= 0.0:
+			_base_fov = camera.fov
+		var ratio := clampf(absf(_drive_speed) / speed_fov_ref, 0.0, 1.0)
+		camera.fov = lerpf(camera.fov, _base_fov + speed_fov_boost * ratio, clampf(4.0 * delta, 0.0, 1.0))
 
 
 func _update_camera() -> void:

@@ -33,11 +33,85 @@ func _ready() -> void:
 	_add_ramps(layout)
 	_add_triggers(layout)
 	_add_finish_flags(layout)
+	_add_kerb_and_boards(layout)
 	_add_trees(layout)
 	print(
 		"[MW] race dress walls=%d fence_pieces=%d lap≈%sm"
 		% [walls.size(), fence_n, layout.get("lap_m", "?")]
 	)
+
+
+func _pts_xy(pts: Array) -> Array:
+	"""centerline [{x,y}, ...] → [Vector2, ...]"""
+	var out: Array = []
+	for p in pts:
+		if typeof(p) == TYPE_DICTIONARY:
+			out.append(Vector2(float(p.get("x", 0.0)), float(p.get("y", 0.0))))
+	return out
+
+
+func _corner_indices(pts: Array) -> Array:
+	"""R5: local maxima of curvature along centerline (viewer aids only)."""
+	var out: Array = []
+	var n := pts.size()
+	if n < 8:
+		return out
+	for i in range(n):
+		var a: Vector2 = pts[(i - 2 + n) % n]
+		var b: Vector2 = pts[i]
+		var c: Vector2 = pts[(i + 2) % n]
+		var v1 := (b - a).normalized()
+		var v2 := (c - b).normalized()
+		var turn := absf(v1.angle_to(v2))
+		if turn > 0.35:
+			var dominated := false
+			for j in out:
+				if mini(abs(j - i), n - abs(j - i)) < 6:
+					dominated = true
+					break
+			if not dominated:
+				out.append(i)
+	return out
+
+
+func _add_kerb_and_boards(layout: Dictionary) -> void:
+	"""Red/white kerb strips at corner apexes + 50/100/150 m brake boards."""
+	var pts: Array = _pts_xy(layout.get("centerline", []))
+	var lane_half := float(layout.get("lane_half_m", 6.0))
+	var corners := _corner_indices(pts)
+	var red := StandardMaterial3D.new()
+	red.albedo_color = Color(0.85, 0.12, 0.12)
+	var white := StandardMaterial3D.new()
+	white.albedo_color = Color(0.92, 0.92, 0.92)
+	var board_mat := StandardMaterial3D.new()
+	board_mat.albedo_color = Color(0.95, 0.75, 0.1)
+	var n := pts.size()
+	# meters per centerline sample (for board placement)
+	var step_m := float(layout.get("lap_m", 0.0)) / maxf(float(n), 1.0)
+	if step_m <= 0.01:
+		step_m = 3.0
+	for ci in corners:
+		var apex: Vector2 = pts[ci]
+		var tangent := (Vector2(pts[(ci + 1) % n]) - Vector2(pts[(ci - 1 + n) % n])).normalized()
+		var normal := Vector2(-tangent.y, tangent.x)
+		var yaw := tangent.angle()  # matches _add_flat_lane convention
+		# kerb strips both edges, ~6 m around apex
+		for side in [-1, 1]:
+			for k in range(3):
+				var off := apex + tangent * float(k - 1) * 2.0 + normal * lane_half * float(side)
+				_add_box("Kerb", Vector3(off.x, 0.03, -off.y), Vector3(2.0, 0.06, 0.8),
+					red if k % 2 == 0 else white, yaw)
+		# brake boards before corner: 50/100/150 m, right side of travel
+		for dist in [50, 100, 150]:
+			var back := int(round(dist / step_m))
+			var bi := (ci - back + n * 4) % n
+			var bp: Vector2 = pts[bi]
+			var bt := (Vector2(pts[(bi + 1) % n]) - Vector2(pts[(bi - 1 + n) % n])).normalized()
+			var bn := Vector2(-bt.y, bt.x)
+			var pos := bp + bn * (lane_half + 1.2)
+			_add_box("BrakePost", Vector3(pos.x, 0.75, -pos.y), Vector3(0.12, 1.5, 0.12), white, bt.angle())
+			_add_box("BrakeBoard", Vector3(pos.x, 1.7, -pos.y), Vector3(0.9, 0.6, 0.08), board_mat, bt.angle())
+	print("[MW] race dress kerbs: corners=%d" % corners.size())
 
 
 func _load_layout() -> Dictionary:
