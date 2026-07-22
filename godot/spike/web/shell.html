@@ -517,7 +517,7 @@ body.mw-play.mw-no-joints #mw-joints {
 
 		<pre id="mw-hud" title="Click to collapse" data-i18n="hud.connecting">MineWorld · 连接中…</pre>
 		<div id="mw-hub-profile">
-			<div class="mw-id" id="mw-hub-id" data-i18n="hub.pilot">飞行员卡</div>
+			<div class="mw-id" id="mw-hub-id" data-i18n="hub.pilot">驾驶员卡</div>
 			<div id="mw-hub-nick-label">Guest</div>
 			<input id="mw-hub-nick" type="text" maxlength="24" data-i18n="hub.nick" data-i18n-attr="placeholder" placeholder="昵称" autocomplete="off">
 			<div class="mw-profile-links">
@@ -793,7 +793,7 @@ const engine = new Engine(GODOT_CONFIG);
 			const id = String(p.id || '?');
 			const nick = String(p.nickname || 'Guest').slice(0, 24);
 			if (idEl) {
-				var prefix = window.MW_I18N ? window.MW_I18N.t('hub.pilot_id') : '飞行员 · ID ';
+				var prefix = window.MW_I18N ? window.MW_I18N.t('hub.pilot_id') : '驾驶员 · ID ';
 				idEl.textContent = prefix + id.slice(0, 12);
 			}
 			if (nickLabel) {

@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-07-22 · 开源落地页默认 / 驾驶员 / 默认第一人称
+
+- 落地页默认「机甲学院母港」+ `© 2026 Bug Copyright 云端机甲学院`（无 ICP）；公网品牌注入见私有 `scripts/*.local.py`。
+- 中文「飞行员」→「驾驶员」；相机默认 first-person。
+- README 英/中分册 + `screenshots/`。
+
+---
+
 ## 2026-07-22 · Hub 人偶：Kenney Blocky + 走跑动画
 
 - `avatar_puppet`：轮式程序化模型 → Kenney `character-a..d`；idle/walk/sprint 由插值速度驱动；H9 accent 换皮。Gateway 不变。

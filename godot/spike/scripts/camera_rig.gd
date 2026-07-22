@@ -1,5 +1,5 @@
 ## Follow-orbit camera for teleoperation / hub / levels (shared SSOT).
-## Modes: orbit (wide 3rd), first-person, chase (close behind). V cycles.
+## Modes: first-person (default), chase (close behind), orbit (wide 3rd). V cycles.
 ## Mouse: LMB peek (spring back), RMB sticky look, MMB or L+R pan, wheel zoom, C recenter.
 extends Node3D
 
@@ -21,7 +21,7 @@ const CHASE_PITCH_DEFAULT := -0.28
 @export var pan_speed := 8.0
 @export var pan_mouse_scale := 0.12
 @export var max_look_offset := 40.0
-@export var view_mode: ViewMode = ViewMode.ORBIT
+@export var view_mode: ViewMode = ViewMode.FIRST
 @export var chase_distance := 3.6
 @export var min_chase_distance := 2.0
 @export var max_chase_distance := 8.0
@@ -95,24 +95,24 @@ func handle_code(code: String, down: bool) -> bool:
 
 
 func cycle_view_mode() -> String:
-	"""Orbit → first-person → chase → orbit. Returns mode label."""
+	"""First-person → chase → orbit → first-person. Returns mode label."""
 	match view_mode:
-		ViewMode.ORBIT:
-			view_mode = ViewMode.FIRST
-			_fp_yaw = 0.0
-			_fp_pitch = 0.0
-			_commit_current_look()
 		ViewMode.FIRST:
 			view_mode = ViewMode.CHASE
 			_chase_yaw = 0.0
 			_chase_pitch = CHASE_PITCH_DEFAULT
 			chase_distance = 3.6
 			_commit_current_look()
-		_:
+		ViewMode.CHASE:
 			view_mode = ViewMode.ORBIT
 			distance = _orbit_distance
 			pitch = _orbit_pitch
 			yaw = _orbit_yaw
+			_commit_current_look()
+		_:
+			view_mode = ViewMode.FIRST
+			_fp_yaw = 0.0
+			_fp_pitch = 0.0
 			_commit_current_look()
 	_update_camera()
 	var label := view_mode_label()

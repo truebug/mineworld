@@ -195,6 +195,7 @@
 		.foot a:hover { color: var(--accent); }
 		.foot .legal { display: block; }
 		.foot .beian { display: inline-block; margin-top: 2px; }
+		.foot .beian[hidden] { display: none; }
 		#guest, #authed { display: none; }
 		#guest.show, #authed.show { display: flex; }
 	</style>
@@ -266,11 +267,11 @@
 			</svg>
 		</div>
 		<div class="hero">
-			<h1 class="brand"><span data-i18n="land.tag">数聚球母港</span>MineWorld</h1>
+			<h1 class="brand"><span id="mw-land-tag" data-i18n="land.tag">机甲学院母港</span>MineWorld</h1>
 			<p class="lede" data-i18n="land.lede">真机甲 · 真任务 · 可训练的遥操数据。进入母港大厅，或从门后打开仿真卡片。</p>
 			<div class="ctas" id="guest">
 				<a class="btn btn-primary" id="signin" href="/portal/login.html" data-i18n="land.signin">登录</a>
-				<a class="btn btn-ghost" href="/portal/login.html?next=%2Fportal%2Fme.html" data-i18n="land.record">飞行员档案</a>
+				<a class="btn btn-ghost" href="/portal/login.html?next=%2Fportal%2Fme.html" data-i18n="land.record">驾驶员档案</a>
 			</div>
 			<div class="ctas" id="authed">
 				<a class="btn btn-primary" id="enter-hub" href="/" data-i18n="land.enter">进入母港</a>
@@ -278,13 +279,37 @@
 			</div>
 		</div>
 		<footer class="foot">
-			<span class="legal">© 2026 数聚球（上海）科技有限公司 · 机器人云端试验场</span>
-			<a class="beian" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">沪ICP备2026009411号-1</a>
+			<span class="legal" id="mw-legal">© 2026 Bug Copyright 云端机甲学院</span>
+			<a class="beian" id="mw-beian" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" hidden></a>
 			 · <a href="/portal/admin.html">Admin</a>
 		</footer>
 	</main>
 	<script>
 	(function () {
+		/* Optional deploy inject: window.MW_SITE = { tagZh, tagEn, legal, beianText, beianHref } */
+		var site = window.MW_SITE || null;
+		if (site && window.MW_I18N && window.MW_I18N.dict) {
+			if (site.tagZh || site.tagEn) {
+				window.MW_I18N.dict['land.tag'] = {
+					zh: site.tagZh || window.MW_I18N.dict['land.tag'].zh,
+					en: site.tagEn || window.MW_I18N.dict['land.tag'].en
+				};
+			}
+		}
+		if (site) {
+			var legal = document.getElementById('mw-legal');
+			if (legal && site.legal) {
+				legal.textContent = site.legal;
+			}
+			var beian = document.getElementById('mw-beian');
+			if (beian && site.beianText) {
+				beian.textContent = site.beianText;
+				if (site.beianHref) {
+					beian.href = site.beianHref;
+				}
+				beian.hidden = false;
+			}
+		}
 		if (window.MW_I18N) {
 			window.MW_I18N.mountToggle(document.body);
 		}

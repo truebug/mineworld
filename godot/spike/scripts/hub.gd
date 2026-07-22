@@ -141,7 +141,7 @@ func _start_hub_session() -> void:
 	_apply_cjk_fonts()
 	_link_banner = MWi18n.t("正在连接网关…", "Connecting to gateway…")
 	_lore_body = MWi18n.t(
-		"你已抵达数聚球母港。\n东翼本仓关卡 · 北翼卡片通道 · 西翼边缘坞。",
+		"你已抵达机甲学院母港。\n东翼本仓关卡 · 北翼卡片通道 · 西翼边缘坞。",
 		"You have reached the mothership hangar.\nEast native · North cards · West edge."
 	)
 	_compose_and_push_tips()
@@ -307,7 +307,7 @@ func _apply_profile_ui() -> void:
 	if nick_edit != null:
 		nick_edit.text = nick
 	if profile_label != null:
-		profile_label.text = MWi18n.t("飞行员卡\n%s\nID %s", "Pilot card\n%s\nID %s") % [
+		profile_label.text = MWi18n.t("驾驶员卡\n%s\nID %s", "Pilot card\n%s\nID %s") % [
 			nick, pid.substr(0, 14)
 		]
 	_push_web_profile()
@@ -447,7 +447,7 @@ func _on_scene(payload: Dictionary) -> void:
 	ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
 	_link_banner = ""
 	_lore_body = MWi18n.t(
-		"飞行员 %s · 母港\n东翼本仓 A/B · 北翼卡片 C · 西翼边缘 D · 南翼竞技 E",
+		"驾驶员 %s · 母港\n东翼本仓 A/B · 北翼卡片 C · 西翼边缘 D · 南翼竞技 E",
 		"Pilot %s · Hangar Core\nEast A/B · North C · West Edge D · South Arena E"
 	) % str(_profile.get("nickname", "Guest"))
 	_compose_and_push_tips()

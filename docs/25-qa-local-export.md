@@ -101,7 +101,7 @@ ssh binjietk 'sudo systemctl restart mineworld-web mineworld-gateway'
 
 核对：HTTPS 200；`index.html` 含 playground WSS；`examples/contracts/demo_city.json` seed/障碍与本地一致；硬刷新后再手测 §2 City 三行。
 
-私有细节见 `docs/ops.local.md`（gitignore）。
+私有细节见 `docs/ops.local.md`（gitignore）。公网落地页品牌（数聚球 / ICP）见私有 `scripts/inject_site_branding.local.py`，**每次 rsync 后必跑**。
 
 ## 5. 勾选
 
