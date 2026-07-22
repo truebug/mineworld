@@ -1,18 +1,25 @@
 ## Local FakeMech-free patrol walker (Hub atmosphere only; not on Gateway).
+## Walks a loop; dwells at each stop with a soft speech bubble.
 extends Node3D
 
 const NPC_SCALE := 0.36
 const BLOCKY_DIR := "res://assets/kenney_blocky/"
+const ARRIVE_DIST := 0.35
+const DWELL_S := 2.6
 
 @export var move_speed := 1.35
 var waypoints: Array = [] ## Vector3
 var _wp_i := 0
 var _anim: AnimationPlayer = null
 var _speed_smooth := 0.0
+var _dwell_left := 0.0
+var _bubble: Node3D = null
+var _rng := RandomNumberGenerator.new()
 
 
-func setup(asset: String, path: Array, accent: Color) -> void:
-	"""Build mesh + waypoint loop."""
+func setup(asset: String, path: Array, accent: Color, lines: Array = [], start_offset: float = 0.0) -> void:
+	"""Build mesh + waypoint loop; optional chat lines shown while dwelling."""
+	_rng.randomize()
 	waypoints = path.duplicate()
 	if waypoints.is_empty():
 		waypoints = [global_position]
@@ -21,6 +28,20 @@ func setup(asset: String, path: Array, accent: Color) -> void:
 		_fallback(accent)
 	else:
 		call_deferred("_plant_feet")
+	if not lines.is_empty():
+		_bubble = preload("res://scripts/hub_speech_bubble.gd").new()
+		_bubble.name = "SpeechBubble"
+		add_child(_bubble)
+		_bubble.position = Vector3(0, 1.85, 0)
+		_bubble.set("dwell_only", true)
+		_bubble.set("hold_s", 3.4)
+		_bubble.call("setup", lines, accent.lightened(0.25), start_offset)
+		_bubble.call("set_dwell_active", false)
+	# Brief pause at spawn so plaza is not empty-walkers-only.
+	_dwell_left = 1.2 + _rng.randf() * 1.4
+	_play("idle")
+	if _bubble != null:
+		_bubble.call("set_dwell_active", true)
 
 
 func _spawn_blocky(asset: String) -> bool:
@@ -110,17 +131,30 @@ func _collect_meshes(n: Node) -> Array:
 
 
 func _process(delta: float) -> void:
-	"""Walk toward next waypoint; loop."""
+	"""Dwell at stops (bubble on), then walk to next waypoint."""
 	if waypoints.size() < 2:
 		_play("idle")
+		return
+	if _dwell_left > 0.0:
+		_dwell_left = maxf(0.0, _dwell_left - delta)
+		_speed_smooth = lerpf(_speed_smooth, 0.0, 0.25)
+		_play("idle")
+		if _bubble != null:
+			_bubble.call("set_dwell_active", true)
+		if _dwell_left <= 0.0 and _bubble != null:
+			_bubble.call("set_dwell_active", false)
 		return
 	var target: Vector3 = waypoints[_wp_i]
 	target.y = global_position.y
 	var to := target - global_position
 	to.y = 0.0
 	var dist := to.length()
-	if dist < 0.35:
+	if dist < ARRIVE_DIST:
 		_wp_i = (_wp_i + 1) % waypoints.size()
+		_dwell_left = DWELL_S + _rng.randf() * 1.8
+		_play("idle")
+		if _bubble != null:
+			_bubble.call("set_dwell_active", true)
 		return
 	var step := minf(move_speed * delta, dist)
 	var dir := to / dist
@@ -128,3 +162,5 @@ func _process(delta: float) -> void:
 	rotation.y = atan2(-dir.z, dir.x)
 	_speed_smooth = lerpf(_speed_smooth, move_speed, 0.2)
 	_play("walk")
+	if _bubble != null:
+		_bubble.call("set_dwell_active", false)

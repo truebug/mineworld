@@ -216,10 +216,11 @@ func _add_box(parent: Node3D, pos: Vector3, size: Vector3, color: Color) -> void
 
 
 func set_display(name_text: String, accent_hex: String = "") -> void:
-	"""Update name tag; accent may swap Blocky skin (H9 vendor)."""
+	"""Update name tag; Hub short codes look like «Nick · #A1B2»."""
 	display_name = name_text
 	if _label != null:
 		_label.text = name_text if name_text != "" else "Guest"
+		_label.font_size = 42 if name_text.find(" · #") >= 0 else 48
 	if accent_hex != "":
 		var c := Color(accent_hex)
 		if c.a > 0.0:

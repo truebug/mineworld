@@ -466,28 +466,48 @@ func _place_npcs() -> void:
 		MWi18n.t("玛雅", "Maya"),
 		"character-a.glb", Vector3(5.8, 0, 2.4), -120.0, Color(1.0, 0.85, 0.4),
 		MWi18n.t("F · 与玛雅交谈", "F · Talk to Maya"),
-		MWi18n.t("玛雅: 跟橙灯带去工坊，蓝灯带去训练场。", "Maya: Orange lights → Workshop, blue → Training."),
+		[
+			MWi18n.t("跟橙灯带去工坊~", "Follow orange lights to Workshop~"),
+			MWi18n.t("蓝灯带 → 训练场。", "Blue lights → Training yard."),
+			MWi18n.t("新人？先看中央碑。", "New here? Check the central board."),
+		],
+		0.0,
 	)
 	_npc(
 		"rex",
 		MWi18n.t("雷克斯", "Rex"),
 		"character-b.glb", Vector3(17.5, 0, 2.4), -90.0, Color(1.0, 0.55, 0.25),
 		MWi18n.t("F · 与雷克斯交谈", "F · Talk to Rex"),
-		MWi18n.t("雷克斯: 橙门工坊就在前面。把推车完整带回来！", "Rex: Orange gate Workshop ahead — bring the cart back!"),
+		[
+			MWi18n.t("橙门工坊就在前面！", "Orange gate Workshop ahead!"),
+			MWi18n.t("把推车完整带回来。", "Bring the cart back intact."),
+			MWi18n.t("臂爪任务，慢慢来。", "Arm/claw tasks — take it slow."),
+		],
+		1.1,
 	)
 	_npc(
 		"jin",
 		MWi18n.t("金", "Jin"),
 		"character-c.glb", Vector3(-17.5, 0, 2.2), 90.0, Color(0.45, 0.8, 1.0),
 		MWi18n.t("F · 与金交谈", "F · Talk to Jin"),
-		MWi18n.t("金: 蓝门是训练场。进街区前先热身。", "Jin: Blue door = Training yard."),
+		[
+			MWi18n.t("蓝门是训练场。", "Blue door = Training yard."),
+			MWi18n.t("进街区前先热身。", "Warm up before the blocks."),
+			MWi18n.t("别撞展柜啊。", "Don't ram the exhibits."),
+		],
+		2.2,
 	)
 	_npc(
 		"pip",
 		MWi18n.t("皮普", "Pip"),
 		"character-d.glb", Vector3(0.0, 0, -8.0), 0.0, Color(0.7, 0.9, 0.5),
 		MWi18n.t("F · 与皮普交谈", "F · Talk to Pip"),
-		MWi18n.t("皮普: 中央碑有今日去处。朋友进厅记得打招呼！", "Pip: Check the central board — say hi when friends join."),
+		[
+			MWi18n.t("中央碑有今日去处！", "Central board has today's routes!"),
+			MWi18n.t("朋友进厅记得打招呼。", "Say hi when friends join."),
+			MWi18n.t("电梯可上 L2 观景。", "Elevator goes to L2 lounge."),
+		],
+		3.4,
 	)
 
 
@@ -499,9 +519,10 @@ func _npc(
 	face_yaw_deg: float,
 	accent: Color,
 	prompt: String,
-	line: String,
+	lines: Array,
+	bubble_offset: float = 0.0,
 ) -> void:
-	"""Spawn a scaled blocky character planted on the floor."""
+	"""Spawn a scaled blocky character with rotating speech bubble."""
 	var root := Node3D.new()
 	root.name = "NPC_%s" % npc_id
 	add_child(root)
@@ -514,29 +535,26 @@ func _npc(
 		call_deferred("_plant_feet", root)
 	var tag := Label3D.new()
 	MWFonts.apply_label3d(tag)
+	tag.name = "NpcTag"
 	tag.text = display
-	tag.font_size = 36
+	tag.font_size = 32
 	tag.outline_size = 6
 	tag.pixel_size = 0.01
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	tag.modulate = accent
 	root.add_child(tag)
-	tag.position = Vector3(0, 1.55, 0)
-	var hint := Label3D.new()
-	MWFonts.apply_label3d(hint)
-	hint.text = prompt
-	hint.font_size = 24
-	hint.outline_size = 4
-	hint.pixel_size = 0.009
-	hint.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	hint.modulate = Color(0.9, 0.9, 0.95, 0.85)
-	root.add_child(hint)
-	hint.position = Vector3(0, 1.3, 0)
+	tag.position = Vector3(0, 1.42, 0)
+	var bubble: Node3D = preload("res://scripts/hub_speech_bubble.gd").new()
+	bubble.name = "SpeechBubble"
+	root.add_child(bubble)
+	bubble.position = Vector3(0, 1.92, 0)
+	bubble.call("setup", lines, accent.lightened(0.2), bubble_offset)
+	var talk_line := str(lines[0]) if not lines.is_empty() else display
 	interactables.append({
 		"node": root,
 		"id": "npc_%s" % npc_id,
 		"prompt": prompt,
-		"line": line,
+		"line": "%s: %s" % [display, talk_line],
 	})
 
 
@@ -587,14 +605,13 @@ func _plant_feet(root: Node3D) -> void:
 			min_y = minf(min_y, w.y)
 	if min_y < 1e8:
 		mesh.global_position.y -= min_y
-	# Name tags sit just above scaled head (~1.1m after plant).
-	for child in root.get_children():
-		if child is Label3D:
-			var lbl := child as Label3D
-			if lbl.text.begins_with("F -"):
-				lbl.position.y = 1.15
-			else:
-				lbl.position.y = 1.35
+	# Name tag / bubble sit just above scaled head after plant.
+	var nametag := root.get_node_or_null("NpcTag") as Label3D
+	if nametag != null:
+		nametag.position.y = 1.35
+	var bubble := root.get_node_or_null("SpeechBubble") as Node3D
+	if bubble != null:
+		bubble.position.y = 1.85
 
 
 func _all_meshes(n: Node) -> Array:
@@ -735,7 +752,7 @@ func _place_beacon() -> void:
 
 
 func _place_patrols() -> void:
-	"""Local walkers (not on Gateway) so the plaza feels occupied."""
+	"""Local walkers with dwell stops + chat bubbles (not on Gateway)."""
 	_patrol(
 		"scout_a",
 		"character-b.glb",
@@ -746,6 +763,12 @@ func _place_patrols() -> void:
 			Vector3(14.0, 0, -4.0),
 			Vector3(8.0, 0, -5.0),
 		],
+		[
+			MWi18n.t("去工坊看看？", "Heading to Workshop?"),
+			MWi18n.t("今日通关率不错。", "Clear rate looks good today."),
+			MWi18n.t("小心门湾别卡住。", "Watch the door bays."),
+		],
+		0.4,
 	)
 	_patrol(
 		"scout_b",
@@ -757,6 +780,12 @@ func _place_patrols() -> void:
 			Vector3(-12.0, 0, -4.0),
 			Vector3(-5.0, 0, -5.5),
 		],
+		[
+			MWi18n.t("训练场在蓝门。", "Training yard at the blue door."),
+			MWi18n.t("有人组队吗？", "Anyone for a party?"),
+			MWi18n.t("L2 风不错。", "Nice breeze on L2."),
+		],
+		1.6,
 	)
 	_patrol(
 		"scout_c",
@@ -767,16 +796,24 @@ func _place_patrols() -> void:
 			Vector3(-3.0, 0, 10.0),
 			Vector3(4.0, 0, 12.0),
 		],
+		[
+			MWi18n.t("南边赛车场……", "Race oval to the south…"),
+			MWi18n.t("先热身再进关。", "Warm up before entering."),
+			MWi18n.t("嗨——欢迎。", "Hey — welcome."),
+		],
+		2.8,
 	)
 
 
-func _patrol(npc_id: String, asset: String, accent: Color, path: Array) -> void:
-	"""Instance a hub_patrol_npc along waypoints."""
+func _patrol(
+	npc_id: String, asset: String, accent: Color, path: Array, lines: Array = [], offset: float = 0.0
+) -> void:
+	"""Instance a hub_patrol_npc along waypoints with optional chat lines."""
 	var node: Node3D = preload("res://scripts/hub_patrol_npc.gd").new()
 	node.name = "Patrol_%s" % npc_id
 	add_child(node)
 	if node.has_method("setup"):
-		node.call("setup", asset, path, accent)
+		node.call("setup", asset, path, accent, lines, offset)
 
 
 func _start_ambient_hum() -> void:

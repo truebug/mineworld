@@ -37,6 +37,7 @@ func _build() -> void:
 	_place_mezzanine(root)
 	_place_room_shells(root)
 	_place_props(root)
+	_place_hero_prop(root)
 	_place_guide_paths(root)
 	_place_door_glows()
 	_place_wing_labels(root)
@@ -822,6 +823,34 @@ func _place_props(root: Node3D) -> void:
 			float(item["yaw"]),
 			float(item.get("s", 1.0)),
 		)
+
+
+func _place_hero_prop(root: Node3D) -> void:
+	"""Poly Haven metal toolbox near mid-ring beacon (Web PBR fidelity demo)."""
+	const PATH := "res://assets/polyhaven_metal_toolbox/metal_toolbox_2k.gltf"
+	if not ResourceLoader.exists(PATH):
+		return
+	var packed := load(PATH) as PackedScene
+	if packed == null:
+		return
+	var node := packed.instantiate() as Node3D
+	node.name = "HeroMetalToolbox"
+	root.add_child(node)
+	# Beacon sits at ~(5,0,0) in HubLife; place just SW so it reads in first look.
+	node.position = Vector3(3.55, 0.0, 1.35)
+	node.rotation_degrees.y = -35.0
+	# Model is ~0.4 m wide; slight scale so it reads from mid-hall.
+	node.scale = Vector3(1.35, 1.35, 1.35)
+	var tag := Label3D.new()
+	MWFonts.apply_label3d(tag)
+	tag.text = MWi18n.t("金属工具箱 · Poly Haven CC0", "Metal toolbox · Poly Haven CC0")
+	tag.font_size = 28
+	tag.outline_size = 5
+	tag.pixel_size = 0.008
+	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	tag.modulate = Color(0.85, 0.9, 0.95, 0.9)
+	node.add_child(tag)
+	tag.position = Vector3(0, 0.85, 0)
 
 
 func _spawn(parent: Node3D, asset: String, x: float, z: float, yaw_deg: float, s: float) -> void:

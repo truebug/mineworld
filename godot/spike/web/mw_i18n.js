@@ -19,6 +19,12 @@
 		'hub.admin': { zh: '管理', en: 'Admin' },
 		'hub.map': { zh: '母港图 · 东A橙 · 西B蓝 · 北C · 西偏北D · 南E', en: 'Hub map · A orange · B blue · C north · D NW · E south' },
 		'hub.lb': { zh: '排行榜', en: 'Leaderboard' },
+		'hub.l2_title': { zh: 'L2 · 本周训练', en: 'L2 · This week' },
+		'hub.l2_body': {
+			zh: '工坊推车 · 训练场街区 · 赛车计时\n走近门 A / B / E 进入。电梯旁按 F 下楼。',
+			en: 'Workshop cart · City blocks · Race timed\nWalk into doors A / B / E. F at elevator to go down.'
+		},
+		'hub.l2_top': { zh: '本周榜 · 只读', en: 'Weekly board · read-only' },
 		'hub.success': { zh: '通关', en: 'SUCCESS' },
 		'hub.me_link': { zh: '我的战绩 →', en: 'My record →' },
 		'hub.seed': { zh: '种子', en: 'seed' },

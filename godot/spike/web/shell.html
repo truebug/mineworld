@@ -335,6 +335,61 @@ body.mw-hub #mw-hub-lb {
 	display: block;
 }
 
+body.mw-hub.mw-hub-l2 #mw-hub-lb {
+	display: none;
+}
+
+#mw-hub-l2-brief {
+	display: none;
+	position: fixed;
+	z-index: 2147483646;
+	box-sizing: border-box;
+	left: 16px;
+	bottom: 16px;
+	width: min(240px, calc(100vw - 32px));
+	padding: 10px 12px 12px;
+	background: rgba(18, 24, 32, 0.92);
+	color: #e8eaed;
+	font: 12px/1.4 ui-sans-serif, system-ui, sans-serif;
+	border-radius: 8px;
+	border: 1px solid #3a6a7a;
+	pointer-events: none;
+	box-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+}
+
+body.mw-hub.mw-hub-l2 #mw-hub-l2-brief {
+	display: block;
+}
+
+#mw-hub-l2-brief .mw-l2-title {
+	font-size: 12px;
+	color: #7ec8ff;
+	margin-bottom: 6px;
+	letter-spacing: 0.02em;
+}
+
+#mw-hub-l2-brief .mw-l2-body {
+	color: #c8d4de;
+	white-space: pre-line;
+	margin-bottom: 8px;
+}
+
+#mw-hub-l2-brief .mw-l2-top {
+	font-size: 11px;
+	color: #e8d48a;
+	margin-bottom: 4px;
+}
+
+#mw-hub-l2-brief ol {
+	margin: 0;
+	padding-left: 1.2em;
+}
+
+#mw-hub-l2-brief li {
+	margin: 2px 0;
+	font: 12px/1.35 ui-monospace, Menlo, Consolas, monospace;
+}
+
 #mw-hub-lb .mw-lb-title {
 	font-size: 11px;
 	color: #e8d48a;
@@ -588,6 +643,13 @@ body.mw-play.mw-no-joints #mw-joints {
 				<option value="demo_race">赛车场</option>
 			</select>
 			<ol id="mw-hub-lb-list"><li>…</li></ol>
+		</div>
+		<div id="mw-hub-l2-brief" aria-label="L2 weekly brief">
+			<div class="mw-l2-title" data-i18n="hub.l2_title">L2 · 本周训练</div>
+			<div class="mw-l2-body" data-i18n="hub.l2_body">工坊推车 · 训练场街区 · 赛车计时
+走近门 A / B / E 进入。电梯旁按 F 下楼。</div>
+			<div class="mw-l2-top" data-i18n="hub.l2_top">本周榜 · 只读</div>
+			<ol id="mw-hub-l2-list"><li>…</li></ol>
 		</div>
 		<div id="mw-success" aria-live="polite">
 			<div class="mw-title" data-i18n="hub.success">通关</div>
@@ -1024,7 +1086,8 @@ const engine = new Engine(GODOT_CONFIG);
 		async function refreshLeaderboard() {
 			const list = document.getElementById('mw-hub-lb-list');
 			const levelSel = document.getElementById('mw-hub-lb-level');
-			if (!list) {
+			const l2list = document.getElementById('mw-hub-l2-list');
+			if (!list && !l2list) {
 				return;
 			}
 			try {
@@ -1033,24 +1096,46 @@ const engine = new Engine(GODOT_CONFIG);
 				const r = await fetch('/api/platform/leaderboard' + q);
 				const data = await r.json();
 				const entries = (data && data.entries) || [];
-				list.innerHTML = '';
-				if (!entries.length) {
-					const li = document.createElement('li');
-					li.textContent = 'No scores yet';
-					list.appendChild(li);
-					return;
-				}
-				entries.slice(0, 8).forEach(function (e) {
-					const li = document.createElement('li');
-					const name = String(e.display_name || e.player_id || '?').slice(0, 14);
-					li.textContent = name + ' · ' + String(e.total_points || 0);
-					list.appendChild(li);
-				});
+				const fill = function (el, maxN) {
+					if (!el) {
+						return;
+					}
+					el.innerHTML = '';
+					if (!entries.length) {
+						const li = document.createElement('li');
+						li.textContent = 'No scores yet';
+						el.appendChild(li);
+						return;
+					}
+					entries.slice(0, maxN).forEach(function (e) {
+						const li = document.createElement('li');
+						const name = String(e.display_name || e.player_id || '?').slice(0, 14);
+						li.textContent = name + ' · ' + String(e.total_points || 0);
+						el.appendChild(li);
+					});
+				};
+				fill(list, 8);
+				fill(l2list, 5);
 			} catch (err) {
-				list.innerHTML = '<li>—</li>';
+				if (list) {
+					list.innerHTML = '<li>—</li>';
+				}
+				if (l2list) {
+					l2list.innerHTML = '<li>—</li>';
+				}
 			}
 		}
 		window.MW_REFRESH_LEADERBOARD = refreshLeaderboard;
+		window.MW_SET_HUB_FLOOR = function (floor) {
+			const n = Number(floor) || 1;
+			document.body.classList.toggle('mw-hub-l2', n === 2);
+			if (typeof window.MW_LAYOUT_HUB_CHROME === 'function') {
+				window.MW_LAYOUT_HUB_CHROME();
+			}
+			if (n === 2) {
+				refreshLeaderboard();
+			}
+		};
 		const lbLevel = document.getElementById('mw-hub-lb-level');
 		if (lbLevel) {
 			lbLevel.addEventListener('change', refreshLeaderboard);
@@ -1064,6 +1149,7 @@ const engine = new Engine(GODOT_CONFIG);
 			const profile = document.getElementById('mw-hub-profile');
 			const map = document.getElementById('mw-hub-map');
 			const lb = document.getElementById('mw-hub-lb');
+			const l2 = document.getElementById('mw-hub-l2-brief');
 			if (!canvas || !document.body.classList.contains('mw-hub')) {
 				return;
 			}
@@ -1094,15 +1180,16 @@ const engine = new Engine(GODOT_CONFIG);
 				const mh = map.offsetHeight || 160;
 				map.style.top = Math.max(pad, r.bottom - pad - mh) + 'px';
 			}
-			if (lb) {
-				const lw = Math.min(220, Math.max(140, r.width * 0.28));
-				lb.style.width = lw + 'px';
-				lb.style.left = Math.max(pad, r.left + pad) + 'px';
-				lb.style.right = 'auto';
-				lb.style.top = 'auto';
-				lb.style.bottom = 'auto';
-				const lh = lb.offsetHeight || 120;
-				lb.style.top = Math.max(pad, r.bottom - pad - lh) + 'px';
+			const leftBoard = document.body.classList.contains('mw-hub-l2') ? l2 : lb;
+			if (leftBoard) {
+				const lw = Math.min(240, Math.max(140, r.width * 0.28));
+				leftBoard.style.width = lw + 'px';
+				leftBoard.style.left = Math.max(pad, r.left + pad) + 'px';
+				leftBoard.style.right = 'auto';
+				leftBoard.style.top = 'auto';
+				leftBoard.style.bottom = 'auto';
+				const lh = leftBoard.offsetHeight || 120;
+				leftBoard.style.top = Math.max(pad, r.bottom - pad - lh) + 'px';
 			}
 		}
 		window.MW_LAYOUT_HUB_CHROME = layoutHubChrome;

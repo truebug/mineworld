@@ -82,6 +82,11 @@ var _edge_state_i := 0
 ## E9: full | low | paused — open visitor shell throttles Hub WS.
 var _presence_throttle := "full"
 var _presence_throttle_sent := ""
+## Elevator ride FX: wait amber → snap → arrive green.
+var _elev_phase := ""
+var _elev_t := 0.0
+var _elev_pending_floor := 1
+const NAMETAG_NEAR_M := 8.0
 var _presence_shell_open := false
 const ARENA_STATES := [
 	{"mode": "1v1", "looking": false},
@@ -521,14 +526,14 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 			push_ok = false
 		if push_ok:
 			puppet.call("push_state", entity, t_sim)
-		# Nametag only when nearby (or self) — cuts clutter with many pilots.
+		# Nametag: self always; remotes only within NAMETAG_NEAR_M.
 		var tag := puppet.get_node_or_null("NameTag") as Node3D
 		if tag != null:
 			var show_tag := eid == _controlled_entity_id
 			if not show_tag and puppet.visible:
 				var own_for_tag := _own_avatar()
 				if own_for_tag != null:
-					show_tag = own_for_tag.global_position.distance_to(puppet.global_position) < 14.0
+					show_tag = own_for_tag.global_position.distance_to(puppet.global_position) < NAMETAG_NEAR_M
 			tag.visible = show_tag and puppet.visible
 		if puppet.visible:
 			occupied[eid] = puppet
@@ -738,6 +743,7 @@ func _process(delta: float) -> void:
 		_poll_visitor_shell()
 	if _door_grace > 0.0:
 		_door_grace = maxf(0.0, _door_grace - delta)
+	_tick_elevator(delta)
 	_check_doors()
 	_update_door_context()
 	_update_door_approach_fx()
@@ -778,7 +784,7 @@ func _process(delta: float) -> void:
 
 
 func _sync_first_person_mesh() -> void:
-	"""Hide own body in FP so the camera is not inside the mesh."""
+	"""Hide own body in FP so the camera is not inside the mesh; keep nameplate."""
 	var own := _own_avatar()
 	if own == null:
 		return
@@ -791,9 +797,7 @@ func _sync_first_person_mesh() -> void:
 	if camera_rig != null and "view_mode" in camera_rig:
 		fp = int(camera_rig.view_mode) == 1  ## ViewMode.FIRST
 	bot.visible = not fp
-	var tag := own.get_node_or_null("NameTag") as Node3D
-	if tag != null:
-		tag.visible = not fp
+	# Own nameplate stays on (privacy: remotes still near-only in _on_state).
 
 
 func _sync_mw_keys() -> void:
@@ -1142,7 +1146,10 @@ func _try_interact() -> void:
 		return
 	var sid := str(hit.get("id", ""))
 	if sid == "elevator":
-		_toggle_elevator()
+		_begin_elevator_ride()
+		return
+	if sid.begins_with("npc_"):
+		_talk_npc(hit)
 		return
 	if sid == "board_party":
 		_use_party_board()
@@ -1165,6 +1172,29 @@ func _try_interact() -> void:
 		_open_exhibit_url(url, str(hit.get("title", hit.get("id", "Space"))), space_id)
 		return
 	_refresh_tips(str(hit.get("line", "...")))
+
+
+func _talk_npc(hit: Dictionary) -> void:
+	"""F: advance speech bubble + show that line in tips."""
+	var node: Node3D = hit.get("node") as Node3D
+	var prompt := str(hit.get("prompt", ""))
+	var line := str(hit.get("line", "..."))
+	if node != null:
+		var bubble := node.get_node_or_null("SpeechBubble") as Node
+		if bubble != null and "lines" in bubble:
+			var lines: Array = bubble.get("lines")
+			if not lines.is_empty():
+				var idx := int(bubble.get("_idx")) if "_idx" in bubble else 0
+				idx = (idx + 1) % lines.size()
+				bubble.set("_idx", idx)
+				bubble.set("_phase", "hold")
+				bubble.set("_t", 0.0)
+				if bubble.has_method("_apply_line"):
+					bubble.call("_apply_line", 1.0)
+				var nametag := node.get_node_or_null("NpcTag") as Label3D
+				var who := nametag.text if nametag != null else "NPC"
+				line = "%s: %s" % [who, str(lines[idx])]
+	_refresh_tips(line + "\n\n" + prompt)
 
 
 func _use_arena_gate() -> void:
@@ -1317,10 +1347,87 @@ func _open_exhibit_url(url: String, title: String, space_id: String = "") -> voi
 			)
 
 
+func _begin_elevator_ride() -> void:
+	"""Start wait-light sequence; snap happens after amber dwell."""
+	if _elev_phase != "":
+		return
+	_elev_phase = "wait"
+	_elev_t = 0.0
+	_elev_pending_floor = 2 if _hub_floor == 1 else 1
+	_set_elev_led(Color(1.0, 0.72, 0.2), 3.2)
+	_refresh_tips(MWi18n.t(
+		"电梯运行中… 请稍候。",
+		"Elevator moving… please wait."
+	))
+
+
+func _tick_elevator(delta: float) -> void:
+	"""Wait amber → arrive green → idle cyan."""
+	if _elev_phase == "":
+		return
+	_elev_t += delta
+	if _elev_phase == "wait" and _elev_t >= 0.55:
+		_hub_floor = _elev_pending_floor
+		_apply_hub_floor()
+		_elev_phase = "arrive"
+		_elev_t = 0.0
+		_set_elev_led(Color(0.35, 1.0, 0.55), 2.8)
+		if _hub_floor == 2:
+			_refresh_tips(MWi18n.t(
+				"已到达 L2 观景廊 — 可看本周训练简报。电梯旁按 F 下楼。",
+				"Arrived L2 Lounge — weekly brief on the left. F at elevator to return."
+			))
+			_door_context = MWi18n.t("楼层: L2 · 已到达", "Floor: L2 · arrived")
+		else:
+			_refresh_tips(MWi18n.t(
+				"已回到母港一层 — 电梯旁按 F 上 L2。",
+				"Back on hangar floor — F at elevator for L2."
+			))
+			_door_context = MWi18n.t("楼层: L1 · 已到达", "Floor: L1 · arrived")
+		_compose_and_push_tips()
+		_push_web_hub_floor()
+	elif _elev_phase == "arrive" and _elev_t >= 1.1:
+		_elev_phase = ""
+		_elev_t = 0.0
+		_set_elev_led(Color(0.3, 0.75, 1.0), 1.2)
+
+
+func _set_elev_led(color: Color, energy: float) -> void:
+	"""Tint ElevLed emission for wait / arrive / idle."""
+	var led := get_node_or_null("Decor/HangarDress/ElevLed") as MeshInstance3D
+	if led == null:
+		# Dress builds deferred; fall back to search once.
+		var dress := get_node_or_null("Decor") as Node
+		if dress != null:
+			led = dress.find_child("ElevLed", true, false) as MeshInstance3D
+	if led == null:
+		return
+	var mat := led.material_override as StandardMaterial3D
+	if mat == null:
+		mat = StandardMaterial3D.new()
+		led.material_override = mat
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = energy
+	mat.roughness = 0.35
+
+
+func _push_web_hub_floor() -> void:
+	"""Toggle L2 DOM brief / hide L1 leaderboard chrome."""
+	if not _is_web:
+		return
+	JavaScriptBridge.eval(
+		"(function(){if(typeof window.MW_SET_HUB_FLOOR==='function'){window.MW_SET_HUB_FLOOR(%d);}})()" % _hub_floor,
+		true
+	)
+
+
 func _toggle_elevator() -> void:
-	"""H8 thin ride: snap viewer to L2 mezzanine or back to hangar floor."""
+	"""Legacy instant ride (unused); prefer _begin_elevator_ride."""
 	_hub_floor = 2 if _hub_floor == 1 else 1
 	_apply_hub_floor()
+	_push_web_hub_floor()
 	if _hub_floor == 2:
 		_refresh_tips(MWi18n.t(
 			"L2 观景廊 — 可沿廊走动。电梯旁按 F 下楼。",

@@ -2071,8 +2071,8 @@ class EchoGateway:
             player_name = str(profile["nickname"]).strip() or player_name
         # Hub: distinguish concurrent sessions (same account OK for now).
         if hub:
-            tag = session.session_id.replace("-", "")[:4]
-            player_name = f"{player_name} · {tag}"
+            tag = session.session_id.replace("-", "")[-4:].upper()
+            player_name = f"{player_name} · #{tag}"
 
         self._leave_room(session)
 
