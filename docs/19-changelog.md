@@ -14,6 +14,7 @@
 
 - 子集入库 `godot/spike/assets/kenney_racing/`（fenceStraight + jersey curb + 终旗 + 树）。
 - `race_dress`：盒状橙墙 → 沿 MuJoCo 墙段铺护栏；权威碰撞仍为契约 box。
+- Playground：`MW_BUILD=20260722-134505`。
 
 ## 2026-07-22 · demo_race 可视修复 + 提速中圈
 
