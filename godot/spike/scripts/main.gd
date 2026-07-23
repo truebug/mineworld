@@ -1295,79 +1295,7 @@ func _update_drive_channels(w: bool, s: bool, q: bool, e: bool, x_rev: bool) -> 
 	_drv_steer = _approachf(_drv_steer, steer_target, DRV_STEER_UP, DRV_STEER_CENTER, dt)
 
 
-var _race_smoke: GPUParticles3D = null
-var _tire_marks: Array = []
-var _tire_mark_acc := 0.0
-const TIRE_MARK_MAX := 220
-
-
-func _ensure_race_fx() -> void:
-	"""R4 viewer-only brake smoke; never feeds physics."""
-	if _race_smoke != null or level_id != "demo_race":
-		return
-	var own := _own_mech()
-	if own == null:
-		return
-	var p := GPUParticles3D.new()
-	p.name = "RaceBrakeSmoke"
-	p.amount = 24
-	p.lifetime = 0.6
-	p.emitting = false
-	var mat := ParticleProcessMaterial.new()
-	mat.direction = Vector3(0, 1, 0)
-	mat.spread = 40.0
-	mat.initial_velocity_min = 0.6
-	mat.initial_velocity_max = 1.4
-	mat.gravity = Vector3(0, 0.6, 0)
-	mat.scale_min = 0.15
-	mat.scale_max = 0.4
-	mat.color = Color(0.75, 0.75, 0.78, 0.55)
-	p.process_material = mat
-	var quad := QuadMesh.new()
-	quad.size = Vector2(0.3, 0.3)
-	p.draw_pass_1 = quad
-	p.position = Vector3(-0.4, 0.12, 0)
-	own.add_child(p)
-	_race_smoke = p
-
-
-func _update_race_fx() -> void:
-	var spd := absf(_race_forward_speed())
-	var hard_brake := _drv_brake > 0.35 and spd > 4.0
-	var hard_turn := absf(_drv_steer) > 0.75 and spd > 10.0
-	if _race_smoke != null:
-		_race_smoke.emitting = hard_brake or hard_turn
-	if hard_brake or hard_turn:
-		_drop_tire_mark()
-
-
-func _drop_tire_mark() -> void:
-	"""Flat dark quad under the car; capped FIFO, viewer-only."""
-	_tire_mark_acc += 1.0 / CMD_HZ
-	if _tire_mark_acc < 0.08:
-		return
-	_tire_mark_acc = 0.0
-	var own := _own_mech()
-	if own == null:
-		return
-	var mi := MeshInstance3D.new()
-	var quad := QuadMesh.new()
-	quad.size = Vector2(0.55, 0.22)
-	quad.orientation = PlaneMesh.FACE_Y
-	mi.mesh = quad
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.08, 0.08, 0.09, 0.5)
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mi.material_override = mat
-	add_child(mi)
-	mi.global_position = own.global_position + Vector3(0, 0.02, 0)
-	mi.global_rotation.y = own.global_rotation.y
-	_tire_marks.append(mi)
-	if _tire_marks.size() > TIRE_MARK_MAX:
-		var old_mi: MeshInstance3D = _tire_marks.pop_front()
-		if is_instance_valid(old_mi):
-			old_mi.queue_free()
+var _race_fx: MWRaceFX = null
 
 
 func _send_drive_cmd() -> void:
@@ -1416,8 +1344,13 @@ func _send_velocity_cmd() -> void:
 	if level_id == "demo_race":
 		# R2 analog drive → control_mode "drive" (see gateway DRIVE_DEFAULTS).
 		_update_drive_channels(w, s, q, e, x_rev)
-		_ensure_race_fx()
-		_update_race_fx()
+		var fx_own := _own_mech()
+		if _race_fx == null:
+			_race_fx = MWRaceFX.new()
+			_race_fx.name = "RaceFX"
+			add_child(_race_fx)
+		_race_fx.ensure_smoke(fx_own)
+		_race_fx.update(fx_own, _race_forward_speed(), _drv_brake, _drv_steer, 1.0 / CMD_HZ)
 		if camera_rig != null and camera_rig.has_method("set_drive_speed"):
 			camera_rig.set_drive_speed(_race_forward_speed())
 		_send_drive_cmd()
