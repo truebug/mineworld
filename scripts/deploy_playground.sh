@@ -15,20 +15,26 @@ SITE_URL="https://playground.dev.databall.tech/"
 echo "== 1/6 export web =="
 bash scripts/export_godot.sh web
 
+echo "== 1.5/6 gdscript lint =="
+.venv/bin/python scripts/gdscript_lint.py || { echo "ERROR: gdscript lint failed" >&2; exit 1; }
+
 echo "== 2/6 verify pck contents =="
 PCK="dist/web/index.pck"
 [[ -f "$PCK" ]] || { echo "ERROR: $PCK missing" >&2; exit 1; }
+PCK_STRINGS="$(mktemp)"
+strings "$PCK" > "$PCK_STRINGS"
 for token in race_layout FallbackGrass; do
-  if ! strings "$PCK" | grep -q "$token"; then
+  if ! grep -q "$token" "$PCK_STRINGS"; then
     echo "ERROR: pck missing '$token' — check include_filter / scripts" >&2
     exit 1
   fi
 done
 # race_dress parse-error regression guard
-if strings "$PCK" | grep -q "var bi :="; then
+if grep -q "var bi :=" "$PCK_STRINGS"; then
   echo "ERROR: pck still has untyped 'bi' (parse error)" >&2
   exit 1
 fi
+rm -f "$PCK_STRINGS"
 echo "pck OK ($(du -h "$PCK" | cut -f1))"
 
 echo "== 3/6 inject build + gateway =="
