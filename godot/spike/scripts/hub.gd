@@ -780,6 +780,11 @@ func _process(delta: float) -> void:
 		return
 	_cmd_timer = 0.0
 	if _door_grace > 0.0:
+		# Grace blocks cmd send — also zero the prediction cache or the
+		# puppet keeps integrating the last nonzero cmd (stale _cmd_vx).
+		var own_idle := _own_avatar()
+		if own_idle != null and own_idle.has_method("set_local_cmd"):
+			own_idle.call("set_local_cmd", 0.0, 0.0, 0.0)
 		return
 	_send_velocity_cmd()
 

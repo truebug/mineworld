@@ -14,6 +14,7 @@ const ANIM_BLEND := 0.15
 ## E9: public-net feel — cap catch-up / extrap so remotes don't "fly".
 const MAX_GROUND_SPEED := 4.0
 const MAX_EXTRAP_S := 0.28
+const EXTRAP_HOLD_S := 0.45  # stale stream: stop extrapolating, hold authority pose
 const SNAP_DIST := 3.5
 
 @export var entity_id: String = "avatar_0"
@@ -327,9 +328,18 @@ func _process(delta: float) -> void:
 	var target_yaw := _next_yaw
 	if span > 1e-6:
 		var alpha := (render_t - _prev_time) / span
+		# Stale stream (delta compression drops stationary entities): the
+		# (next-prev)/span velocity is soft-correct residue, not motion —
+		# extrapolating it caused the 1.25 s authority-keyframe pendulum.
+		var state_age := wall_now - _wall_at_last_state
 		if alpha <= 1.0:
 			target = _prev_pos.lerp(_next_pos, clampf(alpha, 0.0, 1.0))
 			target_yaw = lerp_angle(_prev_yaw, _next_yaw, clampf(alpha, 0.0, 1.0))
+		elif local_predict or state_age > EXTRAP_HOLD_S:
+			# Own avatar: prediction drives motion; hold authority anchor.
+			# Any puppet: stream stale > window → hold last authority pose.
+			target = _next_pos
+			target_yaw = _next_yaw
 		else:
 			var sample_vel := (_next_pos - _prev_pos) / span
 			var spd := Vector2(sample_vel.x, sample_vel.z).length()
