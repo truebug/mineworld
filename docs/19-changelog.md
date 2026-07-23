@@ -10,6 +10,13 @@
 
 ---
 
+## 2026-07-23 · 修复 delta 压缩下 Hub 小地图丢静止玩家
+
+- 症状：state delta 压缩（`6a4753f`）后，静止玩家只随 1.25s 关键帧出现；Hub `_on_state`
+  每帧用当前 payload 重建小地图 actors → 静止者圆点消失、自己坐标显示退回「独自」。
+- 修复：`_on_state` 改为维护 `_map_actors` 缓存（可见即更新、槽位不可见即剔除），
+  minimap/坐标/DOM 地图一律从缓存重建。评审代理发现，约 +14/-3 行。
+
 ## 2026-07-23 · 修复大厅傀儡「停止后原地钟摆」
 
 - 症状：键盘停止输入后，自己的 avatar 以 ~1.25s 周期前后/左右往复摆动（横移停→横摆，转身停→斜摆）。
@@ -33,7 +40,9 @@
   - `ghost_car.gd`（`MWGhost`）：幽灵车取榜/拉帧/傀儡/循环回放全链路，
     经 `loaded` 信号回传状态，main.gd 1437→1319。
 - 每刀均过 `gdscript_lint` + Web 导出零错误后入库；已发版 playground 验证。
-- 待续刀（边界已勘定）：ghost/replay 约 120 行各自自包含；hud 约 250 行；hub.gd 复用同款。
+- 续刀已完成：`MWGhost`（幽灵车）、`MWHud`（横幅/提示音/ASCII 条/Web 推送）、
+  `MWReplay`（离线回放，Callable 回 level）——main.gd 1549→1029 行（-34%）。
+- 剩余：net 消息处理层（最纠缠，边界待文档化）；hub.gd 按自身域拆门系统/NPC/提示。
 
 ## 2026-07-23 · AI 车手 v0（pure pursuit，无学习）
 

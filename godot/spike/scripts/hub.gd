@@ -48,6 +48,7 @@ var _web_key_cb
 var _web_blur_cb
 var _held_codes: Dictionary = {}
 var _puppets: Dictionary = {}
+var _map_actors: Dictionary = {}  # minimap/coords cache — survives delta frames
 var _controlled_entity_id := "avatar_0"
 var _joined_room_id := "hub"
 var _profile: Dictionary = {}
@@ -506,7 +507,6 @@ func _own_avatar() -> Node3D:
 func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 	"""Drive puppets; hide empty slots; refresh minimap."""
 	var occupied: Dictionary = {}
-	var actors: Array = []
 	for entity in payload.get("entities", []):
 		if typeof(entity) != TYPE_DICTIONARY:
 			continue
@@ -543,11 +543,17 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 			if "last_mw_x" in puppet:
 				mx = float(puppet.get("last_mw_x"))
 				my = float(puppet.get("last_mw_y"))
-			actors.append({
+			_map_actors[eid] = {
 				"x": mx,
 				"y": my,
 				"is_self": eid == _controlled_entity_id,
-			})
+			}
+		elif _map_actors.has(eid):
+			# Slot went invisible (player left / empty) — drop from cache.
+			_map_actors.erase(eid)
+	# Delta frames only carry moved entities — rebuild from cache so
+	# stationary players stay on the minimap (was: rebuilt per-payload).
+	var actors: Array = _map_actors.values()
 	if minimap != null and minimap.has_method("set_actors"):
 		minimap.call("set_actors", actors)
 	if map_coords != null:
