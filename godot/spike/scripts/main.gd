@@ -17,12 +17,6 @@ const MOVE_SPEED_RACE := 1.0
 const TURN_SPEED_RACE := 1.0
 const STRAFE_SPEED_RACE := 0.35
 ## R2 analog drive (keyboard time-for-axis; gamepad native axis).
-const DRV_THROTTLE_UP := 2.5   # /s ramp to full gas
-const DRV_THROTTLE_DOWN := 4.0 # /s decay on release
-const DRV_BRAKE_UP := 5.0      # /s ramp to full brake
-const DRV_BRAKE_DOWN := 6.0
-const DRV_STEER_UP := 3.0      # /s toward lock
-const DRV_STEER_CENTER := 5.0  # /s auto-center on release
 const CMD_HZ := 20.0
 const _WEB_BLOCK_CODES := {
 	"KeyW": true, "KeyA": true, "KeyS": true, "KeyD": true,
@@ -44,9 +38,7 @@ const _WEB_BLOCK_CODES := {
 
 var _session_id := ""
 var _hello: Dictionary = {}
-var _drv_throttle := 0.0
-var _drv_brake := 0.0
-var _drv_steer := 0.0
+var _drive := MWDriveInput.new()
 var _lap_splits: Array = []
 var _lap_start_t := -1.0
 var _last_state_t := 0.0
@@ -1258,43 +1250,6 @@ func _apply_ghost_frame() -> void:
 		break
 
 
-func _approachf(cur: float, target: float, up: float, down: float, dt: float) -> float:
-	"""Rate-limited approach: `up` toward ±target, `down` back toward 0."""
-	if target != 0.0:
-		return move_toward(cur, target, up * dt)
-	return move_toward(cur, 0.0, down * dt)
-
-
-func _update_drive_channels(w: bool, s: bool, q: bool, e: bool, x_rev: bool) -> void:
-	"""Keyboard: hold-to-ramp, release-to-decay; gamepad axis wins when live."""
-	var dt := 1.0 / CMD_HZ
-	var pad_thr := Input.get_axis("move_back", "move_forward")
-	var pad_steer := Input.get_axis("turn_ccw", "turn_cw")
-	if absf(pad_thr) > 0.15 or absf(pad_steer) > 0.15:
-		_drv_throttle = clampf(pad_thr, -1.0, 1.0)
-		_drv_brake = 0.0
-		_drv_steer = clampf(-pad_steer, -1.0, 1.0)
-		return
-	var fwd := _race_forward_speed()
-	if w and not s and not x_rev:
-		_drv_throttle = _approachf(_drv_throttle, 1.0, DRV_THROTTLE_UP, DRV_THROTTLE_DOWN, dt)
-	elif x_rev and not w and fwd < 1.0:
-		# Reverse gate: only when nearly stopped (NFS-style shift protection).
-		_drv_throttle = _approachf(_drv_throttle, -1.0, DRV_THROTTLE_UP, DRV_THROTTLE_DOWN, dt)
-	else:
-		_drv_throttle = _approachf(_drv_throttle, 0.0, DRV_THROTTLE_UP, DRV_THROTTLE_DOWN, dt)
-	if s and not w and not x_rev:
-		_drv_brake = _approachf(_drv_brake, 1.0, DRV_BRAKE_UP, DRV_BRAKE_DOWN, dt)
-	else:
-		_drv_brake = _approachf(_drv_brake, 0.0, DRV_BRAKE_UP, DRV_BRAKE_DOWN, dt)
-	var steer_target := 0.0
-	if q:
-		steer_target += 1.0
-	if e:
-		steer_target -= 1.0
-	_drv_steer = _approachf(_drv_steer, steer_target, DRV_STEER_UP, DRV_STEER_CENTER, dt)
-
-
 var _race_fx: MWRaceFX = null
 
 
@@ -1304,9 +1259,9 @@ func _send_drive_cmd() -> void:
 	ws.send_cmd({
 		"entity_id": _controlled_entity_id,
 		"control_mode": "drive",
-		"throttle": snappedf(_drv_throttle, 0.01),
-		"brake": snappedf(_drv_brake, 0.01),
-		"steer": snappedf(_drv_steer, 0.01),
+		"throttle": snappedf(_drive.throttle, 0.01),
+		"brake": snappedf(_drive.brake, 0.01),
+		"steer": snappedf(_drive.steer, 0.01),
 		"handbrake": 0.0,
 	})
 
@@ -1343,14 +1298,14 @@ func _send_velocity_cmd() -> void:
 		x_rev = _key_down(KEY_X)
 	if level_id == "demo_race":
 		# R2 analog drive → control_mode "drive" (see gateway DRIVE_DEFAULTS).
-		_update_drive_channels(w, s, q, e, x_rev)
+		_drive.update(w, s, q, e, x_rev, _race_forward_speed(), 1.0 / CMD_HZ)
 		var fx_own := _own_mech()
 		if _race_fx == null:
 			_race_fx = MWRaceFX.new()
 			_race_fx.name = "RaceFX"
 			add_child(_race_fx)
 		_race_fx.ensure_smoke(fx_own)
-		_race_fx.update(fx_own, _race_forward_speed(), _drv_brake, _drv_steer, 1.0 / CMD_HZ)
+		_race_fx.update(fx_own, _race_forward_speed(), _drive.brake, _drive.steer, 1.0 / CMD_HZ)
 		if camera_rig != null and camera_rig.has_method("set_drive_speed"):
 			camera_rig.set_drive_speed(_race_forward_speed())
 		_send_drive_cmd()
@@ -1466,7 +1421,7 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	if level_id == "demo_race":
 		var kmh := absf(_race_forward_speed()) * 3.6
 		text += "\n车速 %3.0f km/h | 油门 %s | 刹车 %s\n转向 %s" % [
-			kmh, _bar(_drv_throttle), _bar(_drv_brake), _steer_bar(_drv_steer),
+			kmh, _bar(_drive.throttle), _bar(_drive.brake), _steer_bar(_drive.steer),
 		]
 		if _lap_splits.size() > 0:
 			text += "\n" + " | ".join(_lap_splits)
