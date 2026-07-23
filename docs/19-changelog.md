@@ -10,6 +10,15 @@
 
 ---
 
+## 2026-07-23 · main.gd 结构还债第一刀（mw/ 模块目录）
+
+- 新增 `godot/spike/scripts/mw/` 模块目录，从 1500 行 god-object 抽出自包含逻辑：
+  - `race_fx.gd`（`MWRaceFX`）：胎痕 + 刹车烟尘，viewer-only，main.gd 1549→1482。
+  - `drive_input.gd`（`MWDriveInput`）：油门/刹车/转向模拟通道纯逻辑（含手柄轴优先、
+    倒车保护、自动回正），main.gd 1482→1437；行为与原实现逐行等价。
+- 每刀均过 `gdscript_lint` + Web 导出零错误后入库；已发版 playground 验证。
+- 待续刀（边界已勘定）：ghost/replay 约 120 行各自自包含；hud 约 250 行；hub.gd 复用同款。
+
 ## 2026-07-23 · AI 车手 v0（pure pursuit，无学习）
 
 - `scripts/ai_driver.py`：以普通 WS 客户端身份接入（与人同一协议，T4.5 人机可互换的实证），

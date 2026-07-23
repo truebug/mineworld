@@ -8,6 +8,7 @@ MineWorld bridges a Godot 4 world editor with a headless MuJoCo physics authorit
 - `mw_platform/` — identity HTTP API (SQLite; swap via `MW_PLATFORM_DB_URL`).
 - `gateway/` — WebSocket gateway (`echo_server.py`), Python 3.11+, `--physics fake|mujoco`; Hub rooms force FakeMech; `recording_store.py`.
 - `godot/` — spike baseline; default main scene **`demo_hub`**; doors → `demo_workshop` / `demo_city`; autoloads `MWTransition` / `MWi18n` / `MWFonts`（Noto SC）; `?menu=1` text lobby.
+- `godot/spike/scripts/mw/` — extracted modules from the main.gd/hub.gd god-objects: `MWRaceFX`（胎痕/烟尘）、`MWDriveInput`（模拟驾驶通道）。新自包含逻辑优先落这里，不再塞进 main.gd。
 - `gdevelop/` — archived legacy.
 - `mujoco/` — MJCF + headless scripts; DiffBot + arm/gripper for workshop.
 - `schemas/` — JSON Schema SSOT (`*.v0.json`).
