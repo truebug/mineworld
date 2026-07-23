@@ -1537,7 +1537,6 @@ func _enter_level(scene_path: String) -> void:
 	"""Leave hub room and load a MuJoCo play level."""
 	if _entering_door:
 		return
-	_entering_door = true
 	var label := MWi18n.t("进入中…", "Entering…")
 	var accent := ""
 	var space_id := _resolve_space_id()
@@ -1577,5 +1576,11 @@ func _enter_level(scene_path: String) -> void:
 		)
 	else:
 		_refresh_tips(MWi18n.t("进入航线…", "Entering route…"))
+	# Lock door only after transition actually starts. A stuck MWTransition._busy
+	# used to make go() no-op while leaving _entering_door true forever.
+	if not MWTransition.go(scene_path, label, accent):
+		_reset_door_lockout()
+		_refresh_tips(MWi18n.t("进入失败，请重试", "Enter failed — try again"))
+		return
+	_entering_door = true
 	ws.close_link()
-	MWTransition.go(scene_path, label, accent)

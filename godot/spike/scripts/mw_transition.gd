@@ -3,6 +3,9 @@
 extends Node
 
 const FADE_S := 0.28
+## If the next scene never calls notify_arrived(), tear down the overlay
+## so Hub doors are not permanently blocked (go() no-ops while _busy).
+const ARRIVE_WATCHDOG_S := 2.5
 
 var _busy := false
 var _layer: CanvasLayer
@@ -11,6 +14,7 @@ var _label: Label
 var _pending_scene := ""
 var _skip_requested := false
 var _fade_tween: Tween
+var _watchdog_gen := 0
 
 
 func _ready() -> void:
@@ -33,17 +37,41 @@ func _process(_delta: float) -> void:
 		_request_skip()
 
 
-func go(scene_path: String, label: String = "", accent: String = "") -> void:
-	"""Fade out, then load scene_path. New scene must call notify_arrived()."""
-	if _busy:
-		return
+func go(scene_path: String, label: String = "", accent: String = "") -> bool:
+	"""Fade out, then load scene_path. New scene must call notify_arrived().
+
+	Returns false if path empty. If a previous transition left `_busy` stuck
+	(overlay up, no notify_arrived), force-clear then proceed so doors work.
+	"""
 	if scene_path == "":
-		return
+		return false
+	if _busy:
+		push_warning("[MW] transition: clearing stuck busy before go(%s)" % scene_path)
+		_force_clear()
 	_run_go(scene_path, label, accent)
+	return true
 
 
 func notify_arrived() -> void:
 	"""Call from each playable scene _ready after boot chrome is set."""
+	_watchdog_gen += 1
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval(
+			"if(typeof window.MW_TRANSITION==='object'&&window.MW_TRANSITION.end){window.MW_TRANSITION.end();}",
+			true
+		)
+	elif _rect != null:
+		_desktop_set_alpha(0.0, false)
+	_busy = false
+	_pending_scene = ""
+	_skip_requested = false
+
+
+func _force_clear() -> void:
+	"""Drop overlay + busy without changing scene (recovery path)."""
+	_watchdog_gen += 1
+	if _fade_tween != null and _fade_tween.is_running():
+		_fade_tween.kill()
 	if OS.has_feature("web"):
 		JavaScriptBridge.eval(
 			"if(typeof window.MW_TRANSITION==='object'&&window.MW_TRANSITION.end){window.MW_TRANSITION.end();}",
@@ -96,14 +124,15 @@ func _run_go(scene_path: String, label: String, accent: String) -> void:
 			true
 		)
 		await get_tree().create_timer(FADE_S).timeout
-		if _skip_requested:
+		# Skip already called _finish_go; only bail if pending was consumed.
+		if _pending_scene == "":
 			return
 		_finish_go()
 		return
 	_desktop_set_label(label)
 	_desktop_apply_accent(accent)
 	await _desktop_fade_to(1.0)
-	if _skip_requested:
+	if _pending_scene == "":
 		return
 	_finish_go()
 
@@ -114,7 +143,23 @@ func _finish_go() -> void:
 	if path == "":
 		return
 	_pending_scene = ""
-	get_tree().change_scene_to_file(path)
+	var err := get_tree().change_scene_to_file(path)
+	if err != OK:
+		push_error("[MW] transition: change_scene_to_file(%s) failed err=%s" % [path, err])
+		_force_clear()
+		return
+	_arm_arrive_watchdog()
+
+
+func _arm_arrive_watchdog() -> void:
+	"""If next scene never calls notify_arrived, clear overlay so Hub recovers."""
+	_watchdog_gen += 1
+	var gen := _watchdog_gen
+	await get_tree().create_timer(ARRIVE_WATCHDOG_S).timeout
+	if gen != _watchdog_gen or not _busy:
+		return
+	push_warning("[MW] transition: arrive watchdog — forcing overlay clear")
+	_force_clear()
 
 
 func _ensure_desktop_overlay() -> void:

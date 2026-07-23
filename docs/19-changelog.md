@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-07-23 · 修复进关过场双锁死（遮罩卡住后所有门进不去）
+
+- 根因：`MWTransition._busy` 依赖新场景 `notify_arrived()` 清锁；若切场景失败/未到达，
+  `_busy` 永久 true → 后续 `go()` 静默 no-op；Hub 侧 `_entering_door` 先置位再 `go()`，
+  失败后门锁死，`#mw-transition.show` 黑遮罩不撤。
+- 修复：卡住的 `_busy` 进门前强制清遮罩；`change_scene` 失败 / 2.5s 看门狗兜底；
+  Hub 仅在 `go()` 成功后再锁门并关 WS。
+
 ## 2026-07-23 · B2.5 AI 常驻陪练（resident bot）
 
 - 痛点：1v1 对决需双人同时在线，低流量下访客永远体验不到。解法：ai_driver 常驻公共
