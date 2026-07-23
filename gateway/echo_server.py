@@ -883,6 +883,8 @@ class Session:
     route_kind: str = "mineworld_level"
     ## E9 Hub: state broadcast divisor vs STATE_EVERY (1=full, 4=low, 0=paused).
     presence_state_divisor: int = 1
+    ## Hub mezzanine floor (1|2) — visual height only; FakeMech stays planar.
+    hub_floor: int = 1
     ## State delta (P1): per-entity last-sent quantized pose + keyframe counter.
     last_sent_entities: dict[str, tuple] = field(default_factory=dict)
     states_since_keyframe: int = 999  # large → first state is a full keyframe
@@ -1347,9 +1349,12 @@ STATE_KEYFRAME_INTERVAL = 25  # ~1.25s at 20Hz: force full state
 
 
 def _quantize_entity(ent: dict[str, Any]) -> tuple:
-    """Delta key: pose 1mm / velocities 1cm-s quantized (jitter below this is noise)."""
+    """Delta key: pose 1mm / velocities 1cm-s + hub_floor (mezzanine sync)."""
     pose = ent.get("base_pose") or {}
     vel = ent.get("velocities") or {}
+    mw = (ent.get("extensions") or {}).get("mw") or {}
+    if not isinstance(mw, dict):
+        mw = {}
     return (
         round(float(pose.get("x", 0.0)), 3),
         round(float(pose.get("y", 0.0)), 3),
@@ -1357,6 +1362,8 @@ def _quantize_entity(ent: dict[str, Any]) -> tuple:
         round(float(pose.get("yaw", 0.0)), 4),
         round(float(vel.get("vx", 0.0)), 2),
         round(float(vel.get("vy", 0.0)), 2),
+        int(mw.get("hub_floor", 1) or 1),
+        bool(mw.get("occupied", False)),
     )
 
 
@@ -1997,6 +2004,7 @@ class EchoGateway:
             mw = ent.setdefault("extensions", {}).setdefault("mw", {})
             mw["display_name"] = occupant.player_name
             mw["occupied"] = True
+            mw["hub_floor"] = 1 if int(occupant.hub_floor) != 2 else 2
             accent = occupant.profile.get("accent")
             if accent:
                 mw["accent"] = str(accent)
@@ -2083,8 +2091,12 @@ class EchoGateway:
 
     async def _handle_cmd(self, session: Session, payload: dict[str, Any]) -> None:
         """Accept cmds only for the session's assigned entity."""
-        if str(payload.get("action") or "") == "presence_throttle":
+        action = str(payload.get("action") or "")
+        if action == "presence_throttle":
             self._apply_presence_throttle(session, payload)
+            return
+        if action == "set_hub_floor":
+            self._apply_hub_floor(session, payload)
             return
         mech = session.mech
         if mech is None or not session.joined:
@@ -2103,6 +2115,8 @@ class EchoGateway:
                 ),
             )
             return
+        # Optional piggyback: velocity cmd may carry extensions.mw.hub_floor.
+        self._maybe_hub_floor_from_ext(session, payload)
         try:
             events = mech.apply_cmd(payload)
         except CmdRejected as err:
@@ -2137,6 +2151,44 @@ class EchoGateway:
             level,
             session.presence_state_divisor,
         )
+
+    def _apply_hub_floor(self, session: Session, payload: dict[str, Any]) -> None:
+        """Hub-only: set mezzanine floor (1|2) for multiplayer height sync."""
+        if session.room is None or not session.joined:
+            return
+        if not is_hub_contract(session.contract):
+            return
+        raw = payload.get("floor", payload.get("hub_floor", 1))
+        try:
+            floor = int(raw)
+        except (TypeError, ValueError):
+            floor = 1
+        session.hub_floor = 2 if floor == 2 else 1
+        LOG.info(
+            "session=%s hub_floor=%d",
+            session.session_id,
+            session.hub_floor,
+        )
+
+    def _maybe_hub_floor_from_ext(
+        self, session: Session, payload: dict[str, Any]
+    ) -> None:
+        """If cmd.extensions.mw.hub_floor present on Hub, update session."""
+        if not session.joined or session.room is None:
+            return
+        if not is_hub_contract(session.contract):
+            return
+        ext = payload.get("extensions")
+        if not isinstance(ext, dict):
+            return
+        mw = ext.get("mw")
+        if not isinstance(mw, dict) or "hub_floor" not in mw:
+            return
+        try:
+            floor = int(mw.get("hub_floor", 1))
+        except (TypeError, ValueError):
+            floor = 1
+        session.hub_floor = 2 if floor == 2 else 1
 
     def _should_send_state(self, session: Session, tick: int) -> bool:
         """Gate state frames per session (Hub presence_throttle)."""
@@ -2376,6 +2428,8 @@ class EchoGateway:
         session.completed_objectives.clear()
         session.outcome = None
         session.pending_events.clear()
+        session.hub_floor = 1
+        session.presence_state_divisor = 1
         room.members[session.session_id] = session
 
         self._close_recorder(session, outcome="abort")

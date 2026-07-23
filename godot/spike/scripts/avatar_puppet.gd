@@ -39,6 +39,8 @@ var last_mw_y := 0.0
 var last_mw_yaw := 0.0
 ## Hub mezzanine: Godot Y offset (MW Z-up maps to Godot Y; FakeMech stays z≈0).
 var height_offset := 0.0
+## Must match hub.gd / hub_dress FLOOR2_Y.
+const HUB_FLOOR2_Y := 8.5
 
 var _last_render_pos := Vector3.ZERO
 var _speed_smooth := 0.0
@@ -305,7 +307,7 @@ func push_state(entity: Dictionary, t_sim: float) -> void:
 
 
 func _apply_profile_ext(entity: Dictionary) -> void:
-	"""Optional display_name / accent from extensions.mw."""
+	"""Optional display_name / accent / hub_floor from extensions.mw."""
 	var ext: Variant = entity.get("extensions", {})
 	if typeof(ext) != TYPE_DICTIONARY:
 		return
@@ -316,6 +318,20 @@ func _apply_profile_ext(entity: Dictionary) -> void:
 	var ac := str(mw.get("accent", ""))
 	if dn != "" or ac != "":
 		set_display(dn if dn != "" else display_name, ac)
+	if mw.has("hub_floor"):
+		_apply_hub_floor_from_net(int(mw.get("hub_floor", 1)))
+
+
+func _apply_hub_floor_from_net(floor: int) -> void:
+	"""Sync mezzanine height from authority (Hub FakeMech stays planar)."""
+	var want := HUB_FLOOR2_Y if floor == 2 else 0.0
+	if absf(want - height_offset) < 0.01:
+		return
+	height_offset = want
+	global_position.y = want
+	_prev_pos.y = want
+	_next_pos.y = want
+	_last_render_pos.y = want
 
 
 func _process(delta: float) -> void:

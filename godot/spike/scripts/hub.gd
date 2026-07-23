@@ -1402,6 +1402,7 @@ func _tick_elevator(delta: float) -> void:
 			_door_context = MWi18n.t("楼层: L1 · 已到达", "Floor: L1 · arrived")
 		_compose_and_push_tips()
 		_push_web_hub_floor()
+		_send_hub_floor()
 	elif _elev_phase == "arrive" and _elev_t >= 1.1:
 		_elev_phase = ""
 		_elev_t = 0.0
@@ -1439,11 +1440,19 @@ func _push_web_hub_floor() -> void:
 	)
 
 
+func _send_hub_floor() -> void:
+	"""Publish mezzanine floor so remotes raise the same avatar."""
+	if _session_id == "":
+		return
+	ws.send_cmd({"action": "set_hub_floor", "floor": _hub_floor})
+
+
 func _toggle_elevator() -> void:
 	"""Legacy instant ride (unused); prefer _begin_elevator_ride."""
 	_hub_floor = 2 if _hub_floor == 1 else 1
 	_apply_hub_floor()
 	_push_web_hub_floor()
+	_send_hub_floor()
 	if _hub_floor == 2:
 		_refresh_tips(MWi18n.t(
 			"L2 观景廊 — 可沿廊走动。电梯旁按 F 下楼。",

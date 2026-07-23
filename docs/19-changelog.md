@@ -10,6 +10,13 @@
 
 ---
 
+## 2026-07-23 · Hub 电梯楼层多人同步（hub_floor）
+
+- 根因：L2 乘梯只改本机 `height_offset`，FakeMech 权威仍是平面 → 自己悬空、远端仍见一楼。
+- 协议：`cmd action=set_hub_floor`（`floor` 1|2）；state `extensions.mw.hub_floor`；
+  delta quantize 含 floor（+ occupied），换层立即进包。
+- 客户端：乘梯到达发 floor；远端 puppet 读 floor → `HUB_FLOOR2_Y` 抬高。
+
 ## 2026-07-23 · 修复 demo_race 幽灵车 return 跳过网关连接（油门无反应）
 
 - 根因：`main.gd` `_ready` 在 `MWGhost.fetch_best()` 后误 `return`，未执行
