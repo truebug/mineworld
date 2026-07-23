@@ -63,13 +63,7 @@ var _controlled_entity_id := "mech_player"
 var _joined_room_id := ""
 var _hud: MWHud = null
 ## D8: offline frame replay (?replay=<session_id>); skips gateway.
-var _replay_session := ""
-var _replay_frames: Array = []
-var _replay_playing := false
-var _replay_speed := 1.0
-var _replay_t := 0.0
-var _replay_idx := 0
-var _replay_status := ""
+var _replay: MWReplay = null
 ## V1c: held arm/gripper setpoints (desktop sliders / web MW_JOINT_TARGETS).
 var _joint_targets: Dictionary = {
 	"arm_yaw": 0.0,
@@ -95,7 +89,6 @@ func _ready() -> void:
 	if q_level != "":
 		level_id = q_level
 	MWTransition.notify_arrived()
-	_replay_session = _resolve_replay_id()
 	ws.hello_received.connect(_on_hello)
 	ws.scene_received.connect(_on_scene)
 	ws.state_received.connect(_on_state)
@@ -135,8 +128,18 @@ func _ready() -> void:
 		_sync_web_joints_ui()
 	if camera_rig != null and camera_rig.has_signal("view_mode_changed"):
 		camera_rig.view_mode_changed.connect(_on_camera_view_changed)
-	if _replay_session != "":
-		_start_replay_mode()
+	var replay_id := _resolve_replay_id()
+	if replay_id != "":
+		_replay = MWReplay.new()
+		_replay.name = "Replay"
+		_replay.puppets = _puppets
+		_replay.ensure_puppets_cb = _ensure_puppets
+		_replay.own_mech_getter = _own_mech
+		_replay.camera_rig = camera_rig
+		_replay.hud_refresh = _update_hud
+		_replay.frame_applied.connect(_on_replay_frame)
+		add_child(_replay)
+		_replay.start(replay_id)
 	elif level_id == "demo_race":
 		_ghost = MWGhost.new()
 		_ghost.name = "Ghost"
@@ -224,147 +227,8 @@ func _resolve_replay_id() -> String:
 	))
 
 
-func _start_replay_mode() -> void:
-	"""Fetch frames.jsonl and drive puppets without Gateway."""
-	_replay_status = "loading frames…"
-	_update_hud()
-	var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
-	if origin == "":
-		_replay_status = "replay: no origin"
-		_update_hud()
-		return
-	var http := HTTPRequest.new()
-	http.name = "ReplayHttp"
-	add_child(http)
-	http.request_completed.connect(_on_replay_http.bind(http))
-	var url := "%s/api/recordings/%s/frames" % [origin, _replay_session.uri_encode()]
-	var err := http.request(url)
-	if err != OK:
-		_replay_status = "replay HTTP err %s" % err
-		http.queue_free()
-		_update_hud()
-
-
-func _on_replay_http(
-	result: int,
-	response_code: int,
-	_headers: PackedStringArray,
-	body: PackedByteArray,
-	http: HTTPRequest,
-) -> void:
-	"""Parse JSONL frames and start playback."""
-	http.queue_free()
-	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
-		_replay_status = "replay load fail %s/%s" % [result, response_code]
-		_update_hud()
-		return
-	var lines := body.get_string_from_utf8().split("\n", false)
-	_replay_frames.clear()
-	for line in lines:
-		if str(line).strip_edges() == "":
-			continue
-		var parsed = JSON.parse_string(line)
-		if typeof(parsed) == TYPE_DICTIONARY:
-			_replay_frames.append(parsed)
-	if _replay_frames.is_empty():
-		_replay_status = "replay: empty frames"
-		_update_hud()
-		return
-	# Seed puppets from first frame entities.
-	var first: Dictionary = _replay_frames[0]
-	var state: Variant = first.get("state", {})
-	if typeof(state) == TYPE_DICTIONARY:
-		_ensure_puppets((state as Dictionary).get("entities", []) as Array)
-	_replay_playing = true
-	_replay_t = 0.0
-	_replay_idx = 0
-	_replay_status = "REPLAY · %s · %d frames · Space pause" % [
-		_replay_session.substr(0, 8), _replay_frames.size()
-	]
-	var own := _own_mech()
-	if camera_rig != null and camera_rig.has_method("set_target"):
-		camera_rig.set_target(own)
-	_apply_replay_frame(0)
-	_update_hud()
-
-
-func _apply_replay_frame(idx: int) -> void:
-	"""Apply one recorded frame to puppets."""
-	if idx < 0 or idx >= _replay_frames.size():
-		return
-	var frame: Dictionary = _replay_frames[idx]
-	var t_sim := float(frame.get("t_sim", 0.0))
-	var state: Variant = frame.get("state", {})
-	if typeof(state) != TYPE_DICTIONARY:
-		return
-	for entity in (state as Dictionary).get("entities", []):
-		if typeof(entity) != TYPE_DICTIONARY:
-			continue
-		var eid := str(entity.get("entity_id", ""))
-		if eid == "":
-			continue
-		if not _puppets.has(eid):
-			_ensure_puppets([entity])
-		if not _puppets.has(eid):
-			continue
-		var puppet = _puppets[eid]
-		if puppet.has_method("apply_state"):
-			puppet.apply_state(entity, t_sim)
-	_replay_idx = idx
+func _on_replay_frame(t_sim: float) -> void:
 	_update_hud(-1, t_sim)
-
-
-func _process_replay(delta: float) -> void:
-	"""Advance offline replay clock and apply nearest frame."""
-	if _is_web and camera_rig != null and camera_rig.has_method("pan_axes"):
-		var pan_r := 0.0
-		var pan_f := 0.0
-		if _web_key("ArrowRight"):
-			pan_r += 1.0
-		if _web_key("ArrowLeft"):
-			pan_r -= 1.0
-		if _web_key("ArrowUp"):
-			pan_f += 1.0
-		if _web_key("ArrowDown"):
-			pan_f -= 1.0
-		camera_rig.pan_axes(pan_r, pan_f, delta)
-	if not _replay_playing or _replay_frames.is_empty():
-		return
-	_replay_t += delta * _replay_speed
-	var last: Dictionary = _replay_frames[_replay_frames.size() - 1]
-	var t_max := float(last.get("t_sim", 0.0))
-	if _replay_t >= t_max:
-		_replay_t = t_max
-		_replay_playing = false
-		_replay_status = "REPLAY done · Space restart · Esc back"
-	while _replay_idx + 1 < _replay_frames.size():
-		var nxt: Dictionary = _replay_frames[_replay_idx + 1]
-		if float(nxt.get("t_sim", 0.0)) > _replay_t:
-			break
-		_replay_idx += 1
-	_apply_replay_frame(_replay_idx)
-
-
-func _toggle_replay_pause() -> void:
-	"""Space: pause/resume or restart when finished."""
-	if _replay_frames.is_empty():
-		return
-	var last: Dictionary = _replay_frames[_replay_frames.size() - 1]
-	var t_max := float(last.get("t_sim", 0.0))
-	if _replay_t >= t_max and not _replay_playing:
-		_replay_t = 0.0
-		_replay_idx = 0
-		_replay_playing = true
-		_replay_status = "REPLAY · %s · %d frames" % [
-			_replay_session.substr(0, 8), _replay_frames.size()
-		]
-		_apply_replay_frame(0)
-		return
-	_replay_playing = not _replay_playing
-	_replay_status = (
-		"REPLAY paused" if not _replay_playing else "REPLAY playing"
-	)
-	_update_hud()
 
 func _resolve_hud_label() -> Label:
 	"""Resolve Label under Hud (Margin/... or legacy PanelContainer/...)."""
@@ -423,8 +287,8 @@ func _on_dom_key_event(args: Array) -> void:
 				if _controlled and ws.session_id != "":
 					ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
 			"Space":
-				if _replay_session != "":
-					_toggle_replay_pause()
+				if _replay != null and _replay.is_active():
+					_replay.toggle_pause()
 			"Escape":
 				_leave_to_hub()
 
@@ -821,8 +685,20 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
-	if _replay_session != "":
-		_process_replay(delta)
+	if _replay != null and _replay.is_active():
+		if _is_web and camera_rig != null and camera_rig.has_method("pan_axes"):
+			var pan_r := 0.0
+			var pan_f := 0.0
+			if _web_key("ArrowRight"):
+				pan_r += 1.0
+			if _web_key("ArrowLeft"):
+				pan_r -= 1.0
+			if _web_key("ArrowUp"):
+				pan_f += 1.0
+			if _web_key("ArrowDown"):
+				pan_f -= 1.0
+			camera_rig.pan_axes(pan_r, pan_f, delta)
+		_replay.advance(delta)
 		return
 	# Web: arrow keys pan camera (document bridge). Desktop: camera_rig reads Input.
 	if _is_web and camera_rig != null and camera_rig.has_method("pan_axes"):
@@ -859,8 +735,8 @@ func _input(event: InputEvent) -> void:
 			if code == KEY_ESCAPE:
 				_leave_to_hub()
 				return
-			if code == KEY_SPACE and _replay_session != "":
-				_toggle_replay_pause()
+			if code == KEY_SPACE and _replay != null and _replay.is_active():
+				_replay.toggle_pause()
 				return
 			if ws.session_id == "":
 				return
@@ -1078,15 +954,15 @@ func _notification(what: int) -> void:
 
 func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	var own = _own_mech()
-	if _replay_session != "":
+	if _replay != null and _replay.is_active():
 		var text := "MineWorld · REPLAY\n"
-		text += "%s\n" % _replay_status
-		text += "session: %s\n" % _replay_session
+		text += "%s\n" % _replay.status
+		text += "session: %s\n" % _replay.session
 		if tick >= 0 or t_sim > 0.0:
 			text += "t_sim=%.2f frame=%d/%d\n" % [
-				t_sim if t_sim > 0.0 else _replay_t,
-				_replay_idx + 1,
-				_replay_frames.size(),
+				t_sim if t_sim > 0.0 else _replay.t,
+				_replay.idx + 1,
+				_replay.frames.size(),
 			]
 			text += "pos=(%.2f, %.2f) yaw=%.2f\n" % [
 				own.position.x, own.position.z, own.rotation.y,
