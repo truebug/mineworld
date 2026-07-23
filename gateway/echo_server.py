@@ -875,6 +875,9 @@ class Session:
     route_kind: str = "mineworld_level"
     ## E9 Hub: state broadcast divisor vs STATE_EVERY (1=full, 4=low, 0=paused).
     presence_state_divisor: int = 1
+    ## State delta (P1): per-entity last-sent quantized pose + keyframe counter.
+    last_sent_entities: dict[str, tuple] = field(default_factory=dict)
+    states_since_keyframe: int = 999  # large → first state is a full keyframe
 
     @property
     def mech(self) -> MechState | None:
@@ -1329,6 +1332,46 @@ def envelope(
 
 async def send_json(ws: ServerConnection, msg: dict[str, Any]) -> None:
     await ws.send(json.dumps(msg, ensure_ascii=False, separators=(",", ":")))
+
+
+STATE_KEYFRAME_INTERVAL = 25  # ~1.25s at 20Hz: force full state
+
+
+def _quantize_entity(ent: dict[str, Any]) -> tuple:
+    """Delta key: pose 1mm / velocities 1cm-s quantized (jitter below this is noise)."""
+    pose = ent.get("base_pose") or {}
+    vel = ent.get("velocities") or {}
+    return (
+        round(float(pose.get("x", 0.0)), 3),
+        round(float(pose.get("y", 0.0)), 3),
+        round(float(pose.get("z", 0.0)), 3),
+        round(float(pose.get("yaw", 0.0)), 4),
+        round(float(vel.get("vx", 0.0)), 2),
+        round(float(vel.get("vy", 0.0)), 2),
+    )
+
+
+def build_delta_state(session: Session, entities: list[dict[str, Any]]) -> dict[str, Any]:
+    """Per-session delta: full on keyframe/first send, else only changed entities.
+
+    Unknown kind consumers ignore; Godot client merges by entity_id (schema
+    already allows kind=delta).
+    """
+    session.states_since_keyframe += 1
+    if session.states_since_keyframe >= STATE_KEYFRAME_INTERVAL:
+        session.last_sent_entities = {
+            str(e.get("entity_id")): _quantize_entity(e) for e in entities
+        }
+        session.states_since_keyframe = 0
+        return {"kind": "full", "entities": entities}
+    changed: list[dict[str, Any]] = []
+    for ent in entities:
+        eid = str(ent.get("entity_id"))
+        q = _quantize_entity(ent)
+        if session.last_sent_entities.get(eid) != q:
+            session.last_sent_entities[eid] = q
+            changed.append(ent)
+    return {"kind": "delta", "entities": changed}
 
 
 class EchoGateway:
@@ -2437,13 +2480,16 @@ class EchoGateway:
                             room.tick % STATE_EVERY_N_TICKS == 0
                             and self._should_send_state(session, room.tick)
                         ):
+                            # Recording keeps full frames (replay integrity);
+                            # wire gets per-session delta (P1 bandwidth).
+                            wire_payload = build_delta_state(session, entities)
                             await send_json(
                                 session.ws,
                                 envelope(
                                     "state",
                                     session_id=session.session_id,
                                     tick=room.tick,
-                                    payload=state_payload,
+                                    payload=wire_payload,
                                 ),
                             )
                     except websockets.ConnectionClosed:

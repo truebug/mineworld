@@ -591,3 +591,9 @@ bash scripts/export_godot.sh web && bash scripts/serve_web.sh restart
 
 - Web 首屏：`shell.html` 品牌字标（MineWorld / Dungeon Gate）+ 进度条；隐藏 Godot 默认 splash 图。
 - 过场：`MW_TRANSITION` DOM 淡入淡出（~280ms）；Autoload `MWTransition.go` / `notify_arrived` 覆盖 Hub 门、Esc 回 Hub、文本菜单。
+## 2026-07-23 · state delta 压缩（P1 带宽）
+
+- 网关在 20Hz state 广播做会话级增量：首帧/每 25 帧关键帧发 full，中间只发量化后
+  位姿/速度有变化的实体（kind=delta，schema 已预留枚举）。
+- 录制仍写 full 帧，回放/幽灵车/IL 导出完整性不受影响。
+- 实测 demo_race 同房：avg delta 308B vs full 1266B（-76%）；`ws_smoke_test` 回归 PASS。
