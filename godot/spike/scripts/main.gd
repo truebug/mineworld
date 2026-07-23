@@ -42,11 +42,7 @@ var _drive := MWDriveInput.new()
 var _lap_splits: Array = []
 var _lap_start_t := -1.0
 var _last_state_t := 0.0
-var _ghost_frames: Array = []
-var _ghost_puppet: Node3D = null
-var _ghost_t := 0.0
-var _ghost_name := ""
-var _ghost_loading := false
+var _ghost: MWGhost = null
 var _last_error := ""
 var _cmd_timer := 0.0
 var _last_log_tick := -1
@@ -142,7 +138,12 @@ func _ready() -> void:
 	if _replay_session != "":
 		_start_replay_mode()
 	elif level_id == "demo_race":
-		_ghost_fetch_best()
+		_ghost = MWGhost.new()
+		_ghost.name = "Ghost"
+		_ghost.own_mech_getter = _own_mech
+		_ghost.loaded.connect(_on_ghost_loaded)
+		add_child(_ghost)
+		_ghost.fetch_best()
 		return
 	ws.connect_to_gateway(_resolve_gateway_url())
 	_update_hud()
@@ -995,9 +996,8 @@ func _process(delta: float) -> void:
 	if _cmd_timer >= 1.0 / CMD_HZ:
 		_cmd_timer = 0.0
 		_send_velocity_cmd()
-	if not _ghost_frames.is_empty():
-		_ghost_t += delta
-		_apply_ghost_frame()
+	if _ghost != null:
+		_ghost.advance(delta)
 
 
 func _input(event: InputEvent) -> void:
@@ -1130,127 +1130,9 @@ func _steer_bar(v: float) -> String:
 	return out
 
 
-func _ghost_fetch_best() -> void:
-	"""Ghost car v1: query platform for fastest demo_race session."""
-	if _ghost_loading or not _is_web:
-		return
-	_ghost_loading = true
-	var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
-	if origin == "":
-		return
-	var http := HTTPRequest.new()
-	add_child(http)
-	http.request_completed.connect(_on_ghost_best_http.bind(http))
-	http.request("%s/api/platform/best_lap?level_id=demo_race" % origin)
-
-
-func _on_ghost_best_http(
-	result: int, code: int, _h: PackedStringArray, body: PackedByteArray, http: HTTPRequest
-) -> void:
-	http.queue_free()
-	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
-		return
-	var data: Variant = JSON.parse_string(body.get_string_from_utf8())
-	if typeof(data) != TYPE_DICTIONARY:
-		return
-	var best: Variant = (data as Dictionary).get("best")
-	if typeof(best) != TYPE_DICTIONARY:
-		return  # no successful lap recorded yet — ghost stays off
-	var sid := str((best as Dictionary).get("session_id", ""))
-	_ghost_name = str((best as Dictionary).get("display_name", "ghost"))
-	if sid == "":
-		return
-	var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
-	var http2 := HTTPRequest.new()
-	add_child(http2)
-	http2.request_completed.connect(_on_ghost_frames_http.bind(http2))
-	http2.request("%s/api/recordings/%s/frames" % [origin, sid.uri_encode()])
-
-
-func _on_ghost_frames_http(
-	result: int, code: int, _h: PackedStringArray, body: PackedByteArray, http: HTTPRequest
-) -> void:
-	http.queue_free()
-	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
-		return
-	for line in body.get_string_from_utf8().split("\n", false):
-		if str(line).strip_edges() == "":
-			continue
-		var parsed = JSON.parse_string(line)
-		if typeof(parsed) == TYPE_DICTIONARY:
-			_ghost_frames.append(parsed)
-	if _ghost_frames.is_empty():
-		return
-	_spawn_ghost_puppet()
-	_status_line = "幽灵车 · %s 的最快圈" % _ghost_name
+func _on_ghost_loaded(ghost_name: String) -> void:
+	_status_line = "幽灵车 · %s 的最快圈" % ghost_name
 	_update_hud()
-
-
-func _spawn_ghost_puppet() -> void:
-	"""Translucent duplicate of own mech template; pure viewer, no physics."""
-	var tmpl := _own_mech()
-	if tmpl == null:
-		return
-	var ghost := tmpl.duplicate() as Node3D
-	ghost.name = "GhostCar"
-	ghost.set("entity_id", "__ghost__")
-	# Strip scripts' behavior: visual only.
-	ghost.set_script(null)
-	for child in ghost.get_children():
-		if child is Label3D:
-			child.queue_free()
-	add_child(ghost)
-	# Translucent cyan glass look.
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.3, 0.9, 1.0, 0.35)
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	for mesh_inst in ghost.find_children("*", "MeshInstance3D", true, false):
-		(mesh_inst as MeshInstance3D).material_override = mat
-	_ghost_puppet = ghost
-	_ghost_t = 0.0
-
-
-func _apply_ghost_frame() -> void:
-	"""Advance ghost along recorded t_sim (loops)."""
-	if _ghost_puppet == null:
-		return
-	var total := float((_ghost_frames[-1] as Dictionary).get("t_sim", 0.0))
-	if total <= 0.0:
-		return
-	var t := fmod(_ghost_t, total)
-	# binary search frame
-	var lo := 0
-	var hi := _ghost_frames.size() - 1
-	while lo < hi:
-		var mid := int((lo + hi + 1) / 2)
-		if float((_ghost_frames[mid] as Dictionary).get("t_sim", 0.0)) <= t:
-			lo = mid
-		else:
-			hi = mid - 1
-	var frame: Dictionary = _ghost_frames[lo]
-	var state: Variant = frame.get("state", {})
-	if typeof(state) != TYPE_DICTIONARY:
-		return
-	for entity in (state as Dictionary).get("entities", []):
-		if typeof(entity) != TYPE_DICTIONARY:
-			continue
-		var eid := str(entity.get("entity_id", ""))
-		# Follow the recorded winner's own car (first controllable mech).
-		if not eid.begins_with("mech_player"):
-			continue
-		var pose: Variant = entity.get("base_pose", {})
-		if typeof(pose) != TYPE_DICTIONARY:
-			continue
-		var mw := pose as Dictionary
-		_ghost_puppet.global_position = Vector3(
-			float(mw.get("x", 0.0)), float(mw.get("z", 0.0)), -float(mw.get("y", 0.0))
-		)
-		_ghost_puppet.global_rotation.y = float(mw.get("yaw", 0.0))
-		break
-
-
-var _race_fx: MWRaceFX = null
 
 
 func _send_drive_cmd() -> void:
