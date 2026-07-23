@@ -2338,25 +2338,26 @@ class EchoGateway:
             )
             return
 
-        # First member into an existing empty room already reset via _make_room_mechs.
-        # Public rooms (demo / hub): only reset when the room was empty.
+        # Free slots are by definition unclaimed (free_spawn_id); leaving a
+        # room parks the car off-track, so every join MUST reset to the grid
+        # spawn — else a resident bot (B2.5) keeps the room alive forever and
+        # every later joiner spawns at the (420,420) park, 600 m off-track.
         public_room = hub or room_id in (
             DEMO_ROOM_ID,
             CITY_ROOM_ID,
             RACE_ROOM_ID,
             HUB_ROOM_ID,
         )
-        if (not public_room) or len([s for s in room.members.values() if s.joined]) == 0:
-            spawn = next(
-                (s for s in (room.contract.get("mech_spawns") or []) if s.get("id") == entity_id),
-                None,
-            )
-            pose = (spawn or {}).get("pose") or {}
-            room.mechs[entity_id].reset_pose(pose)
-            room.mechs[entity_id].controlled = False
-            room.mechs[entity_id].vx = room.mechs[entity_id].vy = room.mechs[entity_id].yaw_rate = 0.0
-            if not public_room:
-                room.tick = 0
+        spawn = next(
+            (s for s in (room.contract.get("mech_spawns") or []) if s.get("id") == entity_id),
+            None,
+        )
+        pose = (spawn or {}).get("pose") or {}
+        room.mechs[entity_id].reset_pose(pose)
+        room.mechs[entity_id].controlled = False
+        room.mechs[entity_id].vx = room.mechs[entity_id].vy = room.mechs[entity_id].yaw_rate = 0.0
+        if not public_room:
+            room.tick = 0
 
         session.contract = room.contract
         session.level_id = level_id
