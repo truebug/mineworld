@@ -148,13 +148,14 @@ func _ready() -> void:
 		add_child(_replay)
 		_replay.start(replay_id)
 	elif level_id == "demo_race":
+		# Ghost is viewer-only async fetch — must NOT return early or race
+		# never connects WS (throttle/cmds never sent; car sits at spawn).
 		_ghost = MWGhost.new()
 		_ghost.name = "Ghost"
 		_ghost.own_mech_getter = _own_mech
 		_ghost.loaded.connect(_on_ghost_loaded)
 		add_child(_ghost)
 		_ghost.fetch_best()
-		return
 	ws.connect_to_gateway(_resolve_gateway_url())
 	_update_hud()
 

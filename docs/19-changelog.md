@@ -10,6 +10,13 @@
 
 ---
 
+## 2026-07-23 · 修复 demo_race 幽灵车 return 跳过网关连接（油门无反应）
+
+- 根因：`main.gd` `_ready` 在 `MWGhost.fetch_best()` 后误 `return`，未执行
+  `ws.connect_to_gateway()` → 无 session / control，车停在本地出生点，按 W 无效；
+  HUD 仍残留母港 tip。
+- 修复：幽灵车异步拉取后继续连网关（viewer-only，不阻断进房）。
+
 ## 2026-07-23 · 修复进关过场双锁死（遮罩卡住后所有门进不去）
 
 - 根因：`MWTransition._busy` 依赖新场景 `notify_arrived()` 清锁；若切场景失败/未到达，
