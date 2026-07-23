@@ -16,6 +16,8 @@
   - `race_fx.gd`（`MWRaceFX`）：胎痕 + 刹车烟尘，viewer-only，main.gd 1549→1482。
   - `drive_input.gd`（`MWDriveInput`）：油门/刹车/转向模拟通道纯逻辑（含手柄轴优先、
     倒车保护、自动回正），main.gd 1482→1437；行为与原实现逐行等价。
+  - `ghost_car.gd`（`MWGhost`）：幽灵车取榜/拉帧/傀儡/循环回放全链路，
+    经 `loaded` 信号回传状态，main.gd 1437→1319。
 - 每刀均过 `gdscript_lint` + Web 导出零错误后入库；已发版 playground 验证。
 - 待续刀（边界已勘定）：ghost/replay 约 120 行各自自包含；hud 约 250 行；hub.gd 复用同款。
 
