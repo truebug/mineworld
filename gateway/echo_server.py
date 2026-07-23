@@ -727,6 +727,11 @@ class Room:
     grasp_eq: dict[tuple[str, str], int] = field(default_factory=dict)
     ## H1: compiled MjModel for this room's contract (may differ per level).
     mj_model: Any = None
+    ## B2: thin 1v1 duel for demo_race — first finisher wins the round.
+    duel_settled: bool = False
+    duel_armed_tick: int = -1
+    duel_pending: set[str] = field(default_factory=set)
+    duel_round: int = 0
 
     def free_spawn_id(self) -> str | None:
         """Return first mech spawn id not claimed by a joined member."""
@@ -1575,6 +1580,80 @@ class EchoGateway:
             route_kind=session.route_kind,
         )
 
+    def _evaluate_race_duel(
+        self,
+        session: Session,
+        room: "Room",
+        objective_events: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """B2 thin duel: first obj_race_finish in a >=2-player race room wins.
+
+        Winner gets the event this tick (recorded + broadcast); other members
+        via pending_events next tick. Round re-arms once every pending player
+        also finishes (or leaves). Solo laps never settle a duel.
+        """
+        if str(room.contract.get("level_id") or "") != "demo_race":
+            return []
+        if room.duel_armed_tick < 0:
+            controlled_now = {
+                s.controlled_entity_id
+                for s in room.members.values()
+                if s.joined and not s.closed and s.controlled_entity_id
+            }
+            if len(controlled_now) >= 2:
+                room.duel_armed_tick = room.tick
+        finished = any(
+            ev.get("event_type") == "objective_complete"
+            and str(ev.get("objective_id") or "") == "obj_race_finish"
+            for ev in objective_events
+        )
+        if not finished or session.mech is None:
+            return []
+        eid = session.mech.entity_id
+        controlled = {
+            s.controlled_entity_id
+            for s in room.members.values()
+            if s.joined and not s.closed and s.controlled_entity_id
+        }
+        if room.duel_settled:
+            room.duel_pending.intersection_update(controlled)
+            room.duel_pending.discard(eid)
+            if not room.duel_pending:
+                room.duel_settled = False
+                room.duel_armed_tick = room.tick
+            return []
+        if len(controlled) < 2:
+            return []
+        room.duel_settled = True
+        room.duel_round += 1
+        room.duel_pending = controlled - {eid}
+        win_time = max(0.0, (room.tick - room.duel_armed_tick) * DT)
+        ev = {
+            "event_type": "duel_result",
+            "entity_id": eid,
+            "detail": {
+                "winner_entity_id": eid,
+                "winner_name": session.player_name,
+                "win_time_s": round(win_time, 2),
+                "participants": sorted(controlled),
+                "round": room.duel_round,
+                "level_id": "demo_race",
+            },
+        }
+        for other in room.members.values():
+            if other is session or not other.joined or other.closed:
+                continue
+            other.pending_events.append(dict(ev))
+        LOG.info(
+            "session=%s duel_result winner=%s round=%d win_time=%.1fs participants=%s",
+            session.session_id,
+            eid,
+            room.duel_round,
+            win_time,
+            sorted(controlled),
+        )
+        return [ev]
+
     def _applied_cmd(self, mech: MechState) -> dict[str, Any] | None:
         """Control applied this tick (velocity + joint_targets), or None if idle."""
         if not mech.controlled:
@@ -2419,6 +2498,9 @@ class EchoGateway:
                     session.pending_events.clear()
                     objective_events = evaluate_objectives(session)
                     objective_events.extend(evaluate_time_limit(session))
+                    objective_events.extend(
+                        self._evaluate_race_duel(session, room, objective_events)
+                    )
                     if objective_events:
                         duration = float(room.tick) * DT
                         level_id = str(

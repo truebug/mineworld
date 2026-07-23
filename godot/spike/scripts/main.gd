@@ -43,6 +43,10 @@ var _lap_splits: Array = []
 var _lap_start_t := -1.0
 var _last_state_t := 0.0
 var _ghost: MWGhost = null
+var _race_cum: PackedFloat32Array = PackedFloat32Array()  # centerline cumulative dist (m)
+var _race_pts: PackedVector2Array = PackedVector2Array()  # centerline MW xy
+var _race_track_len := 0.0
+var _duel_hint_idx: Dictionary = {}  # eid -> last nearest centerline idx
 var _last_error := ""
 var _cmd_timer := 0.0
 var _last_log_tick := -1
@@ -128,6 +132,8 @@ func _ready() -> void:
 		_sync_web_joints_ui()
 	if camera_rig != null and camera_rig.has_signal("view_mode_changed"):
 		camera_rig.view_mode_changed.connect(_on_camera_view_changed)
+	if level_id == "demo_race":
+		_load_race_centerline()
 	var replay_id := _resolve_replay_id()
 	if replay_id != "":
 		_replay = MWReplay.new()
@@ -588,6 +594,22 @@ func _on_event(payload: Dictionary) -> void:
 			_hud.show_mission_result(true, oid, pts, ws.session_id)
 			if _controlled:
 				ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
+		"duel_result":
+			var d_v: Variant = payload.get("detail", {})
+			var d: Dictionary = d_v if typeof(d_v) == TYPE_DICTIONARY else {}
+			var winner := str(d.get("winner_entity_id", ""))
+			var win := winner == _controlled_entity_id
+			var wname := str(d.get("winner_name", winner))
+			var wtime := float(d.get("win_time_s", 0.0))
+			_status_line = (
+				MWi18n.t("对决胜利 · %.1fs", "DUEL WIN · %.1fs") % wtime
+				if win
+				else MWi18n.t("对决落败 · %s %.1fs", "DUEL LOSE · %s %.1fs") % [wname, wtime]
+			)
+			_hud.show_mission_result(
+				win, _status_line, 0, ws.session_id, "YOU WIN" if win else "YOU LOSE"
+			)
+			_update_hud()
 		"objective_failed":
 			_mission_done = true
 			_status_line = MWi18n.t("失败 · %s", "FAIL · %s") % payload.get("objective_id", "?")
@@ -952,6 +974,88 @@ func _notification(what: int) -> void:
 		ws.close_link()
 
 
+func _load_race_centerline() -> void:
+	# demo_race centerline → cumulative distances for duel progress delta.
+	var raw := FileAccess.get_file_as_string("res://data/race_layout.json")
+	if raw == "":
+		return
+	var parsed: Variant = JSON.parse_string(raw)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	var cl: Array = (parsed as Dictionary).get("centerline", [])
+	if cl.size() < 2:
+		return
+	_race_pts.clear()
+	for pt in cl:
+		if typeof(pt) == TYPE_DICTIONARY:
+			var d := pt as Dictionary
+			_race_pts.append(Vector2(float(d.get("x", 0.0)), float(d.get("y", 0.0))))
+	_race_cum.clear()
+	_race_cum.append(0.0)
+	for i in range(1, _race_pts.size()):
+		_race_cum.append(_race_cum[i - 1] + _race_pts[i].distance_to(_race_pts[i - 1]))
+	_race_track_len = _race_cum[_race_cum.size() - 1] + _race_pts[0].distance_to(
+		_race_pts[_race_pts.size() - 1]
+	)
+
+
+func _race_progress_m(eid: String) -> float:
+	# Nearest-centerline progress (m along lap) with per-entity wrap hint.
+	if _race_pts.size() < 2 or not _puppets.has(eid):
+		return -1.0
+	var puppet = _puppets[eid]
+	if not ("last_mw_x" in puppet):
+		return -1.0
+	var px := float(puppet.get("last_mw_x"))
+	var py := float(puppet.get("last_mw_y"))
+	var n := _race_pts.size()
+	var hint := int(_duel_hint_idx.get(eid, 0))
+	var best := hint
+	var best_d := 1e18
+	for off in range(-20, 21):
+		var i: int = (hint + off + n) % n
+		var dd := _race_pts[i].distance_squared_to(Vector2(px, py))
+		if dd < best_d:
+			best_d = dd
+			best = i
+	if best_d > 225.0:  # >15m off line: full rescan (spawn/reset)
+		for i in n:
+			var dd2 := _race_pts[i].distance_squared_to(Vector2(px, py))
+			if dd2 < best_d:
+				best_d = dd2
+				best = i
+	_duel_hint_idx[eid] = best
+	return _race_cum[best]
+
+
+func _duel_delta_text() -> String:
+	# Shortest signed gap vs nearest opponent on the loop (client-side).
+	if _race_track_len <= 0.0:
+		return ""
+	var self_p := _race_progress_m(_controlled_entity_id)
+	if self_p < 0.0:
+		return ""
+	var best_abs := 1e18
+	var best_delta := 0.0
+	var found := false
+	for eid in _puppets.keys():
+		var id_str := str(eid)
+		if id_str == _controlled_entity_id or not id_str.begins_with("mech_player"):
+			continue
+		var opp_p := _race_progress_m(id_str)
+		if opp_p < 0.0:
+			continue
+		var delta := fmod(self_p - opp_p + _race_track_len * 1.5, _race_track_len) - _race_track_len * 0.5
+		if absf(delta) < best_abs:
+			best_abs = absf(delta)
+			best_delta = delta
+			found = true
+	if not found:
+		return ""
+	var word := MWi18n.t("领先", "ahead") if best_delta >= 0.0 else MWi18n.t("落后", "behind")
+	return "\n" + MWi18n.t("对决 %s %.0fm", "duel %s %.0fm") % [word, absf(best_delta)]
+
+
 func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	var own = _own_mech()
 	if _replay != null and _replay.is_active():
@@ -1017,6 +1121,7 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		]
 		if _lap_splits.size() > 0:
 			text += "\n" + " | ".join(_lap_splits)
+		text += _duel_delta_text()
 		text += "\nRace: W 油门 | S 刹车 | X 倒车 | Q/E 转向"
 	text += "\nV 相机 | 左键 peek 松手回中 | 右键粘性环视 | 中键/左右同按平移 | 滚轮缩放 | C 强制回中"
 	if _is_web:

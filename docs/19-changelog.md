@@ -10,6 +10,19 @@
 
 ---
 
+## 2026-07-23 · B2 薄 1v1 竞速对决（duel_result）
+
+- 网关：demo_race 房间 ≥2 名受控玩家时自动武装对决；首位过线（`obj_race_finish`）者
+  触发 `duel_result` 事件（winner/圈时/参赛者/轮次），胜者当帧、其余成员下一帧入流，
+  经既有 `recorder.write_frame(events=…)` 落盘双方录制；全员完赛后自动重新武装下一轮。
+  单人刷圈不触发；非 race 关卡免疫。事件样例 `examples/ws/event-duel-result.json`。
+- 客户端：事件 → 大字横幅 YOU WIN / YOU LOSE（`MWHud.show_mission_result` 新增
+  title_override）+ 状态行；HUD 新增「对决 领先/落后 Nm」——纯客户端中线投影
+  （race_layout.json 累计里程 + 每实体回绕提示的最短符号差），零 schema 变更。
+- 验证：`scripts/duel_smoke.py` 进程内 5 断言（settle/pending/re-arm/单人守卫/异关卡），
+  顺手抓到并修复 `logger`→`LOG` 引用错误；`ws_smoke_test`（mujoco 标准路径）OK；
+  lint 0；Web 导出零错误。
+
 ## 2026-07-23 · 修复 Hub 角色「滑行不动四肢」
 
 - 症状：玩家行走时角色常原地平滑滑行、四肢不动。
