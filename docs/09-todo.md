@@ -125,6 +125,18 @@
 
 > 规格 SSOT：[20-platform-portal.md](20-platform-portal.md) · 生态 [21](21-ecosystem-federation.md)。Gateway WS 只管仿真；身份/积分/运营走独立 API。
 
+### 技术债 · Godot 结构拆分（2026-07-23 起）
+
+> 评审建议：main.gd 已够瘦（1549→1029，-34%），**暂停抽模块**；优先级让位产品切片。
+> 已完成：`MWRaceFX` / `MWDriveInput` / `MWGhost` / `MWHud` / `MWReplay`（见 [19](19-changelog.md)）。
+
+| ID | 任务 | 边界 / 备注 | 状态 |
+|----|------|------------|------|
+| TD1 | main.gd net 消息处理层 | `_on_hello/_on_scene/_on_event/_on_state` + cmd 发送器 ~350 行；与任务/HUD/傀儡三层交叉，须信号化设计，拆前先在 ADR 落接口 | [ ] 暂缓 |
+| TD2 | hub.gd 门系统域 | `_check_doors/_update_door_context/approach FX/hint` ~200 行；耦合 `_door_grace/_entering_door`/场景切换 | [ ] 暂缓 |
+| TD3 | hub.gd NPC/交互域 + 提示系统 | `_try_interact/_talk_npc/_use_*` ~150 行；tips ~90 行较自包含可先走 | [ ] 暂缓 |
+| TD4 | Linux 容器 CI `--check-only` | 替代本地 Metal 崩溃的盲验；现 `gdscript_lint` 兜底 | [ ] 待定 |
+
 ### UX · 首屏与过场
 
 | ID | 任务 | 验收 | 状态 |
