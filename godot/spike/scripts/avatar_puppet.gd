@@ -9,7 +9,7 @@ const BLOCKY_SCALE := 0.36
 ## Kenney face is typically −Z; rotate so facing matches puppet +X.
 const MESH_YAW_DEG := 90.0
 const SPEED_IDLE := 0.25
-const SPEED_SPRINT := 2.4
+const SPEED_SPRINT := 3.2  # above hub MOVE_SPEED 2.8: normal locomotion shows walk
 const ANIM_BLEND := 0.15
 ## E9: public-net feel — cap catch-up / extrap so remotes don't "fly".
 const MAX_GROUND_SPEED := 4.0
@@ -102,6 +102,10 @@ func _ensure_skin(force: bool = false) -> void:
 	_anim = _find_anim_player(node)
 	if _anim != null:
 		_anim.active = true
+		for loco in ["idle", "walk", "sprint"]:
+			var loco_clip := _resolve_anim(loco)
+			if loco_clip != "":
+				_anim.get_animation(loco_clip).loop_mode = Animation.LOOP_LINEAR
 		_play_anim("idle")
 	call_deferred("_plant_feet")
 
@@ -145,7 +149,7 @@ func _play_anim(want: String) -> void:
 	var clip := _resolve_anim(want)
 	if clip == "":
 		return
-	if clip == _anim_playing:
+	if clip == _anim_playing and _anim.is_playing():
 		return
 	_anim.play(clip, ANIM_BLEND)
 	_anim_playing = clip

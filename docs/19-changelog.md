@@ -10,6 +10,16 @@
 
 ---
 
+## 2026-07-23 · 修复 Hub 角色「滑行不动四肢」
+
+- 症状：玩家行走时角色常原地平滑滑行、四肢不动。
+- 根因（双因）：① `SPEED_SPRINT=2.4` 低于大厅走速 2.8 m/s → 常态行走被判为 sprint，
+  walk 循环实际不可达；② 运动剪辑循环依赖导入 loop 标志，若未循环则 0.5–0.67s 后
+  定格末帧（静态目标覆盖 + cross-fade 0.15s），视觉上即永久滑行。
+- 修复：`SPEED_SPRINT` 提至 3.2（走→walk、仅预测过冲瞬时触发 sprint）；
+  `_ensure_skin` 对 idle/walk/sprint 强制 `LOOP_LINEAR`；`_play_anim` 守卫加
+  `is_playing()`——剪辑播完自动重播，对任何循环失效自愈。
+
 ## 2026-07-23 · 修复 delta 压缩下 Hub 小地图丢静止玩家
 
 - 症状：state delta 压缩（`6a4753f`）后，静止玩家只随 1.25s 关键帧出现；Hub `_on_state`
