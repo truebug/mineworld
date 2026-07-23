@@ -18,6 +18,9 @@ bash scripts/export_godot.sh web
 echo "== 1.5/6 gdscript lint =="
 .venv/bin/python scripts/gdscript_lint.py || { echo "ERROR: gdscript lint failed" >&2; exit 1; }
 
+echo "== 1.6/6 scene boot check (compile gate) =="
+bash scripts/check_scenes_boot.sh || { echo "ERROR: scene boot check failed — aborting deploy" >&2; exit 1; }
+
 echo "== 2/6 verify pck contents =="
 PCK="dist/web/index.pck"
 [[ -f "$PCK" ]] || { echo "ERROR: $PCK missing" >&2; exit 1; }
