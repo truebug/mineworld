@@ -1,0 +1,17 @@
+[Unit]
+Description=MineWorld AI Race Bot (resident opponent, B2.5)
+After=network-online.target mineworld-gateway.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/mineworld
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/mineworld/.venv/bin/python /opt/mineworld/scripts/ai_driver.py --url ws://10.200.0.14:18081 --room race --name "AI 车手" --bot --forever
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

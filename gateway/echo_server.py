@@ -2374,7 +2374,9 @@ class EchoGateway:
 
         self._close_recorder(session, outcome="abort")
         # Hub presence is not teleop capture — skip recordings.
-        if self.record_dir is not None and not hub:
+        # Bots (AI driver resident) also skip: their laps flood session index.
+        is_bot = bool((profile or {}).get("bot"))
+        if self.record_dir is not None and not hub and not is_bot:
             software: dict[str, Any] = {"gateway_version": PROTOCOL_VERSION}
             if self.physics == "mujoco" and mujoco is not None:
                 software["mujoco_version"] = getattr(mujoco, "__version__", "unknown")

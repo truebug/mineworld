@@ -10,6 +10,19 @@
 
 ---
 
+## 2026-07-23 · B2.5 AI 常驻陪练（resident bot）
+
+- 痛点：1v1 对决需双人同时在线，低流量下访客永远体验不到。解法：ai_driver 常驻公共
+  赛车房 `race`，任何单人访客进门即有活对手——duel 自动武装、WIN/LOSE 横幅、
+  进度差 HUD 全部立即可用，人机对决数据继续喂飞轮（T4.5 人机同协议）。
+- `ai_driver.py`：`--room`（共享房）/`--name`/`--bot`/`--forever`（圈内复位 + 掉线
+  3s 重连驻留循环）；`--bot` 经 join extensions.mw.profile 标记，网关据此跳过其录制
+  （`profile.bot` → 不建 SessionRecorder，防 AI 圈淹没会话索引与 best_lap 幽灵车源）。
+- 运维：`scripts/mineworld-bot.service`（Restart=always，连内网 gateway）；
+  安装步骤见 docs/ops.local.md（私有）。
+- 验证：fake 网关共享房加入（room=race max_members=6）+ 录制零新增；mujoco 网关
+  15s 试驾 PASS（11–12 m/s）。
+
 ## 2026-07-23 · B2 薄 1v1 竞速对决（duel_result）
 
 - 网关：demo_race 房间 ≥2 名受控玩家时自动武装对决；首位过线（`obj_race_finish`）者

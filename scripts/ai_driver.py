@@ -65,15 +65,27 @@ def curvature_ahead(pts: list[tuple[float, float]], idx: int, span: int = 6) -> 
     return worst
 
 
-async def drive(url: str, seconds: float) -> int:
+async def drive(
+    url: str,
+    seconds: float,
+    room: str = "",
+    name: str = "AI Driver v0",
+    bot: bool = False,
+    forever: bool = False,
+) -> int:
     pts = load_centerline()
     n = len(pts)
     async with websockets.connect(url) as ws:
         hello = json.loads(await asyncio.wait_for(ws.recv(), timeout=5))
         sid = hello["session_id"]
+        join_payload: dict = {"level_id": "demo_race", "player_name": name}
+        if room:
+            join_payload["room_id"] = room
+        if bot:
+            join_payload["extensions"] = {"mw": {"profile": {"bot": True, "id": "ai-driver-v0"}}}
         await ws.send(json.dumps({
             "type": "join", "session_id": sid,
-            "payload": {"level_id": "demo_race", "player_name": "AI Driver v0"},
+            "payload": join_payload,
         }))
         entity = None
         hint = 0
@@ -93,7 +105,9 @@ async def drive(url: str, seconds: float) -> int:
                 },
             }))
 
-        deadline = asyncio.get_event_loop().time() + seconds
+        deadline = (
+            float("inf") if forever else asyncio.get_event_loop().time() + seconds
+        )
         last_cmd = 0.0
         while asyncio.get_event_loop().time() < deadline:
             try:
@@ -168,7 +182,11 @@ async def drive(url: str, seconds: float) -> int:
                 # lap detection: accumulated a full centerline traversal
                 if lap_start_t is not None and accum_progress >= n * 0.95:
                     print(f"LAP DONE in {t_sim - lap_start_t:.1f}s (verified full traversal)")
-                    return 0
+                    if forever:
+                        lap_start_t = None
+                        accum_progress = 0.0
+                    else:
+                        return 0
         span = (max(progress_marks) - min(progress_marks)) if progress_marks else 0
         print(f"progress: centerline span {span}/{n} idx over {seconds}s")
         ok = span > n * 0.15  # covered at least 15% of the lap
@@ -176,12 +194,32 @@ async def drive(url: str, seconds: float) -> int:
         return 0 if ok else 1
 
 
+async def drive_forever(
+    url: str, room: str, name: str, bot: bool, retry_s: float = 3.0
+) -> int:
+    """Resident bot loop: reconnect + rejoin on any drop (gateway restart, room full)."""
+    while True:
+        try:
+            await drive(url, 0.0, room=room, name=name, bot=bot, forever=True)
+        except (OSError, websockets.WebSocketException, asyncio.TimeoutError) as err:
+            print(f"connection dropped: {err!r} — retry in {retry_s:.0f}s")
+        await asyncio.sleep(retry_s)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="ws://127.0.0.1:8765")
     ap.add_argument("--seconds", type=float, default=45.0)
+    ap.add_argument("--room", default="", help="shared room id (empty = private)")
+    ap.add_argument("--name", default="AI Driver v0")
+    ap.add_argument("--bot", action="store_true", help="mark session as bot (skip recording)")
+    ap.add_argument("--forever", action="store_true", help="resident mode: laps + reconnect loop")
     args = ap.parse_args()
-    raise SystemExit(asyncio.run(drive(args.url, args.seconds)))
+    if args.forever:
+        raise SystemExit(asyncio.run(drive_forever(args.url, args.room, args.name, args.bot)))
+    raise SystemExit(
+        asyncio.run(drive(args.url, args.seconds, room=args.room, name=args.name, bot=args.bot))
+    )
 
 
 if __name__ == "__main__":
