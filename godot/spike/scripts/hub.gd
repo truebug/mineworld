@@ -15,6 +15,7 @@ const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const _WEB_BLOCK_CODES := {
 	"KeyW": true, "KeyA": true, "KeyS": true, "KeyD": true,
 	"KeyQ": true, "KeyE": true, "KeyV": true, "KeyF": true, "KeyC": true,
+	"Space": true,
 	"ArrowUp": true, "ArrowDown": true, "ArrowLeft": true, "ArrowRight": true,
 }
 
@@ -698,11 +699,11 @@ func _compose_and_push_tips() -> void:
 		chunks.append(_door_context)
 	chunks.append(
 		MWi18n.t(
-			"WASD 平移 | Q/E 转向 | F 交互\n"
+			"WASD 平移 | Q/E 转向 | F 交互 | 空格跳跃\n"
 			+ "左键 peek 回中 · 右键粘性环视 · 中键/左右同按平移 · 滚轮缩放 · C 强制回中 · V 相机\n"
 			+ "门：A 工坊 · B 训练 · C 卡片 · D 边缘 · E 竞技(建设中) · R 赛车\n"
 			+ "（点击折叠）",
-			"WASD strafe | Q/E turn | F interact\n"
+			"WASD strafe | Q/E turn | F interact | Space jump\n"
 			+ "LMB peek · RMB sticky look · MMB/L+R pan · wheel zoom · C recenter · V camera\n"
 			+ "Doors: A Workshop · B Training · C Cards · D Edge · E Arena(WIP) · R Race\n"
 			+ "(click to collapse)"
@@ -871,13 +872,17 @@ func _send_velocity_cmd() -> void:
 		own.call("set_local_cmd", vx, vy, yaw_rate)
 	if _session_id == "":
 		return
-	ws.send_cmd({
+	var cmd := {
 		"entity_id": _controlled_entity_id,
 		"control_mode": "velocity",
 		"vx": vx,
 		"vy": vy,
 		"yaw_rate": yaw_rate,
-	})
+	}
+	# Piggyback visual hop so remotes see the jump (Hub FakeMech stays planar).
+	if own != null and own.has_method("get_hub_hop_y"):
+		cmd["extensions"] = {"mw": {"hop_y": float(own.call("get_hub_hop_y"))}}
+	ws.send_cmd(cmd)
 	_controlled = true
 
 
@@ -1475,11 +1480,22 @@ func _apply_hub_floor() -> void:
 		return
 	if "height_offset" in own:
 		own.set("height_offset", FLOOR2_Y if _hub_floor == 2 else 0.0)
-	# Nudge buffers so the jump is immediate (don't wait for next state).
-	if _hub_floor == 2:
-		own.global_position.y = FLOOR2_Y
-	else:
-		own.global_position.y = 0.0
+	if own.has_method("reset_hub_hop"):
+		own.reset_hub_hop()
+	# Nudge buffers so the floor snap is immediate (don't wait for next state).
+	var y := FLOOR2_Y if _hub_floor == 2 else 0.0
+	own.global_position.y = y
+
+
+func _try_hub_hop() -> void:
+	"""Space: hub-only hop (same class of key as F — not used in play levels)."""
+	if nick_edit != null and nick_edit.has_focus():
+		return
+	if _elev_phase != "":
+		return
+	var own := _own_avatar()
+	if own != null and own.has_method("try_hub_hop"):
+		own.try_hub_hop()
 
 
 func _on_camera_view_changed(label: String) -> void:
@@ -1489,7 +1505,7 @@ func _on_camera_view_changed(label: String) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	"""Desktop: Esc stays in hub; F interact. Camera C/V live on CameraRig."""
+	"""Desktop: Esc stays in hub; F interact; Space hop. Camera C/V on CameraRig."""
 	if event is InputEventKey:
 		var ek := event as InputEventKey
 		if ek.pressed and not ek.echo:
@@ -1498,6 +1514,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 			if ek.keycode == KEY_F or ek.physical_keycode == KEY_F:
 				_try_interact()
+				get_viewport().set_input_as_handled()
+				return
+			if ek.keycode == KEY_SPACE or ek.physical_keycode == KEY_SPACE:
+				_try_hub_hop()
 				get_viewport().set_input_as_handled()
 				return
 
@@ -1527,12 +1547,14 @@ func _on_dom_key_event(args: Array) -> void:
 	_held_codes[code] = down
 	# Release nickname LineEdit focus so WASD reach the game again.
 	if down and nick_edit != null and nick_edit.has_focus():
-		if code in ["KeyW", "KeyS", "KeyQ", "KeyE", "KeyA", "KeyD"]:
+		if code in ["KeyW", "KeyS", "KeyQ", "KeyE", "KeyA", "KeyD", "Space"]:
 			nick_edit.release_focus()
 	if down and camera_rig != null and camera_rig.has_method("handle_code"):
 		camera_rig.handle_code(code, true)
 	if down and code == "KeyF":
 		_try_interact()
+	if down and code == "Space":
+		_try_hub_hop()
 	if _WEB_BLOCK_CODES.has(code):
 		event.preventDefault()
 

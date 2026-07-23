@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-07-23 · Hub L2 空气墙 + 空格跳跃互见（playground）
+
+- **L2 clamp**：`demo_hub` `bounds.floor2_walkable`；`hub_floor==2` 时 FakeMech 钳在观景廊甲板。
+- **空格跳跃**：Hub 专用（同 F）；本机抛物线；velocity `extensions.mw.hop_y` → state → 远端抬高。
+- 冒烟：`scripts/h_bounds_e3b_smoke.py`（floor2 投影）、`scripts/hub_floor_smoke.py`（floor+hop）。
+- 样例：`examples/ws/cmd_set_hub_floor.json`、`examples/ws/cmd_hub_hop_y.json`。
+- 现网：`MW_BUILD=20260723-181418`（强刷）。
+
 ## 2026-07-23 · Hub 电梯楼层多人同步（hub_floor）
 
 - 根因：L2 乘梯只改本机 `height_offset`，FakeMech 权威仍是平面 → 自己悬空、远端仍见一楼。

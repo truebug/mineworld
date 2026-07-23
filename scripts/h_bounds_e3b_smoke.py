@@ -13,6 +13,7 @@ import websockets
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "gateway"))
 from echo_server import (  # noqa: E402
+    _hub_floor2_walkable_aabbs,
     _hub_walkable_aabbs,
     _nearest_aabb_point,
     _point_in_aabb,
@@ -42,6 +43,22 @@ def _test_walkable_projection() -> None:
     nx, ny = _nearest_aabb_point(void_x, void_y, walkable)
     assert any(_point_in_aabb(nx, ny, b) for b in walkable), f"projected ({nx},{ny}) still void"
     print(f"hub walkable projection OK · void ({void_x},{void_y}) → ({nx:.2f},{ny:.2f})")
+
+
+def _test_floor2_deck_projection() -> None:
+    """Off L2 open edge must project back onto mezzanine AABB."""
+    data = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    bounds = data["extensions"]["mw"]["bounds"]
+    floor2 = _hub_floor2_walkable_aabbs(bounds)
+    assert floor2, "demo_hub.json missing bounds.floor2_walkable"
+    # Elevator pad stays on deck.
+    assert any(_point_in_aabb(16.0, -15.0, b) for b in floor2), "elevator not on L2 deck"
+    # Past open edge toward hall center (MW +Y from south deck).
+    void_x, void_y = 16.0, -6.0
+    assert not any(_point_in_aabb(void_x, void_y, b) for b in floor2)
+    nx, ny = _nearest_aabb_point(void_x, void_y, floor2)
+    assert any(_point_in_aabb(nx, ny, b) for b in floor2), f"L2 projected ({nx},{ny}) still void"
+    print(f"hub floor2 deck projection OK · void ({void_x},{void_y}) → ({nx:.2f},{ny:.2f})")
 
 
 async def _hub_live_clamp(url: str) -> None:
@@ -153,6 +170,7 @@ async def _workshop_space_id(url: str) -> None:
 async def main() -> int:
     url = sys.argv[1] if len(sys.argv) > 1 else "ws://127.0.0.1:8765"
     _test_walkable_projection()
+    _test_floor2_deck_projection()
     await _hub_live_clamp(url)
     await _workshop_space_id(url)
     print("h_bounds_e3b smoke OK")

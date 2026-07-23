@@ -1,0 +1,16 @@
+{
+  "type": "cmd",
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "payload": {
+    "entity_id": "avatar_0",
+    "control_mode": "velocity",
+    "vx": 0.0,
+    "vy": 0.0,
+    "yaw_rate": 0.0,
+    "extensions": {
+      "mw": {
+        "hop_y": 1.25
+      }
+    }
+  }
+}

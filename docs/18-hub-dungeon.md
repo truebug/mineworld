@@ -52,7 +52,9 @@
 | **H5** | Hub 互见：`level_id=demo_hub` + `room_id=hub`，无 MuJoCo | 两浏览器可见对方纸片人 |
 | **H6** | 本地 Profile：昵称 + accent，localStorage，无登录 | 头顶显示昵称；刷新仍在 |
 | **H7** | 左栏/右栏/人物菜单打磨 + 门 C–E 占位 | ✅ v0 |
-| **H8** | 可乘电梯 + 可上 L2 | ✅ 薄乘（viewer Y） |
+| **H8** | 可乘电梯 + 可上 L2 | ✅ 薄乘 + `hub_floor` 多人同步 |
+| **H8b** | L2 甲板空气墙 | ✅ `bounds.floor2_walkable` clamp |
+| **H8c** | Hub 空格跳跃（可互见） | ✅ `extensions.mw.hop_y` |
 | **H9** | Party board / Vendor | ✅ 薄 UI（LFG 切换 / accent 循环） |
 | **H10** | 展厅/教室走廊壳 | ✅ 北墙 alcove + lore |
 | **H11** | 竞技场门占位 | ✅ 门 E 南翼 + F stub |
@@ -70,6 +72,8 @@
 - 契约 `examples/contracts/demo_hub.json`，`extensions.mw.mode = "hub"`。
 - 即使进程 `--physics mujoco`，Hub 房也 **强制 FakeMech**（不 compile MjModel）。
 - 边界：契约 `bounds.walkable[]` AABB 并集 + `_clamp_hub_bounds`（多段空气墙）；外接 `half_x/half_y` 兜底；**不做 Hub MuJoCo 空气墙**。
+- L2：`bounds.floor2_walkable[]`；仅 `hub_floor==2` 时 clamp 到观景廊甲板（防悬空）。
+- 楼层 / 跳跃视觉：`hub_floor`（1|2）与 `hop_y`（m）经 `extensions.mw` 进 state；FakeMech 平面权威不变。
 - 默认公共房 `room_id=hub`，`max_members=8`（契约可改）。
 - **不写** `recordings/`（Hub 非遥操采集）。
 - `join.player_name` + `extensions.mw.profile` 写入 session；`state` 实体带 `extensions.mw.display_name`。
@@ -77,6 +81,7 @@
 ### 3.2 客户端
 
 - 本地走动仍走 Gateway `cmd` velocity（与玩法关同一协议），纸片人跟 `state`。
+- Hub 专用键：`F` 交互；`Space` 跳跃（`hop_y` 猪背 velocity cmd，远端可见）。
 - 进门前 `bye` / 断链，再经 **`MWTransition`**（Web DOM 淡入淡出）`change_scene` 到玩法关并重新 `join`。
 - Profile：Web `localStorage.mw_profile`；桌面 `user://mw_profile.json`。
 - i18n：`localStorage.mw_lang`（默认 `zh`）；autoload `MWi18n` / `MWFonts`（Noto）。

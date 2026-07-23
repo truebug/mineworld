@@ -39,6 +39,11 @@ var last_mw_y := 0.0
 var last_mw_yaw := 0.0
 ## Hub mezzanine: Godot Y offset (MW Z-up maps to Godot Y; FakeMech stays z≈0).
 var height_offset := 0.0
+## Hub-only visual hop on top of height_offset (Space; not in FakeMech).
+var _hop_y := 0.0
+var _hop_vy := 0.0
+const HOP_SPEED := 5.0
+const HOP_GRAVITY := 16.0
 ## Must match hub.gd / hub_dress FLOOR2_Y.
 const HUB_FLOOR2_Y := 8.5
 
@@ -320,6 +325,8 @@ func _apply_profile_ext(entity: Dictionary) -> void:
 		set_display(dn if dn != "" else display_name, ac)
 	if mw.has("hub_floor"):
 		_apply_hub_floor_from_net(int(mw.get("hub_floor", 1)))
+	if mw.has("hop_y"):
+		_apply_hop_from_net(float(mw.get("hop_y", 0.0)))
 
 
 func _apply_hub_floor_from_net(floor: int) -> void:
@@ -328,10 +335,60 @@ func _apply_hub_floor_from_net(floor: int) -> void:
 	if absf(want - height_offset) < 0.01:
 		return
 	height_offset = want
-	global_position.y = want
-	_prev_pos.y = want
-	_next_pos.y = want
-	_last_render_pos.y = want
+	reset_hub_hop()
+	var y := _feet_y()
+	global_position.y = y
+	_prev_pos.y = y
+	_next_pos.y = y
+	_last_render_pos.y = y
+
+
+func try_hub_hop() -> bool:
+	"""Hub Space jump — visual Y only; grounded check."""
+	if _hop_y > 0.02 or _hop_vy > 0.05:
+		return false
+	_hop_vy = HOP_SPEED
+	return true
+
+
+func reset_hub_hop() -> void:
+	"""Cancel in-air hop (elevator / floor change)."""
+	_hop_y = 0.0
+	_hop_vy = 0.0
+
+
+func get_hub_hop_y() -> float:
+	"""Current visual hop height for cmd piggyback."""
+	return _hop_y
+
+
+func _feet_y() -> float:
+	"""Floor deck + hop offset."""
+	return height_offset + _hop_y
+
+
+func _integrate_hop(dt: float) -> void:
+	"""Integrate hub hop parabola (own avatar only; remotes use net hop_y)."""
+	if not local_predict:
+		return
+	if _hop_vy == 0.0 and _hop_y == 0.0:
+		return
+	_hop_vy -= HOP_GRAVITY * dt
+	_hop_y += _hop_vy * dt
+	if _hop_y <= 0.0:
+		_hop_y = 0.0
+		_hop_vy = 0.0
+
+
+func _apply_hop_from_net(y: float) -> void:
+	"""Remote hop height from authority (cm-ish; FakeMech planar)."""
+	if local_predict:
+		return
+	var want := clampf(y, 0.0, 4.0)
+	if absf(want - _hop_y) < 0.005:
+		return
+	_hop_y = want
+	_hop_vy = 0.0
 
 
 func _process(delta: float) -> void:
@@ -339,6 +396,7 @@ func _process(delta: float) -> void:
 	if not _has_state:
 		return
 	var dt := maxf(delta, 1e-4)
+	_integrate_hop(dt)
 	if local_predict:
 		_step_local_predict(dt)
 	var wall_now := Time.get_ticks_msec() / 1000.0
@@ -368,7 +426,7 @@ func _process(delta: float) -> void:
 			var past := minf((alpha - 1.0) * span, MAX_EXTRAP_S)
 			target = _next_pos + sample_vel * past
 			target_yaw = _next_yaw
-	target.y = height_offset
+	target.y = _feet_y()
 	# Per-frame catch-up cap (remotes); own predict already stepped.
 	if not local_predict:
 		var delta_pos := target - global_position
@@ -411,7 +469,7 @@ func _step_local_predict(dt: float) -> void:
 	var d_mw_y := (s * _cmd_vx + c * _cmd_vy) * dt
 	global_position.x += d_mw_x
 	global_position.z -= d_mw_y
-	global_position.y = height_offset
+	global_position.y = _feet_y()
 	rotation.y += _cmd_yaw_rate * dt
 	last_mw_x = global_position.x
 	last_mw_y = -global_position.z

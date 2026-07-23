@@ -776,7 +776,13 @@ class Room:
         except (TypeError, ValueError):
             half_x, half_y = 18.5, 14.5
         walkable = _hub_walkable_aabbs(bounds, half_x, half_y)
-        for mech in self.mechs.values():
+        floor2 = _hub_floor2_walkable_aabbs(bounds)
+        floor_by_eid = {
+            s.controlled_entity_id: (2 if int(s.hub_floor) == 2 else 1)
+            for s in self.members.values()
+            if s.joined and not s.closed and s.controlled_entity_id
+        }
+        for eid, mech in self.mechs.items():
             # Outer envelope first.
             if mech.x < -half_x:
                 mech.x = -half_x
@@ -790,17 +796,22 @@ class Room:
             elif mech.y > half_y:
                 mech.y = half_y
                 mech.vy = 0.0
-            if not walkable:
+            # L2 mezzanine: clamp to deck AABB (visual rails are non-colliding).
+            active = floor2 if floor_by_eid.get(eid, 1) == 2 and floor2 else walkable
+            if not active:
                 continue
-            if any(_point_in_aabb(mech.x, mech.y, box) for box in walkable):
+            if any(_point_in_aabb(mech.x, mech.y, box) for box in active):
                 pass
             else:
-                nx, ny = _nearest_aabb_point(mech.x, mech.y, walkable)
+                nx, ny = _nearest_aabb_point(mech.x, mech.y, active)
                 if abs(nx - mech.x) > 1e-6:
                     mech.vx = 0.0
                 if abs(ny - mech.y) > 1e-6:
                     mech.vy = 0.0
                 mech.x, mech.y = nx, ny
+            # Pillars only on L1 apron (L2 deck sits above them).
+            if floor_by_eid.get(eid, 1) == 2:
+                continue
             blocked = _hub_blocked_aabbs(bounds)
             for box in blocked:
                 if not _point_in_aabb(mech.x, mech.y, box):
@@ -885,6 +896,8 @@ class Session:
     presence_state_divisor: int = 1
     ## Hub mezzanine floor (1|2) — visual height only; FakeMech stays planar.
     hub_floor: int = 1
+    ## Hub visual hop height (m above deck); FakeMech stays planar.
+    hub_hop_y: float = 0.0
     ## State delta (P1): per-entity last-sent quantized pose + keyframe counter.
     last_sent_entities: dict[str, tuple] = field(default_factory=dict)
     states_since_keyframe: int = 999  # large → first state is a full keyframe
@@ -991,6 +1004,28 @@ def _hub_walkable_aabbs(
 def _hub_blocked_aabbs(bounds: dict[str, Any]) -> list[dict[str, float]]:
     """Parse solid pillar / prop AABBs (FakeMech cannot enter)."""
     raw = bounds.get("blocked")
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, float]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        try:
+            min_x = float(item["min_x"])
+            max_x = float(item["max_x"])
+            min_y = float(item["min_y"])
+            max_y = float(item["max_y"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if min_x >= max_x or min_y >= max_y:
+            continue
+        out.append({"min_x": min_x, "max_x": max_x, "min_y": min_y, "max_y": max_y})
+    return out
+
+
+def _hub_floor2_walkable_aabbs(bounds: dict[str, Any]) -> list[dict[str, float]]:
+    """L2 lounge deck AABBs (MW XY); mirrors hub_dress mezzanine plate."""
+    raw = bounds.get("floor2_walkable")
     if not isinstance(raw, list):
         return []
     out: list[dict[str, float]] = []
@@ -1349,7 +1384,7 @@ STATE_KEYFRAME_INTERVAL = 25  # ~1.25s at 20Hz: force full state
 
 
 def _quantize_entity(ent: dict[str, Any]) -> tuple:
-    """Delta key: pose 1mm / velocities 1cm-s + hub_floor (mezzanine sync)."""
+    """Delta key: pose 1mm / velocities 1cm-s + hub_floor / hop_y."""
     pose = ent.get("base_pose") or {}
     vel = ent.get("velocities") or {}
     mw = (ent.get("extensions") or {}).get("mw") or {}
@@ -1364,6 +1399,7 @@ def _quantize_entity(ent: dict[str, Any]) -> tuple:
         round(float(vel.get("vy", 0.0)), 2),
         int(mw.get("hub_floor", 1) or 1),
         bool(mw.get("occupied", False)),
+        round(float(mw.get("hop_y", 0.0) or 0.0), 2),
     )
 
 
@@ -2005,6 +2041,7 @@ class EchoGateway:
             mw["display_name"] = occupant.player_name
             mw["occupied"] = True
             mw["hub_floor"] = 1 if int(occupant.hub_floor) != 2 else 2
+            mw["hop_y"] = round(max(0.0, float(occupant.hub_hop_y)), 3)
             accent = occupant.profile.get("accent")
             if accent:
                 mw["accent"] = str(accent)
@@ -2115,8 +2152,9 @@ class EchoGateway:
                 ),
             )
             return
-        # Optional piggyback: velocity cmd may carry extensions.mw.hub_floor.
+        # Optional piggyback: velocity cmd may carry extensions.mw.hub_floor / hop_y.
         self._maybe_hub_floor_from_ext(session, payload)
+        self._maybe_hub_hop_from_ext(session, payload)
         try:
             events = mech.apply_cmd(payload)
         except CmdRejected as err:
@@ -2189,6 +2227,26 @@ class EchoGateway:
         except (TypeError, ValueError):
             floor = 1
         session.hub_floor = 2 if floor == 2 else 1
+
+    def _maybe_hub_hop_from_ext(
+        self, session: Session, payload: dict[str, Any]
+    ) -> None:
+        """If cmd.extensions.mw.hop_y present on Hub, update session (visual)."""
+        if not session.joined or session.room is None:
+            return
+        if not is_hub_contract(session.contract):
+            return
+        ext = payload.get("extensions")
+        if not isinstance(ext, dict):
+            return
+        mw = ext.get("mw")
+        if not isinstance(mw, dict) or "hop_y" not in mw:
+            return
+        try:
+            hop = float(mw.get("hop_y", 0.0))
+        except (TypeError, ValueError):
+            return
+        session.hub_hop_y = max(0.0, min(hop, 4.0))
 
     def _should_send_state(self, session: Session, tick: int) -> bool:
         """Gate state frames per session (Hub presence_throttle)."""
@@ -2429,6 +2487,7 @@ class EchoGateway:
         session.outcome = None
         session.pending_events.clear()
         session.hub_floor = 1
+        session.hub_hop_y = 0.0
         session.presence_state_divisor = 1
         room.members[session.session_id] = session
 

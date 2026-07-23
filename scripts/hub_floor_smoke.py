@@ -91,7 +91,48 @@ async def main(url: str) -> int:
         if saw is None:
             print("FAIL: peer never saw hub_floor=2 for", ea, file=sys.stderr)
             return 1
-        print("hub_floor smoke OK", ea, saw.get("hub_floor"), "occupied", saw.get("occupied"))
+        await a.send(
+            json.dumps(
+                {
+                    "type": "cmd",
+                    "session_id": sa,
+                    "payload": {
+                        "entity_id": ea,
+                        "control_mode": "velocity",
+                        "vx": 0.0,
+                        "vy": 0.0,
+                        "yaw_rate": 0.0,
+                        "extensions": {"mw": {"hop_y": 1.25}},
+                    },
+                }
+            )
+        )
+        deadline = asyncio.get_event_loop().time() + 3.0
+        saw_hop = None
+        while asyncio.get_event_loop().time() < deadline:
+            msg = json.loads(await asyncio.wait_for(b.recv(), timeout=5))
+            if msg.get("type") != "state":
+                continue
+            for ent in msg["payload"].get("entities") or []:
+                if ent.get("entity_id") != ea:
+                    continue
+                mw = (ent.get("extensions") or {}).get("mw") or {}
+                if float(mw.get("hop_y", 0) or 0) >= 1.2:
+                    saw_hop = mw
+                    break
+            if saw_hop is not None:
+                break
+        if saw_hop is None:
+            print("FAIL: peer never saw hop_y for", ea, file=sys.stderr)
+            return 1
+        print(
+            "hub_floor+hop smoke OK",
+            ea,
+            "floor",
+            saw.get("hub_floor"),
+            "hop",
+            saw_hop.get("hop_y"),
+        )
         return 0
 
 
