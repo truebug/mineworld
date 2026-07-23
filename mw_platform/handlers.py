@@ -95,6 +95,14 @@ def handle_platform_get(
             200,
         )
         return True
+    if path == "/api/platform/best_lap":
+        level_id = (qs.get("level_id") or [""])[0].strip()
+        row = get_store().best_lap_session(level_id)  # type: ignore[attr-defined]
+        send_json(
+            {"ok": True, "level_id": level_id, "best": row},
+            200,
+        )
+        return True
     if path == "/api/platform/players":
         key = get_header("X-Admin-Key") or get_header("x-admin-key")
         expected = admin_key()

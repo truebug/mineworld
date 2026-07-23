@@ -281,6 +281,24 @@ class SQLitePlayerStore(PlayerStore):
             "wins": int(row["wins"]),
         }
 
+    def best_lap_session(self, level_id: str) -> dict[str, Any] | None:
+        """Fastest success run for a level → {session_id, player_id, display_name, duration_sim_s}."""
+        lid = (level_id or "").strip()
+        if not lid:
+            return None
+        with self._conn() as conn:
+            row = conn.execute(
+                """
+                SELECT session_id, player_id, display_name, duration_sim_s
+                FROM scores
+                WHERE level_id = ? AND outcome = 'success' AND duration_sim_s > 0
+                ORDER BY duration_sim_s ASC
+                LIMIT 1
+                """,
+                (lid,),
+            ).fetchone()
+        return dict(row) if row else None
+
     def player_scores(self, player_id: str, *, limit: int = 20) -> list[dict[str, Any]]:
         """Recent score rows for one player (newest first)."""
         lim = max(1, min(100, int(limit)))
@@ -564,6 +582,9 @@ class PostgresPlayerStore(PlayerStore):
         raise NotImplementedError
 
     def leaderboard(self, *, limit: int = 10, level_id: str | None = None) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    def best_lap_session(self, level_id: str) -> dict[str, Any] | None:
         raise NotImplementedError
 
     def player_stats(self, player_id: str) -> dict[str, Any]:
