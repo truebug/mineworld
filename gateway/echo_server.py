@@ -871,6 +871,9 @@ class Session:
     closed: bool = False
     recorder: SessionRecorder | None = None
     completed_objectives: set[str] = field(default_factory=set)
+    ## Tick at join — time_limit/points must measure the session's own
+    ## elapsed time, not the (possibly persistent) room age (B2.5 bot room).
+    join_tick: int = -1
     outcome: str | None = None
     ## Hub / join display (no account); see docs/18-hub-dungeon.md.
     player_name: str = "guest"
@@ -1287,7 +1290,8 @@ def evaluate_time_limit(session: Session) -> list[dict[str, Any]]:
     limit = _il_time_limit_s(session.contract)
     if limit is None:
         return []
-    t_sim = float(session.room.tick) * DT
+    base_tick = session.join_tick if session.join_tick >= 0 else 0
+    t_sim = float(session.room.tick - base_tick) * DT
     if t_sim < limit:
         return []
     oid = _il_primary_task_id(session.contract) or "time_limit"
@@ -2363,6 +2367,7 @@ class EchoGateway:
         session.level_id = level_id
         session.joined = True
         session.room = room
+        session.join_tick = room.tick
         session.controlled_entity_id = entity_id
         session.player_name = player_name
         session.profile = profile
@@ -2505,7 +2510,7 @@ class EchoGateway:
                         self._evaluate_race_duel(session, room, objective_events)
                     )
                     if objective_events:
-                        duration = float(room.tick) * DT
+                        duration = float(room.tick - max(session.join_tick, 0)) * DT
                         level_id = str(
                             session.level_id or session.contract.get("level_id") or ""
                         )
