@@ -109,9 +109,11 @@ func push_web_hud(text: String) -> void:
 	)
 
 
-func show_mission_result(ok: bool, detail: String, points: int = 0, session_id: String = "") -> void:
+func show_mission_result(
+	ok: bool, detail: String, points: int = 0, session_id: String = "", title_override: String = ""
+) -> void:
 	"""Show big SUCCESS/FAIL + short beep (desktop Label / web DOM)."""
-	var title := "SUCCESS" if ok else "FAIL"
+	var title := title_override if title_override != "" else ("SUCCESS" if ok else "FAIL")
 	var sub := detail if detail != "" else ("reach zone OK" if ok else "objective failed")
 	if ok and points > 0:
 		sub = "%s · +%d pts" % [sub, points]

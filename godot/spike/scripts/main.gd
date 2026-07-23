@@ -43,6 +43,7 @@ var _lap_splits: Array = []
 var _lap_start_t := -1.0
 var _last_state_t := 0.0
 var _ghost: MWGhost = null
+var _race_fx: MWRaceFX = null
 var _race_cum: PackedFloat32Array = PackedFloat32Array()  # centerline cumulative dist (m)
 var _race_pts: PackedVector2Array = PackedVector2Array()  # centerline MW xy
 var _race_track_len := 0.0
