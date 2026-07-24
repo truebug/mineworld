@@ -47,6 +47,11 @@ var _controlled := false
 var _is_web := false
 var _web_key_cb
 var _web_blur_cb
+var _web_mouse_cb
+## WoW-style RMB turn-drive: accumulated mouse motion (desktop) / last DOM
+## movementX + timestamp (web), consumed by each cmd tick.
+var _rmb_motion_x := 0.0
+var _rmb_motion_t := 0.0
 var _held_codes: Dictionary = {}
 var _puppets: Dictionary = {}
 var _map_actors: Dictionary = {}  # minimap/coords cache — survives delta frames
@@ -149,6 +154,10 @@ func _start_hub_session() -> void:
 		camera_rig.distance = 22.0
 		camera_rig.pitch = -0.62
 		camera_rig.max_distance = 90.0
+		if "turn_drive_enabled" in camera_rig:
+			camera_rig.turn_drive_enabled = true
+		if camera_rig.has_signal("turn_drag_started"):
+			camera_rig.turn_drag_started.connect(_on_turn_drag_started)
 		if camera_rig.has_signal("view_mode_changed"):
 			camera_rig.view_mode_changed.connect(_on_camera_view_changed)
 	if map_title != null:
@@ -867,6 +876,11 @@ func _send_velocity_cmd() -> void:
 				vx = Input.get_axis("move_back", "move_forward") * MOVE_SPEED
 				vy = Input.get_axis("strafe_left", "strafe_right") * -MOVE_SPEED
 				yaw_rate = Input.get_axis("turn_cw", "turn_ccw") * TURN_SPEED
+	var rmb_rate := _rmb_turn_rate()
+	if rmb_rate != 0.0:
+		# WoW-style: while RMB is held the mouse steers the body; QE keys
+		# would fight it, so the mouse wins.
+		yaw_rate = rmb_rate
 	var own := _own_avatar()
 	if own != null and own.has_method("set_local_cmd"):
 		own.call("set_local_cmd", vx, vy, yaw_rate)
@@ -1504,8 +1518,42 @@ func _on_camera_view_changed(label: String) -> void:
 	_compose_and_push_tips()
 
 
+func _on_turn_drag_started() -> void:
+	"""WoW-style RMB press: body snaps to face where the camera was looking,
+	then the camera recenters behind it. LMB peek behavior is untouched."""
+	var own := _own_avatar()
+	if own == null or camera_rig == null:
+		return
+	if own.has_method("get_yaw") and camera_rig.has_method("get_look_yaw_offset"):
+		own.rotation.y = own.call("get_yaw") + camera_rig.call("get_look_yaw_offset")
+	if camera_rig.has_method("snap_look_behind"):
+		camera_rig.call("snap_look_behind")
+	_rmb_motion_x = 0.0
+
+
+func _rmb_turn_rate() -> float:
+	"""Mouse-turn yaw rate while RMB held (consumed each cmd tick)."""
+	if camera_rig == null or not ("turn_drive_enabled" in camera_rig):
+		return 0.0
+	if not camera_rig.turn_drive_enabled:
+		return 0.0
+	if not ("_drag" in camera_rig) or int(camera_rig._drag) != 2:  ## DragKind.STICKY
+		return 0.0
+	if not _is_web:
+		var rate := clampf(-_rmb_motion_x * 0.01, -TURN_SPEED, TURN_SPEED)
+		_rmb_motion_x = 0.0
+		return rate
+	if Time.get_ticks_msec() / 1000.0 - _rmb_motion_t < 0.15:
+		return clampf(-_rmb_motion_x * 0.01, -TURN_SPEED, TURN_SPEED)
+	return 0.0
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	"""Desktop: Esc stays in hub; F interact; Space hop. Camera C/V on CameraRig."""
+	if event is InputEventMouseMotion and not _is_web:
+		# WoW-style RMB turn: accumulate horizontal motion for the cmd tick.
+		if camera_rig != null and "_drag" in camera_rig and int(camera_rig._drag) == 2:
+			_rmb_motion_x += (event as InputEventMouseMotion).relative.x
 	if event is InputEventKey:
 		var ek := event as InputEventKey
 		if ek.pressed and not ek.echo:
@@ -1534,7 +1582,25 @@ func _install_web_keyboard_bridge() -> void:
 	document.addEventListener("keydown", _web_key_cb)
 	document.addEventListener("keyup", _web_key_cb)
 	window_obj.addEventListener("blur", _web_blur_cb)
+	# WoW-style RMB turn: canvas input events never reach the engine while the
+	# pointer is captured by the shell, so mirror horizontal mouse velocity.
+	_web_mouse_cb = JavaScriptBridge.create_callback(_on_dom_mouse_event)
+	document.addEventListener("mousemove", _web_mouse_cb)
 	print("[MW] hub key bridge: document listeners registered")
+
+
+func _on_dom_mouse_event(args: Array) -> void:
+	"""DOM mousemove → RMB turn accumulator (Web)."""
+	if args.is_empty():
+		return
+	var event = args[0]
+	if camera_rig == null or not ("_drag" in camera_rig) or int(camera_rig._drag) != 2:
+		return
+	var dx := float(event.movementX)
+	if dx == 0.0:
+		return
+	_rmb_motion_x = dx
+	_rmb_motion_t = Time.get_ticks_msec() / 1000.0
 
 
 func _on_dom_key_event(args: Array) -> void:

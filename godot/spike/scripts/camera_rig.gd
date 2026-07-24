@@ -4,6 +4,7 @@
 extends Node3D
 
 signal view_mode_changed(label: String)
+signal turn_drag_started ## WoW-style: RMB pressed while turn-drive is armed.
 
 enum ViewMode { ORBIT, FIRST, CHASE }
 enum DragKind { NONE, PEEK, STICKY, PAN }
@@ -31,6 +32,10 @@ const CHASE_PITCH_DEFAULT := -0.38
 @export var speed_fov_ref := 18.0   ## m/s at full boost
 @export var speed_fov_boost := 12.0 ## degrees added at ref speed
 @export var follow_lag := 0.0       ## 0 = rigid; ~6 gives elastic chase
+## WoW-style RMB: while held, horizontal mouse motion turns the *body* (via
+## hub-injected yaw_rate) instead of orbiting the camera. Off by default so
+## race/play levels keep the classic sticky-look RMB.
+@export var turn_drive_enabled := false
 
 @onready var camera: Camera3D = $Camera3D
 var _target: Node3D = null
@@ -145,6 +150,31 @@ func is_first_person() -> bool:
 	return view_mode == ViewMode.FIRST
 
 
+func get_look_yaw_offset() -> float:
+	"""Horizontal peek/sticky offset from body forward (chase / FP modes)."""
+	match view_mode:
+		ViewMode.FIRST:
+			return _fp_yaw
+		ViewMode.CHASE:
+			return _chase_yaw
+		_:
+			return 0.0
+
+
+func snap_look_behind() -> void:
+	"""WoW RMB-press: zero the horizontal look offset so the camera sits
+	directly behind the body (which the hub has just re-aimed)."""
+	match view_mode:
+		ViewMode.FIRST:
+			_fp_yaw = 0.0
+		ViewMode.CHASE:
+			_chase_yaw = 0.0
+		_:
+			return
+	_commit_current_look()
+	_update_camera()
+
+
 func pan_axes(right: float, forward: float, delta: float) -> void:
 	"""Arrow pan — orbit/chase shift look point; first-person looks."""
 	if right == 0.0 and forward == 0.0:
@@ -232,6 +262,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _refresh_drag_kind() -> void:
 	"""LMB peek, RMB sticky, MMB or L+R pan."""
+	var was := _drag
 	if _btn_m or (_btn_l and _btn_r):
 		_drag = DragKind.PAN
 	elif _btn_l:
@@ -240,6 +271,8 @@ func _refresh_drag_kind() -> void:
 		_drag = DragKind.STICKY
 	else:
 		_drag = DragKind.NONE
+	if turn_drive_enabled and _drag == DragKind.STICKY and was != DragKind.STICKY:
+		turn_drag_started.emit()
 
 
 func _on_zoom(sign: float) -> void:
@@ -262,6 +295,20 @@ func _on_zoom(sign: float) -> void:
 
 func _on_mouse_look(relative: Vector2, commit: bool) -> void:
 	"""Orbit / FP / chase look; commit=true stores sticky home (RMB)."""
+	if turn_drive_enabled and commit:
+		# RMB turn-drive: only pitch follows the mouse; yaw turns the body
+		# (hub injects yaw_rate while RMB is held), and the chase camera
+		# stays glued behind the body — so the view pans with the turn.
+		match view_mode:
+			ViewMode.FIRST:
+				_fp_pitch = clampf(_fp_pitch - relative.y * orbit_sensitivity, -1.2, 1.0)
+			ViewMode.CHASE:
+				_chase_pitch = clampf(_chase_pitch - relative.y * orbit_sensitivity, -1.0, 0.45)
+			_:
+				pitch = clampf(pitch - relative.y * orbit_sensitivity, -1.45, -0.05)
+		_commit_current_look()
+		_update_camera()
+		return
 	match view_mode:
 		ViewMode.FIRST:
 			_fp_yaw -= relative.x * orbit_sensitivity

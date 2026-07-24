@@ -249,6 +249,11 @@ func set_local_cmd(vx: float, vy: float, yaw_rate: float) -> void:
 	_cmd_yaw_rate = yaw_rate
 
 
+func get_yaw() -> float:
+	"""Current body yaw (Godot rotation.y == MW yaw)."""
+	return rotation.y
+
+
 func push_state(entity: Dictionary, t_sim: float) -> void:
 	"""Buffer authority pose (MW Z-up → Godot Y-up)."""
 	var pose: Variant = entity.get("base_pose", {})
