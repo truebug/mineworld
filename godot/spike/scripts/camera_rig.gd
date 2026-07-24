@@ -5,6 +5,7 @@ extends Node3D
 
 signal view_mode_changed(label: String)
 signal turn_drag_started ## WoW-style: RMB pressed while turn-drive is armed.
+signal turn_dragged(dx: float) ## WoW-style: horizontal mouse delta while RMB held.
 
 enum ViewMode { ORBIT, FIRST, CHASE }
 enum DragKind { NONE, PEEK, STICKY, PAN }
@@ -299,6 +300,7 @@ func _on_mouse_look(relative: Vector2, commit: bool) -> void:
 		# RMB turn-drive: only pitch follows the mouse; yaw turns the body
 		# (hub injects yaw_rate while RMB is held), and the chase camera
 		# stays glued behind the body — so the view pans with the turn.
+		turn_dragged.emit(relative.x)
 		match view_mode:
 			ViewMode.FIRST:
 				_fp_pitch = clampf(_fp_pitch - relative.y * orbit_sensitivity, -1.2, 1.0)
