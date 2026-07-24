@@ -13,7 +13,9 @@ for scene in $SCENES; do
   "$GODOT" --headless --rendering-driver dummy --path "$PROJ" "$scene" > "$log" 2>&1 &
   pid=$!
   sleep "$BOOT_S"
-  kill "$pid" 2>/dev/null
+  # SIGKILL, not SIGTERM: graceful shutdown crashes in the macOS Metal
+  # teardown path (Abort trap 6) and pops a crash-report dialog every run.
+  kill -9 "$pid" 2>/dev/null
   wait "$pid" 2>/dev/null
   hits=$(grep -cE "SCRIPT ERROR|Parse Error|Compile Error" "$log" || true)
   if [ "$hits" -gt 0 ]; then

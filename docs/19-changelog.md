@@ -16,6 +16,7 @@
 - **实现**：`camera_rig` 新增 `turn_drive_enabled`（默认关，竞速/关卡保持旧 RMB sticky 语义）+ `turn_drag_started` 信号 + `get_look_yaw_offset()/snap_look_behind()`；`hub.gd` 每 cmd tick（20Hz）注入 `yaw_rate = clamp(-dx·0.01, ±TURN_SPEED)`，经既有 velocity 契约 → 权威 FakeMech 转向，远端互见；`_drag==STICKY` 时 RMB 只控俯仰，不再攒 `_chase_yaw`（松手无跳变）。桌面走 `_unhandled_input` 累积，Web 走 DOM `mousemove`（`movementX` + 150ms 新鲜度）桥。
 - **边界**：PAN（中键/左右同按）优先于转头；QE 键盘转向与右键并存时鼠标优先；orbit 模式 RMB 维持旧 sticky。`avatar_puppet` 增 `get_yaw()`。
 - **验证**：`gdscript_lint` 0 findings；`check_scenes_boot.sh` 四场景 BOOT OK。
+- **工具**：`check_scenes_boot.sh` 改 `kill -9` 收尾（SIGTERM 走优雅退出会额外触发一次 Metal 析构崩溃）。已知：本机 macOS 26 + Godot 4.7.1 无头进程运行数秒后自行 Abort trap 6（dummy/opengl3 驱动均复现，与项目代码无关），启动日志在崩溃前已落盘，BOOT 判定不受影响；崩溃弹窗属系统级 CrashReporter，需 `defaults write com.apple.CrashReporter DialogType none` 才可关闭。
 
 ## 2026-07-23 · Hub L2 空气墙 + 空格跳跃互见（playground）
 
