@@ -1,0 +1,20 @@
+{
+  "type": "event",
+  "session_id": "c1c1c1c1-0000-4000-8000-0000000000c1",
+  "tick": 42,
+  "t_sim": 0.84,
+  "payload": {
+    "event_type": "chess_table_update",
+    "detail": {
+      "table_id": "table_1",
+      "black_sid": "c1c1c1c1-0000-4000-8000-0000000000c1",
+      "white_sid": null,
+      "vs_ai": true,
+      "status": "playing",
+      "turn": 1,
+      "winner": 0,
+      "cells": [],
+      "full": false
+    }
+  }
+}

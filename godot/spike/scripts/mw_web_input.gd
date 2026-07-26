@@ -50,7 +50,7 @@ func _mw_poll_setup() -> void:
 
 
 func _process(_delta: float) -> void:
-	"""Each frame: merge window._mw_keys into _held_codes (no duplicate — hub/main compat)."""
+	"""Each frame: merge window._mw_keys into _held_codes (false releases included)."""
 	if not _initialized:
 		return
 	var raw := str(JavaScriptBridge.eval(
@@ -58,9 +58,12 @@ func _process(_delta: float) -> void:
 		true
 	))
 	var parsed: Variant = JSON.parse_string(raw)
-	if typeof(parsed) == TYPE_DICTIONARY:
-		for k in (parsed as Dictionary).keys():
-			_held_codes[str(k)] = bool((parsed as Dictionary)[k])
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	# Only codes present in the mirror — do not wipe DOM-listener keys when
+	# _mw_keys is empty/uninstalled (would cancel all Web WASD).
+	for k in (parsed as Dictionary).keys():
+		_held_codes[str(k)] = bool((parsed as Dictionary)[k])
 
 
 func _on_dom_key_event(args: Array) -> void:

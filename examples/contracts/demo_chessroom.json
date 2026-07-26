@@ -1,0 +1,100 @@
+{
+  "contract_version": "0.1",
+  "level_id": "demo_chessroom",
+  "seed": 1,
+  "frame": "mineworld_zup_m",
+  "sim": {
+    "dt": 0.02
+  },
+  "mech_spawns": [
+    {
+      "id": "avatar_0",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 0.0, "y": 0.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 0,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_1",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 2.0, "y": 1.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 1,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_2",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": -2.0, "y": 1.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 2,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_3",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 2.0, "y": -1.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 3,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_4",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": -2.0, "y": -1.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 4,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_5",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 4.0, "y": 0.0, "z": 0.9, "yaw": 3.14 },
+      "player_slot": 5,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_6",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": -4.0, "y": 0.0, "z": 0.9, "yaw": 0.0 },
+      "player_slot": 6,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    },
+    {
+      "id": "avatar_7",
+      "model_ref": "hub/paper_doll",
+      "pose": { "x": 0.0, "y": 3.0, "z": 0.9, "yaw": -1.57 },
+      "player_slot": 7,
+      "control_mode": "velocity",
+      "physics_role": "viewer_only"
+    }
+  ],
+  "dynamic_props": [],
+  "static_obstacles": [],
+  "objectives": [],
+  "triggers": [],
+  "extensions": {
+    "mw": {
+      "mode": "hub",
+      "max_members": 8,
+      "default_room_id": "chess",
+      "story": "chess_lounge",
+      "chess_tables": ["table_1", "table_2", "table_3", "table_4"],
+      "bounds": {
+        "half_x": 12.0,
+        "half_y": 9.0,
+        "walkable": [
+          {
+            "min_x": -11.5,
+            "max_x": 11.5,
+            "min_y": -8.5,
+            "max_y": 8.5
+          }
+        ]
+      }
+    }
+  }
+}

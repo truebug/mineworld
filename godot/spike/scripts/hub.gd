@@ -394,14 +394,16 @@ func _resolve_gateway_url() -> String:
 
 
 func _resolve_room_id() -> String:
-	"""Hub presence room. Ignore leftover play-room query (?room=demo|city)."""
+	"""Hub presence room. Ignore leftover play-room query (?room=city|race|chess)."""
 	if _is_web:
 		var from_q := str(JavaScriptBridge.eval(
 			"(function(){try{return new URLSearchParams(location.search).get('room')||''}catch(e){return ''}})()",
 			true
 		)).strip_edges()
 		# Shared play rooms — never use them for hangar presence.
-		if from_q != "" and from_q != "demo" and from_q != "city":
+		if from_q in ["demo", "city", "race", "chess"]:
+			return room_id if room_id != "" else "hub"
+		if from_q != "":
 			return from_q
 	return room_id if room_id != "" else "hub"
 
@@ -1572,6 +1574,7 @@ func _enter_level(scene_path: String) -> void:
 	elif scene_path.find("chessroom") >= 0:
 		label = MWi18n.t("棋牌室", "Chess Room")
 		accent = "#9a5ae8"
+		play_room = "chess"
 	if _is_web:
 		var q_js := (
 			"(function(){try{var u=new URL(location.href);"

@@ -87,6 +87,7 @@
 | B1 | 计时竞速关 | 契约时限/检查点；通关写时长榜（复用 A2 `level_id`） | [x] `demo_race` ~755 m · **Ackermann v3**（W/S/X · QE）· room=`race` · max 6 |
 | B2 | 薄 1v1 | 双人同房目标竞速或推箱对决；事件可录 | [ ] **Next** |
 | B3 | 房间模式字段 | join/`extensions.mw.mode`：`solo \| duel \| shared_ffa` | [~] race 已标 `shared_ffa`；通用字段后补 |
+| Chess-P | 棋牌室对齐传送门 | Hub 式 FakeMech + `room=chess`；薄桌面 `chess_*` cmd / `chess_table_update`；人机/PvP | [x] `demo_chessroom` · `scripts/chessroom_smoke.py` |
 
 ---
 

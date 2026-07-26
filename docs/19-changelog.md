@@ -10,15 +10,24 @@
 
 ---
 
+## 2026-07-26 · 棋牌室对齐传送门（presence + 薄桌面权威）
+
+- **动机**：一期纯离线与 Hub/Workshop/City/Race 分叉，导致 WASD 等反复「修键桥无效」。改为与其他门同构。
+- **契约**：`examples/contracts/demo_chessroom.json` — `extensions.mw.mode=hub`、room 默认 `chess`、max 8、24×18 可行走 AABB、4 桌 id。
+- **Gateway**：`ChessTable` FSM（`chess_sit` / `leave` / `place` / `reset`）+ `chess_table_update` 广播；规则/AI 在 `gateway/gomoku.py`（对齐 `gomoku.gd`）。单人坐 → `vs_ai`；第二人入座 → PvP。
+- **客户端**：`chessroom.gd` 接 `WsClient` join/state/cmd；棋盘只渲染权威快照；Hub 过门设 `?room=chess`，Esc 清 room 回母港；Hub `_resolve_room_id` 忽略 play rooms（含 race/chess）。
+- **样例 / 冒烟**：`examples/ws/cmd_chess_sit.json`、`event-chess-table-update.json`；`scripts/chessroom_smoke.py`。
+
 ## 2026-07-26 · 棋牌室一期（门 P + 五子棋人机）
 
-- **场景**：`demo_chessroom.tscn` 封闭暖色房间（24×18m）——4 张棋桌 × 2 椅，走近按 F 落座打开棋盘面板，F/Esc 起身，Esc 回大厅；一期**纯离线**（无 gateway 连接，人人对战二期再接房间权威）。
-- **玩法**：五子棋人机对弈——`gomoku.gd`（15×15 纯逻辑 RefCounted：落子/胜负/威胁评分 AI，攻×1.05 偏置）；`chessroom.gd`（移动复用 avatar local_predict + CameraRig，Web DOM 键桥，CanvasLayer 2D 棋盘 `_draw` 渲染 + 点击落子 + 0.35s AI 延迟）。
+- **场景**：`demo_chessroom.tscn` 封闭暖色房间（24×18m）——4 张棋桌 × 2 椅，走近按 F 落座打开棋盘面板，F/Esc 起身，Esc 回大厅；一期曾**纯离线**（已由上条对齐为在线 presence）。
+- **玩法**：五子棋——`gomoku.gd`（15×15）；对局权威现迁 Gateway（见上条）。
 - **Hub**：东墙新门 `DoorChess`（22.5, -14，紫色自发光，标签「P 棋牌室」），`hub.gd` 接线 armed/near/context/过场标签；提示行加 `P Chess`。
 - **顺手修复**：RMB 转头灵敏度（衰减 30→8/s、增益 0.4→0.6——慢速拖动不再死于 cmd tick 间隔）。
 - **验证**：lint 0 findings；boot 检查扩至 5 场景全 BOOT OK。
 - **热修**（同日验收反馈）：① CameraRig 子节点缺 `Camera3D`（`camera==null` → 全黑；headless 崩在渲染前，boot 检查未能发现）；② 场景换 `BG_COLOR` 纯色背景去 ProceduralSky；③ 补 `MW_SET_SHELL_UI(true,false,true)` 切换 DOM 壳层；④ 门 P transform 旋转 90° 贴合东墙。**教训**：新建 3D 场景必须查 boot log 的 `Node not found`，而非只看 SCRIPT ERROR 计数。
 - **重构 MWWebInput**（同日）：将 Web 键桥抽象为 MWWebInput autoload 单例——DOM 监听器安装一次、跨场景持久化；is_pressed(keyCode)/web_key_event 信号供三场景同源引用。hub.gd _process/_send_velocity_cmd/箭头键全切 MWWebInput.is_pressed()；on_dom_key_event/sync_mw_keys/web_key 全删除。chessroom 不再自建键桥副本。main.gd 待续。
+- **根因热修 · 棋牌室 WASD 无效**（同日）：多次改键桥无效——真因是 `avatar_puppet._process` 在 `_has_state==false` 时直接 return，而棋牌室纯离线**从不** `push_state`，故 `local_predict`/`set_local_cmd` 永不积分。修复：离线 `local_predict` 自举 pose 锚点、设 `_authority_live`，无权威流时跳过 soft-pull（否则会每帧拽回出生点把位移抵消）。**随后已对齐在线 presence**，默认路径走 `push_state`。
 
 ## 2026-07-24 · Hub WoW 式右键转头（turn-drive）
 

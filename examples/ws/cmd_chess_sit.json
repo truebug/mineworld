@@ -1,0 +1,10 @@
+{
+  "type": "cmd",
+  "session_id": "c1c1c1c1-0000-4000-8000-0000000000c1",
+  "tick": 40,
+  "t_sim": 0.8,
+  "payload": {
+    "action": "chess_sit",
+    "table_id": "table_1"
+  }
+}

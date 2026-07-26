@@ -1,8 +1,9 @@
-[gd_scene load_steps=17 format=3 uid="uid://b0mwchessroom01"]
+[gd_scene load_steps=18 format=3 uid="uid://b0mwchessroom01"]
 
 [ext_resource type="Script" path="res://scripts/chessroom.gd" id="1_room"]
-[ext_resource type="PackedScene" path="res://avatar_puppet.tscn" id="2_avatar"]
-[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="3_cam"]
+[ext_resource type="Script" path="res://scripts/ws_client.gd" id="2_ws"]
+[ext_resource type="PackedScene" path="res://avatar_puppet.tscn" id="3_avatar"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="4_cam"]
 
 [sub_resource type="Environment" id="env"]
 background_mode = 1
@@ -238,14 +239,18 @@ font_size = 56
 modulate = Color(1, 0.9, 0.75, 1)
 outline_size = 6
 
-[node name="Avatar" parent="." instance=ExtResource("2_avatar")]
+[node name="Avatar" parent="." instance=ExtResource("3_avatar")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+visible = false
 
 [node name="CameraRig" type="Node3D" parent="."]
-script = ExtResource("3_cam")
+script = ExtResource("4_cam")
 target_path = NodePath("../Avatar")
 distance = 9.0
 pitch = -0.5
 yaw = 0.5
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
+
+[node name="WsClient" type="Node" parent="."]
+script = ExtResource("2_ws")

@@ -32,6 +32,9 @@ var _next_pos := Vector3.ZERO
 var _next_yaw := 0.0
 var _next_time := -1.0
 var _has_state := false
+## True after at least one gateway push_state (hub/city). Offline rooms
+## (chessroom) use local_predict without authority — soft-pull must not run.
+var _authority_live := false
 var _sim_now := 0.0
 var _wall_at_last_state := 0.0
 var last_mw_x := 0.0
@@ -268,6 +271,7 @@ func push_state(entity: Dictionary, t_sim: float) -> void:
 	var godot_pos := Vector3(mw_x, height_offset, -mw_y)
 	_sim_now = t_sim
 	_wall_at_last_state = Time.get_ticks_msec() / 1000.0
+	_authority_live = true
 	if not _has_state:
 		_prev_pos = godot_pos
 		_next_pos = godot_pos
@@ -396,14 +400,52 @@ func _apply_hop_from_net(y: float) -> void:
 	_hop_vy = 0.0
 
 
+func _bootstrap_offline_predict() -> void:
+	"""Seed pose anchors so local_predict can run without gateway state."""
+	if _has_state:
+		return
+	_prev_pos = global_position
+	_next_pos = global_position
+	_prev_yaw = rotation.y
+	_next_yaw = rotation.y
+	_prev_time = 0.0
+	_next_time = 0.0
+	_last_render_pos = global_position
+	_has_state = true
+	last_mw_x = global_position.x
+	last_mw_y = -global_position.z
+	last_mw_yaw = rotation.y
+
+
+func _update_locomotion_anim(dt: float) -> void:
+	"""Drive idle/walk/sprint from frame displacement."""
+	var move := global_position - _last_render_pos
+	_last_render_pos = global_position
+	var dist := Vector2(move.x, move.z).length()
+	_speed_smooth = lerpf(_speed_smooth, dist / maxf(dt, 1e-4), 0.28)
+	if _speed_smooth < SPEED_IDLE:
+		_play_anim("idle")
+	elif _speed_smooth >= SPEED_SPRINT:
+		_play_anim("sprint")
+	else:
+		_play_anim("walk")
+
+
 func _process(delta: float) -> void:
 	"""Interpolate / rate-limited extrap; optional local predict for self."""
-	if not _has_state:
-		return
 	var dt := maxf(delta, 1e-4)
 	_integrate_hop(dt)
+	# Offline rooms (chessroom): cmds via set_local_cmd, no push_state ever.
+	# Must integrate before the _has_state gate — and must NOT soft-pull to
+	# unset authority anchors (that cancelled motion every prior "fix").
 	if local_predict:
+		_bootstrap_offline_predict()
 		_step_local_predict(dt)
+		if not _authority_live:
+			_update_locomotion_anim(dt)
+			return
+	elif not _has_state:
+		return
 	var wall_now := Time.get_ticks_msec() / 1000.0
 	var render_t := _sim_now + (wall_now - _wall_at_last_state) - interp_delay
 	var span := _next_time - _prev_time
@@ -453,16 +495,7 @@ func _process(delta: float) -> void:
 		# Soft pull toward interpolated authority while predicting.
 		global_position = global_position.lerp(target, clampf(dt * 8.0, 0.0, 1.0))
 		rotation.y = lerp_angle(rotation.y, target_yaw, clampf(dt * 10.0, 0.0, 1.0))
-	var move := global_position - _last_render_pos
-	_last_render_pos = global_position
-	var dist := Vector2(move.x, move.z).length()
-	_speed_smooth = lerpf(_speed_smooth, dist / dt, 0.28)
-	if _speed_smooth < SPEED_IDLE:
-		_play_anim("idle")
-	elif _speed_smooth >= SPEED_SPRINT:
-		_play_anim("sprint")
-	else:
-		_play_anim("walk")
+	_update_locomotion_anim(dt)
 
 
 func _step_local_predict(dt: float) -> void:

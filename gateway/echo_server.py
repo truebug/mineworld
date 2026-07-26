@@ -7,9 +7,9 @@ Physics backends (--physics):
 
 Rooms (W2.3 / W3):
   join.payload.room_id omitted → private room (= session_id), one member;
-  except demo_hub → room "hub", and demo_city → shared room "city" (max 5).
-  room_id "demo" → shared workshop room, max 2 members; F7: one shared MjData so
-  mechs can collide (joints/actuators prefixed by entity_id).
+  except demo_hub → room "hub", demo_city → "city" (max 5), demo_chessroom → "chess",
+  and demo_race → "race". room_id "demo" → shared workshop room, max 2 members;
+  F7: one shared MjData so mechs can collide (joints/actuators prefixed by entity_id).
 
 Recording (T2.5): on join, writes recordings/sessions/<id>/header.json + frames.jsonl.
 Joints (T2.6 / F6): entity_state includes joints / joint_vels (planar + wheels).
@@ -34,6 +34,7 @@ from websockets.asyncio.server import ServerConnection, serve
 
 from recorder import SessionRecorder
 from score_client import build_and_post
+from gomoku import BLACK, EMPTY, WHITE, GomokuBoard
 
 try:  # optional: only --physics mujoco needs it
     import mujoco
@@ -67,6 +68,8 @@ RACE_ROOM_ID = "race"
 RACE_ROOM_MAX = 6
 HUB_ROOM_ID = "hub"
 HUB_ROOM_MAX = 8
+CHESS_ROOM_ID = "chess"
+CHESS_TABLE_IDS = ("table_1", "table_2", "table_3", "table_4")
 
 
 def _yaw_to_quat(yaw: float) -> dict[str, float]:
@@ -710,6 +713,41 @@ class DynamicProp:
 
 
 @dataclass
+class ChessTable:
+    """One gomoku table inside a chess lounge room."""
+
+    table_id: str
+    board: GomokuBoard = field(default_factory=GomokuBoard)
+    black_sid: str | None = None
+    white_sid: str | None = None
+    vs_ai: bool = False
+    status: str = "idle"  # idle | playing | finished
+    turn: int = BLACK
+
+    def to_detail(self) -> dict[str, Any]:
+        """Snapshot for chess_table_update events."""
+        return {
+            "table_id": self.table_id,
+            "black_sid": self.black_sid,
+            "white_sid": self.white_sid,
+            "vs_ai": self.vs_ai,
+            "status": self.status,
+            "turn": self.turn,
+            "winner": self.board.winner,
+            "cells": self.board.snapshot_cells(),
+            "full": self.board.is_full(),
+        }
+
+    def seated_sids(self) -> list[str]:
+        out: list[str] = []
+        if self.black_sid:
+            out.append(self.black_sid)
+        if self.white_sid and self.white_sid != self.black_sid:
+            out.append(self.white_sid)
+        return out
+
+
+@dataclass
 class Room:
     """Logical shared world: mechs + props + members; one tick for all members."""
 
@@ -732,6 +770,8 @@ class Room:
     duel_armed_tick: int = -1
     duel_pending: set[str] = field(default_factory=set)
     duel_round: int = 0
+    ## Chess lounge: per-table gomoku authority (FakeMech presence room).
+    chess_tables: dict[str, ChessTable] = field(default_factory=dict)
 
     def free_spawn_id(self) -> str | None:
         """Return first mech spawn id not claimed by a joined member."""
@@ -1071,6 +1111,22 @@ def is_hub_contract(contract: dict[str, Any]) -> bool:
     if contract_mw(contract).get("mode") == "hub":
         return True
     return str(contract.get("level_id") or "") == "demo_hub"
+
+
+def is_chessroom_contract(contract: dict[str, Any]) -> bool:
+    """True for chess lounge (Hub-mode FakeMech + table FSM)."""
+    return str(contract.get("level_id") or "") == "demo_chessroom"
+
+
+def _make_chess_tables(contract: dict[str, Any]) -> dict[str, ChessTable]:
+    """Build empty table map from contract extensions.mw.chess_tables."""
+    raw = contract_mw(contract).get("chess_tables")
+    ids: list[str]
+    if isinstance(raw, list) and raw:
+        ids = [str(x) for x in raw]
+    else:
+        ids = list(CHESS_TABLE_IDS)
+    return {tid: ChessTable(table_id=tid) for tid in ids}
 
 
 def hub_max_members(contract: dict[str, Any]) -> int:
@@ -1996,6 +2052,8 @@ class EchoGateway:
         room = session.room
         if room is None:
             return
+        if room.chess_tables:
+            self._chess_free_session(room, session.session_id, broadcast=True)
         room.members.pop(session.session_id, None)
         if session.controlled_entity_id:
             mech = room.mechs.get(session.controlled_entity_id)
@@ -2048,6 +2106,131 @@ class EchoGateway:
             pid = occupant.profile.get("id")
             if pid:
                 mw["profile_id"] = str(pid)
+
+    def _broadcast_chess_table(self, room: Room, table: ChessTable) -> None:
+        """Queue chess_table_update for every joined member."""
+        ev = {
+            "event_type": "chess_table_update",
+            "detail": table.to_detail(),
+        }
+        for member in room.members.values():
+            if member.joined and not member.closed:
+                member.pending_events.append(dict(ev))
+
+    def _chess_free_session(
+        self, room: Room, session_id: str, *, broadcast: bool
+    ) -> None:
+        """Remove session from any table seats; reset table when empty."""
+        for table in room.chess_tables.values():
+            changed = False
+            if table.black_sid == session_id:
+                table.black_sid = None
+                changed = True
+            if table.white_sid == session_id:
+                table.white_sid = None
+                changed = True
+            if not changed:
+                continue
+            humans = [s for s in (table.black_sid, table.white_sid) if s]
+            if not humans:
+                table.board.reset()
+                table.vs_ai = False
+                table.status = "idle"
+                table.turn = BLACK
+            elif len(humans) == 1:
+                alone = humans[0]
+                table.black_sid = alone
+                table.white_sid = None
+                table.vs_ai = True
+                table.board.reset()
+                table.status = "playing"
+                table.turn = BLACK
+            if broadcast:
+                self._broadcast_chess_table(room, table)
+
+    def _handle_chess_cmd(
+        self, session: Session, action: str, payload: dict[str, Any]
+    ) -> None:
+        """Thin table FSM: sit / leave / place / reset."""
+        room = session.room
+        if room is None or not session.joined or not room.chess_tables:
+            return
+        if not is_chessroom_contract(session.contract):
+            return
+        sid = session.session_id
+        if action == "chess_leave":
+            self._chess_free_session(room, sid, broadcast=True)
+            return
+        table_id = str(payload.get("table_id") or "").strip()
+        table = room.chess_tables.get(table_id)
+        if table is None:
+            return
+        if action == "chess_sit":
+            if sid in (table.black_sid, table.white_sid):
+                self._broadcast_chess_table(room, table)
+                return
+            self._chess_free_session(room, sid, broadcast=True)
+            if table.black_sid is None:
+                table.black_sid = sid
+            elif table.white_sid is None:
+                table.white_sid = sid
+                table.vs_ai = False
+                table.board.reset()
+                table.status = "playing"
+                table.turn = BLACK
+                self._broadcast_chess_table(room, table)
+                return
+            else:
+                return
+            humans = [s for s in (table.black_sid, table.white_sid) if s]
+            if len(humans) >= 2:
+                table.vs_ai = False
+            else:
+                table.vs_ai = True
+            table.board.reset()
+            table.status = "playing"
+            table.turn = BLACK
+            self._broadcast_chess_table(room, table)
+            return
+        if action == "chess_reset":
+            if sid not in (table.black_sid, table.white_sid):
+                return
+            table.board.reset()
+            table.status = "playing"
+            table.turn = BLACK
+            self._broadcast_chess_table(room, table)
+            return
+        if action == "chess_place":
+            if table.status != "playing":
+                return
+            try:
+                x = int(payload.get("x"))
+                y = int(payload.get("y"))
+            except (TypeError, ValueError):
+                return
+            color = EMPTY
+            if table.black_sid == sid:
+                color = BLACK
+            elif table.white_sid == sid and not table.vs_ai:
+                color = WHITE
+            else:
+                return
+            if table.turn != color:
+                return
+            if not table.board.place(x, y, color):
+                return
+            if table.board.winner != EMPTY or table.board.is_full():
+                table.status = "finished"
+            else:
+                table.turn = WHITE if color == BLACK else BLACK
+                if table.vs_ai and table.turn == WHITE:
+                    ax, ay = table.board.ai_move()
+                    if ax >= 0 and table.board.place(ax, ay, WHITE):
+                        if table.board.winner != EMPTY or table.board.is_full():
+                            table.status = "finished"
+                        else:
+                            table.turn = BLACK
+            self._broadcast_chess_table(room, table)
 
     async def handler(self, ws: ServerConnection) -> None:
         session_id = str(uuid.uuid4())
@@ -2134,6 +2317,9 @@ class EchoGateway:
             return
         if action == "set_hub_floor":
             self._apply_hub_floor(session, payload)
+            return
+        if action in ("chess_sit", "chess_leave", "chess_place", "chess_reset"):
+            self._handle_chess_cmd(session, action, payload)
             return
         mech = session.mech
         if mech is None or not session.joined:
@@ -2425,6 +2611,8 @@ class EchoGateway:
                 grasp_eq=grasp_eq,
                 mj_model=mj_model,
             )
+            if is_chessroom_contract(contract):
+                room.chess_tables = _make_chess_tables(contract)
             self.rooms[room_id] = room
             LOG.info(
                 "room=%s level=%s max_members=%d mechs=%s props=%s shared_mj=%s hub=%s",
@@ -2461,6 +2649,7 @@ class EchoGateway:
             CITY_ROOM_ID,
             RACE_ROOM_ID,
             HUB_ROOM_ID,
+            CHESS_ROOM_ID,
         )
         spawn = next(
             (s for s in (room.contract.get("mech_spawns") or []) if s.get("id") == entity_id),
@@ -2583,6 +2772,14 @@ class EchoGateway:
             room_id,
             entity_id,
         )
+        if room.chess_tables:
+            for table in room.chess_tables.values():
+                session.pending_events.append(
+                    {
+                        "event_type": "chess_table_update",
+                        "detail": table.to_detail(),
+                    }
+                )
 
     async def sim_loop(self) -> None:
         """Advance each Room at SIM_HZ; broadcast state at STATE_HZ to members."""
