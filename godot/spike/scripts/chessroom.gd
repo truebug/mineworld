@@ -682,22 +682,22 @@ func _board_px() -> float:
 
 
 func _junqi_board_size() -> Vector2:
-	"""Fit 12×5 board into viewport so chrome + status stay on screen."""
+	"""Landscape 12×5: long axis horizontal for widescreen comfort."""
 	var vp := get_viewport().get_visible_rect().size
-	var chrome := 176.0
-	var max_h := clampf(vp.y - chrome, 260.0, 460.0)
-	var max_w := clampf(vp.x - 56.0, 170.0, 280.0)
-	var h := max_h
-	var w := h * (5.0 / 12.2)
-	if w > max_w:
-		w = max_w
-		h = w * (12.2 / 5.0)
+	var chrome_h := 160.0
+	var max_w := clampf(vp.x - 48.0, 360.0, 740.0)
+	var max_h := clampf(vp.y - chrome_h, 150.0, 300.0)
+	var w := max_w
+	var h := w * (5.0 / 12.2)
+	if h > max_h:
+		h = max_h
+		w = h * (12.2 / 5.0)
 	return Vector2(floorf(w), floorf(h))
 
 
 func _junqi_flip() -> bool:
-	"""Put local player's half at the bottom of the screen."""
-	return _my_junqi_side() == "black"
+	"""Landscape: keep local player's half on the LEFT."""
+	return _my_junqi_side() == "red"
 
 
 func _junqi_view_r(model_r: int) -> int:
@@ -721,8 +721,8 @@ func _fit_board_panel() -> void:
 		var bs := _junqi_board_size()
 		if _board_ctrl != null:
 			_board_ctrl.custom_minimum_size = bs
-		pw = clampf(bs.x + 48.0, 280.0, vp.x - 24.0)
-		ph = clampf(bs.y + 150.0, 320.0, vp.y - 24.0)
+		pw = clampf(bs.x + 48.0, 400.0, vp.x - 24.0)
+		ph = clampf(bs.y + 140.0, 280.0, vp.y - 24.0)
 	else:
 		var side := clampf(minf(vp.x - 64.0, vp.y - 168.0), 300.0, 520.0)
 		if _board_ctrl != null:
@@ -1086,7 +1086,10 @@ func _refresh_junqi_status(d: Dictionary, status: String, vs_ai: bool) -> void:
 				"Drag-swap to tune · tap Confirm to start"
 			) + hand_note)
 		else:
-			_set_status(MWi18n.t("布阵 · 先「随机布阵」，可再手调", "Layout · Auto layout, then tune") + hand_note)
+			_set_status(MWi18n.t(
+				"布阵 · 先「随机布阵」，可再手调（本方在左）",
+				"Layout · Auto layout, then tune (you on the left)"
+			) + hand_note)
 		return
 	if status == "finished":
 		var winner := str(d.get("winner", ""))
@@ -1147,7 +1150,7 @@ func _schedule_auto_exit() -> void:
 
 
 func _draw_junqi_board() -> void:
-	"""Wood-framed green board + tile pieces; local side at bottom."""
+	"""Landscape wood board: rows along X (local LEFT), cols along Y."""
 	var detail := _view_detail()
 	var sz := _junqi_board_size()
 	_draw_wood_frame(sz, Color(0.52, 0.68, 0.42))
@@ -1161,20 +1164,19 @@ func _draw_junqi_board() -> void:
 		if typeof(cell) != TYPE_DICTIONARY:
 			continue
 		by_key["%d,%d" % [int(cell.get("r", -1)), int(cell.get("c", -1))]] = cell
+	var vr5 := _junqi_view_r(5)
+	var vr6 := _junqi_view_r(6)
+	var x_mid := origin.x + cw * (float(vr5 + vr6) * 0.5 + 0.5)
 	for c in JUNQI_COLS:
-		var vr5 := _junqi_view_r(5)
-		var vr6 := _junqi_view_r(6)
-		var y_mid := origin.y + ch * (float(vr5 + vr6) * 0.5 + 0.5)
 		if c in [1, 3]:
-			var cx := origin.x + cw * (float(c) + 0.5)
+			var cy := origin.y + ch * (float(c) + 0.5)
 			_board_ctrl.draw_rect(
-				Rect2(cx - cw * 0.42, y_mid - ch * 0.22, cw * 0.84, ch * 0.44),
+				Rect2(x_mid - cw * 0.22, cy - ch * 0.42, cw * 0.44, ch * 0.84),
 				Color(0.45, 0.36, 0.22)
 			)
 	for r in JUNQI_ROWS:
 		for c in JUNQI_COLS:
-			var vr := _junqi_view_r(r)
-			var center := origin + Vector2(cw * (float(c) + 0.5), ch * (float(vr) + 0.5))
+			var center := _junqi_cell_center(r, c, origin, cw, ch)
 			var half := Vector2(cw, ch) * 0.42
 			var rect := Rect2(center - half, half * 2.0)
 			var cell: Dictionary = by_key.get("%d,%d" % [r, c], {})
@@ -1197,14 +1199,18 @@ func _draw_junqi_board() -> void:
 			var piece: Variant = cell2.get("piece", null)
 			if typeof(piece) != TYPE_DICTIONARY or piece == null:
 				continue
-			var vr2 := _junqi_view_r(r)
-			var center2 := origin + Vector2(cw * (float(c) + 0.5), ch * (float(vr2) + 0.5))
 			_draw_junqi_tile(
-				center2,
+				_junqi_cell_center(r, c, origin, cw, ch),
 				min(cw, ch),
 				str(piece.get("side", "")),
 				str(piece.get("type", "?"))
 			)
+
+
+func _junqi_cell_center(r: int, c: int, origin: Vector2, cw: float, ch: float) -> Vector2:
+	"""Map model (r,c) → landscape screen center (row→X, col→Y)."""
+	var vr := _junqi_view_r(r)
+	return origin + Vector2(cw * (float(vr) + 0.5), ch * (float(c) + 0.5))
 
 
 func _draw_junqi_rails(origin: Vector2, cw: float, ch: float) -> void:
@@ -1218,21 +1224,15 @@ func _draw_junqi_rails(origin: Vector2, cw: float, ch: float) -> void:
 	for seg in segs:
 		var a: Array = seg[0]
 		var b: Array = seg[1]
-		var p0 := origin + Vector2(
-			cw * (float(a[1]) + 0.5),
-			ch * (float(_junqi_view_r(int(a[0]))) + 0.5)
-		)
-		var p1 := origin + Vector2(
-			cw * (float(b[1]) + 0.5),
-			ch * (float(_junqi_view_r(int(b[0]))) + 0.5)
-		)
+		var p0 := _junqi_cell_center(int(a[0]), int(a[1]), origin, cw, ch)
+		var p1 := _junqi_cell_center(int(b[0]), int(b[1]), origin, cw, ch)
 		_board_ctrl.draw_line(p0, p1, col_rail, 2.0)
 
 
 func _draw_junqi_tile(center: Vector2, cell: float, side: String, ptype: String) -> void:
 	"""Draw a bevelled rectangular tile like physical junqi pieces."""
-	var tw := cell * 0.72
-	var th := cell * 0.58
+	var tw := cell * 0.78
+	var th := cell * 0.62
 	var rect := Rect2(center - Vector2(tw, th) * 0.5, Vector2(tw, th))
 	_board_ctrl.draw_rect(Rect2(rect.position + Vector2(1.5, 2.0), rect.size), Color(0, 0, 0, 0.35))
 	var body := Color(0.12, 0.12, 0.14) if side == "black" else Color(0.78, 0.18, 0.14)
@@ -1262,12 +1262,12 @@ func _draw_junqi_tile(center: Vector2, cell: float, side: String, ptype: String)
 
 
 func _junqi_layout_metrics() -> Dictionary:
-	"""Shared draw/hit metrics for junqi board."""
+	"""Landscape metrics: cell width along rows (12), height along cols (5)."""
 	var sz := _junqi_board_size()
 	var pad := 8.0
 	var inner := Rect2(Vector2(pad, pad), sz - Vector2(pad, pad) * 2.0)
-	var cw := inner.size.x / float(JUNQI_COLS + 0.35)
-	var ch := inner.size.y / float(JUNQI_ROWS + 0.35)
+	var cw := inner.size.x / float(JUNQI_ROWS + 0.35)
+	var ch := inner.size.y / float(JUNQI_COLS + 0.35)
 	var origin := inner.position + Vector2(cw * 0.175, ch * 0.175)
 	return {"origin": origin, "cw": cw, "ch": ch}
 
@@ -1346,8 +1346,8 @@ func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
 	var origin: Vector2 = m["origin"]
 	var cw: float = m["cw"]
 	var ch: float = m["ch"]
-	var col := int(floor((pos.x - origin.x) / cw))
-	var view_r := int(floor((pos.y - origin.y) / ch))
+	var view_r := int(floor((pos.x - origin.x) / cw))
+	var col := int(floor((pos.y - origin.y) / ch))
 	if col < 0 or view_r < 0 or col >= JUNQI_COLS or view_r >= JUNQI_ROWS:
 		return
 	var row := _junqi_model_r(view_r)
