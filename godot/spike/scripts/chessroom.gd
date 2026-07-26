@@ -70,6 +70,10 @@ var _view_table_id := ""
 var _seated_table_id := ""
 var _auto_exit_gen := 0
 var _sel := Vector2i(-1, -1)
+## Chess-FX: per-cell piece animation state. Key "x,y" → {kind, t, dur}.
+## kind: "place" (scale bounce), "capture" (fade+sink), "flip" (junqi reveal).
+var _piece_anims: Dictionary = {}
+var _prev_cells: Array = []  ## previous board cells for diff detection
 
 
 func _ready() -> void:
@@ -350,6 +354,7 @@ func _on_gateway_error(payload: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	_tick_piece_anims(delta)
 	_cmd_timer += delta
 	if _cmd_timer >= 1.0 / CMD_HZ:
 		_cmd_timer = 0.0
@@ -759,28 +764,28 @@ func _draw_wood_frame(sz: Vector2, face: Color) -> void:
 	_board_ctrl.draw_rect(inner, Color(0.25, 0.14, 0.06, 0.55), false, 2.0)
 
 
-func _draw_stone(center: Vector2, radius: float, black: bool) -> void:
+func _draw_stone(center: Vector2, radius: float, black: bool, alpha: float = 1.0) -> void:
 	"""Glossy go/gomoku stone with rim highlight."""
-	_board_ctrl.draw_circle(center + Vector2(1.2, 1.8), radius, Color(0, 0, 0, 0.28))
+	_board_ctrl.draw_circle(center + Vector2(1.2, 1.8), radius, Color(0, 0, 0, 0.28 * alpha))
 	if black:
-		_board_ctrl.draw_circle(center, radius, Color(0.08, 0.07, 0.07))
-		_board_ctrl.draw_circle(center - Vector2(radius * 0.28, radius * 0.32), radius * 0.28, Color(0.45, 0.45, 0.48, 0.55))
-		_board_ctrl.draw_arc(center, radius, 0, TAU, 28, Color(0.02, 0.02, 0.02), 1.2)
+		_board_ctrl.draw_circle(center, radius, Color(0.08, 0.07, 0.07, alpha))
+		_board_ctrl.draw_circle(center - Vector2(radius * 0.28, radius * 0.32), radius * 0.28, Color(0.45, 0.45, 0.48, 0.55 * alpha))
+		_board_ctrl.draw_arc(center, radius, 0, TAU, 28, Color(0.02, 0.02, 0.02, alpha), 1.2)
 	else:
-		_board_ctrl.draw_circle(center, radius, Color(0.94, 0.93, 0.9))
-		_board_ctrl.draw_circle(center - Vector2(radius * 0.25, radius * 0.3), radius * 0.22, Color(1, 1, 1, 0.7))
-		_board_ctrl.draw_arc(center, radius, 0, TAU, 28, Color(0.45, 0.42, 0.38), 1.3)
+		_board_ctrl.draw_circle(center, radius, Color(0.94, 0.93, 0.9, alpha))
+		_board_ctrl.draw_circle(center - Vector2(radius * 0.25, radius * 0.3), radius * 0.22, Color(1, 1, 1, 0.7 * alpha))
+		_board_ctrl.draw_arc(center, radius, 0, TAU, 28, Color(0.45, 0.42, 0.38, alpha), 1.3)
 
 
-func _draw_halma_pawn(center: Vector2, radius: float, red: bool) -> void:
+func _draw_halma_pawn(center: Vector2, radius: float, red: bool, alpha: float = 1.0) -> void:
 	"""Plastic Halma pawn: cylinder-ish disc with bevel."""
-	_board_ctrl.draw_circle(center + Vector2(1.4, 2.0), radius, Color(0, 0, 0, 0.3))
-	var body := Color(0.82, 0.22, 0.16) if red else Color(0.22, 0.42, 0.88)
-	var rim := Color(0.95, 0.5, 0.4) if red else Color(0.55, 0.7, 0.98)
+	_board_ctrl.draw_circle(center + Vector2(1.4, 2.0), radius, Color(0, 0, 0, 0.3 * alpha))
+	var body := Color(0.82, 0.22, 0.16, alpha) if red else Color(0.22, 0.42, 0.88, alpha)
+	var rim := Color(0.95, 0.5, 0.4, alpha) if red else Color(0.55, 0.7, 0.98, alpha)
 	_board_ctrl.draw_circle(center, radius, body)
 	_board_ctrl.draw_arc(center, radius, 0, TAU, 28, rim, 2.0)
-	_board_ctrl.draw_circle(center - Vector2(radius * 0.2, radius * 0.25), radius * 0.35, Color(1, 1, 1, 0.28))
-	_board_ctrl.draw_circle(center, radius * 0.38, Color(body.r * 1.15, body.g * 1.15, body.b * 1.1))
+	_board_ctrl.draw_circle(center - Vector2(radius * 0.2, radius * 0.25), radius * 0.35, Color(1, 1, 1, 0.28 * alpha))
+	_board_ctrl.draw_circle(center, radius * 0.38, Color(body.r * 1.15, body.g * 1.15, body.b * 1.1, alpha))
 
 
 func _draw_board() -> void:
@@ -827,9 +832,9 @@ func _draw_gomoku_board() -> void:
 			if win_set.has(key):
 				_board_ctrl.draw_circle(center, c * 0.52, Color(1.0, 0.78, 0.2, 0.55))
 			if v == GomokuScript.BLACK:
-				_draw_stone(center, c * 0.38, true)
+				_draw_stone(center + Vector2(0, _anim_y_offset(x, y)), c * 0.38 * _anim_scale(x, y), true, _anim_alpha(x, y))
 			elif v == GomokuScript.WHITE:
-				_draw_stone(center, c * 0.38, false)
+				_draw_stone(center + Vector2(0, _anim_y_offset(x, y)), c * 0.38 * _anim_scale(x, y), false, _anim_alpha(x, y))
 
 
 func _draw_checkers_board() -> void:
@@ -861,9 +866,9 @@ func _draw_checkers_board() -> void:
 			if _sel.x == x and _sel.y == y:
 				_board_ctrl.draw_circle(center, c * 0.48, Color(0.95, 0.85, 0.2, 0.45))
 			if v == GomokuScript.BLACK:
-				_draw_halma_pawn(center, c * 0.36, true)
+				_draw_halma_pawn(center + Vector2(0, _anim_y_offset(x, y)), c * 0.36 * _anim_scale(x, y), true, _anim_alpha(x, y))
 			elif v == GomokuScript.WHITE:
-				_draw_halma_pawn(center, c * 0.36, false)
+				_draw_halma_pawn(center + Vector2(0, _anim_y_offset(x, y)), c * 0.36 * _anim_scale(x, y), false, _anim_alpha(x, y))
 
 
 func _view_detail() -> Dictionary:
@@ -1006,6 +1011,7 @@ func _junqi_layout_from_cells() -> Dictionary:
 func _refresh_board_from_authority() -> void:
 	var d := _view_detail()
 	var game := str(d.get("game", "gomoku"))
+	_detect_piece_changes(d, game)
 	var vs_ai := bool(d.get("vs_ai", false))
 	var title := MWi18n.t(str(d.get("title_zh", "")), str(d.get("title_en", "")))
 	if title == "":
@@ -1527,3 +1533,135 @@ func _on_junqi_layout_click(row: int, col: int, d: Dictionary, my: String) -> vo
 func _set_status(msg: String) -> void:
 	if _status_label != null:
 		_status_label.text = msg
+
+
+# ── Chess-FX ──────────────────────────────────────────────────────────
+
+func _detect_piece_changes(d: Dictionary, game: String) -> void:
+	"""Diff prev/new board cells → populate _piece_anims for animations."""
+	var cells: Array = d.get("cells", [])
+	var s := _board_size() if game != "junqi" else JUNQI_ROWS * JUNQI_COLS
+	if _prev_cells.is_empty() or _prev_cells.size() != cells.size():
+		_prev_cells = cells.duplicate()
+		return
+	for idx in mini(cells.size(), _prev_cells.size()):
+		var old_v := _cell_val_at(_prev_cells, idx, game)
+		var new_v := _cell_val_at(cells, idx, game)
+		if old_v == new_v:
+			continue
+		var xy := _idx_to_xy(idx, game)
+		var key := "%d,%d" % [xy.x, xy.y]
+		if old_v == 0 and new_v != 0:
+			_piece_anims[key] = {"kind": "place", "t": 0.0, "dur": 0.35}
+			_play_sfx("place")
+		elif old_v != 0 and new_v == 0:
+			_piece_anims[key] = {"kind": "capture", "t": 0.0, "dur": 0.25}
+			_play_sfx("capture")
+		elif old_v != new_v:
+			_piece_anims[key] = {"kind": "flip", "t": 0.0, "dur": 0.3}
+			_play_sfx("flip")
+	_prev_cells = cells.duplicate()
+
+
+func _cell_val_at(cells: Array, idx: int, game: String) -> int:
+	if idx >= cells.size():
+		return 0
+	if game == "junqi":
+		var cell: Variant = cells[idx]
+		if typeof(cell) == TYPE_DICTIONARY:
+			var piece: Variant = cell.get("piece", null)
+			if typeof(piece) == TYPE_DICTIONARY and piece != null:
+				return 1 if str(piece.get("type", "")) != "" else 0
+		return 0
+	return int(cells[idx])
+
+
+func _idx_to_xy(idx: int, game: String) -> Vector2i:
+	if game == "junqi":
+		return Vector2i(idx % JUNQI_COLS, idx / JUNQI_COLS)
+	var s := _board_size()
+	return Vector2i(idx % s, idx / s)
+
+
+func _tick_piece_anims(delta: float) -> void:
+	if _piece_anims.is_empty():
+		return
+	var done: Array = []
+	for key in _piece_anims.keys():
+		var a: Dictionary = _piece_anims[key]
+		a["t"] = float(a["t"]) + delta
+		if float(a["t"]) >= float(a["dur"]):
+			done.append(key)
+	for key in done:
+		_piece_anims.erase(key)
+	if _board_ctrl != null and not _piece_anims.is_empty():
+		_board_ctrl.queue_redraw()
+
+
+func _anim_scale(x: int, y: int) -> float:
+	var key := "%d,%d" % [x, y]
+	if not _piece_anims.has(key):
+		return 1.0
+	var a: Dictionary = _piece_anims[key]
+	var kind := str(a.get("kind", ""))
+	var t := float(a.get("t", 0.0)) / float(a.get("dur", 1.0))
+	if kind == "place":
+		# Elastic bounce: 0 → 1.15 → 1.0
+		if t < 0.5:
+			return lerpf(0.0, 1.15, t * 2.0)
+		return lerpf(1.15, 1.0, (t - 0.5) * 2.0)
+	if kind == "capture":
+		return lerpf(1.0, 0.0, t)
+	return 1.0
+
+
+func _anim_alpha(x: int, y: int) -> float:
+	var key := "%d,%d" % [x, y]
+	if not _piece_anims.has(key):
+		return 1.0
+	var a: Dictionary = _piece_anims[key]
+	if str(a.get("kind", "")) == "capture":
+		return lerpf(1.0, 0.0, float(a.get("t", 0.0)) / float(a.get("dur", 1.0)))
+	return 1.0
+
+
+func _anim_y_offset(x: int, y: int) -> float:
+	var key := "%d,%d" % [x, y]
+	if not _piece_anims.has(key):
+		return 0.0
+	var a: Dictionary = _piece_anims[key]
+	if str(a.get("kind", "")) == "capture":
+		return lerpf(0.0, 20.0, float(a.get("t", 0.0)) / float(a.get("dur", 1.0)))
+	return 0.0
+
+
+func _play_sfx(name: String) -> void:
+	if not _is_web:
+		return
+	var freq := 800
+	var dur := 0.08
+	match name:
+		"place":
+			freq = 900
+			dur = 0.06
+		"capture":
+			freq = 400
+			dur = 0.12
+		"flip":
+			freq = 600
+			dur = 0.08
+		"win":
+			freq = 1200
+			dur = 0.3
+	JavaScriptBridge.eval(
+		"(function(){try{"
+		+ "var c=new (window.AudioContext||window.webkitAudioContext)();"
+		+ "var o=c.createOscillator();var g=c.createGain();"
+		+ "o.connect(g);g.connect(c.destination);"
+		+ "o.type='sine';o.frequency.value=%d;"
+		+ "g.gain.setValueAtTime(0.15,c.currentTime);"
+		+ "g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+%.2f);"
+		+ "o.start();o.stop(c.currentTime+%.2f);"
+		+ "}catch(e){}})()" % [freq, dur, dur],
+		true
+	)
