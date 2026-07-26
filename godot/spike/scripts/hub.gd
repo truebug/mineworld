@@ -47,8 +47,6 @@ var _session_id := ""
 var _cmd_timer := 0.0
 var _controlled := false
 var _is_web := false
-var _web_key_cb
-var _web_blur_cb
 ## WoW-style RMB turn-drive: yaw rate from the last horizontal mouse delta,
 ## decayed per frame; consumed by each cmd tick.
 var _rmb_turn_rate := 0.0
@@ -174,9 +172,8 @@ func _start_hub_session() -> void:
 	)
 	_compose_and_push_tips()
 	if _is_web:
-		if MWWebInput.web_key_event.is_connected(_on_web_key_event):
-			MWWebInput.web_key_event.disconnect(_on_web_key_event)
-		MWWebInput.web_key_event.connect(_on_web_key_event)
+		if not MWWebInput.web_key_event.is_connected(_on_hub_key_event):
+			MWWebInput.web_key_event.connect(_on_hub_key_event)
 		JavaScriptBridge.eval(
 			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(false,true);}"
 			+ "if(typeof window.MW_LAYOUT_HUB_CHROME==='function'){window.MW_LAYOUT_HUB_CHROME();}",
@@ -776,19 +773,17 @@ func _process(delta: float) -> void:
 	if _is_web:
 		# During grace, ignore sticky DOM keys left over from the play level.
 		if _door_grace > 0.0 or _presence_throttle == "paused":
-			_held_codes.clear()
-		else:
-			_sync_mw_keys()
+			MWWebInput.clear()
 	if _is_web and camera_rig != null and camera_rig.has_method("pan_axes"):
 		var pan_r := 0.0
 		var pan_f := 0.0
-		if _web_key("ArrowRight"):
+		if MWWebInput.is_pressed("ArrowRight"):
 			pan_r += 1.0
-		if _web_key("ArrowLeft"):
+		if MWWebInput.is_pressed("ArrowLeft"):
 			pan_r -= 1.0
-		if _web_key("ArrowUp"):
+		if MWWebInput.is_pressed("ArrowUp"):
 			pan_f += 1.0
-		if _web_key("ArrowDown"):
+		if MWWebInput.is_pressed("ArrowDown"):
 			pan_f -= 1.0
 		camera_rig.pan_axes(pan_r, pan_f, delta)
 	_sync_first_person_mesh()
@@ -830,23 +825,6 @@ func _sync_first_person_mesh() -> void:
 	# Own nameplate stays on (privacy: remotes still near-only in _on_state).
 
 
-func _sync_mw_keys() -> void:
-	"""Merge shell mw_key_bridge window._mw_keys into _held_codes."""
-	var raw := str(JavaScriptBridge.eval(
-		"(function(){try{return JSON.stringify(window._mw_keys||{})}catch(e){return '{}'}}())",
-		true
-	))
-	var parsed: Variant = JSON.parse_string(raw)
-	if typeof(parsed) != TYPE_DICTIONARY:
-		return
-	for k in (parsed as Dictionary).keys():
-		_held_codes[str(k)] = bool((parsed as Dictionary)[k])
-
-
-func _web_key(code: String) -> bool:
-	"""Web KeyboardEvent.code held (hub listeners + shell bridge)."""
-	return bool(_held_codes.get(code, false))
-
 
 func _send_velocity_cmd() -> void:
 	"""Same mapping as main.gd: W/S forward, A/D strafe, Q/E yaw."""
@@ -855,17 +833,17 @@ func _send_velocity_cmd() -> void:
 	var yaw_rate := 0.0
 	if _presence_throttle != "paused":
 		if _is_web:
-			if _web_key("KeyW"):
+			if MWWebInput.is_pressed("KeyW"):
 				vx += MOVE_SPEED
-			if _web_key("KeyS"):
+			if MWWebInput.is_pressed("KeyS"):
 				vx -= MOVE_SPEED
-			if _web_key("KeyA"):
+			if MWWebInput.is_pressed("KeyA"):
 				vy += MOVE_SPEED
-			if _web_key("KeyD"):
+			if MWWebInput.is_pressed("KeyD"):
 				vy -= MOVE_SPEED
-			if _web_key("KeyQ"):
+			if MWWebInput.is_pressed("KeyQ"):
 				yaw_rate += TURN_SPEED
-			if _web_key("KeyE"):
+			if MWWebInput.is_pressed("KeyE"):
 				yaw_rate -= TURN_SPEED
 		else:
 			if Input.is_physical_key_pressed(KEY_W) or Input.is_key_pressed(KEY_W):
@@ -1565,54 +1543,19 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 			if ek.keycode == KEY_F or ek.physical_keycode == KEY_F:
 				_try_interact()
+		"KeyW", "KeyS", "KeyA", "KeyD", "KeyQ", "KeyE", "Space":
+			# Release nickname LineEdit focus so WASD reach the game again.
+			if nick_edit != null and nick_edit.has_focus():
+				nick_edit.release_focus()
+		_:
+			if camera_rig != null and camera_rig.has_method("handle_code"):
+				camera_rig.handle_code(code, true)
 				get_viewport().set_input_as_handled()
 				return
 			if ek.keycode == KEY_SPACE or ek.physical_keycode == KEY_SPACE:
 				_try_hub_hop()
 				get_viewport().set_input_as_handled()
 				return
-
-
-func _install_web_keyboard_bridge() -> void:
-	"""Same document key bridge as main.gd (single-thread Web)."""
-	_web_key_cb = JavaScriptBridge.create_callback(_on_dom_key_event)
-	_web_blur_cb = JavaScriptBridge.create_callback(_on_dom_blur)
-	var document = JavaScriptBridge.get_interface("document")
-	var window_obj = JavaScriptBridge.get_interface("window")
-	if document == null or window_obj == null:
-		push_warning("[MW] hub: JavaScriptBridge document/window missing")
-		return
-	document.addEventListener("keydown", _web_key_cb)
-	document.addEventListener("keyup", _web_key_cb)
-	window_obj.addEventListener("blur", _web_blur_cb)
-	print("[MW] hub key bridge: document listeners registered")
-
-
-func _on_dom_key_event(args: Array) -> void:
-	"""DOM keydown/keyup → _held_codes; arrows reserved for camera pan."""
-	if args.is_empty():
-		return
-	var event = args[0]
-	var code := str(event.code)
-	var down := str(event.type) == "keydown"
-	_held_codes[code] = down
-	# Release nickname LineEdit focus so WASD reach the game again.
-	if down and nick_edit != null and nick_edit.has_focus():
-		if code in ["KeyW", "KeyS", "KeyQ", "KeyE", "KeyA", "KeyD", "Space"]:
-			nick_edit.release_focus()
-	if down and camera_rig != null and camera_rig.has_method("handle_code"):
-		camera_rig.handle_code(code, true)
-	if down and code == "KeyF":
-		_try_interact()
-	if down and code == "Space":
-		_try_hub_hop()
-	if _WEB_BLOCK_CODES.has(code):
-		event.preventDefault()
-
-
-func _on_dom_blur(_args: Array) -> void:
-	"""Clear held keys when the browser tab loses focus."""
-	_held_codes.clear()
 
 
 func _enter_level(scene_path: String) -> void:
@@ -1669,3 +1612,22 @@ func _enter_level(scene_path: String) -> void:
 		return
 	_entering_door = true
 	ws.close_link()
+
+
+func _on_hub_key_event(code: String, down: bool) -> void:
+	"""Scene-specific key events from MWWebInput (F/Space/camera C/V)."""
+	if not down:
+		return
+	# Release nickname LineEdit focus so WASD reach the game again.
+	if nick_edit != null and nick_edit.has_focus():
+		if code in ["KeyW", "KeyS", "KeyQ", "KeyE", "KeyA", "KeyD", "Space"]:
+			nick_edit.release_focus()
+			return
+	match code:
+		"KeyF":
+			_try_interact()
+		"Space":
+			_try_hub_hop()
+		_:
+			if camera_rig != null and camera_rig.has_method("handle_code"):
+				camera_rig.handle_code(code, true)
