@@ -1543,16 +1543,6 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 			if ek.keycode == KEY_F or ek.physical_keycode == KEY_F:
 				_try_interact()
-		"KeyW", "KeyS", "KeyA", "KeyD", "KeyQ", "KeyE", "Space":
-			# Release nickname LineEdit focus so WASD reach the game again.
-			if nick_edit != null and nick_edit.has_focus():
-				nick_edit.release_focus()
-		_:
-			if camera_rig != null and camera_rig.has_method("handle_code"):
-				camera_rig.handle_code(code, true)
-				get_viewport().set_input_as_handled()
-				return
-			if ek.keycode == KEY_SPACE or ek.physical_keycode == KEY_SPACE:
 				_try_hub_hop()
 				get_viewport().set_input_as_handled()
 				return
