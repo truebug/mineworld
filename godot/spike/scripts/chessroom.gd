@@ -649,13 +649,15 @@ func _on_chess_hand() -> void:
 
 
 func _board_px() -> float:
+	if _board_ctrl != null and _board_ctrl.custom_minimum_size.x > 10.0:
+		return _board_ctrl.custom_minimum_size.x
 	return 540.0
 
 
 func _junqi_board_size() -> Vector2:
 	"""Fit 12×5 board into viewport so chrome + status stay on screen."""
 	var vp := get_viewport().get_visible_rect().size
-	var chrome := 176.0  # title + buttons + status + panel pad
+	var chrome := 176.0
 	var max_h := clampf(vp.y - chrome, 260.0, 460.0)
 	var max_w := clampf(vp.x - 56.0, 170.0, 280.0)
 	var h := max_h
@@ -680,21 +682,155 @@ func _junqi_model_r(view_r: int) -> int:
 
 
 func _fit_board_panel() -> void:
-	"""Resize centered panel so junqi board does not clip the viewport bottom."""
+	"""Resize centered panel so board + chrome stay inside the viewport."""
 	if _board_panel == null:
 		return
 	var vp := get_viewport().get_visible_rect().size
 	if _view_game() == "junqi":
 		var bs := _junqi_board_size()
+		if _board_ctrl != null:
+			_board_ctrl.custom_minimum_size = bs
 		var pw := maxf(bs.x + 40.0, 300.0)
 		var ph := minf(vp.y - 16.0, bs.y + 148.0)
 		_board_panel.custom_minimum_size = Vector2(pw, ph)
 		_board_panel.size = Vector2(pw, ph)
 		_board_panel.position = Vector2(-pw * 0.5, -ph * 0.5)
+		return
+	var side := clampf(minf(vp.x - 64.0, vp.y - 168.0), 300.0, 520.0)
+	if _board_ctrl != null:
+		_board_ctrl.custom_minimum_size = Vector2(side, side)
+	var pw2 := side + 40.0
+	var ph2 := minf(vp.y - 16.0, side + 140.0)
+	_board_panel.custom_minimum_size = Vector2(pw2, ph2)
+	_board_panel.size = Vector2(pw2, ph2)
+	_board_panel.position = Vector2(-pw2 * 0.5, -ph2 * 0.5)
+
+
+func _draw_wood_frame(sz: Vector2, face: Color) -> void:
+	"""Shared outer wood rim + inner playing surface."""
+	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.38, 0.22, 0.1))
+	var pad := 8.0
+	var inner := Rect2(Vector2(pad, pad), sz - Vector2(pad, pad) * 2.0)
+	_board_ctrl.draw_rect(inner, face)
+	# Subtle grain stripes
+	var grain := Color(face.r * 0.92, face.g * 0.92, face.b * 0.9, 0.35)
+	var y := inner.position.y + 4.0
+	while y < inner.end.y:
+		_board_ctrl.draw_line(
+			Vector2(inner.position.x + 2.0, y),
+			Vector2(inner.end.x - 2.0, y),
+			grain,
+			1.0
+		)
+		y += 7.0
+	_board_ctrl.draw_rect(inner, Color(0.25, 0.14, 0.06, 0.55), false, 2.0)
+
+
+func _draw_stone(center: Vector2, radius: float, black: bool) -> void:
+	"""Glossy go/gomoku stone with rim highlight."""
+	_board_ctrl.draw_circle(center + Vector2(1.2, 1.8), radius, Color(0, 0, 0, 0.28))
+	if black:
+		_board_ctrl.draw_circle(center, radius, Color(0.08, 0.07, 0.07))
+		_board_ctrl.draw_circle(center - Vector2(radius * 0.28, radius * 0.32), radius * 0.28, Color(0.45, 0.45, 0.48, 0.55))
+		_board_ctrl.draw_arc(center, radius, 0, TAU, 28, Color(0.02, 0.02, 0.02), 1.2)
 	else:
-		_board_panel.custom_minimum_size = Vector2(560, 700)
-		_board_panel.size = Vector2(560, 700)
-		_board_panel.position = Vector2(-280, -350)
+		_board_ctrl.draw_circle(center, radius, Color(0.94, 0.93, 0.9))
+		_board_ctrl.draw_circle(center - Vector2(radius * 0.25, radius * 0.3), radius * 0.22, Color(1, 1, 1, 0.7))
+		_board_ctrl.draw_arc(center, radius, 0, TAU, 28, Color(0.45, 0.42, 0.38), 1.3)
+
+
+func _draw_halma_pawn(center: Vector2, radius: float, red: bool) -> void:
+	"""Plastic Halma pawn: cylinder-ish disc with bevel."""
+	_board_ctrl.draw_circle(center + Vector2(1.4, 2.0), radius, Color(0, 0, 0, 0.3))
+	var body := Color(0.82, 0.22, 0.16) if red else Color(0.22, 0.42, 0.88)
+	var rim := Color(0.95, 0.5, 0.4) if red else Color(0.55, 0.7, 0.98)
+	_board_ctrl.draw_circle(center, radius, body)
+	_board_ctrl.draw_arc(center, radius, 0, TAU, 28, rim, 2.0)
+	_board_ctrl.draw_circle(center - Vector2(radius * 0.2, radius * 0.25), radius * 0.35, Color(1, 1, 1, 0.28))
+	_board_ctrl.draw_circle(center, radius * 0.38, Color(body.r * 1.15, body.g * 1.15, body.b * 1.1))
+
+
+func _draw_board() -> void:
+	var game := _view_game()
+	if game == "junqi":
+		_draw_junqi_board()
+		return
+	if game == "checkers":
+		_draw_checkers_board()
+		return
+	_draw_gomoku_board()
+
+
+func _draw_gomoku_board() -> void:
+	"""Warm wood goban + glossy stones."""
+	var s := _board_size()
+	var px := _board_px()
+	var c := px / float(s + 1)
+	var detail := _view_detail()
+	_draw_wood_frame(Vector2(px, px), Color(0.86, 0.7, 0.42))
+	var margin := c
+	# Grid
+	for i in s:
+		var p := margin + c * float(i)
+		_board_ctrl.draw_line(Vector2(margin, p), Vector2(px - margin, p), Color(0.22, 0.14, 0.08), 1.6)
+		_board_ctrl.draw_line(Vector2(p, margin), Vector2(p, px - margin), Color(0.22, 0.14, 0.08), 1.6)
+	for star in [Vector2i(3, 3), Vector2i(11, 3), Vector2i(3, 11), Vector2i(11, 11), Vector2i(7, 7)]:
+		_board_ctrl.draw_circle(_cell_center(star.x, star.y), 3.8, Color(0.18, 0.12, 0.07))
+	var cells: Array = detail.get("cells", [])
+	var win_set: Dictionary = {}
+	for pt in detail.get("win_line", []):
+		if typeof(pt) != TYPE_ARRAY:
+			continue
+		var arr := pt as Array
+		if arr.size() < 2:
+			continue
+		win_set["%d,%d" % [int(arr[0]), int(arr[1])]] = true
+	for y in s:
+		for x in s:
+			var idx := y * s + x
+			var v := int(cells[idx]) if idx < cells.size() else 0
+			var center := _cell_center(x, y)
+			var key := "%d,%d" % [x, y]
+			if win_set.has(key):
+				_board_ctrl.draw_circle(center, c * 0.52, Color(1.0, 0.78, 0.2, 0.55))
+			if v == GomokuScript.BLACK:
+				_draw_stone(center, c * 0.38, true)
+			elif v == GomokuScript.WHITE:
+				_draw_stone(center, c * 0.38, false)
+
+
+func _draw_checkers_board() -> void:
+	"""Wood Halma board with camp tints + plastic pawns."""
+	var s := _board_size()
+	var px := _board_px()
+	var c := px / float(s + 1)
+	var detail := _view_detail()
+	_draw_wood_frame(Vector2(px, px), Color(0.78, 0.62, 0.4))
+	# Soft checker texture
+	for y in s:
+		for x in s:
+			if (x + y) % 2 == 0:
+				_board_ctrl.draw_rect(_cell_rect(x, y, c).grow(-1.0), Color(0.72, 0.56, 0.36, 0.55))
+	for xy in [[0, 0], [1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [0, 3]]:
+		_board_ctrl.draw_rect(_cell_rect(xy[0], xy[1], c).grow(-2.0), Color(0.9, 0.4, 0.28, 0.4))
+	for xy in [[7, 7], [6, 7], [5, 7], [4, 7], [7, 6], [6, 6], [5, 6], [7, 5], [6, 5], [7, 4]]:
+		_board_ctrl.draw_rect(_cell_rect(xy[0], xy[1], c).grow(-2.0), Color(0.3, 0.5, 0.92, 0.4))
+	for i in s:
+		var p := c * float(i + 1)
+		_board_ctrl.draw_line(Vector2(c * 0.5, p), Vector2(px - c * 0.5, p), Color(0.3, 0.18, 0.08, 0.55), 1.2)
+		_board_ctrl.draw_line(Vector2(p, c * 0.5), Vector2(p, px - c * 0.5), Color(0.3, 0.18, 0.08, 0.55), 1.2)
+	var cells: Array = detail.get("cells", [])
+	for y in s:
+		for x in s:
+			var idx := y * s + x
+			var v := int(cells[idx]) if idx < cells.size() else 0
+			var center := _cell_center(x, y)
+			if _sel.x == x and _sel.y == y:
+				_board_ctrl.draw_circle(center, c * 0.48, Color(0.95, 0.85, 0.2, 0.45))
+			if v == GomokuScript.BLACK:
+				_draw_halma_pawn(center, c * 0.36, true)
+			elif v == GomokuScript.WHITE:
+				_draw_halma_pawn(center, c * 0.36, false)
 
 
 func _view_detail() -> Dictionary:
@@ -793,11 +929,7 @@ func _sync_junqi_chrome(status: String) -> void:
 	if _hand_btn != null:
 		_hand_btn.visible = seated and status in ["layout", "playing"]
 	_fit_board_panel()
-	if _board_ctrl != null:
-		if is_jq:
-			_board_ctrl.custom_minimum_size = _junqi_board_size()
-		else:
-			_board_ctrl.custom_minimum_size = Vector2(540, 540)
+	# Board ctrl size set inside _fit_board_panel.
 
 
 func _junqi_own_piece_count() -> int:
@@ -981,66 +1113,11 @@ func _schedule_auto_exit() -> void:
 	)
 
 
-func _draw_board() -> void:
-	var game := _view_game()
-	if game == "junqi":
-		_draw_junqi_board()
-		return
-	var s := _board_size()
-	var c := _cell_px()
-	var detail := _view_detail()
-	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE * _board_px()), Color(0.87, 0.72, 0.47))
-	# Checkers: tint home camps.
-	if game == "checkers":
-		for xy in [[0, 0], [1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [0, 3]]:
-			_board_ctrl.draw_rect(_cell_rect(xy[0], xy[1], c), Color(0.9, 0.45, 0.35, 0.35))
-		for xy in [[7, 7], [6, 7], [5, 7], [4, 7], [7, 6], [6, 6], [5, 6], [7, 5], [6, 5], [7, 4]]:
-			_board_ctrl.draw_rect(_cell_rect(xy[0], xy[1], c), Color(0.35, 0.55, 0.95, 0.35))
-	for i in s:
-		var p := c * float(i + 1)
-		_board_ctrl.draw_line(Vector2(c, p), Vector2(_board_px() - c, p), Color(0.25, 0.18, 0.1), 1.5)
-		_board_ctrl.draw_line(Vector2(p, c), Vector2(p, _board_px() - c), Color(0.25, 0.18, 0.1), 1.5)
-	if game == "gomoku":
-		for star in [Vector2i(3, 3), Vector2i(11, 3), Vector2i(3, 11), Vector2i(11, 11), Vector2i(7, 7)]:
-			_board_ctrl.draw_circle(_cell_center(star.x, star.y), 4.0, Color(0.25, 0.18, 0.1))
-	var cells: Array = detail.get("cells", [])
-	var win_set: Dictionary = {}
-	for pt in detail.get("win_line", []):
-		if typeof(pt) != TYPE_ARRAY:
-			continue
-		var arr := pt as Array
-		if arr.size() < 2:
-			continue
-		win_set["%d,%d" % [int(arr[0]), int(arr[1])]] = true
-	for y in s:
-		for x in s:
-			var idx := y * s + x
-			var v := 0
-			if idx < cells.size():
-				v = int(cells[idx])
-			var center := _cell_center(x, y)
-			var key := "%d,%d" % [x, y]
-			if win_set.has(key):
-				_board_ctrl.draw_circle(center, c * 0.55, Color(1.0, 0.75, 0.15, 0.85))
-			if _sel.x == x and _sel.y == y:
-				_board_ctrl.draw_circle(center, c * 0.5, Color(0.2, 0.95, 0.45, 0.55))
-			if v == GomokuScript.BLACK:
-				var col := Color(0.75, 0.2, 0.15) if game == "checkers" else Color(0.08, 0.08, 0.1)
-				_board_ctrl.draw_circle(center, c * 0.38, col)
-			elif v == GomokuScript.WHITE:
-				var col2 := Color(0.25, 0.45, 0.9) if game == "checkers" else Color(0.95, 0.95, 0.93)
-				_board_ctrl.draw_circle(center, c * 0.38, col2)
-				_board_ctrl.draw_arc(center, c * 0.38, 0, TAU, 24, Color(0.3, 0.3, 0.3), 1.2)
-
-
 func _draw_junqi_board() -> void:
 	"""Wood-framed green board + tile pieces; local side at bottom."""
 	var detail := _view_detail()
 	var sz := _junqi_board_size()
-	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.42, 0.26, 0.12))
-	var pad := 6.0
-	var inner := Rect2(Vector2(pad, pad), sz - Vector2(pad, pad) * 2.0)
-	_board_ctrl.draw_rect(inner, Color(0.52, 0.68, 0.42))
+	_draw_wood_frame(sz, Color(0.52, 0.68, 0.42))
 	var m: Dictionary = _junqi_layout_metrics()
 	var cw: float = m["cw"]
 	var ch: float = m["ch"]
@@ -1076,7 +1153,7 @@ func _draw_junqi_board() -> void:
 				_board_ctrl.draw_circle(center, min(cw, ch) * 0.38, Color(0.62, 0.78, 0.92))
 				_board_ctrl.draw_arc(center, min(cw, ch) * 0.38, 0, TAU, 28, Color(0.25, 0.4, 0.55), 1.6)
 			else:
-				_board_ctrl.draw_rect(rect, Color(0.58, 0.74, 0.48))
+				_board_ctrl.draw_rect(rect, Color(0.58, 0.74, 0.48, 0.55))
 				_board_ctrl.draw_rect(rect, Color(0.28, 0.38, 0.22), false, 1.0)
 			if _sel.x == c and _sel.y == r:
 				_board_ctrl.draw_rect(rect.grow(1.0), Color(0.95, 0.85, 0.2, 0.55), false, 2.5)
@@ -1154,7 +1231,7 @@ func _draw_junqi_tile(center: Vector2, cell: float, side: String, ptype: String)
 func _junqi_layout_metrics() -> Dictionary:
 	"""Shared draw/hit metrics for junqi board."""
 	var sz := _junqi_board_size()
-	var pad := 6.0
+	var pad := 8.0
 	var inner := Rect2(Vector2(pad, pad), sz - Vector2(pad, pad) * 2.0)
 	var cw := inner.size.x / float(JUNQI_COLS + 0.35)
 	var ch := inner.size.y / float(JUNQI_ROWS + 0.35)
