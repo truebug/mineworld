@@ -1158,25 +1158,17 @@ func _draw_junqi_board() -> void:
 	var cw: float = m["cw"]
 	var ch: float = m["ch"]
 	var origin: Vector2 = m["origin"]
+	var gap: float = m["gap"]
 	var cells: Array = detail.get("cells", [])
 	var by_key: Dictionary = {}
 	for cell in cells:
 		if typeof(cell) != TYPE_DICTIONARY:
 			continue
 		by_key["%d,%d" % [int(cell.get("r", -1)), int(cell.get("c", -1))]] = cell
-	var vr5 := _junqi_view_r(5)
-	var vr6 := _junqi_view_r(6)
-	var x_mid := origin.x + cw * (float(vr5 + vr6) * 0.5 + 0.5)
-	for c in JUNQI_COLS:
-		if c in [1, 3]:
-			var cy := origin.y + ch * (float(c) + 0.5)
-			_board_ctrl.draw_rect(
-				Rect2(x_mid - cw * 0.22, cy - ch * 0.42, cw * 0.44, ch * 0.84),
-				Color(0.45, 0.36, 0.22)
-			)
+	_draw_junqi_mountains(origin, cw, ch, gap)
 	for r in JUNQI_ROWS:
 		for c in JUNQI_COLS:
-			var center := _junqi_cell_center(r, c, origin, cw, ch)
+			var center := _junqi_cell_center(r, c, origin, cw, ch, gap)
 			var half := Vector2(cw, ch) * 0.42
 			var rect := Rect2(center - half, half * 2.0)
 			var cell: Dictionary = by_key.get("%d,%d" % [r, c], {})
@@ -1192,7 +1184,7 @@ func _draw_junqi_board() -> void:
 				_board_ctrl.draw_rect(rect, Color(0.28, 0.38, 0.22), false, 1.0)
 			if _sel.x == c and _sel.y == r:
 				_board_ctrl.draw_rect(rect.grow(1.0), Color(0.95, 0.85, 0.2, 0.55), false, 2.5)
-	_draw_junqi_rails(origin, cw, ch)
+	_draw_junqi_rails(origin, cw, ch, gap)
 	for r in JUNQI_ROWS:
 		for c in JUNQI_COLS:
 			var cell2: Dictionary = by_key.get("%d,%d" % [r, c], {})
@@ -1200,22 +1192,80 @@ func _draw_junqi_board() -> void:
 			if typeof(piece) != TYPE_DICTIONARY or piece == null:
 				continue
 			_draw_junqi_tile(
-				_junqi_cell_center(r, c, origin, cw, ch),
+				_junqi_cell_center(r, c, origin, cw, ch, gap),
 				min(cw, ch),
 				str(piece.get("side", "")),
 				str(piece.get("type", "?"))
 			)
 
 
-func _junqi_cell_center(r: int, c: int, origin: Vector2, cw: float, ch: float) -> Vector2:
+func _junqi_cell_center(r: int, c: int, origin: Vector2, cw: float, ch: float, gap: float = 0.0) -> Vector2:
 	"""Map model (r,c) → landscape screen center (row→X, col→Y)."""
 	var vr := _junqi_view_r(r)
-	return origin + Vector2(cw * (float(vr) + 0.5), ch * (float(c) + 0.5))
+	var x := origin.x + cw * (float(vr) + 0.5)
+	if vr >= 6:
+		x += gap
+	return Vector2(x, origin.y + ch * (float(c) + 0.5))
 
 
-func _draw_junqi_rails(origin: Vector2, cw: float, ch: float) -> void:
+func _draw_junqi_mountains(origin: Vector2, _cw: float, ch: float, gap: float) -> void:
+	"""山界 strip between halves — two impassable circles (cols 1 & 3)."""
+	var x_mid := origin.x + cw * 6.0 + gap * 0.5
+	var strip := Rect2(
+		Vector2(x_mid - gap * 0.48, origin.y + ch * 0.08),
+		Vector2(gap * 0.96, ch * float(JUNQI_COLS) - ch * 0.16)
+	)
+	_board_ctrl.draw_rect(strip, Color(0.42, 0.34, 0.22, 0.55))
+	_board_ctrl.draw_rect(strip.grow(-1.5), Color(0.28, 0.22, 0.14, 0.35), false, 1.2)
+	# Passable frontline corridors (cols 0 / 2 / 4).
+	for c in [0, 2, 4]:
+		var cy := origin.y + ch * (float(c) + 0.5)
+		var lane := Rect2(x_mid - gap * 0.42, cy - ch * 0.16, gap * 0.84, ch * 0.32)
+		_board_ctrl.draw_rect(lane, Color(0.62, 0.72, 0.48, 0.7))
+		_board_ctrl.draw_line(
+			Vector2(x_mid - gap * 0.4, cy),
+			Vector2(x_mid + gap * 0.4, cy),
+			Color(0.22, 0.18, 0.1, 0.85),
+			2.0 if c == 2 else 2.8
+		)
+	var font: Font = MWFonts.font() if MWFonts != null else ThemeDB.fallback_font
+	var rad := minf(gap * 0.42, ch * 0.42)
+	for c in [1, 3]:
+		var cy := origin.y + ch * (float(c) + 0.5)
+		var center := Vector2(x_mid, cy)
+		_board_ctrl.draw_circle(center + Vector2(1.0, 1.2), rad, Color(0, 0, 0, 0.22))
+		_board_ctrl.draw_circle(center, rad, Color(0.48, 0.4, 0.28))
+		_board_ctrl.draw_circle(center, rad * 0.78, Color(0.58, 0.5, 0.34))
+		_board_ctrl.draw_arc(center, rad, 0.0, TAU, 32, Color(0.28, 0.2, 0.12), 2.0)
+		_board_ctrl.draw_line(
+			center + Vector2(-rad * 0.35, rad * 0.1),
+			center + Vector2(0.0, -rad * 0.45),
+			Color(0.32, 0.26, 0.16, 0.7),
+			1.4
+		)
+		_board_ctrl.draw_line(
+			center + Vector2(rad * 0.35, rad * 0.1),
+			center + Vector2(0.0, -rad * 0.45),
+			Color(0.32, 0.26, 0.16, 0.7),
+			1.4
+		)
+		var label := "山界"
+		var fs := int(clampf(rad * 0.55, 9.0, 14.0))
+		var text_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+		_board_ctrl.draw_string(
+			font,
+			center - text_size * 0.5 + Vector2(0, text_size.y * 0.35),
+			label,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			fs,
+			Color(0.95, 0.9, 0.75)
+		)
+
+
+func _draw_junqi_rails(origin: Vector2, cw: float, ch: float, gap: float) -> void:
 	"""Sketch railway rings on both halves (visual cue, not authority)."""
-	var col_rail := Color(0.2, 0.18, 0.12, 0.75)
+	var col_rail := Color(0.18, 0.14, 0.08, 0.85)
 	var segs: Array = [
 		[[1, 0], [1, 4]], [[5, 0], [5, 4]], [[1, 0], [5, 0]], [[1, 4], [5, 4]],
 		[[6, 0], [6, 4]], [[10, 0], [10, 4]], [[6, 0], [10, 0]], [[6, 4], [10, 4]],
@@ -1224,9 +1274,9 @@ func _draw_junqi_rails(origin: Vector2, cw: float, ch: float) -> void:
 	for seg in segs:
 		var a: Array = seg[0]
 		var b: Array = seg[1]
-		var p0 := _junqi_cell_center(int(a[0]), int(a[1]), origin, cw, ch)
-		var p1 := _junqi_cell_center(int(b[0]), int(b[1]), origin, cw, ch)
-		_board_ctrl.draw_line(p0, p1, col_rail, 2.0)
+		var p0 := _junqi_cell_center(int(a[0]), int(a[1]), origin, cw, ch, gap)
+		var p1 := _junqi_cell_center(int(b[0]), int(b[1]), origin, cw, ch, gap)
+		_board_ctrl.draw_dashed_line(p0, p1, col_rail, 2.4, 6.0)
 
 
 func _draw_junqi_tile(center: Vector2, cell: float, side: String, ptype: String) -> void:
@@ -1261,15 +1311,32 @@ func _draw_junqi_tile(center: Vector2, cell: float, side: String, ptype: String)
 	)
 
 
+func _junqi_view_r_at_x(x: float, origin_x: float, cw: float, gap: float) -> int:
+	"""Hit-test landscape X → view row; mountain gap returns -1."""
+	var rel := x - origin_x
+	var left_w := cw * 6.0
+	if rel < 0.0:
+		return -1
+	if rel < left_w:
+		return int(floor(rel / cw))
+	if rel < left_w + gap:
+		return -1
+	var right := int(floor((rel - left_w - gap) / cw))
+	if right < 0:
+		return -1
+	return 6 + right
+
+
 func _junqi_layout_metrics() -> Dictionary:
 	"""Landscape metrics: cell width along rows (12), height along cols (5)."""
 	var sz := _junqi_board_size()
 	var pad := 8.0
 	var inner := Rect2(Vector2(pad, pad), sz - Vector2(pad, pad) * 2.0)
-	var cw := inner.size.x / float(JUNQI_ROWS + 0.35)
-	var ch := inner.size.y / float(JUNQI_COLS + 0.35)
-	var origin := inner.position + Vector2(cw * 0.175, ch * 0.175)
-	return {"origin": origin, "cw": cw, "ch": ch}
+	var gap := clampf(inner.size.x * 0.07, 22.0, 40.0)
+	var cw := (inner.size.x - gap) / float(JUNQI_ROWS)
+	var ch := inner.size.y / float(JUNQI_COLS)
+	var origin := inner.position
+	return {"origin": origin, "cw": cw, "ch": ch, "gap": gap}
 
 
 func _cell_rect(x: int, y: int, c: float) -> Rect2:
@@ -1346,7 +1413,8 @@ func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
 	var origin: Vector2 = m["origin"]
 	var cw: float = m["cw"]
 	var ch: float = m["ch"]
-	var view_r := int(floor((pos.x - origin.x) / cw))
+	var gap: float = m["gap"]
+	var view_r := _junqi_view_r_at_x(pos.x, origin.x, cw, gap)
 	var col := int(floor((pos.y - origin.y) / ch))
 	if col < 0 or view_r < 0 or col >= JUNQI_COLS or view_r >= JUNQI_ROWS:
 		return
