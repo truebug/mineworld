@@ -1208,7 +1208,7 @@ func _junqi_cell_center(r: int, c: int, origin: Vector2, cw: float, ch: float, g
 	return Vector2(x, origin.y + ch * (float(c) + 0.5))
 
 
-func _draw_junqi_mountains(origin: Vector2, _cw: float, ch: float, gap: float) -> void:
+func _draw_junqi_mountains(origin: Vector2, cw: float, ch: float, gap: float) -> void:
 	"""山界 strip between halves — two impassable circles (cols 1 & 3)."""
 	var x_mid := origin.x + cw * 6.0 + gap * 0.5
 	var strip := Rect2(
