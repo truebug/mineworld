@@ -17,6 +17,7 @@
 - **Hub**：东墙新门 `DoorChess`（22.5, -14，紫色自发光，标签「P 棋牌室」），`hub.gd` 接线 armed/near/context/过场标签；提示行加 `P Chess`。
 - **顺手修复**：RMB 转头灵敏度（衰减 30→8/s、增益 0.4→0.6——慢速拖动不再死于 cmd tick 间隔）。
 - **验证**：lint 0 findings；boot 检查扩至 5 场景全 BOOT OK。
+- **热修**（同日验收反馈）：① CameraRig 子节点缺 `Camera3D`（`camera==null` → 全黑；headless 崩在渲染前，boot 检查未能发现）；② 场景换 `BG_COLOR` 纯色背景去 ProceduralSky；③ 补 `MW_SET_SHELL_UI(true,false,true)` 切换 DOM 壳层；④ 门 P transform 旋转 90° 贴合东墙。**教训**：新建 3D 场景必须查 boot log 的 `Node not found`，而非只看 SCRIPT ERROR 计数。
 
 ## 2026-07-24 · Hub WoW 式右键转头（turn-drive）
 

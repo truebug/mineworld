@@ -30,6 +30,11 @@ func _ready() -> void:
 		camera_rig.set_target(avatar)
 	if _is_web:
 		_install_web_key_bridge()
+		# Switch DOM shell to play chrome (hub keeps its own overlay set).
+		JavaScriptBridge.eval(
+			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(true,false,true);}",
+			true
+		)
 	_build_board_ui()
 	MWTransition.notify_arrived()
 	print("[MW] chessroom ready (offline, gomoku vs AI)")
