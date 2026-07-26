@@ -10,6 +10,11 @@
 
 ---
 
+## 2026-07-26 · 军棋面板飞出屏幕
+
+- **根因**：`CanvasLayer` 下直接 `PRESET_CENTER` + 负 position，Web 视口锚点基准错误。
+- **修复**：全屏 Control 根节点；面板 `TOP_LEFT` + 视口绝对居中；规则条文不再写死 520 宽。
+
 ## 2026-07-26 · 棋牌室空位傀儡闪现
 
 - **根因**：`chessroom._on_state` 把缺 `occupied` 当已占用，且 delta 未带上的实体整帧隐藏 → 空槽/远端闪现。

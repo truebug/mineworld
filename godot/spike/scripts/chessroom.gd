@@ -514,16 +514,24 @@ func _build_board_ui() -> void:
 	_board_layer.layer = 20
 	_board_layer.visible = false
 	add_child(_board_layer)
+	# CanvasLayer children need a full-rect Control root or center anchors break.
+	var root := Control.new()
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_board_layer.add_child(root)
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.55)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_board_layer.add_child(dim)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(dim)
 	var panel := PanelContainer.new()
 	_board_panel = panel
-	panel.set_anchors_preset(Control.PRESET_CENTER)
+	# Absolute position via _fit_board_panel (viewport-centered).
+	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	panel.custom_minimum_size = Vector2(560, 700)
-	panel.position = Vector2(-280, -350)
-	_board_layer.add_child(panel)
+	root.add_child(panel)
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 8)
 	panel.add_child(vbox)
@@ -562,7 +570,7 @@ func _build_board_ui() -> void:
 	_rules_label = Label.new()
 	_rules_label.visible = false
 	_rules_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_rules_label.custom_minimum_size = Vector2(520, 0)
+	_rules_label.custom_minimum_size = Vector2(0, 0)
 	_rules_label.add_theme_font_size_override("font_size", 14)
 	_rules_label.add_theme_color_override("font_color", Color(0.92, 0.9, 0.82))
 	_rules_label.text = MWi18n.t(
@@ -594,6 +602,9 @@ func _build_board_ui() -> void:
 	_result_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
 	vbox.add_child(_result_label)
 	_apply_board_fonts()
+	_fit_board_panel()
+	if not get_viewport().size_changed.is_connected(_fit_board_panel):
+		get_viewport().size_changed.connect(_fit_board_panel)
 
 
 func _apply_board_fonts() -> void:
@@ -619,6 +630,7 @@ func _toggle_junqi_rules() -> void:
 			if _rules_visible
 			else MWi18n.t("规则说明", "Rules")
 		)
+	_fit_board_panel()
 
 
 func _on_junqi_auto_layout() -> void:
@@ -697,28 +709,34 @@ func _junqi_model_r(view_r: int) -> int:
 
 
 func _fit_board_panel() -> void:
-	"""Resize centered panel so board + chrome stay inside the viewport."""
+	"""Resize panel and center it in the viewport (top-left anchors)."""
 	if _board_panel == null:
 		return
 	var vp := get_viewport().get_visible_rect().size
+	if vp.x < 32.0 or vp.y < 32.0:
+		return
+	var pw := 560.0
+	var ph := 700.0
 	if _view_game() == "junqi":
 		var bs := _junqi_board_size()
 		if _board_ctrl != null:
 			_board_ctrl.custom_minimum_size = bs
-		var pw := maxf(bs.x + 40.0, 300.0)
-		var ph := minf(vp.y - 16.0, bs.y + 148.0)
-		_board_panel.custom_minimum_size = Vector2(pw, ph)
-		_board_panel.size = Vector2(pw, ph)
-		_board_panel.position = Vector2(-pw * 0.5, -ph * 0.5)
-		return
-	var side := clampf(minf(vp.x - 64.0, vp.y - 168.0), 300.0, 520.0)
-	if _board_ctrl != null:
-		_board_ctrl.custom_minimum_size = Vector2(side, side)
-	var pw2 := side + 40.0
-	var ph2 := minf(vp.y - 16.0, side + 140.0)
-	_board_panel.custom_minimum_size = Vector2(pw2, ph2)
-	_board_panel.size = Vector2(pw2, ph2)
-	_board_panel.position = Vector2(-pw2 * 0.5, -ph2 * 0.5)
+		pw = clampf(bs.x + 48.0, 280.0, vp.x - 24.0)
+		ph = clampf(bs.y + 150.0, 320.0, vp.y - 24.0)
+	else:
+		var side := clampf(minf(vp.x - 64.0, vp.y - 168.0), 300.0, 520.0)
+		if _board_ctrl != null:
+			_board_ctrl.custom_minimum_size = Vector2(side, side)
+		pw = clampf(side + 40.0, 320.0, vp.x - 24.0)
+		ph = clampf(side + 140.0, 360.0, vp.y - 24.0)
+	if _rules_label != null:
+		_rules_label.custom_minimum_size = Vector2(maxf(pw - 36.0, 120.0), 0.0)
+	_board_panel.custom_minimum_size = Vector2(pw, ph)
+	_board_panel.size = Vector2(pw, ph)
+	_board_panel.position = Vector2(
+		(vp.x - pw) * 0.5,
+		(vp.y - ph) * 0.5
+	)
 
 
 func _draw_wood_frame(sz: Vector2, face: Color) -> void:
