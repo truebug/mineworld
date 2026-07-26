@@ -736,6 +736,7 @@ class ChessTable:
             "winner": self.board.winner,
             "cells": self.board.snapshot_cells(),
             "full": self.board.is_full(),
+            "win_line": self.board.win_line() if self.status == "finished" else [],
         }
 
     def seated_sids(self) -> list[str]:

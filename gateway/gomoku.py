@@ -65,6 +65,23 @@ class GomokuBoard:
     def snapshot_cells(self) -> list[int]:
         return list(self.cells)
 
+    def win_line(self) -> list[list[int]]:
+        """Cells of a length-≥5 run through the last move (empty if no winner)."""
+        if self.winner == EMPTY or not self.moves:
+            return []
+        x, y, color = self.moves[-1]
+        for dx, dy in _DIRS:
+            cells = [[x, y]]
+            for sign in (1, -1):
+                cx, cy = x + dx * sign, y + dy * sign
+                while self.at(cx, cy) == color:
+                    cells.append([cx, cy])
+                    cx += dx * sign
+                    cy += dy * sign
+            if len(cells) >= 5:
+                return cells
+        return [[x, y]]
+
     def _line_len(self, x: int, y: int, color: int) -> int:
         longest = 1
         for dx, dy in _DIRS:
