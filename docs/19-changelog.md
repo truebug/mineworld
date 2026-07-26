@@ -18,7 +18,7 @@
 - **顺手修复**：RMB 转头灵敏度（衰减 30→8/s、增益 0.4→0.6——慢速拖动不再死于 cmd tick 间隔）。
 - **验证**：lint 0 findings；boot 检查扩至 5 场景全 BOOT OK。
 - **热修**（同日验收反馈）：① CameraRig 子节点缺 `Camera3D`（`camera==null` → 全黑；headless 崩在渲染前，boot 检查未能发现）；② 场景换 `BG_COLOR` 纯色背景去 ProceduralSky；③ 补 `MW_SET_SHELL_UI(true,false,true)` 切换 DOM 壳层；④ 门 P transform 旋转 90° 贴合东墙。**教训**：新建 3D 场景必须查 boot log 的 `Node not found`，而非只看 SCRIPT ERROR 计数。
-- **热修Ⅱ**（同日验收反馈）：① Web 无法移动——每帧 poll `window._mw_keys` 路径（冗余键桥，和 hub/main 同款）；② 变成 Guest——hub 存 nick 到 `MWi18n.set_meta("mw_nick")`，chessroom `_ready` 读回写 NameTag。
+- **热修Ⅲ**（同日验收反馈）：① Web 无法移动根因——`_held_codes = _held_codes.duplicate()` 每帧冲空键状态，去掉该行即恢复（mw_key_bridge 数据进同一 dict 不复写）；② 昵称——前置 URL `?nick` 直读（#051D 来自门户，不经过 hub profile）。
 
 ## 2026-07-24 · Hub WoW 式右键转头（turn-drive）
 

@@ -46,6 +46,14 @@ func _ready() -> void:
 		var saved := str(MWi18n.get_meta("mw_nick"))
 		if saved != "":
 			own_tag.text = saved
+	# Web: also read ?nick= from URL (portal passes full nick here).
+	if _is_web and own_tag != null:
+		var url_nick := str(JavaScriptBridge.eval(
+			"(function(){try{return new URLSearchParams(location.search).get('nick')||''}catch(e){return ''}})()",
+			true
+		)).strip_edges()
+		if url_nick != "":
+			own_tag.text = url_nick
 
 
 func _install_web_key_bridge() -> void:
@@ -105,7 +113,6 @@ func _on_escape() -> void:
 
 func _process(_delta: float) -> void:
 	if _is_web and _web_mw_bridge:
-		_held_codes = _held_codes.duplicate()
 		var raw := str(JavaScriptBridge.eval(
 			"(function(){try{return JSON.stringify(window._mw_keys||{})}catch(e){return '{}'}}())",
 			true
