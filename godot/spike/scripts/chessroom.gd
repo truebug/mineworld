@@ -14,6 +14,7 @@ var _is_web := false
 var _held_codes := {}
 var _web_key_cb
 var _web_blur_cb
+var _web_mw_bridge := false
 var _board_layer: CanvasLayer = null
 var _board_ctrl: Control = null
 var _status_label: Label = null
@@ -30,6 +31,7 @@ func _ready() -> void:
 		camera_rig.set_target(avatar)
 	if _is_web:
 		_install_web_key_bridge()
+		_web_mw_bridge = true
 		# Switch DOM shell to play chrome (hub keeps its own overlay set).
 		JavaScriptBridge.eval(
 			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(true,false,true);}",
@@ -38,6 +40,12 @@ func _ready() -> void:
 	_build_board_ui()
 	MWTransition.notify_arrived()
 	print("[MW] chessroom ready (offline, gomoku vs AI)")
+	# Recover nick from hub (MWi18n meta survives scene change).
+	var own_tag := avatar.get_node_or_null("NameTag") as Label3D
+	if own_tag != null and MWi18n.has_meta("mw_nick"):
+		var saved := str(MWi18n.get_meta("mw_nick"))
+		if saved != "":
+			own_tag.text = saved
 
 
 func _install_web_key_bridge() -> void:
@@ -96,6 +104,16 @@ func _on_escape() -> void:
 
 
 func _process(_delta: float) -> void:
+	if _is_web and _web_mw_bridge:
+		_held_codes = _held_codes.duplicate()
+		var raw := str(JavaScriptBridge.eval(
+			"(function(){try{return JSON.stringify(window._mw_keys||{})}catch(e){return '{}'}}())",
+			true
+		))
+		var parsed: Variant = JSON.parse_string(raw)
+		if typeof(parsed) == TYPE_DICTIONARY:
+			for k in (parsed as Dictionary).keys():
+				_held_codes[str(k)] = bool((parsed as Dictionary)[k])
 	var vx := 0.0
 	var vy := 0.0
 	var yaw_rate := 0.0

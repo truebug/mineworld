@@ -332,6 +332,7 @@ func _new_local_id() -> String:
 func _apply_profile_ui() -> void:
 	"""Refresh top-right pilot card from _profile."""
 	var nick := str(_profile.get("nickname", "Guest"))
+	MWi18n.set_meta("mw_nick", nick)
 	var pid := str(_profile.get("id", "?"))
 	if nick_edit != null:
 		nick_edit.text = nick
