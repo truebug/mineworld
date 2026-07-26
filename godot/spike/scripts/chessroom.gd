@@ -52,6 +52,7 @@ var _cmd_timer := 0.0
 var _puppets: Dictionary = {}
 var _profile: Dictionary = {}
 var _board_layer: CanvasLayer = null
+var _board_panel: PanelContainer = null
 var _board_ctrl: Control = null
 var _status_label: Label = null
 var _title_label: Label = null
@@ -477,6 +478,7 @@ func _toggle_board() -> void:
 	_rules_visible = false
 	ws.send_cmd({"action": "chess_sit", "table_id": _view_table_id})
 	_board_layer.visible = true
+	_fit_board_panel()
 	_refresh_board_from_authority()
 
 
@@ -502,6 +504,7 @@ func _build_board_ui() -> void:
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_board_layer.add_child(dim)
 	var panel := PanelContainer.new()
+	_board_panel = panel
 	panel.set_anchors_preset(Control.PRESET_CENTER)
 	panel.custom_minimum_size = Vector2(560, 700)
 	panel.position = Vector2(-280, -350)
@@ -650,7 +653,48 @@ func _board_px() -> float:
 
 
 func _junqi_board_size() -> Vector2:
-	return Vector2(300, 620)
+	"""Fit 12×5 board into viewport so chrome + status stay on screen."""
+	var vp := get_viewport().get_visible_rect().size
+	var chrome := 176.0  # title + buttons + status + panel pad
+	var max_h := clampf(vp.y - chrome, 260.0, 460.0)
+	var max_w := clampf(vp.x - 56.0, 170.0, 280.0)
+	var h := max_h
+	var w := h * (5.0 / 12.2)
+	if w > max_w:
+		w = max_w
+		h = w * (12.2 / 5.0)
+	return Vector2(floorf(w), floorf(h))
+
+
+func _junqi_flip() -> bool:
+	"""Put local player's half at the bottom of the screen."""
+	return _my_junqi_side() == "black"
+
+
+func _junqi_view_r(model_r: int) -> int:
+	return (JUNQI_ROWS - 1 - model_r) if _junqi_flip() else model_r
+
+
+func _junqi_model_r(view_r: int) -> int:
+	return (JUNQI_ROWS - 1 - view_r) if _junqi_flip() else view_r
+
+
+func _fit_board_panel() -> void:
+	"""Resize centered panel so junqi board does not clip the viewport bottom."""
+	if _board_panel == null:
+		return
+	var vp := get_viewport().get_visible_rect().size
+	if _view_game() == "junqi":
+		var bs := _junqi_board_size()
+		var pw := maxf(bs.x + 40.0, 300.0)
+		var ph := minf(vp.y - 16.0, bs.y + 148.0)
+		_board_panel.custom_minimum_size = Vector2(pw, ph)
+		_board_panel.size = Vector2(pw, ph)
+		_board_panel.position = Vector2(-pw * 0.5, -ph * 0.5)
+	else:
+		_board_panel.custom_minimum_size = Vector2(560, 700)
+		_board_panel.size = Vector2(560, 700)
+		_board_panel.position = Vector2(-280, -350)
 
 
 func _view_detail() -> Dictionary:
@@ -748,6 +792,7 @@ func _sync_junqi_chrome(status: String) -> void:
 		_resign_btn.visible = seated and status == "playing"
 	if _hand_btn != null:
 		_hand_btn.visible = seated and status in ["layout", "playing"]
+	_fit_board_panel()
 	if _board_ctrl != null:
 		if is_jq:
 			_board_ctrl.custom_minimum_size = _junqi_board_size()
@@ -989,58 +1034,132 @@ func _draw_board() -> void:
 
 
 func _draw_junqi_board() -> void:
-	"""12×5 fog board; own pieces show rank labels."""
+	"""Wood-framed green board + tile pieces; local side at bottom."""
 	var detail := _view_detail()
 	var sz := _junqi_board_size()
-	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.78, 0.82, 0.7))
-	var cw := sz.x / float(JUNQI_COLS + 1)
-	var ch := sz.y / float(JUNQI_ROWS + 1)
+	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.42, 0.26, 0.12))
+	var pad := 6.0
+	var inner := Rect2(Vector2(pad, pad), sz - Vector2(pad, pad) * 2.0)
+	_board_ctrl.draw_rect(inner, Color(0.52, 0.68, 0.42))
+	var m: Dictionary = _junqi_layout_metrics()
+	var cw: float = m["cw"]
+	var ch: float = m["ch"]
+	var origin: Vector2 = m["origin"]
 	var cells: Array = detail.get("cells", [])
 	var by_key: Dictionary = {}
 	for cell in cells:
 		if typeof(cell) != TYPE_DICTIONARY:
 			continue
-		var r := int(cell.get("r", -1))
-		var c := int(cell.get("c", -1))
-		by_key["%d,%d" % [r, c]] = cell
+		by_key["%d,%d" % [int(cell.get("r", -1)), int(cell.get("c", -1))]] = cell
+	for c in JUNQI_COLS:
+		var vr5 := _junqi_view_r(5)
+		var vr6 := _junqi_view_r(6)
+		var y_mid := origin.y + ch * (float(vr5 + vr6) * 0.5 + 0.5)
+		if c in [1, 3]:
+			var cx := origin.x + cw * (float(c) + 0.5)
+			_board_ctrl.draw_rect(
+				Rect2(cx - cw * 0.42, y_mid - ch * 0.22, cw * 0.84, ch * 0.44),
+				Color(0.45, 0.36, 0.22)
+			)
 	for r in JUNQI_ROWS:
 		for c in JUNQI_COLS:
-			var center := Vector2(cw * float(c + 1), ch * float(r + 1))
-			var half := Vector2(cw, ch) * 0.46
+			var vr := _junqi_view_r(r)
+			var center := origin + Vector2(cw * (float(c) + 0.5), ch * (float(vr) + 0.5))
+			var half := Vector2(cw, ch) * 0.42
 			var rect := Rect2(center - half, half * 2.0)
 			var cell: Dictionary = by_key.get("%d,%d" % [r, c], {})
 			var kind := str(cell.get("kind", "station"))
-			var fill := Color(0.88, 0.9, 0.8)
 			if kind == "hq":
-				fill = Color(0.95, 0.85, 0.45)
+				_board_ctrl.draw_rect(rect, Color(0.78, 0.62, 0.28))
+				_board_ctrl.draw_rect(rect.grow(-2.0), Color(0.9, 0.78, 0.4), false, 1.5)
 			elif kind == "camp":
-				fill = Color(0.55, 0.75, 0.95)
-			# Mountain gap tint on front rows cols 1,3
-			if r in [5, 6] and c in [1, 3]:
-				fill = Color(0.55, 0.5, 0.42)
-			_board_ctrl.draw_rect(rect, fill)
-			_board_ctrl.draw_rect(rect, Color(0.25, 0.22, 0.18), false, 1.0)
+				_board_ctrl.draw_circle(center, min(cw, ch) * 0.38, Color(0.62, 0.78, 0.92))
+				_board_ctrl.draw_arc(center, min(cw, ch) * 0.38, 0, TAU, 28, Color(0.25, 0.4, 0.55), 1.6)
+			else:
+				_board_ctrl.draw_rect(rect, Color(0.58, 0.74, 0.48))
+				_board_ctrl.draw_rect(rect, Color(0.28, 0.38, 0.22), false, 1.0)
 			if _sel.x == c and _sel.y == r:
-				_board_ctrl.draw_rect(rect.grow(-2.0), Color(0.2, 0.95, 0.45, 0.45))
-			var piece: Variant = cell.get("piece", null)
+				_board_ctrl.draw_rect(rect.grow(1.0), Color(0.95, 0.85, 0.2, 0.55), false, 2.5)
+	_draw_junqi_rails(origin, cw, ch)
+	for r in JUNQI_ROWS:
+		for c in JUNQI_COLS:
+			var cell2: Dictionary = by_key.get("%d,%d" % [r, c], {})
+			var piece: Variant = cell2.get("piece", null)
 			if typeof(piece) != TYPE_DICTIONARY or piece == null:
 				continue
-			var side := str(piece.get("side", ""))
-			var ptype := str(piece.get("type", "?"))
-			var chip := Color(0.15, 0.15, 0.18) if side == "black" else Color(0.82, 0.22, 0.18)
-			_board_ctrl.draw_circle(center, min(cw, ch) * 0.36, chip)
-			var label := str(JUNQI_LABEL.get(ptype, ptype))
-			var font: Font = MWFonts.font() if MWFonts != null else ThemeDB.fallback_font
-			var fs := int(min(cw, ch) * 0.42)
-			_board_ctrl.draw_string(
-				font,
-				center + Vector2(-fs * 0.35, fs * 0.35),
-				label,
-				HORIZONTAL_ALIGNMENT_LEFT,
-				-1,
-				fs,
-				Color(1, 1, 1) if side == "black" else Color(1, 0.95, 0.85)
+			var vr2 := _junqi_view_r(r)
+			var center2 := origin + Vector2(cw * (float(c) + 0.5), ch * (float(vr2) + 0.5))
+			_draw_junqi_tile(
+				center2,
+				min(cw, ch),
+				str(piece.get("side", "")),
+				str(piece.get("type", "?"))
 			)
+
+
+func _draw_junqi_rails(origin: Vector2, cw: float, ch: float) -> void:
+	"""Sketch railway rings on both halves (visual cue, not authority)."""
+	var col_rail := Color(0.2, 0.18, 0.12, 0.75)
+	var segs: Array = [
+		[[1, 0], [1, 4]], [[5, 0], [5, 4]], [[1, 0], [5, 0]], [[1, 4], [5, 4]],
+		[[6, 0], [6, 4]], [[10, 0], [10, 4]], [[6, 0], [10, 0]], [[6, 4], [10, 4]],
+		[[5, 0], [6, 0]], [[5, 4], [6, 4]],
+	]
+	for seg in segs:
+		var a: Array = seg[0]
+		var b: Array = seg[1]
+		var p0 := origin + Vector2(
+			cw * (float(a[1]) + 0.5),
+			ch * (float(_junqi_view_r(int(a[0]))) + 0.5)
+		)
+		var p1 := origin + Vector2(
+			cw * (float(b[1]) + 0.5),
+			ch * (float(_junqi_view_r(int(b[0]))) + 0.5)
+		)
+		_board_ctrl.draw_line(p0, p1, col_rail, 2.0)
+
+
+func _draw_junqi_tile(center: Vector2, cell: float, side: String, ptype: String) -> void:
+	"""Draw a bevelled rectangular tile like physical junqi pieces."""
+	var tw := cell * 0.72
+	var th := cell * 0.58
+	var rect := Rect2(center - Vector2(tw, th) * 0.5, Vector2(tw, th))
+	_board_ctrl.draw_rect(Rect2(rect.position + Vector2(1.5, 2.0), rect.size), Color(0, 0, 0, 0.35))
+	var body := Color(0.12, 0.12, 0.14) if side == "black" else Color(0.78, 0.18, 0.14)
+	var rim := Color(0.35, 0.35, 0.38) if side == "black" else Color(0.95, 0.45, 0.35)
+	_board_ctrl.draw_rect(rect, body)
+	_board_ctrl.draw_rect(rect, rim, false, 1.4)
+	_board_ctrl.draw_line(
+		rect.position + Vector2(1, 1),
+		rect.position + Vector2(rect.size.x - 1, 1),
+		Color(1, 1, 1, 0.22),
+		1.0
+	)
+	var label := str(JUNQI_LABEL.get(ptype, ptype))
+	var font: Font = MWFonts.font() if MWFonts != null else ThemeDB.fallback_font
+	var fs := int(clampf(min(tw, th) * 0.55, 10.0, 22.0))
+	var text_col := Color(0.95, 0.92, 0.75) if side == "black" else Color(1.0, 0.96, 0.88)
+	var text_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+	_board_ctrl.draw_string(
+		font,
+		center - text_size * 0.5 + Vector2(0, text_size.y * 0.35),
+		label,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		fs,
+		text_col
+	)
+
+
+func _junqi_layout_metrics() -> Dictionary:
+	"""Shared draw/hit metrics for junqi board."""
+	var sz := _junqi_board_size()
+	var pad := 6.0
+	var inner := Rect2(Vector2(pad, pad), sz - Vector2(pad, pad) * 2.0)
+	var cw := inner.size.x / float(JUNQI_COLS + 0.35)
+	var ch := inner.size.y / float(JUNQI_ROWS + 0.35)
+	var origin := inner.position + Vector2(cw * 0.175, ch * 0.175)
+	return {"origin": origin, "cw": cw, "ch": ch}
 
 
 func _cell_rect(x: int, y: int, c: float) -> Rect2:
@@ -1113,13 +1232,15 @@ func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
 	var my := _my_junqi_side()
 	if my == "":
 		return
-	var sz := _junqi_board_size()
-	var cw := sz.x / float(JUNQI_COLS + 1)
-	var ch := sz.y / float(JUNQI_ROWS + 1)
-	var col := int(round(pos.x / cw)) - 1
-	var row := int(round(pos.y / ch)) - 1
-	if col < 0 or row < 0 or col >= JUNQI_COLS or row >= JUNQI_ROWS:
+	var m: Dictionary = _junqi_layout_metrics()
+	var origin: Vector2 = m["origin"]
+	var cw: float = m["cw"]
+	var ch: float = m["ch"]
+	var col := int(floor((pos.x - origin.x) / cw))
+	var view_r := int(floor((pos.y - origin.y) / ch))
+	if col < 0 or view_r < 0 or col >= JUNQI_COLS or view_r >= JUNQI_ROWS:
 		return
+	var row := _junqi_model_r(view_r)
 	if status == "layout":
 		var ready: Dictionary = d.get("layout_ready", {}) as Dictionary
 		if bool(ready.get(my, false)):
