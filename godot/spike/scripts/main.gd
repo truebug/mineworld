@@ -247,6 +247,49 @@ func _ensure_hud_layout() -> void:
 	MWHud.apply_layout(self)
 
 
+func _leave_to_hub() -> void:
+	"""Esc → Hub; strip ?replay=/?room= so Hub does not re-route or join play rooms."""
+	# Stop cmds + drop play room before scene swap (avoids stale WS / sticky keys).
+	if ws != null:
+		ws.close_link()
+	if _is_web:
+		JavaScriptBridge.eval(
+			"(function(){try{"
+			+ "if(typeof window.MW_CLEAR_MISSION==='function'){window.MW_CLEAR_MISSION();}"
+			+ "var el=document.getElementById('mw-success');"
+			+ "if(el){el.classList.remove('show','fail');}"
+			+ "window._mw_keys=Object.create(null);"
+			+ "var u=new URL(location.href);"
+			+ "u.searchParams.delete('replay');"
+			+ "u.searchParams.delete('room');"
+			+ "history.replaceState({},'',u.pathname+u.search+u.hash);"
+			+ "}catch(e){}})()",
+			true
+		)
+	_held.clear()
+	MWWebInput.clear()
+	MWTransition.go("res://demo_hub.tscn", "Hub", "#8a93a3")
+
+
+func _on_camera_view_changed(label: String) -> void:
+	"""Show camera mode on HUD when V cycles (CameraRig SSOT)."""
+	_status_line = "相机 · Camera: %s（V 切换 · C 回正）" % label
+	_update_hud()
+
+
+func _sync_first_person_mesh() -> void:
+	"""Hide own chassis in FP so the camera is not inside the hull."""
+	var own := _own_mech()
+	if own == null:
+		return
+	var fp := false
+	if camera_rig != null and camera_rig.has_method("is_first_person"):
+		fp = bool(camera_rig.is_first_person())
+	own.visible = not fp
+
+
+
+
 func _resolve_gateway_url() -> String:
 	"""Prefer window.MINEWORLD_GATEWAY on Web; else exported gateway_url."""
 	if _is_web:
