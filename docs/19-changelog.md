@@ -71,7 +71,8 @@
 - **顺手修复**：RMB 转头灵敏度（衰减 30→8/s、增益 0.4→0.6——慢速拖动不再死于 cmd tick 间隔）。
 - **验证**：lint 0 findings；boot 检查扩至 5 场景全 BOOT OK。
 - **热修**（同日验收反馈）：① CameraRig 子节点缺 `Camera3D`（`camera==null` → 全黑；headless 崩在渲染前，boot 检查未能发现）；② 场景换 `BG_COLOR` 纯色背景去 ProceduralSky；③ 补 `MW_SET_SHELL_UI(true,false,true)` 切换 DOM 壳层；④ 门 P transform 旋转 90° 贴合东墙。**教训**：新建 3D 场景必须查 boot log 的 `Node not found`，而非只看 SCRIPT ERROR 计数。
-- **重构 MWWebInput**（同日）：将 Web 键桥抽象为 MWWebInput autoload 单例——DOM 监听器安装一次、跨场景持久化；is_pressed(keyCode)/web_key_event 信号供三场景同源引用。hub.gd _process/_send_velocity_cmd/箭头键全切 MWWebInput.is_pressed()；on_dom_key_event/sync_mw_keys/web_key 全删除。chessroom 不再自建键桥副本。main.gd 待续。
+- **重构 MWWebInput**（同日）：MWWebInput autoload 单例——DOM 监听器一次安装跨场景持久化；is_pressed/web_key_event 供三场景同源引用。hub.gd 全切 MWWebInput.is_pressed()，on_dom_key_event/sync_mw_keys/web_key 全删除；chessroom 不再自建键桥副本。
+- **main.gd 完成**（07-27）：最后一处 DOM 键桥替换——T/R/Space/Escape 走 _on_main_key_event；五子棋/跳棋/军棋 UI 修正（横置/山界/瓦片/居中）。
 - **根因热修 · 棋牌室 WASD 无效**（同日）：多次改键桥无效——真因是 `avatar_puppet._process` 在 `_has_state==false` 时直接 return，而棋牌室纯离线**从不** `push_state`，故 `local_predict`/`set_local_cmd` 永不积分。修复：离线 `local_predict` 自举 pose 锚点、设 `_authority_live`，无权威流时跳过 soft-pull（否则会每帧拽回出生点把位移抵消）。**随后已对齐在线 presence**，默认路径走 `push_state`。
 
 ## 2026-07-26 · 棋牌室多桌 + 跳棋 + 壳层说明
