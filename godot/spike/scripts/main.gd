@@ -18,13 +18,6 @@ const TURN_SPEED_RACE := 1.0
 const STRAFE_SPEED_RACE := 0.35
 ## R2 analog drive (keyboard time-for-axis; gamepad native axis).
 const CMD_HZ := 20.0
-const _WEB_BLOCK_CODES := {
-	"KeyW": true, "KeyA": true, "KeyS": true, "KeyD": true,
-	"KeyQ": true, "KeyE": true, "KeyT": true, "KeyR": true,
-	"KeyV": true, "KeyC": true, "KeyX": true,
-	"ArrowUp": true, "ArrowDown": true, "ArrowLeft": true, "ArrowRight": true,
-	"Space": true,
-}
 
 @export var level_id := "demo_workshop"
 @export var gateway_url := "ws://127.0.0.1:8765"
@@ -56,10 +49,7 @@ var _mission_done := false
 var _status_line := ""
 var _is_web := false
 ## Must keep refs or JS callbacks are garbage-collected.
-var _web_key_cb
-var _web_blur_cb
 ## KeyboardEvent.code → pressed (web)
-var _held_codes: Dictionary = {}
 var _held: Dictionary = {}
 var _web_key_logged := false
 ## entity_id → MWMechPuppet
@@ -117,7 +107,8 @@ func _ready() -> void:
 	if not get_viewport().size_changed.is_connected(_ensure_hud_layout):
 		get_viewport().size_changed.connect(_ensure_hud_layout)
 	if _is_web:
-		_install_web_keyboard_bridge()
+		if not MWWebInput.web_key_event.is_connected(_on_main_key_event):
+			MWWebInput.web_key_event.connect(_on_main_key_event)
 		_sync_web_city_seed_ui()
 		# Hide arm UI before/with play chrome (city has no arm joints).
 		_sync_web_joints_ui()
@@ -254,102 +245,6 @@ func _resolve_hud_label() -> Label:
 func _ensure_hud_layout() -> void:
 	"""Desktop/web HUD surface fixup (delegates to MWHud)."""
 	MWHud.apply_layout(self)
-
-
-func _install_web_keyboard_bridge() -> void:
-	"""Bind document keydown/keyup on the page (single-thread Web only)."""
-	_web_key_cb = JavaScriptBridge.create_callback(_on_dom_key_event)
-	_web_blur_cb = JavaScriptBridge.create_callback(_on_dom_blur)
-	var document = JavaScriptBridge.get_interface("document")
-	var window_obj = JavaScriptBridge.get_interface("window")
-	if document == null or window_obj == null:
-		push_warning("[MW] JavaScriptBridge document/window missing")
-		return
-	document.addEventListener("keydown", _web_key_cb)
-	document.addEventListener("keyup", _web_key_cb)
-	window_obj.addEventListener("blur", _web_blur_cb)
-	print("[MW] key bridge: document listeners registered")
-
-
-func _on_dom_key_event(args: Array) -> void:
-	"""DOM keydown/keyup → update _held_codes. args[0] is the KeyboardEvent."""
-	if args.is_empty():
-		return
-	var event = args[0]
-	var code := str(event.code)
-	var down := str(event.type) == "keydown"
-	_held_codes[code] = down
-	if not _web_key_logged and down:
-		_web_key_logged = true
-		print("[MW] first key from document: ", code)
-	if down and not bool(event.repeat) and camera_rig != null and camera_rig.has_method("handle_code"):
-		camera_rig.handle_code(code, true)
-	if _WEB_BLOCK_CODES.has(code):
-		event.preventDefault()
-	if down and not bool(event.repeat):
-		match code:
-			"KeyT":
-				if not _controlled and not _mission_done and ws.session_id != "":
-					ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
-			"KeyR":
-				if _controlled and ws.session_id != "":
-					ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
-			"Space":
-				if _replay != null and _replay.is_active():
-					_replay.toggle_pause()
-			"Escape":
-				_leave_to_hub()
-
-
-func _leave_to_hub() -> void:
-	"""Esc → Hub; strip ?replay=/?room= so Hub does not re-route or join play rooms."""
-	# Stop cmds + drop play room before scene swap (avoids stale WS / sticky keys).
-	if ws != null:
-		ws.close_link()
-	if _is_web:
-		JavaScriptBridge.eval(
-			"(function(){try{"
-			+ "if(typeof window.MW_CLEAR_MISSION==='function'){window.MW_CLEAR_MISSION();}"
-			+ "var el=document.getElementById('mw-success');"
-			+ "if(el){el.classList.remove('show','fail');}"
-			+ "window._mw_keys=Object.create(null);"
-			+ "var u=new URL(location.href);"
-			+ "u.searchParams.delete('replay');"
-			+ "u.searchParams.delete('room');"
-			+ "history.replaceState({},'',u.pathname+u.search+u.hash);"
-			+ "}catch(e){}})()",
-			true
-		)
-	_held.clear()
-	_held_codes.clear()
-	MWTransition.go("res://demo_hub.tscn", "Hub", "#8a93a3")
-
-
-func _on_camera_view_changed(label: String) -> void:
-	"""Show camera mode on HUD when V cycles (CameraRig SSOT)."""
-	_status_line = "相机 · Camera: %s（V 切换 · C 回正）" % label
-	_update_hud()
-
-
-func _sync_first_person_mesh() -> void:
-	"""Hide own chassis in FP so the camera is not inside the hull."""
-	var own := _own_mech()
-	if own == null:
-		return
-	var fp := false
-	if camera_rig != null and camera_rig.has_method("is_first_person"):
-		fp = bool(camera_rig.is_first_person())
-	own.visible = not fp
-
-
-func _on_dom_blur(_args: Array) -> void:
-	"""Clear held keys when the browser tab loses focus."""
-	_held_codes.clear()
-
-
-func _web_key(code: String) -> bool:
-	"""True if this KeyboardEvent.code is held."""
-	return bool(_held_codes.get(code, false))
 
 
 func _resolve_gateway_url() -> String:
@@ -651,7 +546,7 @@ func _bounce_yard_full_to_hub() -> void:
 			true
 		)
 	_held.clear()
-	_held_codes.clear()
+	MWWebInput.clear()
 	MWTransition.go(
 		"res://demo_hub.tscn",
 		MWi18n.t("房间已满", "Room full"),
@@ -695,7 +590,7 @@ func _on_state(tick: int, t_sim: float, payload: Dictionary) -> void:
 	var own = _own_mech()
 	if tick - _last_log_tick >= 20:
 		_last_log_tick = tick
-		var held_w := _web_key("KeyW") if _is_web else _key_down(KEY_W)
+		var held_w := MWWebInput.is_pressed("KeyW") if _is_web else _key_down(KEY_W)
 		var mw_x := float(own.get("last_mw_x")) if "last_mw_x" in own else 0.0
 		var mw_y := float(own.get("last_mw_y")) if "last_mw_y" in own else 0.0
 		print(
@@ -713,13 +608,13 @@ func _process(delta: float) -> void:
 		if _is_web and camera_rig != null and camera_rig.has_method("pan_axes"):
 			var pan_r := 0.0
 			var pan_f := 0.0
-			if _web_key("ArrowRight"):
+			if MWWebInput.is_pressed("ArrowRight"):
 				pan_r += 1.0
-			if _web_key("ArrowLeft"):
+			if MWWebInput.is_pressed("ArrowLeft"):
 				pan_r -= 1.0
-			if _web_key("ArrowUp"):
+			if MWWebInput.is_pressed("ArrowUp"):
 				pan_f += 1.0
-			if _web_key("ArrowDown"):
+			if MWWebInput.is_pressed("ArrowDown"):
 				pan_f -= 1.0
 			camera_rig.pan_axes(pan_r, pan_f, delta)
 		_replay.advance(delta)
@@ -728,13 +623,13 @@ func _process(delta: float) -> void:
 	if _is_web and camera_rig != null and camera_rig.has_method("pan_axes"):
 		var pan_r := 0.0
 		var pan_f := 0.0
-		if _web_key("ArrowRight"):
+		if MWWebInput.is_pressed("ArrowRight"):
 			pan_r += 1.0
-		if _web_key("ArrowLeft"):
+		if MWWebInput.is_pressed("ArrowLeft"):
 			pan_r -= 1.0
-		if _web_key("ArrowUp"):
+		if MWWebInput.is_pressed("ArrowUp"):
 			pan_f += 1.0
-		if _web_key("ArrowDown"):
+		if MWWebInput.is_pressed("ArrowDown"):
 			pan_f -= 1.0
 		camera_rig.pan_axes(pan_r, pan_f, delta)
 	_sync_first_person_mesh()
@@ -897,13 +792,13 @@ func _send_velocity_cmd() -> void:
 	var e := false
 	var x_rev := false
 	if _is_web:
-		w = _web_key("KeyW")
-		s = _web_key("KeyS")
-		a = _web_key("KeyA")
-		d = _web_key("KeyD")
-		q = _web_key("KeyQ")
-		e = _web_key("KeyE")
-		x_rev = _web_key("KeyX")
+		w = MWWebInput.is_pressed("KeyW")
+		s = MWWebInput.is_pressed("KeyS")
+		a = MWWebInput.is_pressed("KeyA")
+		d = MWWebInput.is_pressed("KeyD")
+		q = MWWebInput.is_pressed("KeyQ")
+		e = MWWebInput.is_pressed("KeyE")
+		x_rev = MWWebInput.is_pressed("KeyX")
 	else:
 		w = _key_down(KEY_W)
 		s = _key_down(KEY_S)
@@ -1091,7 +986,7 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	if space_id != "":
 		text += "space_id: %s · route: pms_space\n" % space_id
 	if _is_web:
-		text += "input: document→godot | heldW=%s\n" % _web_key("KeyW")
+		text += "input: document→godot | heldW=%s\n" % MWWebInput.is_pressed("KeyW")
 	if _status_line != "":
 		text += "%s\n" % _status_line
 	if _is_place_il_level() and not _mission_done and t_sim > 0.0:
@@ -1134,3 +1029,23 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 		_hud.push_web_hud(text)
 	elif hud_label != null:
 		hud_label.text = text
+
+
+func _on_main_key_event(code: String, down: bool) -> void:
+	"""Scene-specific keys from MWWebInput: camera C/V + T/R/Space/Escape."""
+	if not down:
+		return
+	if camera_rig != null and camera_rig.has_method("handle_code"):
+		camera_rig.handle_code(code, true)
+	match code:
+		"KeyT":
+			if not _controlled and not _mission_done and ws.session_id != "":
+				ws.send_cmd({"action": "take_control", "entity_id": _controlled_entity_id})
+		"KeyR":
+			if _controlled and ws.session_id != "":
+				ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
+		"Space":
+			if _replay != null and _replay.is_active():
+				_replay.toggle_pause()
+		"Escape":
+			_leave_to_hub()
