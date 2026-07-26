@@ -755,7 +755,9 @@ func _on_tips_gui_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	"""Match play-level controls: WASD strafe + QE turn; arrows pan camera (Web)."""
 	# Mouse-turn decays each frame; fresh deltas re-arm it (works on Web too).
-	_rmb_turn_rate = move_toward(_rmb_turn_rate, 0.0, 30.0 * delta)
+	# 8/s (not 30): at 20Hz cmd ticks a 30/s decay killed slow-drag rates
+	# between frames, making small mouse movements feel dead.
+	_rmb_turn_rate = move_toward(_rmb_turn_rate, 0.0, 8.0 * delta)
 	if _entering_door:
 		return
 	if _is_web:
@@ -1535,7 +1537,7 @@ func _on_turn_drag_started() -> void:
 func _on_turn_dragged(dx: float) -> void:
 	"""Horizontal mouse delta while RMB held → yaw rate for the next cmd tick.
 	0.4 ≈ px-per-frame → rad/s at 20Hz cmd rate, clamped to keyboard turn speed."""
-	_rmb_turn_rate = clampf(-dx * 0.4, -TURN_SPEED, TURN_SPEED)
+	_rmb_turn_rate = clampf(-dx * 0.6, -TURN_SPEED, TURN_SPEED)
 
 
 func _unhandled_input(event: InputEvent) -> void:
