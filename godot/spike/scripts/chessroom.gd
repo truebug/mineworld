@@ -11,10 +11,6 @@ const GomokuScript := preload("res://scripts/gomoku.gd")
 @onready var camera_rig: Node3D = $CameraRig
 
 var _is_web := false
-var _held_codes := {}
-var _web_key_cb
-var _web_blur_cb
-var _web_mw_bridge := false
 var _board_layer: CanvasLayer = null
 var _board_ctrl: Control = null
 var _status_label: Label = null
@@ -30,8 +26,9 @@ func _ready() -> void:
 	if camera_rig != null and camera_rig.has_method("set_target"):
 		camera_rig.set_target(avatar)
 	if _is_web:
-		_install_web_key_bridge()
-		_web_mw_bridge = true
+		# Shared Web key bridge (autoload singleton).
+		if not MWWebInput.web_key_event.is_connected(_on_web_key_event):
+			MWWebInput.web_key_event.connect(_on_web_key_event)
 		# Switch DOM shell to play chrome (hub keeps its own overlay set).
 		JavaScriptBridge.eval(
 			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(true,false,true);}",
@@ -56,39 +53,14 @@ func _ready() -> void:
 			own_tag.text = url_nick
 
 
-func _install_web_key_bridge() -> void:
-	_web_key_cb = JavaScriptBridge.create_callback(_on_dom_key_event)
-	_web_blur_cb = JavaScriptBridge.create_callback(_on_dom_blur)
-	var document = JavaScriptBridge.get_interface("document")
-	var window_obj = JavaScriptBridge.get_interface("window")
-	if document == null or window_obj == null:
-		return
-	document.addEventListener("keydown", _web_key_cb)
-	document.addEventListener("keyup", _web_key_cb)
-	window_obj.addEventListener("blur", _web_blur_cb)
-
-
-func _on_dom_key_event(args: Array) -> void:
-	if args.is_empty():
-		return
-	var event = args[0]
-	var code := str(event.code)
-	var down := str(event.type) == "keydown"
-	_held_codes[code] = down
-	if down and code == "KeyF":
-		_toggle_board()
-	elif down and code == "Escape":
-		_on_escape()
-	if code in ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]:
-		event.preventDefault()
-
-
-func _on_dom_blur(_args: Array) -> void:
-	_held_codes.clear()
-
-
-func _key(code: String) -> bool:
-	return bool(_held_codes.get(code, false))
+func _on_web_key_event(code: String, down: bool) -> void:
+	"""Handle scene-specific keys from MWWebInput singleton."""
+	if down:
+		match code:
+			"KeyF":
+				_toggle_board()
+			"Escape":
+				_on_escape()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -112,31 +84,22 @@ func _on_escape() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _is_web and _web_mw_bridge:
-		var raw := str(JavaScriptBridge.eval(
-			"(function(){try{return JSON.stringify(window._mw_keys||{})}catch(e){return '{}'}}())",
-			true
-		))
-		var parsed: Variant = JSON.parse_string(raw)
-		if typeof(parsed) == TYPE_DICTIONARY:
-			for k in (parsed as Dictionary).keys():
-				_held_codes[str(k)] = bool((parsed as Dictionary)[k])
 	var vx := 0.0
 	var vy := 0.0
 	var yaw_rate := 0.0
 	if not _board_open():
 		if _is_web:
-			if _key("KeyW"):
+			if MWWebInput.is_pressed("KeyW"):
 				vx += MOVE_SPEED
-			if _key("KeyS"):
+			if MWWebInput.is_pressed("KeyS"):
 				vx -= MOVE_SPEED
-			if _key("KeyA"):
+			if MWWebInput.is_pressed("KeyA"):
 				vy += MOVE_SPEED
-			if _key("KeyD"):
+			if MWWebInput.is_pressed("KeyD"):
 				vy -= MOVE_SPEED
-			if _key("KeyQ"):
+			if MWWebInput.is_pressed("KeyQ"):
 				yaw_rate += TURN_SPEED
-			if _key("KeyE"):
+			if MWWebInput.is_pressed("KeyE"):
 				yaw_rate -= TURN_SPEED
 		else:
 			if Input.is_physical_key_pressed(KEY_W):

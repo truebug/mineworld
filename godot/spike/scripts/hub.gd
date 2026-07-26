@@ -52,7 +52,6 @@ var _web_blur_cb
 ## WoW-style RMB turn-drive: yaw rate from the last horizontal mouse delta,
 ## decayed per frame; consumed by each cmd tick.
 var _rmb_turn_rate := 0.0
-var _held_codes: Dictionary = {}
 var _puppets: Dictionary = {}
 var _map_actors: Dictionary = {}  # minimap/coords cache — survives delta frames
 var _controlled_entity_id := "avatar_0"
@@ -175,7 +174,9 @@ func _start_hub_session() -> void:
 	)
 	_compose_and_push_tips()
 	if _is_web:
-		_install_web_keyboard_bridge()
+		if MWWebInput.web_key_event.is_connected(_on_web_key_event):
+			MWWebInput.web_key_event.disconnect(_on_web_key_event)
+		MWWebInput.web_key_event.connect(_on_web_key_event)
 		JavaScriptBridge.eval(
 			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(false,true);}"
 			+ "if(typeof window.MW_LAYOUT_HUB_CHROME==='function'){window.MW_LAYOUT_HUB_CHROME();}",
@@ -417,7 +418,7 @@ func _reset_door_lockout() -> void:
 
 func _clear_held_keys() -> void:
 	"""Drop sticky WASD so returning pilots are not auto-driven into a door."""
-	_held_codes.clear()
+	MWWebInput.clear()
 	if _is_web:
 		JavaScriptBridge.eval(
 			"(function(){try{window._mw_keys=Object.create(null);}catch(e){}})()",
