@@ -262,7 +262,10 @@ class JunqiBoard:
             return "no_flag"
         return None
 
-    def apply_layout(self, side: str, layout: dict[str, list[int]]) -> bool:
+    def apply_layout(
+        self, side: str, layout: dict[str, list[int]], *, ready: bool = True
+    ) -> bool:
+        """Place side pieces. If ready=False, draft only (may re-edit)."""
         err = self.validate_layout(side, layout)
         if err:
             return False
@@ -273,12 +276,35 @@ class JunqiBoard:
             r, c = int(pos[0]), int(pos[1])
             pid = f"{side}_{key}"
             self.pieces[pid] = JunqiPiece(pid=pid, ptype=ptype, side=side, r=r, c=c)
-        self.layout_ready[side] = True
+        self.layout_ready[side] = bool(ready)
+        if self.phase == "finished":
+            return True
         if self.layout_ready["black"] and self.layout_ready["red"]:
             self.phase = "playing"
-            # First sitter (black) moves first — matches gomoku seat order.
+            # First sitter (black) moves first — product lock 2026-07-26.
             self.turn = "black"
+        else:
+            self.phase = "layout"
         return True
+
+    def layout_dict(self, side: str) -> dict[str, list[int]]:
+        """Export current side placement as layout keys for client re-submit."""
+        counts: dict[str, int] = {}
+        out: dict[str, list[int]] = {}
+        for p in self.pieces.values():
+            if p.side != side or not p.alive:
+                continue
+            i = counts.get(p.ptype, 0)
+            counts[p.ptype] = i + 1
+            out[f"{p.ptype}_{i}"] = [p.r, p.c]
+        return out
+
+    def forfeit(self, loser_side: str) -> None:
+        """Mark opponent as winner (disconnect / resign)."""
+        if loser_side not in ("black", "red"):
+            return
+        self.winner = "red" if loser_side == "black" else "black"
+        self.phase = "finished"
 
     def auto_layout(self, side: str) -> dict[str, list[int]]:
         """Deterministic-ish random legal layout for AI / solo fill."""
@@ -304,7 +330,10 @@ class JunqiBoard:
             raise RuntimeError("no cell")
 
         for i in range(3):
-            r, c = take_cell(lambda x: x[0] in mine_rows and x not in hqs)
+            # Mines: last two rows; may occupy the other HQ (same-cell-with-flag banned only).
+            r, c = take_cell(
+                lambda x: x[0] in mine_rows and x != flag_hq
+            )
             layout[f"dilei_{i}"] = [r, c]
         for i in range(2):
             r, c = take_cell(lambda x: x[0] != back)

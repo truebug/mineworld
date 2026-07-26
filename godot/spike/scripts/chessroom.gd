@@ -58,6 +58,9 @@ var _title_label: Label = null
 var _result_label: Label = null
 var _tips_label: Label = null
 var _layout_btn: Button = null
+var _confirm_btn: Button = null
+var _resign_btn: Button = null
+var _hand_btn: Button = null
 var _rules_btn: Button = null
 var _rules_label: Label = null
 var _rules_visible := false
@@ -518,6 +521,21 @@ func _build_board_ui() -> void:
 	_layout_btn.visible = false
 	_layout_btn.pressed.connect(_on_junqi_auto_layout)
 	btn_row.add_child(_layout_btn)
+	_confirm_btn = Button.new()
+	_confirm_btn.text = MWi18n.t("确认布阵", "Confirm")
+	_confirm_btn.visible = false
+	_confirm_btn.pressed.connect(_on_junqi_confirm_layout)
+	btn_row.add_child(_confirm_btn)
+	_resign_btn = Button.new()
+	_resign_btn.text = MWi18n.t("认输", "Resign")
+	_resign_btn.visible = false
+	_resign_btn.pressed.connect(_on_chess_resign)
+	btn_row.add_child(_resign_btn)
+	_hand_btn = Button.new()
+	_hand_btn.text = MWi18n.t("举手", "Hand")
+	_hand_btn.visible = false
+	_hand_btn.pressed.connect(_on_chess_hand)
+	btn_row.add_child(_hand_btn)
 	_rules_btn = Button.new()
 	_rules_btn.text = MWi18n.t("规则说明", "Rules")
 	_rules_btn.visible = false
@@ -567,7 +585,7 @@ func _apply_board_fonts() -> void:
 	for lab in [_title_label, _status_label, _result_label, _rules_label]:
 		if lab != null:
 			lab.add_theme_font_override("font", f)
-	for btn in [_layout_btn, _rules_btn]:
+	for btn in [_layout_btn, _confirm_btn, _resign_btn, _hand_btn, _rules_btn]:
 		if btn != null:
 			btn.add_theme_font_override("font", f)
 
@@ -586,13 +604,44 @@ func _toggle_junqi_rules() -> void:
 
 
 func _on_junqi_auto_layout() -> void:
-	"""Ask gateway to place a legal random layout for this seat."""
+	"""Draft a random legal layout (not ready — may hand-tune)."""
+	if _view_table_id == "" or _view_game() != "junqi":
+		return
+	_sel = Vector2i(-1, -1)
+	ws.send_cmd({
+		"action": "junqi_layout",
+		"table_id": _view_table_id,
+		"auto": true,
+		"ready": false,
+	})
+
+
+func _on_junqi_confirm_layout() -> void:
+	"""Lock current draft and start (AI fills red if vs_ai)."""
 	if _view_table_id == "" or _view_game() != "junqi":
 		return
 	ws.send_cmd({
 		"action": "junqi_layout",
 		"table_id": _view_table_id,
-		"auto": true,
+		"ready": true,
+	})
+
+
+func _on_chess_resign() -> void:
+	"""Resign current playing table."""
+	if _view_table_id == "":
+		return
+	ws.send_cmd({"action": "chess_resign", "table_id": _view_table_id})
+
+
+func _on_chess_hand() -> void:
+	"""Raise hand signal for opponent / room."""
+	if _view_table_id == "":
+		return
+	ws.send_cmd({
+		"action": "chess_hand",
+		"table_id": _view_table_id,
+		"kind": "raise",
 	})
 
 
@@ -664,6 +713,8 @@ func _my_junqi_side() -> String:
 
 func _sync_junqi_chrome(status: String) -> void:
 	var is_jq := _view_game() == "junqi"
+	var my := _my_junqi_side()
+	var seated := my != "" or _my_color() != GomokuScript.EMPTY
 	if _rules_btn != null:
 		_rules_btn.visible = is_jq
 		if is_jq:
@@ -674,13 +725,72 @@ func _sync_junqi_chrome(status: String) -> void:
 			)
 	if _rules_label != null:
 		_rules_label.visible = is_jq and _rules_visible
-	if _layout_btn != null:
-		_layout_btn.visible = is_jq and status == "layout" and _my_junqi_side() != ""
+	var draft := false
+	if is_jq and status == "layout" and my != "":
+		var ready: Dictionary = _view_detail().get("layout_ready", {}) as Dictionary
+		var own_n := _junqi_own_piece_count()
+		draft = own_n >= 25 and not bool(ready.get(my, false))
+		if _layout_btn != null:
+			_layout_btn.visible = true
+			_layout_btn.text = (
+				MWi18n.t("再随机", "Re-roll")
+				if own_n > 0
+				else MWi18n.t("随机布阵", "Auto layout")
+			)
+		if _confirm_btn != null:
+			_confirm_btn.visible = draft
+	else:
+		if _layout_btn != null:
+			_layout_btn.visible = false
+		if _confirm_btn != null:
+			_confirm_btn.visible = false
+	if _resign_btn != null:
+		_resign_btn.visible = seated and status == "playing"
+	if _hand_btn != null:
+		_hand_btn.visible = seated and status in ["layout", "playing"]
 	if _board_ctrl != null:
 		if is_jq:
 			_board_ctrl.custom_minimum_size = _junqi_board_size()
 		else:
 			_board_ctrl.custom_minimum_size = Vector2(540, 540)
+
+
+func _junqi_own_piece_count() -> int:
+	var my := _my_junqi_side()
+	if my == "":
+		return 0
+	var n := 0
+	for cell in _view_detail().get("cells", []):
+		if typeof(cell) != TYPE_DICTIONARY:
+			continue
+		var p: Variant = cell.get("piece", null)
+		if typeof(p) != TYPE_DICTIONARY or p == null:
+			continue
+		if str(p.get("side", "")) == my and str(p.get("type", "?")) != "?":
+			n += 1
+	return n
+
+
+func _junqi_layout_from_cells() -> Dictionary:
+	"""Build layout dict from personal fog view (own typed pieces)."""
+	var my := _my_junqi_side()
+	var counts: Dictionary = {}
+	var layout: Dictionary = {}
+	for cell in _view_detail().get("cells", []):
+		if typeof(cell) != TYPE_DICTIONARY:
+			continue
+		var p: Variant = cell.get("piece", null)
+		if typeof(p) != TYPE_DICTIONARY or p == null:
+			continue
+		if str(p.get("side", "")) != my:
+			continue
+		var ptype := str(p.get("type", ""))
+		if ptype == "" or ptype == "?":
+			continue
+		var i := int(counts.get(ptype, 0))
+		counts[ptype] = i + 1
+		layout["%s_%d" % [ptype, i]] = [int(cell.get("r", 0)), int(cell.get("c", 0))]
+	return layout
 
 
 func _refresh_board_from_authority() -> void:
@@ -745,15 +855,28 @@ func _refresh_junqi_status(d: Dictionary, status: String, vs_ai: bool) -> void:
 	"""Status line + endgame for junqi fog board."""
 	var my := _my_junqi_side()
 	var ready: Dictionary = d.get("layout_ready", {}) as Dictionary
+	var hand: Variant = d.get("last_hand", null)
+	var hand_note := ""
+	if typeof(hand) == TYPE_DICTIONARY and hand != null:
+		if str(hand.get("sid", "")) != _session_id:
+			hand_note = MWi18n.t("\n对方举手", "\nOpponent raised hand")
+		else:
+			hand_note = MWi18n.t("\n已举手", "\nHand raised")
 	if status == "layout" or status == "idle":
 		if my == "":
-			_set_status(MWi18n.t("旁观 · 等待入座布阵", "Spectating · waiting for layout"))
+			_set_status(MWi18n.t("旁观 · 等待入座布阵", "Spectating · waiting for layout") + hand_note)
 			return
 		var mine_ok := bool(ready.get(my, false))
+		var own_n := _junqi_own_piece_count()
 		if mine_ok:
-			_set_status(MWi18n.t("已布阵 · 等待对方就绪", "Layout set · waiting for opponent"))
+			_set_status(MWi18n.t("已确认 · 等待对方就绪", "Confirmed · waiting for opponent") + hand_note)
+		elif own_n >= 25:
+			_set_status(MWi18n.t(
+				"可拖换己子微调 · 点「确认布阵」开战",
+				"Drag-swap to tune · tap Confirm to start"
+			) + hand_note)
 		else:
-			_set_status(MWi18n.t("布阵阶段 · 点「随机布阵」开局", "Layout · tap Auto layout"))
+			_set_status(MWi18n.t("布阵 · 先「随机布阵」，可再手调", "Layout · Auto layout, then tune") + hand_note)
 		return
 	if status == "finished":
 		var winner := str(d.get("winner", ""))
@@ -773,26 +896,28 @@ func _refresh_junqi_status(d: Dictionary, status: String, vs_ai: bool) -> void:
 		_schedule_auto_exit()
 		return
 	if my == "":
-		_set_status(MWi18n.t("旁观中", "Spectating"))
+		_set_status(MWi18n.t("旁观中", "Spectating") + hand_note)
 		return
 	var turn := str(d.get("turn", ""))
 	if turn == my:
-		_set_status(MWi18n.t("轮到你 · 点己子再点目标格", "Your turn · pick piece, then target"))
+		_set_status(MWi18n.t("轮到你 · 点己子再点目标格", "Your turn · pick piece, then target") + hand_note)
 	elif vs_ai:
-		_set_status(MWi18n.t("AI 思考中…", "AI thinking…"))
+		_set_status(MWi18n.t("AI 思考中…", "AI thinking…") + hand_note)
 	else:
-		_set_status(MWi18n.t("等待对手…", "Waiting for opponent…"))
+		_set_status(MWi18n.t("等待对手…", "Waiting for opponent…") + hand_note)
 	var battle: Variant = d.get("last_battle", null)
 	if typeof(battle) == TYPE_DICTIONARY and battle != null:
 		var res := str(battle.get("result", ""))
-		if res != "":
+		if res != "" and _status_label != null:
+			var atk := str(battle.get("attacker", "?"))
+			var dfd := str(battle.get("defender", "?"))
 			_set_status(
 				_status_label.text
 				+ "\n"
 				+ MWi18n.t("碰撞：", "Clash: ")
-				+ str(battle.get("attacker", "?"))
+				+ str(JUNQI_LABEL.get(atk, atk))
 				+ " → "
-				+ str(battle.get("defender", "?"))
+				+ str(JUNQI_LABEL.get(dfd, dfd))
 				+ " · "
 				+ res
 			)
@@ -983,11 +1108,10 @@ func _on_board_input(event: InputEvent) -> void:
 
 
 func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
-	"""Select own piece then target; coords sent as row/col (fx/fy)."""
-	if str(d.get("status", "")) != "playing":
-		return
+	"""Layout: swap own pieces; playing: move (fx/fy = row/col)."""
+	var status := str(d.get("status", ""))
 	var my := _my_junqi_side()
-	if my == "" or str(d.get("turn", "")) != my:
+	if my == "":
 		return
 	var sz := _junqi_board_size()
 	var cw := sz.x / float(JUNQI_COLS + 1)
@@ -995,6 +1119,16 @@ func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
 	var col := int(round(pos.x / cw)) - 1
 	var row := int(round(pos.y / ch)) - 1
 	if col < 0 or row < 0 or col >= JUNQI_COLS or row >= JUNQI_ROWS:
+		return
+	if status == "layout":
+		var ready: Dictionary = d.get("layout_ready", {}) as Dictionary
+		if bool(ready.get(my, false)):
+			return
+		_on_junqi_layout_click(row, col, d, my)
+		return
+	if status != "playing":
+		return
+	if str(d.get("turn", "")) != my:
 		return
 	var cells: Array = d.get("cells", [])
 	var piece_side := ""
@@ -1009,14 +1143,13 @@ func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
 		break
 	if _sel.x < 0:
 		if piece_side == my:
-			_sel = Vector2i(col, row)  # x=col, y=row
+			_sel = Vector2i(col, row)
 			_board_ctrl.queue_redraw()
 		return
 	if piece_side == my:
 		_sel = Vector2i(col, row)
 		_board_ctrl.queue_redraw()
 		return
-	# Gateway try_move(side, fr, fc, tr, tc) — row, col.
 	ws.send_cmd({
 		"action": "chess_move",
 		"table_id": _view_table_id,
@@ -1026,6 +1159,70 @@ func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
 		"ty": col,
 	})
 	_sel = Vector2i(-1, -1)
+
+
+func _on_junqi_layout_click(row: int, col: int, d: Dictionary, my: String) -> void:
+	"""Swap two own pieces (or move onto empty non-camp) then re-submit draft."""
+	# Own half only.
+	if my == "black" and row > 5:
+		return
+	if my == "red" and row < 6:
+		return
+	var cells: Array = d.get("cells", [])
+	var kind := "station"
+	var piece_side := ""
+	var piece_type := ""
+	for cell in cells:
+		if typeof(cell) != TYPE_DICTIONARY:
+			continue
+		if int(cell.get("r", -1)) != row or int(cell.get("c", -1)) != col:
+			continue
+		kind = str(cell.get("kind", "station"))
+		var piece: Variant = cell.get("piece", null)
+		if typeof(piece) == TYPE_DICTIONARY and piece != null:
+			piece_side = str(piece.get("side", ""))
+			piece_type = str(piece.get("type", ""))
+		break
+	if kind == "camp":
+		return
+	if _sel.x < 0:
+		if piece_side == my and piece_type != "?":
+			_sel = Vector2i(col, row)
+			_board_ctrl.queue_redraw()
+		return
+	var sr := _sel.y
+	var sc := _sel.x
+	if sr == row and sc == col:
+		_sel = Vector2i(-1, -1)
+		_board_ctrl.queue_redraw()
+		return
+	# Build layout, swap (sr,sc) <-> (row,col) or move onto empty.
+	var layout := _junqi_layout_from_cells()
+	if layout.is_empty():
+		return
+	var key_a := ""
+	var key_b := ""
+	for k in layout.keys():
+		var pos: Array = layout[k]
+		if int(pos[0]) == sr and int(pos[1]) == sc:
+			key_a = str(k)
+		if int(pos[0]) == row and int(pos[1]) == col:
+			key_b = str(k)
+	if key_a == "":
+		_sel = Vector2i(-1, -1)
+		return
+	if key_b != "":
+		layout[key_a] = [row, col]
+		layout[key_b] = [sr, sc]
+	else:
+		layout[key_a] = [row, col]
+	_sel = Vector2i(-1, -1)
+	ws.send_cmd({
+		"action": "junqi_layout",
+		"table_id": _view_table_id,
+		"layout": layout,
+		"ready": false,
+	})
 
 
 func _set_status(msg: String) -> void:

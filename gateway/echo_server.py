@@ -752,13 +752,15 @@ class ChessTable:
     black_sid: str | None = None
     white_sid: str | None = None
     vs_ai: bool = False
-    status: str = "idle"  # idle | playing | finished | stub
+    status: str = "idle"  # idle | layout | playing | finished | stub
     turn: int = BLACK
+    last_hand: dict[str, Any] | None = None
 
     def reset_board(self) -> None:
         """Reset underlying board for a new round."""
         self.board = _new_board_for_game(self.game)
         self.turn = BLACK
+        self.last_hand = None
         if self.game == "junqi":
             self.status = "layout"
         else:
@@ -804,6 +806,8 @@ class ChessTable:
             if self.white_sid:
                 views[self.white_sid] = self.board.to_detail(viewer="red")
             base["junqi_views"] = views
+            if self.last_hand:
+                base["last_hand"] = dict(self.last_hand)
             return base
         winner = int(getattr(self.board, "winner", EMPTY) or EMPTY)
         cells = []
@@ -815,7 +819,7 @@ class ChessTable:
         full = False
         if self.game == "gomoku" and hasattr(self.board, "is_full"):
             full = bool(self.board.is_full())
-        return {
+        out = {
             "table_id": self.table_id,
             "game": self.game,
             "title_zh": self.title_zh,
@@ -831,6 +835,9 @@ class ChessTable:
             "win_line": win_line,
             "board_size": CHECKERS_SIZE if self.game == "checkers" else 15,
         }
+        if self.last_hand:
+            out["last_hand"] = dict(self.last_hand)
+        return out
 
     def seated_sids(self) -> list[str]:
         out: list[str] = []
@@ -2238,30 +2245,43 @@ class EchoGateway:
     def _chess_free_session(
         self, room: Room, session_id: str, *, broadcast: bool
     ) -> None:
-        """Remove session from any table seats; reset table when empty."""
+        """Remove session from seats; forfeit if leaving mid-play, else reset/solo."""
         for table in room.chess_tables.values():
             changed = False
-            if table.black_sid == session_id:
+            left_black = table.black_sid == session_id
+            left_white = table.white_sid == session_id
+            if left_black:
                 table.black_sid = None
                 changed = True
-            if table.white_sid == session_id:
+            if left_white:
                 table.white_sid = None
                 changed = True
             if not changed:
+                continue
+            # Mid-play leave → opponent wins (product lock).
+            if table.status == "playing":
+                if table.game == "junqi" and isinstance(table.board, JunqiBoard):
+                    loser = "black" if left_black else "red"
+                    table.board.forfeit(loser)
+                    table.status = "finished"
+                elif table.game in ("gomoku", "checkers"):
+                    # Leaver was black → white wins; leaver white → black wins.
+                    if left_black:
+                        table.board.winner = WHITE if table.game == "gomoku" else CK_WHITE
+                    else:
+                        table.board.winner = BLACK if table.game == "gomoku" else CK_BLACK
+                    table.status = "finished"
+                if broadcast:
+                    self._broadcast_chess_table(room, table)
                 continue
             humans = [s for s in (table.black_sid, table.white_sid) if s]
             if not humans:
                 table.board = _new_board_for_game(table.game)
                 table.vs_ai = False
                 table.turn = BLACK
+                table.last_hand = None
                 table.status = "layout" if table.game == "junqi" else "idle"
-            elif len(humans) == 1 and table.game != "junqi":
-                alone = humans[0]
-                table.black_sid = alone
-                table.white_sid = None
-                table.vs_ai = True
-                table.reset_board()
-            elif len(humans) == 1 and table.game == "junqi":
+            elif len(humans) == 1:
                 alone = humans[0]
                 table.black_sid = alone
                 table.white_sid = None
@@ -2273,7 +2293,7 @@ class EchoGateway:
     def _handle_chess_cmd(
         self, session: Session, action: str, payload: dict[str, Any]
     ) -> None:
-        """Thin table FSM: sit / leave / place / move / reset."""
+        """Thin table FSM: sit / leave / place / move / reset / resign / hand."""
         room = session.room
         if room is None or not session.joined or not room.chess_tables:
             return
@@ -2313,8 +2333,38 @@ class EchoGateway:
             table.reset_board()
             self._broadcast_chess_table(room, table)
             return
+        if action == "chess_resign":
+            if sid not in (table.black_sid, table.white_sid):
+                return
+            if table.status != "playing":
+                return
+            if table.game == "junqi" and isinstance(table.board, JunqiBoard):
+                loser = "black" if table.black_sid == sid else "red"
+                table.board.forfeit(loser)
+                table.status = "finished"
+            elif table.game in ("gomoku", "checkers"):
+                if table.black_sid == sid:
+                    table.board.winner = WHITE if table.game == "gomoku" else CK_WHITE
+                else:
+                    table.board.winner = BLACK if table.game == "gomoku" else CK_BLACK
+                table.status = "finished"
+            else:
+                return
+            self._broadcast_chess_table(room, table)
+            return
+        if action == "chess_hand":
+            if sid not in (table.black_sid, table.white_sid):
+                return
+            table.last_hand = {
+                "sid": sid,
+                "kind": str(payload.get("kind") or "raise"),
+            }
+            self._broadcast_chess_table(room, table)
+            return
         if action == "junqi_layout":
             if table.game != "junqi" or not isinstance(table.board, JunqiBoard):
+                return
+            if table.status not in ("layout", "idle"):
                 return
             side = None
             if table.black_sid == sid:
@@ -2323,26 +2373,35 @@ class EchoGateway:
                 side = "red"
             else:
                 return
+            ready = bool(payload.get("ready", True))
             if bool(payload.get("auto", False)):
                 norm = table.board.auto_layout(side)
             else:
                 layout = payload.get("layout")
                 if not isinstance(layout, dict):
-                    return
-                norm = {}
-                for k, v in layout.items():
-                    if isinstance(v, (list, tuple)) and len(v) >= 2:
-                        norm[str(k)] = [int(v[0]), int(v[1])]
-            if not table.board.apply_layout(side, norm):
+                    # Confirm current draft without resending: use board export.
+                    if ready:
+                        norm = table.board.layout_dict(side)
+                        if len(norm) != 25:
+                            return
+                    else:
+                        return
+                else:
+                    norm = {}
+                    for k, v in layout.items():
+                        if isinstance(v, (list, tuple)) and len(v) >= 2:
+                            norm[str(k)] = [int(v[0]), int(v[1])]
+            if not table.board.apply_layout(side, norm, ready=ready):
                 return
             if (
-                table.vs_ai
+                ready
+                and table.vs_ai
                 and side == "black"
                 and table.board.layout_ready.get("black")
                 and not table.board.layout_ready.get("red")
             ):
                 ai_layout = table.board.auto_layout("red")
-                table.board.apply_layout("red", ai_layout)
+                table.board.apply_layout("red", ai_layout, ready=True)
             table.status = (
                 "playing"
                 if table.board.phase == "playing"
@@ -2544,6 +2603,8 @@ class EchoGateway:
             "chess_place",
             "chess_reset",
             "chess_move",
+            "chess_resign",
+            "chess_hand",
             "junqi_layout",
         ):
             self._handle_chess_cmd(session, action, payload)

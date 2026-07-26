@@ -202,6 +202,7 @@ async def main() -> int:
                         "action": "junqi_layout",
                         "table_id": "table_4",
                         "auto": True,
+                        "ready": True,
                     },
                 }
             )

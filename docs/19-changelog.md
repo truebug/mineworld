@@ -10,6 +10,13 @@
 
 ---
 
+## 2026-07-26 · 军棋产品拍板 + 布阵确认 / 认输举手 / 离座判负
+
+- **定位**：先人机/内测；公网 PvP 等 Chess-P4 迷雾单播。
+- **先手**：先入座（黑席）先走；雷与旗 **仅禁同格**；第二人入座 reset 接受。
+- **布阵**：`junqi_layout` 支持 `ready=false` 草稿；随机后可拖换手调，再「确认布阵」。
+- **操作**：`chess_resign` 认输；`chess_hand` 举手；对局中离座 → 判负。
+
 ## 2026-07-26 · 军棋 SSOT + 可玩桌 + 规则显隐
 
 - **SSOT**：[`docs/26-junqi-ssot.md`](26-junqi-ssot.md) + [`assets/junqi-board-12x5.png`](assets/junqi-board-12x5.png)（12×5 附图拓扑 · 任意子扛旗 · 无需清雷 · Frozen）。
