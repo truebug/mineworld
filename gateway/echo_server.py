@@ -2206,7 +2206,7 @@ class EchoGateway:
     def _attach_occupant_profiles(
         self, room: Room, entities: list[dict[str, Any]]
     ) -> None:
-        """Stamp display_name / accent onto occupied avatar entity_states (Hub)."""
+        """Stamp display_name / accent / occupied onto avatar entity_states (Hub/chess)."""
         by_eid: dict[str, Session] = {}
         for member in room.members.values():
             if (
@@ -2217,10 +2217,14 @@ class EchoGateway:
                 by_eid[member.controlled_entity_id] = member
         for ent in entities:
             eid = str(ent.get("entity_id") or "")
-            occupant = by_eid.get(eid)
-            if occupant is None:
+            if not eid.startswith("avatar_"):
                 continue
             mw = ent.setdefault("extensions", {}).setdefault("mw", {})
+            occupant = by_eid.get(eid)
+            if occupant is None:
+                # Explicit empty — clients must not treat missing as occupied.
+                mw["occupied"] = False
+                continue
             mw["display_name"] = occupant.player_name
             mw["occupied"] = True
             mw["hub_floor"] = 1 if int(occupant.hub_floor) != 2 else 2

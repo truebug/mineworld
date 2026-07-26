@@ -239,6 +239,7 @@ func _on_scene(payload: Dictionary) -> void:
 
 
 func _ensure_puppets(entities: Array) -> void:
+	"""Spawn paper dolls only for self or occupied remotes."""
 	for entity in entities:
 		if typeof(entity) != TYPE_DICTIONARY:
 			continue
@@ -249,10 +250,21 @@ func _ensure_puppets(entities: Array) -> void:
 			continue
 		if _puppets.has(eid):
 			continue
+		var is_self := eid == _controlled_entity_id
+		if not is_self:
+			var ext: Variant = entity.get("extensions", {})
+			var occ := false
+			if typeof(ext) == TYPE_DICTIONARY:
+				var mw: Variant = ext.get("mw", {})
+				if typeof(mw) == TYPE_DICTIONARY:
+					occ = bool(mw.get("occupied", false))
+			if not occ:
+				continue
 		var node: Node3D = AVATAR_SCENE.instantiate()
 		node.name = eid
 		node.set("entity_id", eid)
-		if eid == _controlled_entity_id:
+		node.visible = is_self
+		if is_self:
 			node.set("accent", Color(str(_profile.get("accent", "#9a5ae8"))))
 			node.set("display_name", str(_profile.get("nickname", "Guest")))
 			node.set("local_predict", true)
@@ -268,38 +280,41 @@ func _own_avatar() -> Node3D:
 
 
 func _on_state(_tick: int, t_sim: float, payload: Dictionary) -> void:
-	var entities: Array = payload.get("entities", [])
-	var occupied: Dictionary = {}
-	for entity in entities:
+	"""Drive puppets; hide empty slots. Do NOT hide on delta miss (avoids flicker)."""
+	for entity in payload.get("entities", []):
 		if typeof(entity) != TYPE_DICTIONARY:
 			continue
 		var eid := str(entity.get("entity_id", ""))
 		if not eid.begins_with("avatar_"):
+			continue
+		var ext: Variant = entity.get("extensions", {})
+		var mw: Variant = {}
+		if typeof(ext) == TYPE_DICTIONARY:
+			mw = ext.get("mw", {})
+		# Default false — empty FakeMech slots omit occupied; must stay hidden.
+		var is_occ := false
+		if typeof(mw) == TYPE_DICTIONARY and bool(mw.get("occupied", false)):
+			is_occ = true
+		var is_self := eid == _controlled_entity_id
+		if not is_occ and not is_self:
+			# Drop empty slot puppets if we already spawned them.
+			if _puppets.has(eid):
+				var ghost: Node3D = _puppets[eid]
+				ghost.visible = false
 			continue
 		if not _puppets.has(eid):
 			_ensure_puppets([entity])
 		var puppet: Node3D = _puppets.get(eid)
 		if puppet == null:
 			continue
-		var mw: Variant = {}
-		var ext: Variant = entity.get("extensions", {})
-		if typeof(ext) == TYPE_DICTIONARY:
-			mw = ext.get("mw", {})
-		var is_occ := true
-		if typeof(mw) == TYPE_DICTIONARY and mw.has("occupied"):
-			is_occ = bool(mw.get("occupied"))
-		occupied[eid] = true
-		puppet.visible = is_occ or eid == _controlled_entity_id
+		puppet.visible = true
 		if puppet.has_method("push_state"):
 			puppet.call("push_state", entity, t_sim)
-		if typeof(mw) == TYPE_DICTIONARY and eid != _controlled_entity_id:
+		if typeof(mw) == TYPE_DICTIONARY and not is_self:
 			if str(mw.get("display_name", "")) != "":
 				puppet.set("display_name", str(mw.get("display_name")))
-	for eid in _puppets.keys():
-		if eid == _controlled_entity_id:
-			continue
-		if not occupied.has(eid):
-			(_puppets[eid] as Node3D).visible = false
+			if str(mw.get("accent", "")) != "":
+				puppet.set("accent", Color(str(mw.get("accent"))))
 
 
 func _on_event(payload: Dictionary) -> void:
