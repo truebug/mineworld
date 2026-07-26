@@ -4,11 +4,19 @@
 |------|-----|
 | **状态** | Living |
 | **日期** | 2026-07-20 |
-| **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) |
+| **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
 ---
+
+## 2026-07-26 · 军棋 SSOT + 可玩桌 + 规则显隐
+
+- **SSOT**：[`docs/26-junqi-ssot.md`](26-junqi-ssot.md) + [`assets/junqi-board-12x5.png`](assets/junqi-board-12x5.png)（12×5 附图拓扑 · 任意子扛旗 · 无需清雷 · Frozen）。
+- **Gateway**：`gateway/junqi.py` 权威裁判；桌面 FSM 接 `junqi_layout`（含 `auto` 一键布阵）/ `chess_move`；人机时黑方布阵后自动补红方阵；先手 = 先入座黑方。
+- **客户端**：丁桌可玩（12×5 雾盘、「随机布阵」、选子走子）；**规则说明**按钮显示/隐藏 SSOT 摘要；桌名/壳层 tips 去掉 WIP。
+- **契约 / 冒烟**：`demo_chessroom` `table_4` 标题「军棋」；`chessroom_smoke` 覆盖军棋入座+布阵+透视计数。
+- **已知债（未拦人机试玩）**：`chess_table_update` 仍同包广播 `junqi_open` / 全员 `junqi_views` → **PvP 暗棋可被旁路窥视**；断线/认输未按 SSOT 判负；仅随机布阵、AI 随机合法步。
 
 ## 2026-07-26 · 棋牌室对齐传送门（presence + 薄桌面权威）
 

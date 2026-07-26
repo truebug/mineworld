@@ -1,4 +1,4 @@
-## Chess lounge: Hub FakeMech presence + multi-game tables (gomoku / checkers / junqi stub).
+## Chess lounge: Hub FakeMech presence + multi-game tables (gomoku / checkers / junqi).
 ## Join demo_chessroom / room=chess; F sit; Esc → Hub.
 extends Node3D
 
@@ -9,12 +9,30 @@ const SIT_DIST := 2.4
 const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const GomokuScript := preload("res://scripts/gomoku.gd")
 const AUTO_EXIT_S := 2.4
+const JUNQI_ROWS := 12
+const JUNQI_COLS := 5
+## Short labels for board chips (SSOT types).
+const JUNQI_LABEL := {
+	"junqi": "旗",
+	"siling": "司",
+	"junzhang": "军",
+	"shizhang": "师",
+	"lvzhang": "旅",
+	"tuanzhang": "团",
+	"yingzhang": "营",
+	"lianzhang": "连",
+	"paizhang": "排",
+	"gongbing": "工",
+	"zhadan": "炸",
+	"dilei": "雷",
+	"?": "?",
+}
 ## Fallback meta until first chess_table_update arrives.
 const TABLE_META := {
 	"table_1": {"game": "gomoku", "title_zh": "五子棋 · 甲桌", "title_en": "Gomoku A", "accent": Color(0.95, 0.55, 0.2)},
 	"table_2": {"game": "gomoku", "title_zh": "五子棋 · 乙桌", "title_en": "Gomoku B", "accent": Color(0.95, 0.7, 0.35)},
 	"table_3": {"game": "checkers", "title_zh": "跳棋", "title_en": "Halma", "accent": Color(0.35, 0.75, 0.95)},
-	"table_4": {"game": "junqi", "title_zh": "军棋（筹建中）", "title_en": "Junqi (WIP)", "accent": Color(0.75, 0.45, 0.9)},
+	"table_4": {"game": "junqi", "title_zh": "军棋", "title_en": "Junqi", "accent": Color(0.75, 0.45, 0.9)},
 }
 
 @export var level_id := "demo_chessroom"
@@ -39,6 +57,10 @@ var _status_label: Label = null
 var _title_label: Label = null
 var _result_label: Label = null
 var _tips_label: Label = null
+var _layout_btn: Button = null
+var _rules_btn: Button = null
+var _rules_label: Label = null
+var _rules_visible := false
 var _tables: Dictionary = {}
 var _view_table_id := ""
 var _seated_table_id := ""
@@ -70,7 +92,7 @@ func _ready() -> void:
 	ws.gateway_error.connect(_on_gateway_error)
 	ws.connect_to_gateway(_resolve_gateway_url())
 	MWTransition.notify_arrived()
-	print("[MW] chessroom ready (gomoku + checkers + junqi stub)")
+	print("[MW] chessroom ready (gomoku + checkers + junqi)")
 
 
 func _push_chess_shell_tips() -> void:
@@ -78,11 +100,11 @@ func _push_chess_shell_tips() -> void:
 	var full := MWi18n.t(
 		"棋牌室\n"
 		+ "走近棋桌按 F 落座 · Esc 起身/回母港\n"
-		+ "甲/乙桌：五子棋 · 丙桌：跳棋 · 丁桌：军棋（筹建中）\n"
+		+ "甲/乙桌：五子棋 · 丙桌：跳棋 · 丁桌：军棋\n"
 		+ "WASD 平移 · Q/E 转向 · 人机可单人开局，第二人入座变对战",
 		"Chess Lounge\n"
 		+ "Walk to a table · F sit · Esc stand / Hub\n"
-		+ "A/B Gomoku · C Halma · D Junqi (WIP)\n"
+		+ "A/B Gomoku · C Halma · D Junqi\n"
 		+ "WASD move · Q/E turn · solo vs AI; second sitter → PvP"
 	)
 	var collapsed := MWi18n.t("棋牌室 · 提示 ›（点击）", "Chess · tips › (click)")
@@ -436,8 +458,7 @@ func _toggle_board() -> void:
 	if _board_open():
 		var detail: Dictionary = _tables.get(_view_table_id, {})
 		var status := str(detail.get("status", ""))
-		var game := _view_game()
-		if status == "finished" and _seated_table_id == _view_table_id and game != "junqi":
+		if status == "finished" and _seated_table_id == _view_table_id:
 			_auto_exit_gen += 1
 			if _result_label != null:
 				_result_label.visible = false
@@ -450,6 +471,7 @@ func _toggle_board() -> void:
 		return
 	_view_table_id = _table_id_for_node(nearest)
 	_sel = Vector2i(-1, -1)
+	_rules_visible = false
 	ws.send_cmd({"action": "chess_sit", "table_id": _view_table_id})
 	_board_layer.visible = true
 	_refresh_board_from_authority()
@@ -459,6 +481,7 @@ func _close_board() -> void:
 	_auto_exit_gen += 1
 	_board_layer.visible = false
 	_sel = Vector2i(-1, -1)
+	_rules_visible = false
 	if _result_label != null:
 		_result_label.visible = false
 	if _seated_table_id != "":
@@ -486,6 +509,39 @@ func _build_board_ui() -> void:
 	_title_label = Label.new()
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(_title_label)
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 10)
+	vbox.add_child(btn_row)
+	_layout_btn = Button.new()
+	_layout_btn.text = MWi18n.t("随机布阵", "Auto layout")
+	_layout_btn.visible = false
+	_layout_btn.pressed.connect(_on_junqi_auto_layout)
+	btn_row.add_child(_layout_btn)
+	_rules_btn = Button.new()
+	_rules_btn.text = MWi18n.t("规则说明", "Rules")
+	_rules_btn.visible = false
+	_rules_btn.pressed.connect(_toggle_junqi_rules)
+	btn_row.add_child(_rules_btn)
+	_rules_label = Label.new()
+	_rules_label.visible = false
+	_rules_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_rules_label.custom_minimum_size = Vector2(520, 0)
+	_rules_label.add_theme_font_size_override("font_size", 14)
+	_rules_label.add_theme_color_override("font_color", Color(0.92, 0.9, 0.82))
+	_rules_label.text = MWi18n.t(
+		"12×5 · 行营免战 · 铁路工兵可拐弯\n"
+		+ "军旗必在大本营 · 地雷仅后两行 · 炸弹不上底线\n"
+		+ "公路一步 · 铁路直线（工兵可拐）· 行营离营限一格\n"
+		+ "任意己子走进对方军旗即胜（无需清雷）\n"
+		+ "司令阵亡→公开该方军旗位置",
+		"12×5 · camps safe · engineer turns on rail\n"
+		+ "Flag in HQ · mines last 2 rows · bombs not on back row\n"
+		+ "Road 1-step · rail straight (engineer bends)\n"
+		+ "Any piece walking onto flag wins (no mine-clear)\n"
+		+ "Commander lost → reveal that side's flag"
+	)
+	vbox.add_child(_rules_label)
 	_board_ctrl = Control.new()
 	_board_ctrl.custom_minimum_size = Vector2(540, 540)
 	_board_ctrl.draw.connect(_draw_board)
@@ -508,13 +564,44 @@ func _apply_board_fonts() -> void:
 	var f: Font = MWFonts.font() if MWFonts != null else null
 	if f == null:
 		return
-	for lab in [_title_label, _status_label, _result_label]:
+	for lab in [_title_label, _status_label, _result_label, _rules_label]:
 		if lab != null:
 			lab.add_theme_font_override("font", f)
+	for btn in [_layout_btn, _rules_btn]:
+		if btn != null:
+			btn.add_theme_font_override("font", f)
+
+
+func _toggle_junqi_rules() -> void:
+	"""Show / hide concise junqi rules (SSOT summary)."""
+	_rules_visible = not _rules_visible
+	if _rules_label != null:
+		_rules_label.visible = _rules_visible and _view_game() == "junqi"
+	if _rules_btn != null:
+		_rules_btn.text = (
+			MWi18n.t("隐藏规则", "Hide rules")
+			if _rules_visible
+			else MWi18n.t("规则说明", "Rules")
+		)
+
+
+func _on_junqi_auto_layout() -> void:
+	"""Ask gateway to place a legal random layout for this seat."""
+	if _view_table_id == "" or _view_game() != "junqi":
+		return
+	ws.send_cmd({
+		"action": "junqi_layout",
+		"table_id": _view_table_id,
+		"auto": true,
+	})
 
 
 func _board_px() -> float:
 	return 540.0
+
+
+func _junqi_board_size() -> Vector2:
+	return Vector2(300, 620)
 
 
 func _view_detail() -> Dictionary:
@@ -529,7 +616,18 @@ func _view_detail() -> Dictionary:
 			"status": "idle",
 			"cells": [],
 		}
-	return d
+	if str(d.get("game", "")) != "junqi" or _session_id == "":
+		return d
+	var views: Variant = d.get("junqi_views", {})
+	if typeof(views) != TYPE_DICTIONARY or not views.has(_session_id):
+		return d
+	var mine: Dictionary = (views[_session_id] as Dictionary).duplicate(true)
+	var out := d.duplicate(true)
+	for k in mine.keys():
+		out[k] = mine[k]
+	if str(mine.get("phase", "")) != "":
+		out["status"] = str(mine.get("phase"))
+	return out
 
 
 func _view_game() -> String:
@@ -555,6 +653,36 @@ func _my_color() -> int:
 	return GomokuScript.EMPTY
 
 
+func _my_junqi_side() -> String:
+	var d := _view_detail()
+	if str(d.get("black_sid", "")) == _session_id:
+		return "black"
+	if str(d.get("white_sid", "")) == _session_id and not bool(d.get("vs_ai", false)):
+		return "red"
+	return ""
+
+
+func _sync_junqi_chrome(status: String) -> void:
+	var is_jq := _view_game() == "junqi"
+	if _rules_btn != null:
+		_rules_btn.visible = is_jq
+		if is_jq:
+			_rules_btn.text = (
+				MWi18n.t("隐藏规则", "Hide rules")
+				if _rules_visible
+				else MWi18n.t("规则说明", "Rules")
+			)
+	if _rules_label != null:
+		_rules_label.visible = is_jq and _rules_visible
+	if _layout_btn != null:
+		_layout_btn.visible = is_jq and status == "layout" and _my_junqi_side() != ""
+	if _board_ctrl != null:
+		if is_jq:
+			_board_ctrl.custom_minimum_size = _junqi_board_size()
+		else:
+			_board_ctrl.custom_minimum_size = Vector2(540, 540)
+
+
 func _refresh_board_from_authority() -> void:
 	var d := _view_detail()
 	var game := str(d.get("game", "gomoku"))
@@ -563,24 +691,23 @@ func _refresh_board_from_authority() -> void:
 	if title == "":
 		title = _view_table_id
 	if _title_label != null:
-		if game == "junqi":
-			_title_label.text = title
-		elif vs_ai:
+		if vs_ai:
 			_title_label.text = title + MWi18n.t(" · 人机", " · vs AI")
 		else:
 			_title_label.text = title + MWi18n.t(" · 人对人", " · PvP")
 	var status := str(d.get("status", "idle"))
+	_sync_junqi_chrome(status)
+	if _result_label != null:
+		_result_label.visible = false
+	if game == "junqi":
+		_refresh_junqi_status(d, status, vs_ai)
+		if _board_ctrl != null:
+			_board_ctrl.queue_redraw()
+		return
 	var winner := int(d.get("winner", 0))
 	var turn := int(d.get("turn", 1))
 	var my := _my_color()
-	if _result_label != null:
-		_result_label.visible = false
-	if status == "stub" or game == "junqi":
-		_set_status(MWi18n.t(
-			"军棋桌筹建中 · Esc 起身\n（布局与规则 SSOT 后接入）",
-			"Junqi WIP · Esc to stand\n(rules SSOT later)"
-		))
-	elif status == "finished":
+	if status == "finished":
 		var result := ""
 		if winner == GomokuScript.BLACK:
 			result = MWi18n.t("● 黑/红方获胜", "● Black/Red wins")
@@ -614,6 +741,63 @@ func _refresh_board_from_authority() -> void:
 		_board_ctrl.queue_redraw()
 
 
+func _refresh_junqi_status(d: Dictionary, status: String, vs_ai: bool) -> void:
+	"""Status line + endgame for junqi fog board."""
+	var my := _my_junqi_side()
+	var ready: Dictionary = d.get("layout_ready", {}) as Dictionary
+	if status == "layout" or status == "idle":
+		if my == "":
+			_set_status(MWi18n.t("旁观 · 等待入座布阵", "Spectating · waiting for layout"))
+			return
+		var mine_ok := bool(ready.get(my, false))
+		if mine_ok:
+			_set_status(MWi18n.t("已布阵 · 等待对方就绪", "Layout set · waiting for opponent"))
+		else:
+			_set_status(MWi18n.t("布阵阶段 · 点「随机布阵」开局", "Layout · tap Auto layout"))
+		return
+	if status == "finished":
+		var winner := str(d.get("winner", ""))
+		var result := MWi18n.t("终局", "Game over")
+		if winner == "black":
+			result = MWi18n.t("黑方获胜", "Black wins")
+		elif winner == "red":
+			result = MWi18n.t("红方获胜", "Red wins")
+		if my != "" and my == winner:
+			result = MWi18n.t("你赢了！", "You win!") + "  " + result
+		elif my != "" and winner != "" and my != winner:
+			result = MWi18n.t("你输了", "You lose") + "  " + result
+		_set_status(MWi18n.t("即将自动起身…", "Standing up shortly…"))
+		if _result_label != null:
+			_result_label.text = result
+			_result_label.visible = true
+		_schedule_auto_exit()
+		return
+	if my == "":
+		_set_status(MWi18n.t("旁观中", "Spectating"))
+		return
+	var turn := str(d.get("turn", ""))
+	if turn == my:
+		_set_status(MWi18n.t("轮到你 · 点己子再点目标格", "Your turn · pick piece, then target"))
+	elif vs_ai:
+		_set_status(MWi18n.t("AI 思考中…", "AI thinking…"))
+	else:
+		_set_status(MWi18n.t("等待对手…", "Waiting for opponent…"))
+	var battle: Variant = d.get("last_battle", null)
+	if typeof(battle) == TYPE_DICTIONARY and battle != null:
+		var res := str(battle.get("result", ""))
+		if res != "":
+			_set_status(
+				_status_label.text
+				+ "\n"
+				+ MWi18n.t("碰撞：", "Clash: ")
+				+ str(battle.get("attacker", "?"))
+				+ " → "
+				+ str(battle.get("defender", "?"))
+				+ " · "
+				+ res
+			)
+
+
 func _schedule_auto_exit() -> void:
 	_auto_exit_gen += 1
 	var gen := _auto_exit_gen
@@ -629,6 +813,9 @@ func _schedule_auto_exit() -> void:
 
 func _draw_board() -> void:
 	var game := _view_game()
+	if game == "junqi":
+		_draw_junqi_board()
+		return
 	var s := _board_size()
 	var c := _cell_px()
 	var detail := _view_detail()
@@ -674,16 +861,61 @@ func _draw_board() -> void:
 				var col2 := Color(0.25, 0.45, 0.9) if game == "checkers" else Color(0.95, 0.95, 0.93)
 				_board_ctrl.draw_circle(center, c * 0.38, col2)
 				_board_ctrl.draw_arc(center, c * 0.38, 0, TAU, 24, Color(0.3, 0.3, 0.3), 1.2)
-	if game == "junqi":
-		_board_ctrl.draw_string(
-			ThemeDB.fallback_font,
-			Vector2(120, 270),
-			MWi18n.t("军棋桌 · 筹建中", "Junqi · Coming soon"),
-			HORIZONTAL_ALIGNMENT_LEFT,
-			-1,
-			28,
-			Color(0.2, 0.15, 0.25)
-		)
+
+
+func _draw_junqi_board() -> void:
+	"""12×5 fog board; own pieces show rank labels."""
+	var detail := _view_detail()
+	var sz := _junqi_board_size()
+	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.78, 0.82, 0.7))
+	var cw := sz.x / float(JUNQI_COLS + 1)
+	var ch := sz.y / float(JUNQI_ROWS + 1)
+	var cells: Array = detail.get("cells", [])
+	var by_key: Dictionary = {}
+	for cell in cells:
+		if typeof(cell) != TYPE_DICTIONARY:
+			continue
+		var r := int(cell.get("r", -1))
+		var c := int(cell.get("c", -1))
+		by_key["%d,%d" % [r, c]] = cell
+	for r in JUNQI_ROWS:
+		for c in JUNQI_COLS:
+			var center := Vector2(cw * float(c + 1), ch * float(r + 1))
+			var half := Vector2(cw, ch) * 0.46
+			var rect := Rect2(center - half, half * 2.0)
+			var cell: Dictionary = by_key.get("%d,%d" % [r, c], {})
+			var kind := str(cell.get("kind", "station"))
+			var fill := Color(0.88, 0.9, 0.8)
+			if kind == "hq":
+				fill = Color(0.95, 0.85, 0.45)
+			elif kind == "camp":
+				fill = Color(0.55, 0.75, 0.95)
+			# Mountain gap tint on front rows cols 1,3
+			if r in [5, 6] and c in [1, 3]:
+				fill = Color(0.55, 0.5, 0.42)
+			_board_ctrl.draw_rect(rect, fill)
+			_board_ctrl.draw_rect(rect, Color(0.25, 0.22, 0.18), false, 1.0)
+			if _sel.x == c and _sel.y == r:
+				_board_ctrl.draw_rect(rect.grow(-2.0), Color(0.2, 0.95, 0.45, 0.45))
+			var piece: Variant = cell.get("piece", null)
+			if typeof(piece) != TYPE_DICTIONARY or piece == null:
+				continue
+			var side := str(piece.get("side", ""))
+			var ptype := str(piece.get("type", "?"))
+			var chip := Color(0.15, 0.15, 0.18) if side == "black" else Color(0.82, 0.22, 0.18)
+			_board_ctrl.draw_circle(center, min(cw, ch) * 0.36, chip)
+			var label := str(JUNQI_LABEL.get(ptype, ptype))
+			var font: Font = MWFonts.font() if MWFonts != null else ThemeDB.fallback_font
+			var fs := int(min(cw, ch) * 0.42)
+			_board_ctrl.draw_string(
+				font,
+				center + Vector2(-fs * 0.35, fs * 0.35),
+				label,
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1,
+				fs,
+				Color(1, 1, 1) if side == "black" else Color(1, 0.95, 0.85)
+			)
 
 
 func _cell_rect(x: int, y: int, c: float) -> Rect2:
@@ -705,6 +937,7 @@ func _on_board_input(event: InputEvent) -> void:
 	var d := _view_detail()
 	var game := str(d.get("game", "gomoku"))
 	if game == "junqi":
+		_on_junqi_board_click(mb.position, d)
 		return
 	if str(d.get("status", "")) != "playing":
 		return
@@ -745,6 +978,52 @@ func _on_board_input(event: InputEvent) -> void:
 		"fy": _sel.y,
 		"tx": x,
 		"ty": y,
+	})
+	_sel = Vector2i(-1, -1)
+
+
+func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
+	"""Select own piece then target; coords sent as row/col (fx/fy)."""
+	if str(d.get("status", "")) != "playing":
+		return
+	var my := _my_junqi_side()
+	if my == "" or str(d.get("turn", "")) != my:
+		return
+	var sz := _junqi_board_size()
+	var cw := sz.x / float(JUNQI_COLS + 1)
+	var ch := sz.y / float(JUNQI_ROWS + 1)
+	var col := int(round(pos.x / cw)) - 1
+	var row := int(round(pos.y / ch)) - 1
+	if col < 0 or row < 0 or col >= JUNQI_COLS or row >= JUNQI_ROWS:
+		return
+	var cells: Array = d.get("cells", [])
+	var piece_side := ""
+	for cell in cells:
+		if typeof(cell) != TYPE_DICTIONARY:
+			continue
+		if int(cell.get("r", -1)) != row or int(cell.get("c", -1)) != col:
+			continue
+		var piece: Variant = cell.get("piece", null)
+		if typeof(piece) == TYPE_DICTIONARY and piece != null:
+			piece_side = str(piece.get("side", ""))
+		break
+	if _sel.x < 0:
+		if piece_side == my:
+			_sel = Vector2i(col, row)  # x=col, y=row
+			_board_ctrl.queue_redraw()
+		return
+	if piece_side == my:
+		_sel = Vector2i(col, row)
+		_board_ctrl.queue_redraw()
+		return
+	# Gateway try_move(side, fr, fc, tr, tc) — row, col.
+	ws.send_cmd({
+		"action": "chess_move",
+		"table_id": _view_table_id,
+		"fx": _sel.y,
+		"fy": _sel.x,
+		"tx": row,
+		"ty": col,
 	})
 	_sel = Vector2i(-1, -1)
 

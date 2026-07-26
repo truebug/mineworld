@@ -37,6 +37,7 @@ from score_client import build_and_post
 from gomoku import BLACK, EMPTY, WHITE, GomokuBoard
 from checkers import CheckersBoard, SIZE as CHECKERS_SIZE
 from checkers import BLACK as CK_BLACK, WHITE as CK_WHITE, EMPTY as CK_EMPTY
+from junqi import JunqiBoard
 
 try:  # optional: only --physics mujoco needs it
     import mujoco
@@ -735,13 +736,13 @@ def _new_board_for_game(game: str) -> Any:
     if game == "checkers":
         return CheckersBoard()
     if game == "junqi":
-        return StubBoard()
+        return JunqiBoard()
     return GomokuBoard()
 
 
 @dataclass
 class ChessTable:
-    """One lounge table: gomoku / checkers / junqi stub."""
+    """One lounge table: gomoku / checkers / junqi."""
 
     table_id: str
     game: str = "gomoku"
@@ -759,12 +760,51 @@ class ChessTable:
         self.board = _new_board_for_game(self.game)
         self.turn = BLACK
         if self.game == "junqi":
-            self.status = "stub"
+            self.status = "layout"
         else:
             self.status = "playing"
 
     def to_detail(self) -> dict[str, Any]:
         """Snapshot for chess_table_update events."""
+        if self.game == "junqi" and isinstance(self.board, JunqiBoard):
+            # Viewer-agnostic full fog for broadcast; clients filter by sid.
+            base = {
+                "table_id": self.table_id,
+                "game": self.game,
+                "title_zh": self.title_zh,
+                "title_en": self.title_en,
+                "black_sid": self.black_sid,
+                "white_sid": self.white_sid,
+                "vs_ai": self.vs_ai,
+                "status": self.board.phase
+                if self.board.phase != "layout"
+                else ("layout" if (self.black_sid or self.white_sid) else "idle"),
+            }
+            base.update(self.board.to_detail(viewer=None))
+            # Fog: strip types for broadcast; per-session personalization in handler optional.
+            # Keep "?" for all pieces in shared event — client uses own layout cache for self.
+            fog_cells = []
+            for cell in base.get("cells") or []:
+                c = dict(cell)
+                p = c.get("piece")
+                if isinstance(p, dict) and p.get("type") not in (None, "?"):
+                    # Always hide identity in room broadcast; sitters re-query via dedicated field.
+                    c["piece"] = {
+                        "side": p.get("side"),
+                        "type": "?",
+                        "locked": p.get("locked", False),
+                    }
+                fog_cells.append(c)
+            base["cells"] = fog_cells
+            base["junqi_open"] = self.board.to_detail(viewer=None)
+            # Provide both sides' true views keyed by sid for room members (small room).
+            views: dict[str, Any] = {}
+            if self.black_sid:
+                views[self.black_sid] = self.board.to_detail(viewer="black")
+            if self.white_sid:
+                views[self.white_sid] = self.board.to_detail(viewer="red")
+            base["junqi_views"] = views
+            return base
         winner = int(getattr(self.board, "winner", EMPTY) or EMPTY)
         cells = []
         if hasattr(self.board, "snapshot_cells"):
@@ -1201,7 +1241,7 @@ def _make_chess_tables(contract: dict[str, Any]) -> dict[str, ChessTable]:
             title_zh=spec["title_zh"],
             title_en=spec["title_en"],
             board=_new_board_for_game(game),
-            status="stub" if game == "junqi" else "idle",
+            status="layout" if game == "junqi" else "idle",
         )
         out[spec["id"]] = table
     return out
@@ -2214,8 +2254,14 @@ class EchoGateway:
                 table.board = _new_board_for_game(table.game)
                 table.vs_ai = False
                 table.turn = BLACK
-                table.status = "stub" if table.game == "junqi" else "idle"
+                table.status = "layout" if table.game == "junqi" else "idle"
             elif len(humans) == 1 and table.game != "junqi":
+                alone = humans[0]
+                table.black_sid = alone
+                table.white_sid = None
+                table.vs_ai = True
+                table.reset_board()
+            elif len(humans) == 1 and table.game == "junqi":
                 alone = humans[0]
                 table.black_sid = alone
                 table.white_sid = None
@@ -2246,14 +2292,6 @@ class EchoGateway:
                 self._broadcast_chess_table(room, table)
                 return
             self._chess_free_session(room, sid, broadcast=True)
-            if table.game == "junqi":
-                # WIP: allow sit for preview, no play.
-                if table.black_sid is None:
-                    table.black_sid = sid
-                table.status = "stub"
-                table.vs_ai = False
-                self._broadcast_chess_table(room, table)
-                return
             if table.black_sid is None:
                 table.black_sid = sid
             elif table.white_sid is None:
@@ -2272,9 +2310,44 @@ class EchoGateway:
         if action == "chess_reset":
             if sid not in (table.black_sid, table.white_sid):
                 return
-            if table.game == "junqi":
-                return
             table.reset_board()
+            self._broadcast_chess_table(room, table)
+            return
+        if action == "junqi_layout":
+            if table.game != "junqi" or not isinstance(table.board, JunqiBoard):
+                return
+            side = None
+            if table.black_sid == sid:
+                side = "black"
+            elif table.white_sid == sid:
+                side = "red"
+            else:
+                return
+            if bool(payload.get("auto", False)):
+                norm = table.board.auto_layout(side)
+            else:
+                layout = payload.get("layout")
+                if not isinstance(layout, dict):
+                    return
+                norm = {}
+                for k, v in layout.items():
+                    if isinstance(v, (list, tuple)) and len(v) >= 2:
+                        norm[str(k)] = [int(v[0]), int(v[1])]
+            if not table.board.apply_layout(side, norm):
+                return
+            if (
+                table.vs_ai
+                and side == "black"
+                and table.board.layout_ready.get("black")
+                and not table.board.layout_ready.get("red")
+            ):
+                ai_layout = table.board.auto_layout("red")
+                table.board.apply_layout("red", ai_layout)
+            table.status = (
+                "playing"
+                if table.board.phase == "playing"
+                else "layout"
+            )
             self._broadcast_chess_table(room, table)
             return
         if action == "chess_place":
@@ -2310,6 +2383,40 @@ class EchoGateway:
             self._broadcast_chess_table(room, table)
             return
         if action == "chess_move":
+            if table.game == "junqi" and isinstance(table.board, JunqiBoard):
+                side = None
+                if table.black_sid == sid:
+                    side = "black"
+                elif table.white_sid == sid and not table.vs_ai:
+                    side = "red"
+                else:
+                    return
+                try:
+                    fx = int(payload.get("fx"))
+                    fy = int(payload.get("fy"))
+                    tx = int(payload.get("tx"))
+                    ty = int(payload.get("ty"))
+                except (TypeError, ValueError):
+                    return
+                if table.board.try_move(side, fx, fy, tx, ty) is None:
+                    return
+                if (
+                    table.vs_ai
+                    and table.board.phase == "playing"
+                    and table.board.turn == "red"
+                ):
+                    table.board.ai_move("red")
+                table.status = (
+                    "finished"
+                    if table.board.phase == "finished"
+                    else (
+                        "playing"
+                        if table.board.phase == "playing"
+                        else "layout"
+                    )
+                )
+                self._broadcast_chess_table(room, table)
+                return
             if table.game != "checkers" or table.status != "playing":
                 return
             try:
@@ -2431,7 +2538,14 @@ class EchoGateway:
         if action == "set_hub_floor":
             self._apply_hub_floor(session, payload)
             return
-        if action in ("chess_sit", "chess_leave", "chess_place", "chess_reset", "chess_move"):
+        if action in (
+            "chess_sit",
+            "chess_leave",
+            "chess_place",
+            "chess_reset",
+            "chess_move",
+            "junqi_layout",
+        ):
             self._handle_chess_cmd(session, action, payload)
             return
         mech = session.mech
