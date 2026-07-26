@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-07-26 · 棋牌室一期（门 P + 五子棋人机）
+
+- **场景**：`demo_chessroom.tscn` 封闭暖色房间（24×18m）——4 张棋桌 × 2 椅，走近按 F 落座打开棋盘面板，F/Esc 起身，Esc 回大厅；一期**纯离线**（无 gateway 连接，人人对战二期再接房间权威）。
+- **玩法**：五子棋人机对弈——`gomoku.gd`（15×15 纯逻辑 RefCounted：落子/胜负/威胁评分 AI，攻×1.05 偏置）；`chessroom.gd`（移动复用 avatar local_predict + CameraRig，Web DOM 键桥，CanvasLayer 2D 棋盘 `_draw` 渲染 + 点击落子 + 0.35s AI 延迟）。
+- **Hub**：东墙新门 `DoorChess`（22.5, -14，紫色自发光，标签「P 棋牌室」），`hub.gd` 接线 armed/near/context/过场标签；提示行加 `P Chess`。
+- **顺手修复**：RMB 转头灵敏度（衰减 30→8/s、增益 0.4→0.6——慢速拖动不再死于 cmd tick 间隔）。
+- **验证**：lint 0 findings；boot 检查扩至 5 场景全 BOOT OK。
+
 ## 2026-07-24 · Hub WoW 式右键转头（turn-drive）
 
 - **操控**：大厅右键按住 = 身体随鼠标水平转动（WoW 同款）；左键窥视松手回中不变。按右键瞬间身体对齐当前视线、相机回正肩后。

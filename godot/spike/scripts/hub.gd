@@ -10,6 +10,7 @@ const CMD_HZ_LOW := 5.0
 const WORKSHOP_SCENE := "res://demo_workshop.tscn"
 const CITY_SCENE := "res://demo_city.tscn"
 const RACE_SCENE := "res://demo_race.tscn"
+const CHESS_SCENE := "res://demo_chessroom.tscn"
 const LOBBY_SCENE := "res://demo_lobby.tscn"
 const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const _WEB_BLOCK_CODES := {
@@ -38,6 +39,7 @@ const _WEB_BLOCK_CODES := {
 @onready var door_stub_d: Node3D = $World/DoorStubD
 @onready var door_stub_e: Node3D = $World/DoorStubE
 @onready var door_race: Node3D = $World/DoorRace
+@onready var door_chess: Node3D = $World/DoorChess
 @onready var hub_life: Node3D = $HubLife
 @onready var map_title: Label = $HUD/MapPanel/MapVBox/MapTitle
 
@@ -714,7 +716,7 @@ func _compose_and_push_tips() -> void:
 			+ "（点击折叠）",
 			"WASD strafe | Q/E turn | F interact | Space jump\n"
 			+ "LMB peek · RMB sticky look · MMB/L+R pan · wheel zoom · C recenter · V camera\n"
-			+ "Doors: A Workshop · B Training · C Cards · D Edge · E Arena(WIP) · R Race\n"
+			+ "Doors: A Workshop · B Training · C Cards · D Edge · E Arena(WIP) · R Race · P Chess\n"
 			+ "(click to collapse)"
 		)
 	)
@@ -974,8 +976,12 @@ func _check_doors() -> void:
 		door_race != null
 		and own.global_position.distance_to(door_race.global_position) < DOOR_ENTER_DIST
 	)
+	var near_p := (
+		door_chess != null
+		and own.global_position.distance_to(door_chess.global_position) < DOOR_ENTER_DIST
+	)
 	if not _doors_armed:
-		if not near_a and not near_b and not near_r:
+		if not near_a and not near_b and not near_r and not near_p:
 			_doors_armed = true
 		return
 	if near_a:
@@ -986,6 +992,9 @@ func _check_doors() -> void:
 		return
 	if near_r:
 		_enter_level(RACE_SCENE)
+		return
+	if near_p:
+		_enter_level(CHESS_SCENE)
 
 
 func _update_door_context() -> void:
@@ -1017,6 +1026,10 @@ func _update_door_context() -> void:
 		[door_race, "r", MWi18n.t(
 			"门 R · 赛车场 — 走近进入（MuJoCo · 最多 6 人 · 计时冲线）。",
 			"Door R · Race oval — walk in (MuJoCo · max 6 · timed finish)."
+		)],
+		[door_chess, "p", MWi18n.t(
+			"门 P · 棋牌室 — 走近进入 · 五子棋人机对弈（人人对战/跳棋规划中）。",
+			"Door P · Chess Room — walk in · gomoku vs AI (PvP & more games planned)."
 		)],
 	]
 	for row in candidates:
@@ -1621,6 +1634,9 @@ func _enter_level(scene_path: String) -> void:
 		label = MWi18n.t("赛车场", "Race")
 		accent = "#e85a7a"
 		play_room = "race"
+	elif scene_path.find("chessroom") >= 0:
+		label = MWi18n.t("棋牌室", "Chess Room")
+		accent = "#9a5ae8"
 	if _is_web:
 		var q_js := (
 			"(function(){try{var u=new URL(location.href);"
