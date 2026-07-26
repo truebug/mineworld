@@ -1,5 +1,5 @@
-## Chess lounge: Hub-mode FakeMech presence + thin gateway gomoku tables.
-## Join demo_chessroom / room=chess; F sit → chess_sit; Esc → Hub.
+## Chess lounge: Hub FakeMech presence + multi-game tables (gomoku / checkers / junqi stub).
+## Join demo_chessroom / room=chess; F sit; Esc → Hub.
 extends Node3D
 
 const MOVE_SPEED := 2.8
@@ -8,6 +8,14 @@ const CMD_HZ := 20.0
 const SIT_DIST := 2.4
 const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const GomokuScript := preload("res://scripts/gomoku.gd")
+const AUTO_EXIT_S := 2.4
+## Fallback meta until first chess_table_update arrives.
+const TABLE_META := {
+	"table_1": {"game": "gomoku", "title_zh": "五子棋 · 甲桌", "title_en": "Gomoku A", "accent": Color(0.95, 0.55, 0.2)},
+	"table_2": {"game": "gomoku", "title_zh": "五子棋 · 乙桌", "title_en": "Gomoku B", "accent": Color(0.95, 0.7, 0.35)},
+	"table_3": {"game": "checkers", "title_zh": "跳棋", "title_en": "Halma", "accent": Color(0.35, 0.75, 0.95)},
+	"table_4": {"game": "junqi", "title_zh": "军棋（筹建中）", "title_en": "Junqi (WIP)", "accent": Color(0.75, 0.45, 0.9)},
+}
 
 @export var level_id := "demo_chessroom"
 @export var gateway_url := "ws://127.0.0.1:8765"
@@ -30,12 +38,12 @@ var _board_ctrl: Control = null
 var _status_label: Label = null
 var _title_label: Label = null
 var _result_label: Label = null
-## table_id → last chess_table_update detail
+var _tips_label: Label = null
 var _tables: Dictionary = {}
 var _view_table_id := ""
 var _seated_table_id := ""
 var _auto_exit_gen := 0
-const AUTO_EXIT_S := 2.4
+var _sel := Vector2i(-1, -1)
 
 
 func _ready() -> void:
@@ -45,6 +53,8 @@ func _ready() -> void:
 		scene_avatar.visible = false
 	if camera_rig != null and "turn_drive_enabled" in camera_rig:
 		camera_rig.turn_drive_enabled = true
+	_label_tables()
+	_push_chess_shell_tips()
 	if _is_web:
 		if not MWWebInput.web_key_event.is_connected(_on_web_key_event):
 			MWWebInput.web_key_event.connect(_on_web_key_event)
@@ -60,11 +70,82 @@ func _ready() -> void:
 	ws.gateway_error.connect(_on_gateway_error)
 	ws.connect_to_gateway(_resolve_gateway_url())
 	MWTransition.notify_arrived()
-	print("[MW] chessroom ready (online presence + table FSM)")
+	print("[MW] chessroom ready (gomoku + checkers + junqi stub)")
+
+
+func _push_chess_shell_tips() -> void:
+	"""Replace Hub DOM tips with chessroom guide."""
+	var full := MWi18n.t(
+		"棋牌室\n"
+		+ "走近棋桌按 F 落座 · Esc 起身/回母港\n"
+		+ "甲/乙桌：五子棋 · 丙桌：跳棋 · 丁桌：军棋（筹建中）\n"
+		+ "WASD 平移 · Q/E 转向 · 人机可单人开局，第二人入座变对战",
+		"Chess Lounge\n"
+		+ "Walk to a table · F sit · Esc stand / Hub\n"
+		+ "A/B Gomoku · C Halma · D Junqi (WIP)\n"
+		+ "WASD move · Q/E turn · solo vs AI; second sitter → PvP"
+	)
+	var collapsed := MWi18n.t("棋牌室 · 提示 ›（点击）", "Chess · tips › (click)")
+	if _is_web:
+		JavaScriptBridge.eval(
+			(
+				"(function(){var t=%s;var c=%s;"
+				+ "if(typeof window.MW_SET_HUD==='function'){window.MW_SET_HUD(t,c);}"
+				+ "})()"
+			) % [JSON.stringify(full), JSON.stringify(collapsed)],
+			true
+		)
+		return
+	if _tips_label == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 5
+		add_child(layer)
+		_tips_label = Label.new()
+		_tips_label.position = Vector2(16, 16)
+		_tips_label.size = Vector2(420, 160)
+		_tips_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		layer.add_child(_tips_label)
+		var f: Font = MWFonts.font() if MWFonts != null else null
+		if f != null:
+			_tips_label.add_theme_font_override("font", f)
+	_tips_label.text = full
+
+
+func _label_tables() -> void:
+	"""3D nameplates so each table type is obvious at a glance."""
+	var room_lab := get_node_or_null("RoomLabel") as Label3D
+	if room_lab != null:
+		room_lab.text = MWi18n.t(
+			"棋牌室 · 走近棋桌按 F · 甲乙五子棋 / 丙跳棋 / 丁军棋",
+			"Chess · F to sit · A/B Gomoku · C Halma · D Junqi"
+		)
+		MWFonts.apply_label3d(room_lab)
+	for t in get_tree().get_nodes_in_group("chess_tables"):
+		var node := t as Node3D
+		if node == null:
+			continue
+		var tid := _table_id_for_node(node)
+		var meta: Dictionary = TABLE_META.get(tid, {})
+		var title := MWi18n.t(
+			str(meta.get("title_zh", tid)),
+			str(meta.get("title_en", tid))
+		)
+		var lab := node.get_node_or_null("TableName") as Label3D
+		if lab == null:
+			lab = Label3D.new()
+			lab.name = "TableName"
+			lab.position = Vector3(0, 0.55, 0)
+			lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			lab.font_size = 42
+			lab.outline_size = 6
+			lab.pixel_size = 0.01
+			node.add_child(lab)
+		lab.text = title
+		lab.modulate = meta.get("accent", Color(1, 0.9, 0.75))
+		MWFonts.apply_label3d(lab)
 
 
 func _load_profile() -> Dictionary:
-	"""Reuse portal nick / accent from MWi18n meta or URL."""
 	var nick := "Guest"
 	var accent := "#9a5ae8"
 	if MWi18n.has_meta("mw_nick"):
@@ -310,7 +391,6 @@ func _on_escape() -> void:
 
 
 func _leave_to_hub() -> void:
-	"""Esc → Hub; strip ?room= so Hub does not join play rooms."""
 	if ws != null:
 		ws.close_link()
 	if _is_web:
@@ -356,8 +436,9 @@ func _toggle_board() -> void:
 	if _board_open():
 		var detail: Dictionary = _tables.get(_view_table_id, {})
 		var status := str(detail.get("status", ""))
-		if status == "finished" and _seated_table_id == _view_table_id:
-			_auto_exit_gen += 1  # cancel pending auto-stand
+		var game := _view_game()
+		if status == "finished" and _seated_table_id == _view_table_id and game != "junqi":
+			_auto_exit_gen += 1
 			if _result_label != null:
 				_result_label.visible = false
 			ws.send_cmd({"action": "chess_reset", "table_id": _view_table_id})
@@ -368,6 +449,7 @@ func _toggle_board() -> void:
 	if nearest == null:
 		return
 	_view_table_id = _table_id_for_node(nearest)
+	_sel = Vector2i(-1, -1)
 	ws.send_cmd({"action": "chess_sit", "table_id": _view_table_id})
 	_board_layer.visible = true
 	_refresh_board_from_authority()
@@ -376,6 +458,7 @@ func _toggle_board() -> void:
 func _close_board() -> void:
 	_auto_exit_gen += 1
 	_board_layer.visible = false
+	_sel = Vector2i(-1, -1)
 	if _result_label != null:
 		_result_label.visible = false
 	if _seated_table_id != "":
@@ -422,7 +505,6 @@ func _build_board_ui() -> void:
 
 
 func _apply_board_fonts() -> void:
-	"""Noto SC so win text is not tofu (only Latin F/Esc visible)."""
 	var f: Font = MWFonts.font() if MWFonts != null else null
 	if f == null:
 		return
@@ -435,12 +517,33 @@ func _board_px() -> float:
 	return 540.0
 
 
-func _cell_px() -> float:
-	return _board_px() / float(GomokuScript.SIZE + 1)
-
-
 func _view_detail() -> Dictionary:
-	return _tables.get(_view_table_id, {}) as Dictionary
+	var d: Dictionary = _tables.get(_view_table_id, {}) as Dictionary
+	if d.is_empty() and TABLE_META.has(_view_table_id):
+		var meta: Dictionary = TABLE_META[_view_table_id]
+		return {
+			"table_id": _view_table_id,
+			"game": meta.get("game", "gomoku"),
+			"title_zh": meta.get("title_zh", ""),
+			"title_en": meta.get("title_en", ""),
+			"status": "idle",
+			"cells": [],
+		}
+	return d
+
+
+func _view_game() -> String:
+	return str(_view_detail().get("game", "gomoku"))
+
+
+func _board_size() -> int:
+	if _view_game() == "checkers":
+		return 8
+	return GomokuScript.SIZE
+
+
+func _cell_px() -> float:
+	return _board_px() / float(_board_size() + 1)
 
 
 func _my_color() -> int:
@@ -454,30 +557,35 @@ func _my_color() -> int:
 
 func _refresh_board_from_authority() -> void:
 	var d := _view_detail()
+	var game := str(d.get("game", "gomoku"))
 	var vs_ai := bool(d.get("vs_ai", false))
+	var title := MWi18n.t(str(d.get("title_zh", "")), str(d.get("title_en", "")))
+	if title == "":
+		title = _view_table_id
 	if _title_label != null:
-		if vs_ai:
-			_title_label.text = MWi18n.t(
-				"五子棋 · 人机（起身：Esc）",
-				"Gomoku vs AI (Esc to stand)"
-			)
+		if game == "junqi":
+			_title_label.text = title
+		elif vs_ai:
+			_title_label.text = title + MWi18n.t(" · 人机", " · vs AI")
 		else:
-			_title_label.text = MWi18n.t(
-				"五子棋 · 人对人（起身：Esc）",
-				"Gomoku PvP (Esc to stand)"
-			)
+			_title_label.text = title + MWi18n.t(" · 人对人", " · PvP")
 	var status := str(d.get("status", "idle"))
 	var winner := int(d.get("winner", 0))
 	var turn := int(d.get("turn", 1))
 	var my := _my_color()
 	if _result_label != null:
 		_result_label.visible = false
-	if status == "finished":
+	if status == "stub" or game == "junqi":
+		_set_status(MWi18n.t(
+			"军棋桌筹建中 · Esc 起身\n（布局与规则 SSOT 后接入）",
+			"Junqi WIP · Esc to stand\n(rules SSOT later)"
+		))
+	elif status == "finished":
 		var result := ""
 		if winner == GomokuScript.BLACK:
-			result = MWi18n.t("● 黑棋获胜", "● Black wins")
+			result = MWi18n.t("● 黑/红方获胜", "● Black/Red wins")
 		elif winner == GomokuScript.WHITE:
-			result = MWi18n.t("○ 白棋获胜", "○ White wins")
+			result = MWi18n.t("○ 白/蓝方获胜", "○ White/Blue wins")
 		elif bool(d.get("full", false)):
 			result = MWi18n.t("△ 平局", "△ Draw")
 		else:
@@ -494,7 +602,10 @@ func _refresh_board_from_authority() -> void:
 	elif my == GomokuScript.EMPTY:
 		_set_status(MWi18n.t("旁观中", "Spectating"))
 	elif turn == my:
-		_set_status(MWi18n.t("轮到你了 · 点击落子", "Your move — click"))
+		if game == "checkers":
+			_set_status(MWi18n.t("选己子再点目标格（邻步或跳）", "Pick your piece, then a target (step/jump)"))
+		else:
+			_set_status(MWi18n.t("轮到你了 · 点击落子", "Your move — click"))
 	elif vs_ai:
 		_set_status(MWi18n.t("AI 思考中…", "AI thinking…"))
 	else:
@@ -504,7 +615,6 @@ func _refresh_board_from_authority() -> void:
 
 
 func _schedule_auto_exit() -> void:
-	"""After a short win beat, leave the seat and close the board."""
 	_auto_exit_gen += 1
 	var gen := _auto_exit_gen
 	get_tree().create_timer(AUTO_EXIT_S).timeout.connect(
@@ -518,20 +628,27 @@ func _schedule_auto_exit() -> void:
 
 
 func _draw_board() -> void:
-	var s := GomokuScript.SIZE
+	var game := _view_game()
+	var s := _board_size()
 	var c := _cell_px()
+	var detail := _view_detail()
 	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE * _board_px()), Color(0.87, 0.72, 0.47))
+	# Checkers: tint home camps.
+	if game == "checkers":
+		for xy in [[0, 0], [1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [0, 3]]:
+			_board_ctrl.draw_rect(_cell_rect(xy[0], xy[1], c), Color(0.9, 0.45, 0.35, 0.35))
+		for xy in [[7, 7], [6, 7], [5, 7], [4, 7], [7, 6], [6, 6], [5, 6], [7, 5], [6, 5], [7, 4]]:
+			_board_ctrl.draw_rect(_cell_rect(xy[0], xy[1], c), Color(0.35, 0.55, 0.95, 0.35))
 	for i in s:
 		var p := c * float(i + 1)
 		_board_ctrl.draw_line(Vector2(c, p), Vector2(_board_px() - c, p), Color(0.25, 0.18, 0.1), 1.5)
 		_board_ctrl.draw_line(Vector2(p, c), Vector2(p, _board_px() - c), Color(0.25, 0.18, 0.1), 1.5)
-	for star in [Vector2i(3, 3), Vector2i(11, 3), Vector2i(3, 11), Vector2i(11, 11), Vector2i(7, 7)]:
-		_board_ctrl.draw_circle(_cell_center(star.x, star.y), 4.0, Color(0.25, 0.18, 0.1))
-	var detail := _view_detail()
+	if game == "gomoku":
+		for star in [Vector2i(3, 3), Vector2i(11, 3), Vector2i(3, 11), Vector2i(11, 11), Vector2i(7, 7)]:
+			_board_ctrl.draw_circle(_cell_center(star.x, star.y), 4.0, Color(0.25, 0.18, 0.1))
 	var cells: Array = detail.get("cells", [])
 	var win_set: Dictionary = {}
-	var win_line: Array = detail.get("win_line", [])
-	for pt in win_line:
+	for pt in detail.get("win_line", []):
 		if typeof(pt) != TYPE_ARRAY:
 			continue
 		var arr := pt as Array
@@ -548,11 +665,30 @@ func _draw_board() -> void:
 			var key := "%d,%d" % [x, y]
 			if win_set.has(key):
 				_board_ctrl.draw_circle(center, c * 0.55, Color(1.0, 0.75, 0.15, 0.85))
+			if _sel.x == x and _sel.y == y:
+				_board_ctrl.draw_circle(center, c * 0.5, Color(0.2, 0.95, 0.45, 0.55))
 			if v == GomokuScript.BLACK:
-				_board_ctrl.draw_circle(center, c * 0.42, Color(0.08, 0.08, 0.1))
+				var col := Color(0.75, 0.2, 0.15) if game == "checkers" else Color(0.08, 0.08, 0.1)
+				_board_ctrl.draw_circle(center, c * 0.38, col)
 			elif v == GomokuScript.WHITE:
-				_board_ctrl.draw_circle(center, c * 0.42, Color(0.95, 0.95, 0.93))
-				_board_ctrl.draw_arc(center, c * 0.42, 0, TAU, 24, Color(0.3, 0.3, 0.3), 1.2)
+				var col2 := Color(0.25, 0.45, 0.9) if game == "checkers" else Color(0.95, 0.95, 0.93)
+				_board_ctrl.draw_circle(center, c * 0.38, col2)
+				_board_ctrl.draw_arc(center, c * 0.38, 0, TAU, 24, Color(0.3, 0.3, 0.3), 1.2)
+	if game == "junqi":
+		_board_ctrl.draw_string(
+			ThemeDB.fallback_font,
+			Vector2(120, 270),
+			MWi18n.t("军棋桌 · 筹建中", "Junqi · Coming soon"),
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			28,
+			Color(0.2, 0.15, 0.25)
+		)
+
+
+func _cell_rect(x: int, y: int, c: float) -> Rect2:
+	var center := _cell_center(x, y)
+	return Rect2(center - Vector2(c, c) * 0.5, Vector2(c, c))
 
 
 func _cell_center(x: int, y: int) -> Vector2:
@@ -567,6 +703,9 @@ func _on_board_input(event: InputEvent) -> void:
 	if not (mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT):
 		return
 	var d := _view_detail()
+	var game := str(d.get("game", "gomoku"))
+	if game == "junqi":
+		return
 	if str(d.get("status", "")) != "playing":
 		return
 	var my := _my_color()
@@ -575,12 +714,39 @@ func _on_board_input(event: InputEvent) -> void:
 	var c := _cell_px()
 	var x := int(round(mb.position.x / c)) - 1
 	var y := int(round(mb.position.y / c)) - 1
+	var s := _board_size()
+	if x < 0 or y < 0 or x >= s or y >= s:
+		return
+	if game == "gomoku":
+		ws.send_cmd({
+			"action": "chess_place",
+			"table_id": _view_table_id,
+			"x": x,
+			"y": y,
+		})
+		return
+	# Checkers: select then move.
+	var cells: Array = d.get("cells", [])
+	var idx := y * s + x
+	var v := int(cells[idx]) if idx < cells.size() else 0
+	if _sel.x < 0:
+		if v == my:
+			_sel = Vector2i(x, y)
+			_board_ctrl.queue_redraw()
+		return
+	if v == my:
+		_sel = Vector2i(x, y)
+		_board_ctrl.queue_redraw()
+		return
 	ws.send_cmd({
-		"action": "chess_place",
+		"action": "chess_move",
 		"table_id": _view_table_id,
-		"x": x,
-		"y": y,
+		"fx": _sel.x,
+		"fy": _sel.y,
+		"tx": x,
+		"ty": y,
 	})
+	_sel = Vector2i(-1, -1)
 
 
 func _set_status(msg: String) -> void:

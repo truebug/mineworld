@@ -88,6 +88,7 @@
 | B2 | 薄 1v1 | 双人同房目标竞速或推箱对决；事件可录 | [ ] **Next** |
 | B3 | 房间模式字段 | join/`extensions.mw.mode`：`solo \| duel \| shared_ffa` | [~] race 已标 `shared_ffa`；通用字段后补 |
 | Chess-P | 棋牌室对齐传送门 | Hub 式 FakeMech + `room=chess`；薄桌面 `chess_*` cmd / `chess_table_update`；人机/PvP | [x] `demo_chessroom` · `scripts/chessroom_smoke.py` |
+| Chess-P2 | 多桌类型 + 跳棋 | 甲乙五子棋 / 丙跳棋 Halma / 丁军棋 stub；壳层说明 | [x] |
 
 ---
 

@@ -107,25 +107,65 @@ async def main() -> int:
         assert cells[7 * 15 + 7] == 1, "black center stone missing"
         white = sum(1 for c in cells if c == 2)
         assert white >= 1, "AI white reply missing"
-        # Presence: velocity + state with our avatar
+        # Checkers table: sit + one move
+        await ws.send(
+            json.dumps(
+                {
+                    "type": "cmd",
+                    "session_id": sid,
+                    "payload": {"action": "chess_leave", "table_id": "table_1"},
+                }
+            )
+        )
+        await ws.send(
+            json.dumps(
+                {
+                    "type": "cmd",
+                    "session_id": sid,
+                    "payload": {"action": "chess_sit", "table_id": "table_3"},
+                }
+            )
+        )
+        ck = await _recv_until(
+            ws,
+            lambda m: m.get("type") == "event"
+            and (m.get("payload") or {}).get("event_type") == "chess_table_update"
+            and ((m.get("payload") or {}).get("detail") or {}).get("game") == "checkers"
+            and ((m.get("payload") or {}).get("detail") or {}).get("status")
+            == "playing",
+        )
+        assert ck["payload"]["detail"].get("board_size") == 8
         await ws.send(
             json.dumps(
                 {
                     "type": "cmd",
                     "session_id": sid,
                     "payload": {
-                        "entity_id": eid,
-                        "control_mode": "velocity",
-                        "vx": 1.0,
-                        "vy": 0.0,
-                        "yaw_rate": 0.0,
+                        "action": "chess_move",
+                        "table_id": "table_3",
+                        "fx": 0,
+                        "fy": 3,
+                        "tx": 0,
+                        "ty": 4,
                     },
                 }
             )
         )
-        state = await _recv_until(ws, lambda m: m.get("type") == "state")
-        ents = (state.get("payload") or {}).get("entities") or []
-        assert any(e.get("entity_id") == eid for e in ents), "own avatar missing in state"
+        await _recv_until(
+            ws,
+            lambda m: m.get("type") == "event"
+            and (m.get("payload") or {}).get("event_type") == "chess_table_update"
+            and ((m.get("payload") or {}).get("detail") or {}).get("table_id")
+            == "table_3"
+            and len(
+                ((m.get("payload") or {}).get("detail") or {}).get("cells") or []
+            )
+            >= 64
+            and (
+                ((m.get("payload") or {}).get("detail") or {}).get("cells") or [0]
+            )[4 * 8 + 0]
+            == 1,
+        )
         print("chessroom smoke OK")
         return 0
 

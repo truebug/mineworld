@@ -82,7 +82,32 @@
       "max_members": 8,
       "default_room_id": "chess",
       "story": "chess_lounge",
-      "chess_tables": ["table_1", "table_2", "table_3", "table_4"],
+      "chess_tables": [
+        {
+          "id": "table_1",
+          "game": "gomoku",
+          "title_zh": "五子棋 · 甲桌",
+          "title_en": "Gomoku A"
+        },
+        {
+          "id": "table_2",
+          "game": "gomoku",
+          "title_zh": "五子棋 · 乙桌",
+          "title_en": "Gomoku B"
+        },
+        {
+          "id": "table_3",
+          "game": "checkers",
+          "title_zh": "跳棋",
+          "title_en": "Halma"
+        },
+        {
+          "id": "table_4",
+          "game": "junqi",
+          "title_zh": "军棋（筹建中）",
+          "title_en": "Junqi (WIP)"
+        }
+      ],
       "bounds": {
         "half_x": 12.0,
         "half_y": 9.0,

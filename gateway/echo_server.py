@@ -35,6 +35,8 @@ from websockets.asyncio.server import ServerConnection, serve
 from recorder import SessionRecorder
 from score_client import build_and_post
 from gomoku import BLACK, EMPTY, WHITE, GomokuBoard
+from checkers import CheckersBoard, SIZE as CHECKERS_SIZE
+from checkers import BLACK as CK_BLACK, WHITE as CK_WHITE, EMPTY as CK_EMPTY
 
 try:  # optional: only --physics mujoco needs it
     import mujoco
@@ -713,30 +715,81 @@ class DynamicProp:
 
 
 @dataclass
+class StubBoard:
+    """Placeholder board for WIP games (junqi)."""
+
+    winner: int = EMPTY
+
+    def reset(self) -> None:
+        self.winner = EMPTY
+
+    def snapshot_cells(self) -> list[int]:
+        return []
+
+    def win_line(self) -> list[list[int]]:
+        return []
+
+
+def _new_board_for_game(game: str) -> Any:
+    """Factory for table board by game type."""
+    if game == "checkers":
+        return CheckersBoard()
+    if game == "junqi":
+        return StubBoard()
+    return GomokuBoard()
+
+
+@dataclass
 class ChessTable:
-    """One gomoku table inside a chess lounge room."""
+    """One lounge table: gomoku / checkers / junqi stub."""
 
     table_id: str
-    board: GomokuBoard = field(default_factory=GomokuBoard)
+    game: str = "gomoku"
+    title_zh: str = ""
+    title_en: str = ""
+    board: Any = field(default_factory=GomokuBoard)
     black_sid: str | None = None
     white_sid: str | None = None
     vs_ai: bool = False
-    status: str = "idle"  # idle | playing | finished
+    status: str = "idle"  # idle | playing | finished | stub
     turn: int = BLACK
+
+    def reset_board(self) -> None:
+        """Reset underlying board for a new round."""
+        self.board = _new_board_for_game(self.game)
+        self.turn = BLACK
+        if self.game == "junqi":
+            self.status = "stub"
+        else:
+            self.status = "playing"
 
     def to_detail(self) -> dict[str, Any]:
         """Snapshot for chess_table_update events."""
+        winner = int(getattr(self.board, "winner", EMPTY) or EMPTY)
+        cells = []
+        if hasattr(self.board, "snapshot_cells"):
+            cells = self.board.snapshot_cells()
+        win_line: list[list[int]] = []
+        if self.status == "finished" and hasattr(self.board, "win_line"):
+            win_line = self.board.win_line()
+        full = False
+        if self.game == "gomoku" and hasattr(self.board, "is_full"):
+            full = bool(self.board.is_full())
         return {
             "table_id": self.table_id,
+            "game": self.game,
+            "title_zh": self.title_zh,
+            "title_en": self.title_en,
             "black_sid": self.black_sid,
             "white_sid": self.white_sid,
             "vs_ai": self.vs_ai,
             "status": self.status,
             "turn": self.turn,
-            "winner": self.board.winner,
-            "cells": self.board.snapshot_cells(),
-            "full": self.board.is_full(),
-            "win_line": self.board.win_line() if self.status == "finished" else [],
+            "winner": winner,
+            "cells": cells,
+            "full": full,
+            "win_line": win_line,
+            "board_size": CHECKERS_SIZE if self.game == "checkers" else 15,
         }
 
     def seated_sids(self) -> list[str]:
@@ -1120,14 +1173,38 @@ def is_chessroom_contract(contract: dict[str, Any]) -> bool:
 
 
 def _make_chess_tables(contract: dict[str, Any]) -> dict[str, ChessTable]:
-    """Build empty table map from contract extensions.mw.chess_tables."""
+    """Build table map from contract extensions.mw.chess_tables."""
     raw = contract_mw(contract).get("chess_tables")
-    ids: list[str]
+    specs: list[dict[str, str]] = []
     if isinstance(raw, list) and raw:
-        ids = [str(x) for x in raw]
+        for item in raw:
+            if isinstance(item, str):
+                specs.append({"id": item, "game": "gomoku", "title_zh": item, "title_en": item})
+            elif isinstance(item, dict) and item.get("id"):
+                specs.append(
+                    {
+                        "id": str(item["id"]),
+                        "game": str(item.get("game") or "gomoku"),
+                        "title_zh": str(item.get("title_zh") or item["id"]),
+                        "title_en": str(item.get("title_en") or item["id"]),
+                    }
+                )
     else:
-        ids = list(CHESS_TABLE_IDS)
-    return {tid: ChessTable(table_id=tid) for tid in ids}
+        for tid in CHESS_TABLE_IDS:
+            specs.append({"id": tid, "game": "gomoku", "title_zh": tid, "title_en": tid})
+    out: dict[str, ChessTable] = {}
+    for spec in specs:
+        game = spec["game"]
+        table = ChessTable(
+            table_id=spec["id"],
+            game=game,
+            title_zh=spec["title_zh"],
+            title_en=spec["title_en"],
+            board=_new_board_for_game(game),
+            status="stub" if game == "junqi" else "idle",
+        )
+        out[spec["id"]] = table
+    return out
 
 
 def hub_max_members(contract: dict[str, Any]) -> int:
@@ -2134,25 +2211,23 @@ class EchoGateway:
                 continue
             humans = [s for s in (table.black_sid, table.white_sid) if s]
             if not humans:
-                table.board.reset()
+                table.board = _new_board_for_game(table.game)
                 table.vs_ai = False
-                table.status = "idle"
                 table.turn = BLACK
-            elif len(humans) == 1:
+                table.status = "stub" if table.game == "junqi" else "idle"
+            elif len(humans) == 1 and table.game != "junqi":
                 alone = humans[0]
                 table.black_sid = alone
                 table.white_sid = None
                 table.vs_ai = True
-                table.board.reset()
-                table.status = "playing"
-                table.turn = BLACK
+                table.reset_board()
             if broadcast:
                 self._broadcast_chess_table(room, table)
 
     def _handle_chess_cmd(
         self, session: Session, action: str, payload: dict[str, Any]
     ) -> None:
-        """Thin table FSM: sit / leave / place / reset."""
+        """Thin table FSM: sit / leave / place / move / reset."""
         room = session.room
         if room is None or not session.joined or not room.chess_tables:
             return
@@ -2171,38 +2246,39 @@ class EchoGateway:
                 self._broadcast_chess_table(room, table)
                 return
             self._chess_free_session(room, sid, broadcast=True)
+            if table.game == "junqi":
+                # WIP: allow sit for preview, no play.
+                if table.black_sid is None:
+                    table.black_sid = sid
+                table.status = "stub"
+                table.vs_ai = False
+                self._broadcast_chess_table(room, table)
+                return
             if table.black_sid is None:
                 table.black_sid = sid
             elif table.white_sid is None:
                 table.white_sid = sid
                 table.vs_ai = False
-                table.board.reset()
-                table.status = "playing"
-                table.turn = BLACK
+                table.reset_board()
                 self._broadcast_chess_table(room, table)
                 return
             else:
                 return
             humans = [s for s in (table.black_sid, table.white_sid) if s]
-            if len(humans) >= 2:
-                table.vs_ai = False
-            else:
-                table.vs_ai = True
-            table.board.reset()
-            table.status = "playing"
-            table.turn = BLACK
+            table.vs_ai = len(humans) < 2
+            table.reset_board()
             self._broadcast_chess_table(room, table)
             return
         if action == "chess_reset":
             if sid not in (table.black_sid, table.white_sid):
                 return
-            table.board.reset()
-            table.status = "playing"
-            table.turn = BLACK
+            if table.game == "junqi":
+                return
+            table.reset_board()
             self._broadcast_chess_table(room, table)
             return
         if action == "chess_place":
-            if table.status != "playing":
+            if table.game != "gomoku" or table.status != "playing":
                 return
             try:
                 x = int(payload.get("x"))
@@ -2231,6 +2307,42 @@ class EchoGateway:
                             table.status = "finished"
                         else:
                             table.turn = BLACK
+            self._broadcast_chess_table(room, table)
+            return
+        if action == "chess_move":
+            if table.game != "checkers" or table.status != "playing":
+                return
+            try:
+                fx = int(payload.get("fx"))
+                fy = int(payload.get("fy"))
+                tx = int(payload.get("tx"))
+                ty = int(payload.get("ty"))
+            except (TypeError, ValueError):
+                return
+            color = CK_EMPTY
+            if table.black_sid == sid:
+                color = CK_BLACK
+            elif table.white_sid == sid and not table.vs_ai:
+                color = CK_WHITE
+            else:
+                return
+            if table.turn != color:
+                return
+            if not table.board.try_move(fx, fy, tx, ty, color):
+                return
+            if table.board.winner != CK_EMPTY:
+                table.status = "finished"
+            else:
+                table.turn = CK_WHITE if color == CK_BLACK else CK_BLACK
+                if table.vs_ai and table.turn == CK_WHITE:
+                    mv = table.board.ai_move()
+                    if mv is not None:
+                        ax, ay, bx, by = mv
+                        if table.board.try_move(ax, ay, bx, by, CK_WHITE):
+                            if table.board.winner != CK_EMPTY:
+                                table.status = "finished"
+                            else:
+                                table.turn = CK_BLACK
             self._broadcast_chess_table(room, table)
 
     async def handler(self, ws: ServerConnection) -> None:
@@ -2319,7 +2431,7 @@ class EchoGateway:
         if action == "set_hub_floor":
             self._apply_hub_floor(session, payload)
             return
-        if action in ("chess_sit", "chess_leave", "chess_place", "chess_reset"):
+        if action in ("chess_sit", "chess_leave", "chess_place", "chess_reset", "chess_move"):
             self._handle_chess_cmd(session, action, payload)
             return
         mech = session.mech

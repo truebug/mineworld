@@ -29,6 +29,13 @@
 - **重构 MWWebInput**（同日）：将 Web 键桥抽象为 MWWebInput autoload 单例——DOM 监听器安装一次、跨场景持久化；is_pressed(keyCode)/web_key_event 信号供三场景同源引用。hub.gd _process/_send_velocity_cmd/箭头键全切 MWWebInput.is_pressed()；on_dom_key_event/sync_mw_keys/web_key 全删除。chessroom 不再自建键桥副本。main.gd 待续。
 - **根因热修 · 棋牌室 WASD 无效**（同日）：多次改键桥无效——真因是 `avatar_puppet._process` 在 `_has_state==false` 时直接 return，而棋牌室纯离线**从不** `push_state`，故 `local_predict`/`set_local_cmd` 永不积分。修复：离线 `local_predict` 自举 pose 锚点、设 `_authority_live`，无权威流时跳过 soft-pull（否则会每帧拽回出生点把位移抵消）。**随后已对齐在线 presence**，默认路径走 `push_state`。
 
+## 2026-07-26 · 棋牌室多桌 + 跳棋 + 壳层说明
+
+- **壳层**：进棋牌室用 `MW_SET_HUD` 覆盖母港 tips →「棋牌室」操作说明（折叠标题同步）。
+- **四桌**：契约 `chess_tables` 对象——甲/乙五子棋、丙跳棋（8×8 Halma）、丁军棋 stub；桌面 Label3D 分色命名。
+- **跳棋**：`gateway/checkers.py` + `chess_move`；选子再落点（邻步/跳）；人机 AI；军棋仅预览文案。
+- **胜负 UX**：Noto 字体 + 高亮 + 自动起身（既有）。
+
 ## 2026-07-24 · Hub WoW 式右键转头（turn-drive）
 
 - **操控**：大厅右键按住 = 身体随鼠标水平转动（WoW 同款）；左键窥视松手回中不变。按右键瞬间身体对齐当前视线、相机回正肩后。
