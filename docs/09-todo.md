@@ -90,7 +90,7 @@
 | Chess-P | 棋牌室对齐传送门 | Hub 式 FakeMech + `room=chess`；薄桌面 `chess_*` cmd / `chess_table_update`；人机/PvP | [x] `demo_chessroom` · `scripts/chessroom_smoke.py` |
 | Chess-P2 | 多桌类型 + 跳棋 | 甲乙五子棋 / 丙跳棋 Halma / 丁军棋 stub；壳层说明 | [x] |
 | Chess-P3 | 军棋可玩 + 规则 UI | SSOT `26`；权威裁判；暗棋透视；规则说明显隐 | [x] 人机可玩；随机→手调→确认；认输/举手；离座判负 |
-| Chess-P4 | 军棋暗棋 hardening | 按 session 单播 view、去掉 `junqi_open`；公网 PvP 门槛 | [ ] |
+| Chess-P4 | 军棋暗棋 hardening | 按 session 单播 view、去掉 `junqi_open`；公网 PvP 门槛 | [x] 2026-07-27 单播+拒着；明文盘已去 |
 
 #### B2 已交付（勿再当 Next）
 

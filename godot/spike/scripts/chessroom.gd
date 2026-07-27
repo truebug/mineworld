@@ -70,6 +70,8 @@ var _view_table_id := ""
 var _seated_table_id := ""
 var _auto_exit_gen := 0
 var _sel := Vector2i(-1, -1)
+## Set while a junqi chess_move is in flight; cleared on table update / reject.
+var _pending_junqi_move: Dictionary = {}
 ## Chess-FX: per-cell piece animation state. Key "x,y" → {kind, t, dur}.
 ## kind: "place" (scale bounce), "capture" (fade+sink), "flip" (junqi reveal).
 var _piece_anims: Dictionary = {}
@@ -329,6 +331,9 @@ func _on_event(payload: Dictionary) -> void:
 	if et == "player_release_control":
 		_controlled = false
 		return
+	if et == "chess_reject":
+		_on_chess_reject(payload.get("detail", {}))
+		return
 	if et != "chess_table_update":
 		return
 	var detail: Variant = payload.get("detail", {})
@@ -346,7 +351,26 @@ func _on_event(payload: Dictionary) -> void:
 	elif _seated_table_id == tid:
 		_seated_table_id = ""
 	if _board_open() and _view_table_id == tid:
+		if not _pending_junqi_move.is_empty():
+			_pending_junqi_move = {}
+			_sel = Vector2i(-1, -1)
 		_refresh_board_from_authority()
+
+
+func _on_chess_reject(detail: Variant) -> void:
+	"""Illegal junqi move/layout — keep selection, show why."""
+	_pending_junqi_move = {}
+	var code := ""
+	if typeof(detail) == TYPE_DICTIONARY:
+		code = str(detail.get("code", ""))
+	if code.begins_with("JUNQI_MOVE"):
+		_set_status(MWi18n.t("非法走子 · 再选己子与目标", "Illegal move · reselect"))
+	elif code.begins_with("JUNQI_LAYOUT"):
+		_set_status(MWi18n.t("布阵无效 · 先随机或调整己子", "Invalid layout · auto or adjust"))
+	else:
+		_set_status(MWi18n.t("操作被拒绝", "Action rejected"))
+	if _board_ctrl != null:
+		_board_ctrl.queue_redraw()
 
 
 func _on_gateway_error(payload: Dictionary) -> void:
@@ -509,6 +533,7 @@ func _close_board() -> void:
 	_auto_exit_gen += 1
 	_board_layer.visible = false
 	_sel = Vector2i(-1, -1)
+	_pending_junqi_move = {}
 	_rules_visible = false
 	_piece_anims.clear()
 	if _result_label != null:
@@ -889,15 +914,27 @@ func _view_detail() -> Dictionary:
 		}
 	if str(d.get("game", "")) != "junqi" or _session_id == "":
 		return d
+	# Prefer server-personalized cells (to_detail(viewer_sid=…)).
+	# Legacy fallback: merge junqi_views[sid] cells only — never clobber turn/status.
 	var views: Variant = d.get("junqi_views", {})
-	if typeof(views) != TYPE_DICTIONARY or not views.has(_session_id):
+	if typeof(views) != TYPE_DICTIONARY:
 		return d
-	var mine: Dictionary = (views[_session_id] as Dictionary).duplicate(true)
+	var mine: Variant = views.get(_session_id, null)
+	if typeof(mine) != TYPE_DICTIONARY:
+		for k in views.keys():
+			if str(k) == _session_id:
+				mine = views[k]
+				break
+	if typeof(mine) != TYPE_DICTIONARY:
+		return d
 	var out := d.duplicate(true)
-	for k in mine.keys():
-		out[k] = mine[k]
-	if str(mine.get("phase", "")) != "":
-		out["status"] = str(mine.get("phase"))
+	var md: Dictionary = mine
+	if md.has("cells"):
+		out["cells"] = md["cells"]
+	if md.has("last_battle"):
+		out["last_battle"] = md["last_battle"]
+	if md.has("flag_revealed"):
+		out["flag_revealed"] = md["flag_revealed"]
 	return out
 
 
@@ -1026,6 +1063,8 @@ func _refresh_board_from_authority() -> void:
 		else:
 			_title_label.text = title + MWi18n.t(" · 人对人", " · PvP")
 	var status := str(d.get("status", "idle"))
+	if game == "junqi" and str(d.get("phase", "")) in ("playing", "finished"):
+		status = str(d.get("phase"))
 	_sync_junqi_chrome(status)
 	if _result_label != null:
 		_result_label.visible = false
@@ -1127,6 +1166,10 @@ func _refresh_junqi_status(d: Dictionary, status: String, vs_ai: bool) -> void:
 		_set_status(MWi18n.t("轮到你 · 点己子再点目标格", "Your turn · pick piece, then target") + hand_note)
 	elif vs_ai:
 		_set_status(MWi18n.t("AI 思考中…", "AI thinking…") + hand_note)
+	elif turn == "black":
+		_set_status(MWi18n.t("等待黑方…", "Waiting for Black…") + hand_note)
+	elif turn == "red":
+		_set_status(MWi18n.t("等待红方…", "Waiting for Red…") + hand_note)
 	else:
 		_set_status(MWi18n.t("等待对手…", "Waiting for opponent…") + hand_note)
 	var battle: Variant = d.get("last_battle", null)
@@ -1475,6 +1518,12 @@ func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
 		_sel = Vector2i(col, row)
 		_board_ctrl.queue_redraw()
 		return
+	_pending_junqi_move = {
+		"fx": _sel.y,
+		"fy": _sel.x,
+		"tx": row,
+		"ty": col,
+	}
 	ws.send_cmd({
 		"action": "chess_move",
 		"table_id": _view_table_id,
@@ -1483,7 +1532,8 @@ func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
 		"tx": row,
 		"ty": col,
 	})
-	_sel = Vector2i(-1, -1)
+	# Keep _sel until chess_table_update or chess_reject (avoids "ghost move").
+	_board_ctrl.queue_redraw()
 
 
 func _on_junqi_layout_click(row: int, col: int, d: Dictionary, my: String) -> void:

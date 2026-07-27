@@ -218,22 +218,72 @@ async def main() -> int:
         )
         detail = jq["payload"]["detail"]
         assert detail.get("vs_ai") is True
-        views = detail.get("junqi_views") or {}
-        assert sid in views, "missing personal junqi_views"
-        mine = views[sid]
-        assert mine.get("turn") == "black"
+        assert detail.get("turn") == "black"
+        # Personalized fog: own ranks visible, enemy as "?".
         own_n = sum(
             1
-            for c in mine.get("cells") or []
+            for c in detail.get("cells") or []
             if (c.get("piece") or {}).get("side") == "black"
             and (c.get("piece") or {}).get("type") != "?"
         )
         fog_n = sum(
             1
-            for c in mine.get("cells") or []
+            for c in detail.get("cells") or []
             if (c.get("piece") or {}).get("type") == "?"
         )
         assert own_n == 25 and fog_n == 25, (own_n, fog_n)
+        assert "junqi_open" not in detail, "open board must not leak"
+        # One legal black step then turn flips to red (AI replies in vs_ai).
+        mine = [
+            c
+            for c in detail.get("cells") or []
+            if (c.get("piece") or {}).get("side") == "black"
+            and (c.get("piece") or {}).get("type")
+            not in (None, "?", "junqi", "dilei")
+        ]
+        moved = False
+        for c in mine:
+            fr, fc = int(c["r"]), int(c["c"])
+            for tr, tc in ((fr + 1, fc), (fr, fc + 1), (fr, fc - 1), (fr - 1, fc)):
+                await ws.send(
+                    json.dumps(
+                        {
+                            "type": "cmd",
+                            "session_id": sid,
+                            "payload": {
+                                "action": "chess_move",
+                                "table_id": "table_4",
+                                "fx": fr,
+                                "fy": fc,
+                                "tx": tr,
+                                "ty": tc,
+                            },
+                        }
+                    )
+                )
+                try:
+                    after = await _recv_until(
+                        ws,
+                        lambda m: m.get("type") == "event"
+                        and (m.get("payload") or {}).get("event_type")
+                        == "chess_table_update"
+                        and ((m.get("payload") or {}).get("detail") or {}).get(
+                            "table_id"
+                        )
+                        == "table_4"
+                        and ((m.get("payload") or {}).get("detail") or {}).get("turn")
+                        == "black",
+                        timeout=3.0,
+                    )
+                    # vs_ai: human black move → AI red → turn back to black
+                    assert after["payload"]["detail"].get("status") == "playing"
+                    moved = True
+                    break
+                except TimeoutError:
+                    continue
+            if moved:
+                break
+        assert moved, "junqi move+AI reply failed"
         print("chessroom smoke OK")
         return 0
 

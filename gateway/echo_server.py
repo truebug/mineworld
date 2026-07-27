@@ -766,10 +766,9 @@ class ChessTable:
         else:
             self.status = "playing"
 
-    def to_detail(self) -> dict[str, Any]:
-        """Snapshot for chess_table_update events."""
+    def to_detail(self, viewer_sid: str | None = None) -> dict[str, Any]:
+        """Snapshot for chess_table_update. Junqi: fog by viewer_sid (no open board leak)."""
         if self.game == "junqi" and isinstance(self.board, JunqiBoard):
-            # Viewer-agnostic full fog for broadcast; clients filter by sid.
             base = {
                 "table_id": self.table_id,
                 "game": self.game,
@@ -782,30 +781,29 @@ class ChessTable:
                 if self.board.phase != "layout"
                 else ("layout" if (self.black_sid or self.white_sid) else "idle"),
             }
-            base.update(self.board.to_detail(viewer=None))
-            # Fog: strip types for broadcast; per-session personalization in handler optional.
-            # Keep "?" for all pieces in shared event — client uses own layout cache for self.
-            fog_cells = []
-            for cell in base.get("cells") or []:
-                c = dict(cell)
-                p = c.get("piece")
-                if isinstance(p, dict) and p.get("type") not in (None, "?"):
-                    # Always hide identity in room broadcast; sitters re-query via dedicated field.
-                    c["piece"] = {
-                        "side": p.get("side"),
-                        "type": "?",
-                        "locked": p.get("locked", False),
-                    }
-                fog_cells.append(c)
-            base["cells"] = fog_cells
-            base["junqi_open"] = self.board.to_detail(viewer=None)
-            # Provide both sides' true views keyed by sid for room members (small room).
-            views: dict[str, Any] = {}
-            if self.black_sid:
-                views[self.black_sid] = self.board.to_detail(viewer="black")
-            if self.white_sid:
-                views[self.white_sid] = self.board.to_detail(viewer="red")
-            base["junqi_views"] = views
+            viewer: str | None = None
+            if viewer_sid and viewer_sid == self.black_sid:
+                viewer = "black"
+            elif viewer_sid and viewer_sid == self.white_sid and not self.vs_ai:
+                viewer = "red"
+            base.update(self.board.to_detail(viewer=viewer))
+            # Spectators (or missing sid): strip all identities.
+            if viewer is None:
+                fog_cells = []
+                for cell in base.get("cells") or []:
+                    c = dict(cell)
+                    p = c.get("piece")
+                    if isinstance(p, dict) and p.get("type") not in (None, "?"):
+                        c["piece"] = {
+                            "side": p.get("side"),
+                            "type": "?",
+                            "locked": p.get("locked", False),
+                        }
+                    fog_cells.append(c)
+                base["cells"] = fog_cells
+            # Keep phase→status aligned after board overlay.
+            if self.board.phase != "layout":
+                base["status"] = self.board.phase
             if self.last_hand:
                 base["last_hand"] = dict(self.last_hand)
             return base
@@ -2237,14 +2235,29 @@ class EchoGateway:
                 mw["profile_id"] = str(pid)
 
     def _broadcast_chess_table(self, room: Room, table: ChessTable) -> None:
-        """Queue chess_table_update for every joined member."""
-        ev = {
-            "event_type": "chess_table_update",
-            "detail": table.to_detail(),
-        }
+        """Queue chess_table_update for every joined member (junqi: per-sid fog)."""
         for member in room.members.values():
             if member.joined and not member.closed:
-                member.pending_events.append(dict(ev))
+                member.pending_events.append(
+                    {
+                        "event_type": "chess_table_update",
+                        "detail": table.to_detail(viewer_sid=member.session_id),
+                    }
+                )
+
+    def _chess_reject(
+        self, session: Session, *, code: str, message: str, table_id: str = ""
+    ) -> None:
+        """Tell one client a chess cmd was ignored (illegal move / layout)."""
+        detail: dict[str, Any] = {"code": code, "message": message}
+        if table_id:
+            detail["table_id"] = table_id
+        session.pending_events.append(
+            {
+                "event_type": "chess_reject",
+                "detail": detail,
+            }
+        )
 
     def _chess_free_session(
         self, room: Room, session_id: str, *, broadcast: bool
@@ -2387,6 +2400,12 @@ class EchoGateway:
                     if ready:
                         norm = table.board.layout_dict(side)
                         if len(norm) != 25:
+                            self._chess_reject(
+                                session,
+                                code="JUNQI_LAYOUT_INCOMPLETE",
+                                message="need 25 pieces before confirm",
+                                table_id=table_id,
+                            )
                             return
                     else:
                         return
@@ -2396,6 +2415,12 @@ class EchoGateway:
                         if isinstance(v, (list, tuple)) and len(v) >= 2:
                             norm[str(k)] = [int(v[0]), int(v[1])]
             if not table.board.apply_layout(side, norm, ready=ready):
+                self._chess_reject(
+                    session,
+                    code="JUNQI_LAYOUT_INVALID",
+                    message="illegal junqi layout",
+                    table_id=table_id,
+                )
                 return
             if (
                 ready
@@ -2460,8 +2485,20 @@ class EchoGateway:
                     tx = int(payload.get("tx"))
                     ty = int(payload.get("ty"))
                 except (TypeError, ValueError):
+                    self._chess_reject(
+                        session,
+                        code="JUNQI_MOVE_BAD_COORDS",
+                        message="bad move coordinates",
+                        table_id=table_id,
+                    )
                     return
                 if table.board.try_move(side, fx, fy, tx, ty) is None:
+                    self._chess_reject(
+                        session,
+                        code="JUNQI_MOVE_ILLEGAL",
+                        message="illegal junqi move",
+                        table_id=table_id,
+                    )
                     return
                 if (
                     table.vs_ai
@@ -3069,7 +3106,7 @@ class EchoGateway:
                 session.pending_events.append(
                     {
                         "event_type": "chess_table_update",
-                        "detail": table.to_detail(),
+                        "detail": table.to_detail(viewer_sid=session.session_id),
                     }
                 )
 
