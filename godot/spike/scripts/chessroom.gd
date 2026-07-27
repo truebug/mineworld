@@ -1063,7 +1063,7 @@ func _refresh_board_from_authority() -> void:
 		else:
 			_title_label.text = title + MWi18n.t(" · 人对人", " · PvP")
 	var status := str(d.get("status", "idle"))
-	if game == "junqi" and str(d.get("phase", "")) in ("playing", "finished"):
+	if game == "junqi" and str(d.get("phase", "")) in ["playing", "finished"]:
 		status = str(d.get("phase"))
 	_sync_junqi_chrome(status)
 	if _result_label != null:
