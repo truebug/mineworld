@@ -1098,6 +1098,7 @@ func _refresh_junqi_status(d: Dictionary, status: String, vs_ai: bool) -> void:
 			) + hand_note)
 		return
 	if status == "finished":
+		_trigger_junqi_reveal(d)
 		var winner := str(d.get("winner", ""))
 		var result := MWi18n.t("终局", "Game over")
 		if winner == "black":
@@ -1197,11 +1198,22 @@ func _draw_junqi_board() -> void:
 			var piece: Variant = cell2.get("piece", null)
 			if typeof(piece) != TYPE_DICTIONARY or piece == null:
 				continue
+			var jx := c
+			var jy := r
+			var jscale := _anim_scale(jx, jy)
+			var jalpha := _anim_alpha(jx, jy)
+			var jflip := 1.0
+			var jkey := "%d,%d" % [jx, jy]
+			if _piece_anims.has(jkey) and str(_piece_anims[jkey].get("kind", "")) == "flip":
+				var jt := float(_piece_anims[jkey].get("t", 0.0)) / float(_piece_anims[jkey].get("dur", 1.0))
+				jflip = absf(cos(jt * PI))  # 1→0→1 card flip
 			_draw_junqi_tile(
 				_junqi_cell_center(r, c, origin, cw, ch, gap),
-				min(cw, ch),
+				min(cw, ch) * jscale,
 				str(piece.get("side", "")),
-				str(piece.get("type", "?"))
+				str(piece.get("type", "?")),
+				jalpha,
+				jflip
 			)
 
 
@@ -1285,36 +1297,40 @@ func _draw_junqi_rails(origin: Vector2, cw: float, ch: float, gap: float) -> voi
 		_board_ctrl.draw_dashed_line(p0, p1, col_rail, 2.4, 6.0)
 
 
-func _draw_junqi_tile(center: Vector2, cell: float, side: String, ptype: String) -> void:
-	"""Draw a bevelled rectangular tile like physical junqi pieces."""
+func _draw_junqi_tile(center: Vector2, cell: float, side: String, ptype: String, alpha: float = 1.0, flip_x: float = 1.0) -> void:
+	"""Draw a bevelled rectangular tile. flip_x<1 simulates card-flip rotation."""
 	var tw := cell * 0.78
 	var th := cell * 0.62
-	var rect := Rect2(center - Vector2(tw, th) * 0.5, Vector2(tw, th))
-	_board_ctrl.draw_rect(Rect2(rect.position + Vector2(1.5, 2.0), rect.size), Color(0, 0, 0, 0.35))
-	var body := Color(0.12, 0.12, 0.14) if side == "black" else Color(0.78, 0.18, 0.14)
-	var rim := Color(0.35, 0.35, 0.38) if side == "black" else Color(0.95, 0.45, 0.35)
+	# flip: squash X to simulate Y-axis rotation; hide text when edge-on
+	var eff_tw := tw * flip_x
+	var rect := Rect2(center - Vector2(eff_tw, th) * 0.5, Vector2(eff_tw, th))
+	var shadow_col := Color(0, 0, 0, 0.35 * alpha)
+	_board_ctrl.draw_rect(Rect2(rect.position + Vector2(1.5, 2.0), rect.size), shadow_col)
+	var body := Color(0.12, 0.12, 0.14, alpha) if side == "black" else Color(0.78, 0.18, 0.14, alpha)
+	var rim := Color(0.35, 0.35, 0.38, alpha) if side == "black" else Color(0.95, 0.45, 0.35, alpha)
 	_board_ctrl.draw_rect(rect, body)
 	_board_ctrl.draw_rect(rect, rim, false, 1.4)
-	_board_ctrl.draw_line(
-		rect.position + Vector2(1, 1),
-		rect.position + Vector2(rect.size.x - 1, 1),
-		Color(1, 1, 1, 0.22),
-		1.0
-	)
-	var label := str(JUNQI_LABEL.get(ptype, ptype))
-	var font: Font = MWFonts.font() if MWFonts != null else ThemeDB.fallback_font
-	var fs := int(clampf(min(tw, th) * 0.55, 10.0, 22.0))
-	var text_col := Color(0.95, 0.92, 0.75) if side == "black" else Color(1.0, 0.96, 0.88)
-	var text_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
-	_board_ctrl.draw_string(
-		font,
-		center - text_size * 0.5 + Vector2(0, text_size.y * 0.35),
-		label,
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		fs,
-		text_col
-	)
+	if flip_x > 0.15:
+		_board_ctrl.draw_line(
+			rect.position + Vector2(1, 1),
+			rect.position + Vector2(rect.size.x - 1, 1),
+			Color(1, 1, 1, 0.22 * alpha),
+			1.0
+		)
+		var label := str(JUNQI_LABEL.get(ptype, ptype))
+		var font: Font = MWFonts.font() if MWFonts != null else ThemeDB.fallback_font
+		var fs := int(clampf(min(eff_tw, th) * 0.55, 10.0, 22.0))
+		var text_col := Color(0.95, 0.92, 0.75, alpha) if side == "black" else Color(1.0, 0.96, 0.88, alpha)
+		var text_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+		_board_ctrl.draw_string(
+			font,
+			center - text_size * 0.5 + Vector2(0, text_size.y * 0.35),
+			label,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			fs,
+			text_col
+		)
 
 
 func _junqi_view_r_at_x(x: float, origin_x: float, cw: float, gap: float) -> int:
@@ -1587,14 +1603,19 @@ func _tick_piece_anims(delta: float) -> void:
 	if _piece_anims.is_empty():
 		return
 	var done: Array = []
+	var needs_redraw := false
 	for key in _piece_anims.keys():
 		var a: Dictionary = _piece_anims[key]
 		a["t"] = float(a["t"]) + delta
-		if float(a["t"]) >= float(a["dur"]):
+		var t := float(a["t"])
+		var dur := float(a.get("dur", 1.0))
+		if t >= dur:
 			done.append(key)
+		elif t >= 0.0:
+			needs_redraw = true
 	for key in done:
 		_piece_anims.erase(key)
-	if _board_ctrl != null and not _piece_anims.is_empty():
+	if _board_ctrl != null and (needs_redraw or not _piece_anims.is_empty()):
 		_board_ctrl.queue_redraw()
 
 
@@ -1603,15 +1624,22 @@ func _anim_scale(x: int, y: int) -> float:
 	if not _piece_anims.has(key):
 		return 1.0
 	var a: Dictionary = _piece_anims[key]
+	var t_raw := float(a.get("t", 0.0))
+	if t_raw < 0.0:
+		return 1.0  ## stagger delay — not yet animating
 	var kind := str(a.get("kind", ""))
-	var t := float(a.get("t", 0.0)) / float(a.get("dur", 1.0))
+	var t := t_raw / float(a.get("dur", 1.0))
 	if kind == "place":
-		# Elastic bounce: 0 → 1.15 → 1.0
 		if t < 0.5:
 			return lerpf(0.0, 1.15, t * 2.0)
 		return lerpf(1.15, 1.0, (t - 0.5) * 2.0)
 	if kind == "capture":
 		return lerpf(1.0, 0.0, t)
+	if kind == "flip":
+		# flip: scale 1→0.5→1 with slight overshoot
+		if t < 0.5:
+			return lerpf(1.0, 0.3, t * 2.0)
+		return lerpf(0.3, 1.0, (t - 0.5) * 2.0)
 	return 1.0
 
 
@@ -1620,8 +1648,11 @@ func _anim_alpha(x: int, y: int) -> float:
 	if not _piece_anims.has(key):
 		return 1.0
 	var a: Dictionary = _piece_anims[key]
+	var t_raw := float(a.get("t", 0.0))
+	if t_raw < 0.0:
+		return 1.0
 	if str(a.get("kind", "")) == "capture":
-		return lerpf(1.0, 0.0, float(a.get("t", 0.0)) / float(a.get("dur", 1.0)))
+		return lerpf(1.0, 0.0, t_raw / float(a.get("dur", 1.0)))
 	return 1.0
 
 
@@ -1630,8 +1661,11 @@ func _anim_y_offset(x: int, y: int) -> float:
 	if not _piece_anims.has(key):
 		return 0.0
 	var a: Dictionary = _piece_anims[key]
+	var t_raw := float(a.get("t", 0.0))
+	if t_raw < 0.0:
+		return 0.0
 	if str(a.get("kind", "")) == "capture":
-		return lerpf(0.0, 20.0, float(a.get("t", 0.0)) / float(a.get("dur", 1.0)))
+		return lerpf(0.0, 20.0, t_raw / float(a.get("dur", 1.0)))
 	return 0.0
 
 
@@ -1665,3 +1699,31 @@ func _play_sfx(name: String) -> void:
 		+ "}catch(e){}})()" % [freq, dur, dur],
 		true
 	)
+
+
+func _trigger_junqi_reveal(d: Dictionary) -> void:
+	"""End-game: flip all junqi pieces with staggered wave + gold pulse on winner."""
+	var cells: Array = d.get("cells", [])
+	var winner := str(d.get("winner", ""))
+	for idx in cells.size():
+		var cell: Variant = cells[idx]
+		if typeof(cell) != TYPE_DICTIONARY:
+			continue
+		var piece: Variant = cell.get("piece", null)
+		if typeof(piece) != TYPE_DICTIONARY or piece == null:
+			continue
+		var ptype := str(piece.get("type", ""))
+		if ptype == "":
+			continue
+		var c: int = idx % JUNQI_COLS
+		var r: int = idx / JUNQI_COLS
+		var key := "%d,%d" % [c, r]
+		# Stagger by Manhattan distance from board center for wave effect
+		var dist := absf(float(r) - 5.5) + absf(float(c) - 2.0)
+		_piece_anims[key] = {
+			"kind": "flip",
+			"t": -dist * 0.05,
+			"dur": 0.4,
+			"winner_pulse": str(piece.get("side", "")) == winner,
+		}
+	_play_sfx("win")
