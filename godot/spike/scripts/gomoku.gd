@@ -11,9 +11,11 @@ const WHITE := 2
 var cells: Array = []  ## SIZE*SIZE flat
 var moves: Array = []  ## [x, y, color] history
 var winner := EMPTY
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 func _init() -> void:
+	_rng.randomize()
 	reset()
 
 
@@ -50,8 +52,6 @@ func ai_move() -> Vector2i:
 	"""White reply: best-scoring empty cell (attack biased over defense)."""
 	var best := Vector2i(-1, -1)
 	var best_score := -1.0
-	var jitter := RandomNumberGenerator.new()
-	jitter.randomize()
 	for y in SIZE:
 		for x in SIZE:
 			if at(x, y) != EMPTY:
@@ -59,7 +59,7 @@ func ai_move() -> Vector2i:
 			var score := (
 				_cell_score(x, y, WHITE) * 1.05
 				+ _cell_score(x, y, BLACK)
-				+ jitter.randf() * 3.0
+				+ _rng.randf() * 3.0
 			)
 			if score > best_score:
 				best_score = score

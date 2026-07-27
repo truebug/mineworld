@@ -437,6 +437,9 @@ func _on_escape() -> void:
 
 
 func _leave_to_hub() -> void:
+	_piece_anims.clear()
+	if _seated_table_id != "":
+		ws.send_cmd({"action": "chess_leave", "table_id": _seated_table_id})
 	if ws != null:
 		ws.close_link()
 	if _is_web:
@@ -507,6 +510,7 @@ func _close_board() -> void:
 	_board_layer.visible = false
 	_sel = Vector2i(-1, -1)
 	_rules_visible = false
+	_piece_anims.clear()
 	if _result_label != null:
 		_result_label.visible = false
 	if _seated_table_id != "":
