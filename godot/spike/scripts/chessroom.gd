@@ -1313,11 +1313,11 @@ func _draw_junqi_board() -> void:
 				_board_ctrl.draw_rect(rect.grow(-2.0), Color(0.9, 0.78, 0.4), false, 1.5)
 			elif kind == "camp":
 				# Larger refined camp: filled disc + rim + X diagonals (movement cue)
-				var rad := min(cw, ch) * 0.42
+				var rad: float = min(cw, ch) * 0.42
 				_board_ctrl.draw_circle(center, rad, Color(0.62, 0.78, 0.92))
 				_board_ctrl.draw_circle(center, rad * 0.88, Color(0.7, 0.84, 0.95))
 				_board_ctrl.draw_arc(center, rad, 0, TAU, 32, Color(0.2, 0.35, 0.55), 2.0)
-				var arm := rad * 0.62
+				var arm: float = rad * 0.62
 				var col_x := Color(0.15, 0.3, 0.5, 0.8)
 				_board_ctrl.draw_line(center + Vector2(-arm, -arm), center + Vector2(arm, arm), col_x, 2.0)
 				_board_ctrl.draw_line(center + Vector2(-arm, arm), center + Vector2(arm, -arm), col_x, 2.0)
