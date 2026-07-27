@@ -8,6 +8,14 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-27 · Chess-FX Phase 2 军棋终局动画
+
+- **军棋终局明牌**：finished 时触发 `_trigger_junqi_reveal`，所有棋子按曼哈顿距离波次翻转（stagger delay 0.05s），胜方棋子金色脉冲 + win 音效。
+- **翻转动画**：`_draw_junqi_tile` 增加 `alpha`/`flip_x` 参数；flip_x 余弦插值模拟 Y 轴卡牌翻转（0→1→0→1），<0.15 时隐藏文字保真实感。
+- **棋子动画基础设施**：`_tick_piece_anims` 支持负 t（stagger 延迟）；`_anim_scale`/`_anim_alpha`/`_anim_y_offset` 对负 t 返回安全值；新增 `flip` 动画类型。
+- Deployed `MW_BUILD=20260727-081422`。
+
+
 ---
 
 ## 2026-07-26 · 军棋山界视觉
