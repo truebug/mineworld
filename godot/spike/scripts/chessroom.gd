@@ -681,14 +681,19 @@ func _on_junqi_auto_layout() -> void:
 
 
 func _on_junqi_confirm_layout() -> void:
-	"""Lock current draft and start (AI fills red if vs_ai)."""
+	"""Lock draft (auto-fill first if empty) and mark ready."""
 	if _view_table_id == "" or _view_game() != "junqi":
 		return
-	ws.send_cmd({
+	_sel = Vector2i(-1, -1)
+	var payload := {
 		"action": "junqi_layout",
 		"table_id": _view_table_id,
 		"ready": true,
-	})
+	}
+	# One-click start: no draft yet → server auto_layout then ready.
+	if _junqi_own_piece_count() < 25:
+		payload["auto"] = true
+	ws.send_cmd(payload)
 
 
 func _on_chess_resign() -> void:
@@ -962,10 +967,15 @@ func _my_color() -> int:
 
 
 func _my_junqi_side() -> String:
+	"""Map session → black|red. Never match empty sid (str(null)==\"\")."""
+	if _session_id == "":
+		return ""
 	var d := _view_detail()
-	if str(d.get("black_sid", "")) == _session_id:
+	var black := str(d.get("black_sid", "")).strip_edges()
+	var white := str(d.get("white_sid", "")).strip_edges()
+	if black != "" and black == _session_id:
 		return "black"
-	if str(d.get("white_sid", "")) == _session_id and not bool(d.get("vs_ai", false)):
+	if white != "" and white == _session_id and not bool(d.get("vs_ai", false)):
 		return "red"
 	return ""
 
@@ -1063,8 +1073,14 @@ func _refresh_board_from_authority() -> void:
 		else:
 			_title_label.text = title + MWi18n.t(" · 人对人", " · PvP")
 	var status := str(d.get("status", "idle"))
-	if game == "junqi" and str(d.get("phase", "")) in ["playing", "finished"]:
-		status = str(d.get("phase"))
+	if game == "junqi":
+		var phase := str(d.get("phase", ""))
+		if phase in ["playing", "finished"]:
+			status = phase
+		else:
+			var ready0: Dictionary = d.get("layout_ready", {}) as Dictionary
+			if bool(ready0.get("black", false)) and bool(ready0.get("red", false)):
+				status = "playing"
 	_sync_junqi_chrome(status)
 	if _result_label != null:
 		_result_label.visible = false
@@ -1114,6 +1130,11 @@ func _refresh_junqi_status(d: Dictionary, status: String, vs_ai: bool) -> void:
 	"""Status line + endgame for junqi fog board."""
 	var my := _my_junqi_side()
 	var ready: Dictionary = d.get("layout_ready", {}) as Dictionary
+	var black_ok := bool(ready.get("black", false))
+	var red_ok := bool(ready.get("red", false))
+	# Both ready but status still layout → treat as playing (desync guard).
+	if status in ["layout", "idle"] and black_ok and red_ok:
+		status = "playing"
 	var hand: Variant = d.get("last_hand", null)
 	var hand_note := ""
 	if typeof(hand) == TYPE_DICTIONARY and hand != null:
@@ -1125,10 +1146,19 @@ func _refresh_junqi_status(d: Dictionary, status: String, vs_ai: bool) -> void:
 		if my == "":
 			_set_status(MWi18n.t("旁观 · 等待入座布阵", "Spectating · waiting for layout") + hand_note)
 			return
-		var mine_ok := bool(ready.get(my, false))
+		var mine_ok := (my == "black" and black_ok) or (my == "red" and red_ok)
 		var own_n := _junqi_own_piece_count()
 		if mine_ok:
-			_set_status(MWi18n.t("已确认 · 等待对方就绪", "Confirmed · waiting for opponent") + hand_note)
+			if my == "black":
+				_set_status(MWi18n.t(
+					"已确认 · 等待红方确认布阵",
+					"Confirmed · waiting for Red to confirm"
+				) + hand_note)
+			else:
+				_set_status(MWi18n.t(
+					"已确认 · 等待黑方确认布阵",
+					"Confirmed · waiting for Black to confirm"
+				) + hand_note)
 		elif own_n >= 25:
 			_set_status(MWi18n.t(
 				"可拖换己子微调 · 点「确认布阵」开战",
@@ -1161,17 +1191,21 @@ func _refresh_junqi_status(d: Dictionary, status: String, vs_ai: bool) -> void:
 	if my == "":
 		_set_status(MWi18n.t("旁观中", "Spectating") + hand_note)
 		return
-	var turn := str(d.get("turn", ""))
+	var turn := str(d.get("turn", "")).strip_edges().to_lower()
 	if turn == my:
 		_set_status(MWi18n.t("轮到你 · 点己子再点目标格", "Your turn · pick piece, then target") + hand_note)
 	elif vs_ai:
 		_set_status(MWi18n.t("AI 思考中…", "AI thinking…") + hand_note)
 	elif turn == "black":
-		_set_status(MWi18n.t("等待黑方…", "Waiting for Black…") + hand_note)
+		_set_status(MWi18n.t("等待黑方行棋…", "Waiting for Black to move…") + hand_note)
 	elif turn == "red":
-		_set_status(MWi18n.t("等待红方…", "Waiting for Red…") + hand_note)
+		_set_status(MWi18n.t("等待红方行棋…", "Waiting for Red to move…") + hand_note)
 	else:
-		_set_status(MWi18n.t("等待对手…", "Waiting for opponent…") + hand_note)
+		_set_status(
+			MWi18n.t("等待同步…", "Syncing…")
+			+ " (turn=%s my=%s)" % [turn, my]
+			+ hand_note
+		)
 	var battle: Variant = d.get("last_battle", null)
 	if typeof(battle) == TYPE_DICTIONARY and battle != null:
 		var res := str(battle.get("result", ""))
@@ -1496,7 +1530,7 @@ func _on_junqi_board_click(pos: Vector2, d: Dictionary) -> void:
 		return
 	if status != "playing":
 		return
-	if str(d.get("turn", "")) != my:
+	if str(d.get("turn", "")).strip_edges().to_lower() != my:
 		return
 	var cells: Array = d.get("cells", [])
 	var piece_side := ""

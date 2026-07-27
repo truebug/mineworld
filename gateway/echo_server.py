@@ -804,6 +804,14 @@ class ChessTable:
             # Keep phase→status aligned after board overlay.
             if self.board.phase != "layout":
                 base["status"] = self.board.phase
+            elif (
+                self.board.layout_ready.get("black")
+                and self.board.layout_ready.get("red")
+            ):
+                # Defensive: both ready must be playing.
+                base["status"] = "playing"
+                base["phase"] = "playing"
+            base["turn"] = str(self.board.turn or "black")
             if self.last_hand:
                 base["last_hand"] = dict(self.last_hand)
             return base
