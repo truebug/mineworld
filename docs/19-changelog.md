@@ -14,6 +14,7 @@
 - **Gateway**：`chess_table_update` 按 session 单播个人迷雾；去掉 `junqi_open`；非法走子/布阵回 `chess_reject`。
 - **客户端**：拒着提示；走子等权威回包再清选中；等待文案区分黑/红方。
 - **冒烟**：`chessroom_smoke` 覆盖走子+AI 回手；本地双端 PvP 走子后黑等/红可走。
+- Deployed `MW_BUILD=20260727-172138`。
 
 ## 2026-07-27 · B2 收口 · Next→B3
 
