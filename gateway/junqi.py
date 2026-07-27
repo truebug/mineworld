@@ -401,8 +401,10 @@ class JunqiBoard:
             for nb in RAILWAY.get(cur, ()):
                 if nb in prev:
                     continue
-                # cannot step onto occupied except goal
+                # J4: cannot step onto occupied except goal; camps block transit
                 rr, cc = parse_key(nb)
+                if is_camp(rr, cc) and nb != goal:
+                    continue
                 occ = self.cell_piece(rr, cc)
                 if occ is not None and nb != goal:
                     continue
@@ -439,9 +441,10 @@ class JunqiBoard:
             return None
         # Empty move.
         if target is None:
-            # Entering enemy HQ (empty): lock unless that HQ holds flag — flag always occupies HQ.
+            # J1: lock only if entering an enemy HQ that is actually empty (not the flag cell).
             piece.r, piece.c = tr, tc
             if is_hq(tr, tc) and side_of_cell(tr) != side:
+                # Flag always occupies its HQ; entering an empty enemy HQ = lock.
                 piece.locked = True
             self.turn = "black" if side == "red" else "red"
             self.last_battle = None
@@ -478,6 +481,9 @@ class JunqiBoard:
             piece.alive = False
             if piece.ptype == "siling":
                 self.flag_revealed[side] = True
+            # J5: mine also dies when destroyed by non-engineer attacker
+            if target.ptype == "dilei":
+                target.alive = False
         else:  # draw
             piece.alive = False
             target.alive = False

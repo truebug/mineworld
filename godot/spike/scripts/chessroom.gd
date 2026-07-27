@@ -1312,8 +1312,15 @@ func _draw_junqi_board() -> void:
 				_board_ctrl.draw_rect(rect, Color(0.78, 0.62, 0.28))
 				_board_ctrl.draw_rect(rect.grow(-2.0), Color(0.9, 0.78, 0.4), false, 1.5)
 			elif kind == "camp":
-				_board_ctrl.draw_circle(center, min(cw, ch) * 0.38, Color(0.62, 0.78, 0.92))
-				_board_ctrl.draw_arc(center, min(cw, ch) * 0.38, 0, TAU, 28, Color(0.25, 0.4, 0.55), 1.6)
+				# Larger refined camp: filled disc + rim + X diagonals (movement cue)
+				var rad := min(cw, ch) * 0.42
+				_board_ctrl.draw_circle(center, rad, Color(0.62, 0.78, 0.92))
+				_board_ctrl.draw_circle(center, rad * 0.88, Color(0.7, 0.84, 0.95))
+				_board_ctrl.draw_arc(center, rad, 0, TAU, 32, Color(0.2, 0.35, 0.55), 2.0)
+				var arm := rad * 0.62
+				var col_x := Color(0.15, 0.3, 0.5, 0.8)
+				_board_ctrl.draw_line(center + Vector2(-arm, -arm), center + Vector2(arm, arm), col_x, 2.0)
+				_board_ctrl.draw_line(center + Vector2(-arm, arm), center + Vector2(arm, -arm), col_x, 2.0)
 			else:
 				_board_ctrl.draw_rect(rect, Color(0.58, 0.74, 0.48, 0.55))
 				_board_ctrl.draw_rect(rect, Color(0.28, 0.38, 0.22), false, 1.0)
@@ -1695,6 +1702,8 @@ func _detect_piece_changes(d: Dictionary, game: String) -> void:
 	if _prev_cells.is_empty() or _prev_cells.size() != cells.size():
 		_prev_cells = cells.duplicate()
 		return
+	# J2: collect moves for slide animation (from → to).
+	var moves: Array = []
 	for idx in mini(cells.size(), _prev_cells.size()):
 		var old_v := _cell_val_at(_prev_cells, idx, game)
 		var new_v := _cell_val_at(cells, idx, game)
@@ -1706,11 +1715,34 @@ func _detect_piece_changes(d: Dictionary, game: String) -> void:
 			_piece_anims[key] = {"kind": "place", "t": 0.0, "dur": 0.35}
 			_play_sfx("place")
 		elif old_v != 0 and new_v == 0:
+			# Check if this is the "from" of a move (piece moved to empty → capture anim at destination).
+			moves.append({"from": xy, "key": key})
 			_piece_anims[key] = {"kind": "capture", "t": 0.0, "dur": 0.25}
 			_play_sfx("capture")
 		elif old_v != new_v:
 			_piece_anims[key] = {"kind": "flip", "t": 0.0, "dur": 0.3}
 			_play_sfx("flip")
+	# J2: attach "move" anim at destination cells (from cell captured, to cell placed).
+	for m in moves:
+		var from_xy: Vector2i = m["from"]
+		# Find the cell that changed from 0→non-zero and is not yet animated.
+		for idx2 in cells.size():
+			var ov := _cell_val_at(_prev_cells, idx2, game)
+			var nv := _cell_val_at(cells, idx2, game)
+			if ov != 0 or nv == 0:
+				continue
+			var to_xy := _idx_to_xy(idx2, game)
+			var to_key := "%d,%d" % [to_xy.x, to_xy.y]
+			if _piece_anims.has(to_key):
+				continue
+			_piece_anims[to_key] = {
+				"kind": "move",
+				"t": 0.0,
+				"dur": 0.2,
+				"from_x": from_xy.x,
+				"from_y": from_xy.y,
+			}
+			break
 	_prev_cells = cells.duplicate()
 
 
@@ -1781,6 +1813,11 @@ func _anim_scale(x: int, y: int) -> float:
 		if t < 0.5:
 			return lerpf(1.0, 0.3, t * 2.0)
 		return lerpf(0.3, 1.0, (t - 0.5) * 2.0)
+	if kind == "move":
+		# J2: quick pop-in from smaller (slide feel without position interp)
+		if t < 0.6:
+			return lerpf(0.4, 1.05, t / 0.6)
+		return lerpf(1.05, 1.0, (t - 0.6) / 0.4)
 	return 1.0
 
 
