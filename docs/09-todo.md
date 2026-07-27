@@ -77,20 +77,41 @@
 | E6–E8 | PMS 参观者壳 | 见 [21 §P1b](21-ecosystem-federation.md)；E8 薄壳已挂 E9 降频钩子 | [ ] E6/E7 待 PMS API；E8 侧栏文档后补 |
 | E9 | Hub 公网插值/降频 | 远端不瞬移；开壳降 WS | [x] 插值限速+自机预测；`presence_throttle`；薄参观壳 |
 
-### Phase B · Now（成绩竞技壳 · B1 Done）
+### Phase B · Now（成绩竞技壳 · B1–B2 Done）
 
-> E9 + B1（`demo_race` 高速长弯）已落地并 playground 发版。不必等 E6–E8 / PMS。  
-> **Next = B2 薄 1v1** → B3 房间模式（`solo | duel | shared_ffa`）。
+> E9 + B1（`demo_race`）+ **B2 薄 1v1（竞速 duel）** 已落地。不必等 E6–E8 / PMS。  
+> **Next = B3 房间模式字段**（把现网 race/`duel_result` 收成显式 `solo|duel|shared_ffa`）→ 可穿插 Chess-P4 / E6–E7。
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | B1 | 计时竞速关 | 契约时限/检查点；通关写时长榜（复用 A2 `level_id`） | [x] `demo_race` ~755 m · **Ackermann v3**（W/S/X · QE）· room=`race` · max 6 |
-| B2 | 薄 1v1 | 双人同房目标竞速或推箱对决；事件可录 | [ ] **Next** |
-| B3 | 房间模式字段 | join/`extensions.mw.mode`：`solo \| duel \| shared_ffa` | [~] race 已标 `shared_ffa`；通用字段后补 |
+| B2 | 薄 1v1 | 双人同房目标竞速；`duel_result` 可录；单人可 AI 陪练 | [x] `duel_result` + HUD WIN/LOSE + 领先差；`duel_smoke`；B2.5 `ai_driver --forever` |
+| B3 | 房间模式字段 | join/`extensions.mw.mode`：`solo \| duel \| shared_ffa` | [ ] **Next** · 见下「B3 可执行切片」 |
 | Chess-P | 棋牌室对齐传送门 | Hub 式 FakeMech + `room=chess`；薄桌面 `chess_*` cmd / `chess_table_update`；人机/PvP | [x] `demo_chessroom` · `scripts/chessroom_smoke.py` |
 | Chess-P2 | 多桌类型 + 跳棋 | 甲乙五子棋 / 丙跳棋 Halma / 丁军棋 stub；壳层说明 | [x] |
 | Chess-P3 | 军棋可玩 + 规则 UI | SSOT `26`；权威裁判；暗棋透视；规则说明显隐 | [x] 人机可玩；随机→手调→确认；认输/举手；离座判负 |
 | Chess-P4 | 军棋暗棋 hardening | 按 session 单播 view、去掉 `junqi_open`；公网 PvP 门槛 | [ ] |
+
+#### B2 已交付（勿再当 Next）
+
+- Gateway：`demo_race` ≥2 受控 → 武装；首过 `obj_race_finish` → `duel_result`（胜者当帧、其余次帧）；全员完赛 re-arm；单人不 settle。
+- 录制：事件进既有 `recorder.write_frame(events=…)`。
+- 客户端：WIN/LOSE 横幅 + 「领先/落后 Nm」。
+- 低流量：B2.5 `scripts/ai_driver.py --forever` 常驻 `race` 房陪练。
+- 验证：`scripts/duel_smoke.py` → `duel smoke OK`。推箱对决不在本切片（原「或」未开做）。
+
+#### B3 可执行切片（产品主刀 · KISS）
+
+现状：契约已写 `shared_ffa`，对决却按「人数≥2」隐式武装，模式字段未真正分流。
+
+| 步 | 做啥 | 验收 |
+|----|------|------|
+| B3a | Schema/样例：`join` 或 room `extensions.mw.mode` ∈ `solo\|duel\|shared_ffa`（默认 race=`shared_ffa`） | ajv + `examples/ws` 一条 |
+| B3b | Gateway：`solo` 永不 `duel_result`；`duel` 仅 2 人武装/超额拒或旁观；`shared_ffa`=现行为（多人可 duel 首过） | 扩 `duel_smoke` 按 mode 分断言 |
+| B3c | 客户端：进 race 带 mode（Hub 门默认 `shared_ffa`；可选 `?mode=duel`）；HUD 显示模式一字 | Web 硬刷新可见 |
+| B3d | 文档：`09`/`AGENTS`/`19` 勾 B3；playground 发版一句 | changelog 一条 |
+
+**不做（本刀）**：独立匹配队列、推箱 1v1、门 E 格斗权威、Chess-P4。
 
 ---
 

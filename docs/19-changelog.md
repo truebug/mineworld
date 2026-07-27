@@ -8,6 +8,11 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-27 · B2 收口 · Next→B3
+
+- **事实**：B2 薄 1v1（`duel_result` + 录制 + HUD + B2.5 AI 陪练）早已入库；`09`/`AGENTS` 仍写 Next=B2 为文档漂移。
+- **收口**：B2 勾 Done；**Next = B3**（`solo|duel|shared_ffa` 显式分流）— 可执行四步见 [09](09-todo.md)「B3 可执行切片」。推箱对决不纳入。
+
 ## 2026-07-27 · Chess-FX Phase 2 军棋终局动画
 
 - **军棋终局明牌**：finished 时触发 `_trigger_junqi_reveal`，所有棋子按曼哈顿距离波次翻转（stagger delay 0.05s），胜方棋子金色脉冲 + win 音效。
