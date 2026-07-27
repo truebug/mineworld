@@ -811,7 +811,15 @@ class ChessTable:
                 # Defensive: both ready must be playing.
                 base["status"] = "playing"
                 base["phase"] = "playing"
-            base["turn"] = str(self.board.turn or "black")
+            turn = str(self.board.turn or "black")
+            base["turn"] = turn
+            # Explicit mover sid — clients must not infer turn only via side labels.
+            if turn == "black":
+                base["turn_sid"] = self.black_sid
+            elif turn == "red" and not self.vs_ai:
+                base["turn_sid"] = self.white_sid
+            else:
+                base["turn_sid"] = None
             if self.last_hand:
                 base["last_hand"] = dict(self.last_hand)
             return base
@@ -2245,13 +2253,23 @@ class EchoGateway:
     def _broadcast_chess_table(self, room: Room, table: ChessTable) -> None:
         """Queue chess_table_update for every joined member (junqi: per-sid fog)."""
         for member in room.members.values():
-            if member.joined and not member.closed:
-                member.pending_events.append(
-                    {
-                        "event_type": "chess_table_update",
-                        "detail": table.to_detail(viewer_sid=member.session_id),
-                    }
+            if not member.joined or member.closed:
+                continue
+            try:
+                detail = table.to_detail(viewer_sid=member.session_id)
+            except Exception:
+                LOG.exception(
+                    "chess to_detail failed table=%s sid=%s",
+                    table.table_id,
+                    member.session_id,
                 )
+                continue
+            member.pending_events.append(
+                {
+                    "event_type": "chess_table_update",
+                    "detail": detail,
+                }
+            )
 
     def _chess_reject(
         self, session: Session, *, code: str, message: str, table_id: str = ""

@@ -219,6 +219,7 @@ async def main() -> int:
         detail = jq["payload"]["detail"]
         assert detail.get("vs_ai") is True
         assert detail.get("turn") == "black"
+        assert detail.get("turn_sid") == sid
         # Personalized fog: own ranks visible, enemy as "?".
         own_n = sum(
             1
