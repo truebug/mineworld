@@ -1285,7 +1285,7 @@ func _schedule_auto_exit() -> void:
 
 
 func _draw_junqi_board() -> void:
-	"""Landscape wood board: rows along X (local LEFT), cols along Y."""
+	"""Reference-style junqi board: grid lines + railways + camps + pieces."""
 	var detail := _view_detail()
 	var sz := _junqi_board_size()
 	_draw_wood_frame(sz, Color(0.52, 0.68, 0.42))
@@ -1300,33 +1300,67 @@ func _draw_junqi_board() -> void:
 		if typeof(cell) != TYPE_DICTIONARY:
 			continue
 		by_key["%d,%d" % [int(cell.get("r", -1)), int(cell.get("c", -1))]] = cell
-	_draw_junqi_mountains(origin, cw, ch, gap)
+
+	# === Cell backgrounds ===
 	for r in JUNQI_ROWS:
 		for c in JUNQI_COLS:
 			var center := _junqi_cell_center(r, c, origin, cw, ch, gap)
-			var half := Vector2(cw, ch) * 0.42
+			var half := Vector2(cw, ch) * 0.46
 			var rect := Rect2(center - half, half * 2.0)
 			var cell: Dictionary = by_key.get("%d,%d" % [r, c], {})
 			var kind := str(cell.get("kind", "station"))
 			if kind == "hq":
-				_board_ctrl.draw_rect(rect, Color(0.78, 0.62, 0.28))
-				_board_ctrl.draw_rect(rect.grow(-2.0), Color(0.9, 0.78, 0.4), false, 1.5)
+				_board_ctrl.draw_rect(rect, Color(0.82, 0.68, 0.32))
+				_board_ctrl.draw_rect(rect.grow(-2.0), Color(0.92, 0.8, 0.44), false, 1.5)
 			elif kind == "camp":
-				# Larger refined camp: filled disc + rim + X diagonals (movement cue)
-				var rad: float = min(cw, ch) * 0.42
-				_board_ctrl.draw_circle(center, rad, Color(0.62, 0.78, 0.92))
-				_board_ctrl.draw_circle(center, rad * 0.88, Color(0.7, 0.84, 0.95))
-				_board_ctrl.draw_arc(center, rad, 0, TAU, 32, Color(0.2, 0.35, 0.55), 2.0)
-				var arm: float = rad * 0.62
-				var col_x := Color(0.15, 0.3, 0.5, 0.8)
-				_board_ctrl.draw_line(center + Vector2(-arm, -arm), center + Vector2(arm, arm), col_x, 2.0)
-				_board_ctrl.draw_line(center + Vector2(-arm, arm), center + Vector2(arm, -arm), col_x, 2.0)
+				_board_ctrl.draw_rect(rect, Color(0.58, 0.72, 0.5, 0.6))
 			else:
-				_board_ctrl.draw_rect(rect, Color(0.58, 0.74, 0.48, 0.55))
-				_board_ctrl.draw_rect(rect, Color(0.28, 0.38, 0.22), false, 1.0)
+				_board_ctrl.draw_rect(rect, Color(0.58, 0.74, 0.48, 0.5))
 			if _sel.x == c and _sel.y == r:
 				_board_ctrl.draw_rect(rect.grow(1.0), Color(0.95, 0.85, 0.2, 0.55), false, 2.5)
+
+	# === Grid lines (thin, all cells) ===
+	var col_grid := Color(0.35, 0.48, 0.28, 0.6)
+	for vr in range(13):
+		var x := origin.x + cw * float(vr)
+		if vr >= 6:
+			x += gap
+		_board_ctrl.draw_line(
+			Vector2(x, origin.y), Vector2(x, origin.y + ch * float(JUNQI_COLS)),
+			col_grid, 1.0
+		)
+	for c in range(JUNQI_COLS + 1):
+		var y := origin.y + ch * float(c)
+		var x_end := origin.x + cw * float(JUNQI_ROWS) + gap
+		_board_ctrl.draw_line(
+			Vector2(origin.x, y), Vector2(x_end, y),
+			col_grid, 1.0
+		)
+
+	# === Mountain strip ===
+	_draw_junqi_mountains(origin, cw, ch, gap)
+
+	# === Railway lines (thick dark, prominent) ===
 	_draw_junqi_rails(origin, cw, ch, gap)
+
+	# === Camps (small circles with X) ===
+	var camp_col := Color(0.55, 0.72, 0.88)
+	var camp_rim := Color(0.18, 0.32, 0.55)
+	var camp_x := Color(0.12, 0.28, 0.5, 0.85)
+	for r in JUNQI_ROWS:
+		for c in JUNQI_COLS:
+			var cell: Dictionary = by_key.get("%d,%d" % [r, c], {})
+			if str(cell.get("kind", "")) != "camp":
+				continue
+			var center := _junqi_cell_center(r, c, origin, cw, ch, gap)
+			var rad: float = min(cw, ch) * 0.3
+			_board_ctrl.draw_circle(center, rad, camp_col)
+			_board_ctrl.draw_arc(center, rad, 0, TAU, 28, camp_rim, 1.8)
+			var arm: float = rad * 0.65
+			_board_ctrl.draw_line(center + Vector2(-arm, -arm), center + Vector2(arm, arm), camp_x, 1.8)
+			_board_ctrl.draw_line(center + Vector2(-arm, arm), center + Vector2(arm, -arm), camp_x, 1.8)
+
+	# === Pieces ===
 	for r in JUNQI_ROWS:
 		for c in JUNQI_COLS:
 			var cell2: Dictionary = by_key.get("%d,%d" % [r, c], {})
@@ -1341,7 +1375,7 @@ func _draw_junqi_board() -> void:
 			var jkey := "%d,%d" % [jx, jy]
 			if _piece_anims.has(jkey) and str(_piece_anims[jkey].get("kind", "")) == "flip":
 				var jt := float(_piece_anims[jkey].get("t", 0.0)) / float(_piece_anims[jkey].get("dur", 1.0))
-				jflip = absf(cos(jt * PI))  # 1→0→1 card flip
+				jflip = absf(cos(jt * PI))
 			_draw_junqi_tile(
 				_junqi_cell_center(r, c, origin, cw, ch, gap),
 				min(cw, ch) * jscale,
@@ -1429,7 +1463,7 @@ func _draw_junqi_rails(origin: Vector2, cw: float, ch: float, gap: float) -> voi
 		var b: Array = seg[1]
 		var p0 := _junqi_cell_center(int(a[0]), int(a[1]), origin, cw, ch, gap)
 		var p1 := _junqi_cell_center(int(b[0]), int(b[1]), origin, cw, ch, gap)
-		_board_ctrl.draw_dashed_line(p0, p1, col_rail, 2.4, 6.0)
+		_board_ctrl.draw_line(p0, p1, col_rail, 3.2)
 
 
 func _draw_junqi_tile(center: Vector2, cell: float, side: String, ptype: String, alpha: float = 1.0, flip_x: float = 1.0) -> void:

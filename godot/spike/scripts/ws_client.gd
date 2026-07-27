@@ -19,6 +19,9 @@ var url := "ws://127.0.0.1:8765"
 var session_id := ""
 
 var _ws := WebSocketPeer.new()
+
+const WS_INBOUND_BUF := 262144   # 256 KB — junqi fog views + full room state
+const WS_OUTBOUND_BUF := 65536   # 64 KB — commands are small
 var _connecting := false
 var _intentional_close := false
 var _was_open := false
@@ -34,6 +37,8 @@ func connect_to_gateway(target_url: String = "") -> void:
 	_reconnect_left = 0.0
 	_connecting = true
 	_ws = WebSocketPeer.new()
+	_ws.inbound_buffer_size = WS_INBOUND_BUF
+	_ws.outbound_buffer_size = WS_OUTBOUND_BUF
 	var err := _ws.connect_to_url(url)
 	if err != OK:
 		push_error("[MW] connect_to_url failed: %s" % error_string(err))
