@@ -13,6 +13,7 @@
 - 产品拍板方向入库：[27-pico-webxr.md](27-pico-webxr.md)——Pico 以 WebXR 为主路径，同协议接 MineWorld Gateway；3DGS/视频为皮肤；UE 非默认。下一刀建议 XR-0→XR-1。
 - 并列仓 `mine-world-xr` 已初始化 XR-0（Vite + Three.js + Gateway WS stub）；XR-1 同网遥操已通。
 - Playground 双前台：`/` Godot Web · `/xr/` WebXR（`MW_XR_BUILD=20260728-123716`，共用 `wss://…/ws`）。
+- **XR-1.5**：摇杆轴向可切换、HUD（房间/控权/延迟/链路）、掉线自动重连、CC0 类人 GLB 傀儡；Portal/Hub 入口链到 `/xr/`。
 
 ## 2026-07-27 · 军棋交战后双方互等
 

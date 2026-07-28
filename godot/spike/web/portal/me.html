@@ -45,7 +45,12 @@
 			letter-spacing: 0.14em;
 			text-transform: uppercase;
 		}
-		.cta-row { margin-bottom: 18px; }
+		.cta-row {
+			margin-bottom: 18px;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
 		.btn-enter {
 			display: inline-flex;
 			align-items: center;
@@ -65,6 +70,24 @@
 			transition: background 0.15s ease, transform 0.15s ease;
 		}
 		.btn-enter:hover { background: #e0b35c; transform: translateY(-1px); }
+		.btn-xr {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 100%;
+			padding: 12px 16px;
+			border: 1px solid #3d6a9a;
+			border-radius: 2px;
+			background: transparent;
+			color: var(--link);
+			font-family: Syne, sans-serif;
+			font-weight: 600;
+			font-size: 0.85rem;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			text-decoration: none;
+		}
+		.btn-xr:hover { border-color: var(--link); background: rgba(110, 192, 255, 0.08); }
 		.card {
 			background: var(--panel);
 			border: 1px solid var(--line);
@@ -128,6 +151,7 @@
 		<p class="sub" id="who" data-i18n="me.loading">加载中…</p>
 		<div class="cta-row">
 			<a class="btn-enter" href="/" data-i18n="me.enter">进入母港</a>
+			<a class="btn-xr" href="/xr/" data-i18n="me.xr">头显遥操 /xr</a>
 		</div>
 		<div class="card stats" id="stats">
 			<div class="stat"><strong id="s-pts">—</strong><span data-i18n="me.pts">总积分</span></div>
