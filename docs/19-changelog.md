@@ -8,6 +8,12 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-28 · Pico WebXR 计划建议书
+
+- 产品拍板方向入库：[27-pico-webxr.md](27-pico-webxr.md)——Pico 以 WebXR 为主路径，同协议接 MineWorld Gateway；3DGS/视频为皮肤；UE 非默认。下一刀建议 XR-0→XR-1。
+- 并列仓 `mine-world-xr` 已初始化 XR-0（Vite + Three.js + Gateway WS stub）；XR-1 同网遥操已通。
+- Playground 双前台：`/` Godot Web · `/xr/` WebXR（`MW_XR_BUILD=20260728-123716`，共用 `wss://…/ws`）。
+
 ## 2026-07-27 · 军棋交战后双方互等
 
 - **现象**：军长吃工兵等交战后，双方都显示在等对方。
