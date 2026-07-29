@@ -60,6 +60,7 @@ rsync -az --delete \
   --exclude '.venv/' --exclude '.git/' --exclude 'recordings/' \
   --exclude 'mw_platform/data/*.sqlite' --exclude 'godot/spike/.godot/' \
   --exclude 'scripts/*.local.py' --exclude 'docs/*.local.md' \
+  --exclude 'dist/xr/' \
   ./ "$REMOTE"
 rsync -az scripts/inject_site_branding.local.py "${REMOTE}scripts/"
 
