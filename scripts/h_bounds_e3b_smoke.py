@@ -61,6 +61,25 @@ def _test_floor2_deck_projection() -> None:
     print(f"hub floor2 deck projection OK · void ({void_x},{void_y}) → ({nx:.2f},{ny:.2f})")
 
 
+def _test_floor2_drop_gap() -> None:
+    """Rail-gap AABB sits past open edge and overlaps L1 hall walkable."""
+    from echo_server import _hub_floor2_drop_gap
+
+    data = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    bounds = data["extensions"]["mw"]["bounds"]
+    half_x = float(bounds["half_x"])
+    half_y = float(bounds["half_y"])
+    walkable = _hub_walkable_aabbs(bounds, half_x, half_y)
+    floor2 = _hub_floor2_walkable_aabbs(bounds)
+    gap = _hub_floor2_drop_gap(bounds)
+    assert gap, "demo_hub.json missing bounds.floor2_drop_gap"
+    gx, gy = 10.5, -8.5
+    assert _point_in_aabb(gx, gy, gap), "sample not in drop gap"
+    assert not any(_point_in_aabb(gx, gy, b) for b in floor2), "gap sample still on L2 deck"
+    assert any(_point_in_aabb(gx, gy, b) for b in walkable), "gap sample not on L1 walkable"
+    print(f"hub floor2 drop gap OK · sample ({gx},{gy})")
+
+
 async def _hub_live_clamp(url: str) -> None:
     """Drive avatar toward south-west; pose must remain inside walkable."""
     _half_x, _half_y, walkable = _load_bounds()
@@ -171,6 +190,7 @@ async def main() -> int:
     url = sys.argv[1] if len(sys.argv) > 1 else "ws://127.0.0.1:8765"
     _test_walkable_projection()
     _test_floor2_deck_projection()
+    _test_floor2_drop_gap()
     await _hub_live_clamp(url)
     await _workshop_space_id(url)
     print("h_bounds_e3b smoke OK")

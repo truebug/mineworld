@@ -366,6 +366,13 @@ func reset_hub_hop() -> void:
 	_hop_vy = 0.0
 
 
+func start_l2_fall(from_y: float = HUB_FLOOR2_Y) -> void:
+	"""Drop from L2 deck to ground with a visual fall (own avatar)."""
+	height_offset = 0.0
+	_hop_y = maxf(from_y, 0.5)
+	_hop_vy = -2.5
+
+
 func get_hub_hop_y() -> float:
 	"""Current visual hop height for cmd piggyback."""
 	return _hop_y
@@ -393,7 +400,8 @@ func _apply_hop_from_net(y: float) -> void:
 	"""Remote hop height from authority (cm-ish; FakeMech planar)."""
 	if local_predict:
 		return
-	var want := clampf(y, 0.0, 4.0)
+	# Allow taller values during L2 fall broadcast (else clamp to hop height).
+	var want := clampf(y, 0.0, HUB_FLOOR2_Y + 0.5)
 	if absf(want - _hop_y) < 0.005:
 		return
 	_hop_y = want

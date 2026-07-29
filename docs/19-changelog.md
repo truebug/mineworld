@@ -8,6 +8,11 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-29 · Hub L2 栏杆缺口可跳下
+
+- 观景廊开敞边（电梯西侧）栏杆留缺口；走出 `bounds.floor2_drop_gap` → `hub_floor=1` 落地（视觉下落）。
+- 契约 `demo_hub.json` + gateway clamp 降级；`hub_dress` / `hub.gd` / `avatar_puppet`。
+
 ## 2026-07-28 · Pico WebXR 计划建议书
 
 - 产品拍板方向入库：[27-pico-webxr.md](27-pico-webxr.md)——Pico 以 WebXR 为主路径，同协议接 MineWorld Gateway；3DGS/视频为皮肤；UE 非默认。下一刀建议 XR-0→XR-1。

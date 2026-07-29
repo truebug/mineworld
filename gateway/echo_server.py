@@ -951,10 +951,16 @@ class Room:
             half_x, half_y = 18.5, 14.5
         walkable = _hub_walkable_aabbs(bounds, half_x, half_y)
         floor2 = _hub_floor2_walkable_aabbs(bounds)
-        floor_by_eid = {
-            s.controlled_entity_id: (2 if int(s.hub_floor) == 2 else 1)
+        drop_gap = _hub_floor2_drop_gap(bounds)
+        # eid → session (for L2→L1 demotion through rail gap)
+        sess_by_eid = {
+            s.controlled_entity_id: s
             for s in self.members.values()
             if s.joined and not s.closed and s.controlled_entity_id
+        }
+        floor_by_eid = {
+            eid: (2 if int(s.hub_floor) == 2 else 1)
+            for eid, s in sess_by_eid.items()
         }
         for eid, mech in self.mechs.items():
             # Outer envelope first.
@@ -970,8 +976,25 @@ class Room:
             elif mech.y > half_y:
                 mech.y = half_y
                 mech.vy = 0.0
-            # L2 mezzanine: clamp to deck AABB (visual rails are non-colliding).
-            active = floor2 if floor_by_eid.get(eid, 1) == 2 and floor2 else walkable
+            # L2 mezzanine: clamp to deck — except rail gap → drop to L1.
+            on_l2 = floor_by_eid.get(eid, 1) == 2 and bool(floor2)
+            if on_l2:
+                on_deck = any(_point_in_aabb(mech.x, mech.y, box) for box in floor2)
+                if not on_deck:
+                    in_gap = bool(
+                        drop_gap and _point_in_aabb(mech.x, mech.y, drop_gap)
+                    )
+                    on_ground = any(
+                        _point_in_aabb(mech.x, mech.y, box) for box in walkable
+                    )
+                    if in_gap and on_ground:
+                        sess = sess_by_eid.get(eid)
+                        if sess is not None:
+                            sess.hub_floor = 1
+                            sess.hub_hop_y = 0.0
+                        floor_by_eid[eid] = 1
+                        on_l2 = False
+            active = floor2 if on_l2 else walkable
             if not active:
                 continue
             if any(_point_in_aabb(mech.x, mech.y, box) for box in active):
@@ -1217,6 +1240,23 @@ def _hub_floor2_walkable_aabbs(bounds: dict[str, Any]) -> list[dict[str, float]]
             continue
         out.append({"min_x": min_x, "max_x": max_x, "min_y": min_y, "max_y": max_y})
     return out
+
+
+def _hub_floor2_drop_gap(bounds: dict[str, Any]) -> dict[str, float] | None:
+    """Optional L2 rail-gap AABB (MW XY). Leaving floor2 here demotes to L1."""
+    raw = bounds.get("floor2_drop_gap")
+    if not isinstance(raw, dict):
+        return None
+    try:
+        min_x = float(raw["min_x"])
+        max_x = float(raw["max_x"])
+        min_y = float(raw["min_y"])
+        max_y = float(raw["max_y"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if min_x >= max_x or min_y >= max_y:
+        return None
+    return {"min_x": min_x, "max_x": max_x, "min_y": min_y, "max_y": max_y}
 
 
 def _point_in_aabb(x: float, y: float, box: dict[str, float]) -> bool:
@@ -2806,7 +2846,7 @@ class EchoGateway:
             hop = float(mw.get("hop_y", 0.0))
         except (TypeError, ValueError):
             return
-        session.hub_hop_y = max(0.0, min(hop, 4.0))
+        session.hub_hop_y = max(0.0, min(hop, 9.0))
 
     def _should_send_state(self, session: Session, tick: int) -> bool:
         """Gate state frames per session (Hub presence_throttle)."""

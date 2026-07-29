@@ -660,13 +660,45 @@ func _place_mezzanine(root: Node3D) -> void:
 			Vector3(shaft_w + 1.2, 0.18, north_d),
 			deck,
 		)
-	# Open-edge beam + railing (deck width only).
+	# Open-edge beam + railing with a jump-off gap (west of elevator).
+	# Gap X mirrors demo_hub bounds.floor2_drop_gap (MW x = Godot x).
+	var gap_x0 := 9.0
+	var gap_x1 := 12.5
 	_box(root, "L2Beam", Vector3(deck_mid_x, FLOOR2_Y - 0.25, edge_z), Vector3(deck_w - 0.4, 0.35, 0.35), beam)
-	_box(root, "L2Rail", Vector3(deck_mid_x, FLOOR2_Y + 0.55, edge_z), Vector3(deck_w - 0.8, 0.08, 0.08), rail)
+	var rail_y := FLOOR2_Y + 0.55
+	var rail_h := 0.08
+	var left_w := maxf(0.0, gap_x0 - (deck_x0 + 0.4))
+	var right_w := maxf(0.0, (deck_x1 - 0.4) - gap_x1)
+	if left_w > 0.4:
+		_box(
+			root, "L2RailL",
+			Vector3(deck_x0 + 0.4 + left_w * 0.5, rail_y, edge_z),
+			Vector3(left_w, rail_h, rail_h),
+			rail,
+		)
+	if right_w > 0.4:
+		_box(
+			root, "L2RailR",
+			Vector3(gap_x1 + right_w * 0.5, rail_y, edge_z),
+			Vector3(right_w, rail_h, rail_h),
+			rail,
+		)
+	# End posts at gap lips + sparse posts on solid rail spans.
+	for px in [gap_x0, gap_x1]:
+		_box(root, "L2GapPost", Vector3(px, FLOOR2_Y + 0.28, edge_z), Vector3(0.1, 0.55, 0.1), rail)
 	for i in range(5):
 		var t := float(i) / 4.0
 		var px := lerpf(deck_x0 + 0.6, deck_x1 - 0.6, t)
+		if px > gap_x0 - 0.35 and px < gap_x1 + 0.35:
+			continue
 		_box(root, "L2Post", Vector3(px, FLOOR2_Y + 0.28, edge_z), Vector3(0.08, 0.55, 0.08), rail)
+	# Floor lip marker in the gap (readable jump-off).
+	_box(
+		root, "L2GapLip",
+		Vector3((gap_x0 + gap_x1) * 0.5, FLOOR2_Y + 0.02, edge_z - 0.15),
+		Vector3(gap_x1 - gap_x0 - 0.2, 0.06, 0.35),
+		accent,
+	)
 	# Two support columns under open edge
 	for x in [deck_mid_x - deck_w * 0.28, deck_mid_x + deck_w * 0.28]:
 		_box(root, "L2Col", Vector3(x, FLOOR2_Y * 0.5, edge_z + 0.4), Vector3(0.45, FLOOR2_Y, 0.45), beam)

@@ -184,7 +184,14 @@
             "min_y": -19.1,
             "max_y": -9.7
           }
-        ]
+        ],
+        "floor2_drop_gap": {
+          "min_x": 9.0,
+          "max_x": 12.5,
+          "min_y": -11.0,
+          "max_y": -7.0,
+          "note": "L2 rail gap · west of elevator; exit → hub_floor=1"
+        }
       }
     }
   }

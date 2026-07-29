@@ -82,6 +82,7 @@ Portal / shell：`localStorage.mw_lang` = `zh`（默认）| `en`；右上角切�
 - **楼层多人同步**：`cmd set_hub_floor` / state `extensions.mw.hub_floor`（FakeMech 仍平面，仅视觉 Y）。
 - **L2 空气墙**：契约 `bounds.floor2_walkable`；`hub_floor==2` 时 FakeMech clamp 到甲板 AABB（栏杆仍仅视觉）。
 - **空格跳跃（Hub 专用）**：本机抛物线 + velocity cmd `extensions.mw.hop_y` → 远端同抬；与 F 同属大厅键，玩法关不占用。
+- **L2 栏杆缺口**：开敞边西侧（电梯以西）留跳口；走出 `floor2_drop_gap` → `hub_floor=1` 落地（视觉下落）。
 
 ---
 

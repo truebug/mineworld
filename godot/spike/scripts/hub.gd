@@ -75,6 +75,10 @@ const DOOR_STUB_DIST := 3.2
 const DOOR_HINT_DIST := 5.5
 ## Matches hub_dress FLOOR2_Y — thin elevator ride (viewer offset).
 const FLOOR2_Y := 8.5
+## L2 open-edge + rail gap (must match hub_dress / demo_hub floor2_drop_gap).
+const L2_EDGE_Z := 9.5
+const L2_GAP_X0 := 9.0
+const L2_GAP_X1 := 12.5
 
 var _hub_floor := 1
 var _party_looking := false
@@ -768,6 +772,7 @@ func _process(delta: float) -> void:
 	if _door_grace > 0.0:
 		_door_grace = maxf(0.0, _door_grace - delta)
 	_tick_elevator(delta)
+	_check_l2_rail_drop()
 	_check_doors()
 	_update_door_context()
 	_update_door_approach_fx()
@@ -1497,6 +1502,32 @@ func _apply_hub_floor() -> void:
 	# Nudge buffers so the floor snap is immediate (don't wait for next state).
 	var y := FLOOR2_Y if _hub_floor == 2 else 0.0
 	own.global_position.y = y
+
+
+func _check_l2_rail_drop() -> void:
+	"""Walk/jump through L2 rail gap → land on L1 (visual fall + hub_floor=1)."""
+	if _hub_floor != 2 or _elev_phase != "":
+		return
+	var own := _own_avatar()
+	if own == null:
+		return
+	var p: Vector3 = own.global_position
+	# Past open edge into hall, inside gap X (rail opening).
+	if p.z > L2_EDGE_Z - 0.05:
+		return
+	if p.x < L2_GAP_X0 or p.x > L2_GAP_X1:
+		return
+	_hub_floor = 1
+	if "height_offset" in own:
+		own.set("height_offset", 0.0)
+	if own.has_method("start_l2_fall"):
+		own.call("start_l2_fall", FLOOR2_Y)
+	else:
+		own.global_position.y = 0.0
+	_push_web_hub_floor()
+	_send_hub_floor()
+	_door_context = MWi18n.t("从观景廊跳下", "Dropped from lounge")
+	_compose_and_push_tips()
 
 
 func _try_hub_hop() -> void:
