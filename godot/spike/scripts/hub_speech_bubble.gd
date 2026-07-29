@@ -10,6 +10,8 @@ var hold_s := HOLD_S
 ## When true, only draw while parent sets visible_wanted (patrol dwell).
 var dwell_only := false
 var visible_wanted := true
+## Player plaza chat: show once then hide (no rotate loop).
+var one_shot := false
 
 var _idx := 0
 var _phase := "hold" ## hold | out | in
@@ -22,6 +24,7 @@ var _accent := Color(0.95, 0.92, 0.82, 1.0)
 
 func setup(line_list: Array, accent: Color = Color(0.95, 0.9, 0.75), start_offset: float = 0.0) -> void:
 	"""Attach styled panel + label; stagger start_offset so NPCs don't sync-speak."""
+	one_shot = false
 	lines = []
 	for item in line_list:
 		var s := str(item).strip_edges()
@@ -34,6 +37,25 @@ func setup(line_list: Array, accent: Color = Color(0.95, 0.9, 0.75), start_offse
 	_ensure_nodes()
 	_apply_line(0.0 if lines.is_empty() else 1.0)
 	visible = not dwell_only and not lines.is_empty()
+
+
+func flash(text: String, accent: Color = Color(0.95, 0.9, 0.75), hold: float = 4.5) -> void:
+	"""One-shot player chat bubble; fades out then hides."""
+	var s := text.strip_edges()
+	if s == "":
+		return
+	one_shot = true
+	hold_s = hold
+	dwell_only = false
+	visible_wanted = true
+	lines = [s]
+	_accent = accent
+	_t = 0.0
+	_idx = 0
+	_phase = "hold"
+	_ensure_nodes()
+	_apply_line(1.0)
+	visible = true
 
 
 func set_dwell_active(on: bool) -> void:
@@ -121,7 +143,11 @@ func _process(delta: float) -> void:
 		"hold":
 			_apply_line(1.0)
 			if _t >= hold_s:
-				if lines.size() <= 1 and not dwell_only:
+				if one_shot or lines.size() <= 1 and not dwell_only:
+					if one_shot:
+						_phase = "out"
+						_t = 0.0
+						return
 					_t = 0.0
 					return
 				_phase = "out"
@@ -130,6 +156,11 @@ func _process(delta: float) -> void:
 			var k := 1.0 - clampf(_t / FADE_S, 0.0, 1.0)
 			_apply_line(k)
 			if _t >= FADE_S:
+				if one_shot:
+					visible = false
+					lines.clear()
+					one_shot = false
+					return
 				_idx = (_idx + 1) % lines.size()
 				_phase = "in"
 				_t = 0.0

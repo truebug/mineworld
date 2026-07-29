@@ -1,0 +1,17 @@
+{
+  "type": "event",
+  "session_id": "00000000-0000-4000-8000-000000000002",
+  "tick": 100,
+  "t_sim": 2.0,
+  "payload": {
+    "event_type": "chat",
+    "entity_id": "avatar_0",
+    "detail": {
+      "text": "你好，母港",
+      "from": "Bug",
+      "session_id": "00000000-0000-4000-8000-000000000001",
+      "profile_id": "demo",
+      "level_id": "demo_hub"
+    }
+  }
+}

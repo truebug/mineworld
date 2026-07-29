@@ -627,13 +627,88 @@ func _push_web_map(actors: Array) -> void:
 
 
 func _on_event(payload: Dictionary) -> void:
-	"""Track take/release control from Gateway."""
+	"""Track take/release control; plaza chat fan-out."""
 	var et := str(payload.get("event_type", ""))
 	match et:
 		"player_take_control":
 			_controlled = true
 		"player_release_control":
 			_controlled = false
+		"chat":
+			_on_chat_event(payload)
+
+
+func _on_chat_event(payload: Dictionary) -> void:
+	"""Append chat log + flash bubble on the speaker avatar."""
+	var detail: Variant = payload.get("detail", {})
+	if typeof(detail) != TYPE_DICTIONARY:
+		detail = {}
+	var text := str((detail as Dictionary).get("text", "")).strip_edges()
+	if text == "":
+		return
+	var from_name := str((detail as Dictionary).get("from", "Guest")).strip_edges()
+	if from_name == "":
+		from_name = "Guest"
+	_append_chat_log(from_name, text)
+	var eid := str(payload.get("entity_id", ""))
+	if eid != "" and _puppets.has(eid):
+		var puppet: Node = _puppets[eid]
+		if puppet != null and puppet.has_method("show_chat"):
+			puppet.call("show_chat", text)
+
+
+func _append_chat_log(from_name: String, text: String) -> void:
+	"""Push one line into DOM chat log (Web) or desktop tips."""
+	if _is_web:
+		var payload := JSON.stringify({"from": from_name, "text": text})
+		JavaScriptBridge.eval(
+			"(function(){var p=%s;if(typeof window.MW_APPEND_HUB_CHAT==='function'){window.MW_APPEND_HUB_CHAT(p);}})()" % payload,
+			true
+		)
+		return
+	_refresh_tips("%s: %s" % [from_name, text])
+
+
+func _poll_web_chat() -> void:
+	"""Send pending DOM plaza chat as cmd.action=chat."""
+	if not _is_web:
+		return
+	var raw := str(JavaScriptBridge.eval(
+		"(function(){var n=window.MW_HUB_CHAT_PENDING;window.MW_HUB_CHAT_PENDING=null;return n||''})()",
+		true
+	))
+	if raw == "":
+		return
+	_send_chat(raw)
+
+
+func _desktop_text_focused() -> bool:
+	"""True while nickname or chat LineEdit has focus (desktop)."""
+	if _is_web:
+		return false
+	if nick_edit != null and nick_edit.has_focus():
+		return true
+	var hud := get_node_or_null("HUD") as CanvasLayer
+	if hud != null:
+		var chat := hud.get_node_or_null("ChatEdit") as LineEdit
+		if chat != null and chat.has_focus():
+			return true
+	return false
+
+
+func _send_chat(text: String) -> void:
+	"""Gateway room chat (any joined room; Hub UI first)."""
+	var s := text.strip_edges()
+	if s == "" or ws == null:
+		return
+	if not _controlled:
+		return
+	if s.length() > 80:
+		s = s.substr(0, 80)
+	var payload := {"action": "chat", "text": s}
+	if _controlled_entity_id != "":
+		payload["entity_id"] = _controlled_entity_id
+	ws.send_cmd(payload)
 
 
 func _on_gateway_error(payload: Dictionary) -> void:
@@ -818,6 +893,7 @@ func _process(delta: float) -> void:
 	_sync_first_person_mesh()
 	if _is_web:
 		_poll_web_nick()
+		_poll_web_chat()
 	var cmd_hz := CMD_HZ
 	if _presence_throttle == "low":
 		cmd_hz = CMD_HZ_LOW
@@ -857,6 +933,11 @@ func _sync_first_person_mesh() -> void:
 
 func _send_velocity_cmd() -> void:
 	"""Same mapping as main.gd: W/S forward, A/D strafe, Q/E yaw."""
+	if _desktop_text_focused():
+		var own_idle := _own_avatar()
+		if own_idle != null and own_idle.has_method("set_local_cmd"):
+			own_idle.call("set_local_cmd", 0.0, 0.0, 0.0)
+		return
 	var vx := 0.0
 	var vy := 0.0
 	var yaw_rate := 0.0
@@ -1606,6 +1687,46 @@ func _unhandled_input(event: InputEvent) -> void:
 				_try_hub_hop()
 				get_viewport().set_input_as_handled()
 				return
+			if ek.keycode == KEY_ENTER or ek.keycode == KEY_KP_ENTER:
+				_desktop_focus_or_send_chat()
+				get_viewport().set_input_as_handled()
+				return
+
+
+func _desktop_focus_or_send_chat() -> void:
+	"""Desktop: Enter focuses chat LineEdit or sends when already focused."""
+	if _is_web:
+		return
+	var hud := get_node_or_null("HUD") as CanvasLayer
+	if hud == null:
+		return
+	var edit := hud.get_node_or_null("ChatEdit") as LineEdit
+	if edit == null:
+		edit = LineEdit.new()
+		edit.name = "ChatEdit"
+		edit.placeholder_text = MWi18n.t("广场聊天 · 回车发送", "Plaza chat · Enter to send")
+		edit.max_length = 80
+		edit.custom_minimum_size = Vector2(280, 28)
+		edit.position = Vector2(12, 420)
+		edit.size = Vector2(280, 28)
+		hud.add_child(edit)
+		edit.text_submitted.connect(_on_desktop_chat_submitted)
+	if edit.has_focus():
+		_on_desktop_chat_submitted(edit.text)
+	else:
+		edit.grab_focus()
+
+
+func _on_desktop_chat_submitted(text: String) -> void:
+	"""Desktop LineEdit submit → chat cmd."""
+	var hud := get_node_or_null("HUD") as CanvasLayer
+	var edit: LineEdit = null
+	if hud != null:
+		edit = hud.get_node_or_null("ChatEdit") as LineEdit
+	if edit != null:
+		edit.text = ""
+		edit.release_focus()
+	_send_chat(text)
 
 
 func _enter_level(scene_path: String) -> void:

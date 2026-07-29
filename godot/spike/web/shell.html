@@ -312,6 +312,64 @@ body.mw-hub #mw-hub-map {
 	margin-top: 4px;
 }
 
+#mw-hub-chat {
+	display: none;
+	position: fixed;
+	z-index: 2147483646;
+	box-sizing: border-box;
+	left: 16px;
+	bottom: 190px;
+	width: min(260px, calc(100vw - 32px));
+	padding: 8px 10px 10px;
+	background: rgba(18, 24, 32, 0.92);
+	color: #e8eaed;
+	font: 12px/1.35 ui-sans-serif, system-ui, sans-serif;
+	border-radius: 8px;
+	border: 1px solid #3a7a5a;
+	pointer-events: auto;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.mw-hub #mw-hub-chat {
+	display: block;
+}
+
+#mw-hub-chat .mw-chat-title {
+	font-size: 11px;
+	letter-spacing: 0.04em;
+	color: #9ad4b5;
+	margin-bottom: 4px;
+}
+
+#mw-hub-chat-log {
+	height: 86px;
+	overflow-y: auto;
+	margin-bottom: 6px;
+	word-break: break-word;
+}
+
+#mw-hub-chat-log .mw-chat-line {
+	margin: 0 0 3px;
+}
+
+#mw-hub-chat-log .mw-chat-from {
+	color: #7ec8ff;
+	margin-right: 4px;
+}
+
+#mw-hub-chat-input {
+	width: 100%;
+	box-sizing: border-box;
+	font: inherit;
+	font-size: 12px;
+	background: #1a2030;
+	color: #e8eef6;
+	border: 1px solid #3a4558;
+	border-radius: 4px;
+	padding: 4px 6px;
+	pointer-events: auto;
+}
+
 #mw-hub-lb {
 	display: none;
 	position: fixed;
@@ -636,6 +694,11 @@ body.mw-play.mw-no-joints #mw-joints {
 			<div class="mw-map-title" data-i18n="hub.map">母港图 · 东A橙 · 西B蓝 · 北C · 西偏北D · 南E建设中 · 东南R赛车</div>
 			<canvas id="mw-hub-map-canvas" width="220" height="132"></canvas>
 			<div class="mw-map-coords" id="mw-hub-map-coords">pos --</div>
+		</div>
+		<div id="mw-hub-chat" aria-label="Plaza chat">
+			<div class="mw-chat-title" data-i18n="hub.chat">广场聊天</div>
+			<div id="mw-hub-chat-log"></div>
+			<input id="mw-hub-chat-input" type="text" maxlength="80" data-i18n="hub.chat_ph" data-i18n-attr="placeholder" placeholder="回车发送…" autocomplete="off">
 		</div>
 		<div id="mw-hub-lb" aria-label="Leaderboard">
 			<div class="mw-lb-title" data-i18n="hub.lb">排行榜</div>
@@ -1003,6 +1066,45 @@ const engine = new Engine(GODOT_CONFIG);
 			});
 		}
 
+		const chatInput = document.getElementById('mw-hub-chat-input');
+		const chatLog = document.getElementById('mw-hub-chat-log');
+		window.MW_APPEND_HUB_CHAT = function (payload) {
+			if (!chatLog || !payload) {
+				return;
+			}
+			const from = String(payload.from || 'Guest').slice(0, 24);
+			const text = String(payload.text || '').slice(0, 80);
+			if (!text) {
+				return;
+			}
+			const line = document.createElement('div');
+			line.className = 'mw-chat-line';
+			const who = document.createElement('span');
+			who.className = 'mw-chat-from';
+			who.textContent = from;
+			line.appendChild(who);
+			line.appendChild(document.createTextNode(text));
+			chatLog.appendChild(line);
+			while (chatLog.children.length > 40) {
+				chatLog.removeChild(chatLog.firstChild);
+			}
+			chatLog.scrollTop = chatLog.scrollHeight;
+		};
+		if (chatInput) {
+			chatInput.addEventListener('keydown', function (e) {
+				e.stopPropagation();
+				if (e.code === 'Enter' || e.key === 'Enter') {
+					e.preventDefault();
+					const text = (chatInput.value || '').trim().slice(0, 80);
+					if (text) {
+						window.MW_HUB_CHAT_PENDING = text;
+					}
+					chatInput.value = '';
+					chatInput.blur();
+				}
+			});
+		}
+
 		window.MW_SET_HUB_MAP = function (payload) {
 			if (!canvas || !payload) {
 				return;
@@ -1185,6 +1287,7 @@ const engine = new Engine(GODOT_CONFIG);
 				map.style.top = Math.max(pad, r.bottom - pad - mh) + 'px';
 			}
 			const leftBoard = document.body.classList.contains('mw-hub-l2') ? l2 : lb;
+			const chat = document.getElementById('mw-hub-chat');
 			if (leftBoard) {
 				const lw = Math.min(240, Math.max(140, r.width * 0.28));
 				leftBoard.style.width = lw + 'px';
@@ -1194,6 +1297,18 @@ const engine = new Engine(GODOT_CONFIG);
 				leftBoard.style.bottom = 'auto';
 				const lh = leftBoard.offsetHeight || 120;
 				leftBoard.style.top = Math.max(pad, r.bottom - pad - lh) + 'px';
+				if (chat && document.body.classList.contains('mw-hub')) {
+					const cw = Math.min(260, Math.max(160, r.width * 0.3));
+					chat.style.width = cw + 'px';
+					chat.style.left = Math.max(pad, r.left + pad) + 'px';
+					chat.style.right = 'auto';
+					chat.style.bottom = 'auto';
+					const ch = chat.offsetHeight || 140;
+					const gap = 8;
+					chat.style.top = Math.max(pad, (parseFloat(leftBoard.style.top) || (r.bottom - pad - lh)) - gap - ch) + 'px';
+				}
+			} else if (chat) {
+				chat.style.display = document.body.classList.contains('mw-hub') ? 'block' : 'none';
 			}
 		}
 		window.MW_LAYOUT_HUB_CHROME = layoutHubChrome;

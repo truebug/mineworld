@@ -156,7 +156,9 @@
         "contact",
         "objective_complete",
         "objective_failed",
-        "sim_error"
+        "sim_error",
+        "chat",
+        "duel_result"
       ]
     }
   }

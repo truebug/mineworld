@@ -180,9 +180,14 @@
         "entity_id": { "$ref": "common.v0.json#/$defs/entity_id" },
         "action": {
           "type": "string",
-          "description": "Known: take_control | release_control | presence_throttle | chess_sit | chess_leave | chess_place | chess_move | chess_reset. Custom snake_case allowed.",
+          "description": "Known: take_control | release_control | presence_throttle | chat | chess_sit | chess_leave | chess_place | chess_move | chess_reset. Custom snake_case allowed.",
           "pattern": "^[a-z][a-z0-9_]*$",
-          "examples": ["take_control", "release_control", "presence_throttle", "chess_sit", "chess_place", "chess_move"]
+          "examples": ["take_control", "release_control", "presence_throttle", "chat", "chess_sit", "chess_place", "chess_move"]
+        },
+        "text": {
+          "type": "string",
+          "description": "chat: plaza message body (gateway truncates ~80 chars).",
+          "maxLength": 200
         },
         "table_id": {
           "type": "string",

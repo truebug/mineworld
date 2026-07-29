@@ -83,7 +83,18 @@ func _on_dom_blur(_args: Array) -> void:
 
 
 func is_pressed(code: String) -> bool:
+	"""True while DOM key is down; ignore while typing in an input field."""
+	if OS.has_feature("web") and _typing_in_field():
+		return false
 	return bool(_held_codes.get(code, false))
+
+
+func _typing_in_field() -> bool:
+	"""True when focus is on INPUT / TEXTAREA / contentEditable."""
+	return bool(JavaScriptBridge.eval(
+		"(function(){var t=document.activeElement;if(!t)return false;var n=(t.tagName||'').toUpperCase();return n==='INPUT'||n==='TEXTAREA'||!!t.isContentEditable})()",
+		true
+	))
 
 
 func clear() -> void:

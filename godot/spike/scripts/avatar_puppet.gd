@@ -260,6 +260,24 @@ func set_display(name_text: String, accent_hex: String = "", skin: String = "") 
 	_ensure_skin(false)
 
 
+func show_chat(text: String) -> void:
+	"""Flash a one-shot plaza bubble above the avatar."""
+	var s := text.strip_edges()
+	if s == "":
+		return
+	var bubble := get_node_or_null("PlayerChatBubble") as Node
+	if bubble == null:
+		var script := load("res://scripts/hub_speech_bubble.gd")
+		if script == null:
+			return
+		bubble = script.new()
+		bubble.name = "PlayerChatBubble"
+		add_child(bubble)
+		(bubble as Node3D).position = Vector3(0, 1.55, 0)
+	if bubble.has_method("flash"):
+		bubble.call("flash", s, accent, 4.5)
+
+
 func set_local_cmd(vx: float, vy: float, yaw_rate: float) -> void:
 	"""Cache last velocity cmd for local_predict (body frame, MW)."""
 	_cmd_vx = vx

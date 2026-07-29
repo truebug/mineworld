@@ -24,6 +24,7 @@ import json
 import logging
 import math
 import sys
+import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -71,6 +72,9 @@ RACE_ROOM_ID = "race"
 RACE_ROOM_MAX = 6
 HUB_ROOM_ID = "hub"
 HUB_ROOM_MAX = 8
+## Room chat (plaza): length + cooldown; any joined room (Hub UI first).
+CHAT_MAX_LEN = 80
+CHAT_COOLDOWN_S = 0.75
 CHESS_ROOM_ID = "chess"
 CHESS_TABLE_IDS = ("table_1", "table_2", "table_3", "table_4")
 
@@ -1098,6 +1102,8 @@ class Session:
     ## State delta (P1): per-entity last-sent quantized pose + keyframe counter.
     last_sent_entities: dict[str, tuple] = field(default_factory=dict)
     states_since_keyframe: int = 999  # large → first state is a full keyframe
+    ## Room chat rate-limit (monotonic seconds).
+    last_chat_mono: float = 0.0
 
     @property
     def mech(self) -> MechState | None:
@@ -2720,6 +2726,9 @@ class EchoGateway:
     async def _handle_cmd(self, session: Session, payload: dict[str, Any]) -> None:
         """Accept cmds only for the session's assigned entity."""
         action = str(payload.get("action") or "")
+        if action == "chat":
+            await self._handle_chat(session, payload)
+            return
         if action == "presence_throttle":
             self._apply_presence_throttle(session, payload)
             return
@@ -2771,6 +2780,72 @@ class EchoGateway:
             )
             return
         session.pending_events.extend(events)
+
+    async def _handle_chat(self, session: Session, payload: dict[str, Any]) -> None:
+        """Broadcast short plaza chat to every joined member of the room."""
+        if session.room is None or not session.joined or session.closed:
+            return
+        raw = payload.get("text")
+        if raw is None:
+            raw = payload.get("message")
+        text = " ".join(str(raw or "").split())
+        text = text[:CHAT_MAX_LEN].strip()
+        if not text:
+            return
+        now = time.monotonic()
+        if now - session.last_chat_mono < CHAT_COOLDOWN_S:
+            return
+        session.last_chat_mono = now
+        nick = str(
+            session.profile.get("nickname")
+            or session.player_name
+            or "Guest"
+        ).strip()[:24] or "Guest"
+        eid = session.controlled_entity_id or ""
+        detail: dict[str, Any] = {
+            "text": text,
+            "from": nick,
+            "session_id": session.session_id,
+        }
+        pid = session.profile.get("id")
+        if pid:
+            detail["profile_id"] = str(pid)
+        level_id = str(session.level_id or session.contract.get("level_id") or "")
+        if level_id:
+            detail["level_id"] = level_id
+        ev = {
+            "event_type": "chat",
+            "entity_id": eid,
+            "detail": detail,
+        }
+        room = session.room
+        tick = room.tick
+        for member in list(room.members.values()):
+            if not member.joined or member.closed:
+                continue
+            try:
+                await send_json(
+                    member.ws,
+                    envelope(
+                        "event",
+                        session_id=member.session_id,
+                        tick=tick,
+                        payload=ev,
+                    ),
+                )
+            except Exception:
+                LOG.debug(
+                    "chat fan-out failed session=%s",
+                    member.session_id,
+                    exc_info=True,
+                )
+        LOG.info(
+            "room=%s chat from=%s eid=%s text=%r",
+            room.room_id,
+            nick,
+            eid,
+            text[:40],
+        )
 
     def _apply_presence_throttle(
         self, session: Session, payload: dict[str, Any]

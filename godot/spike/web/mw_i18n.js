@@ -20,6 +20,8 @@
 		'hub.admin': { zh: '管理', en: 'Admin' },
 		'hub.map': { zh: '母港图 · 东A橙 · 西B蓝 · 北C · 西偏北D · 南E建设中 · 东南R赛车', en: 'Hub map · A orange · B blue · C north · D NW · E Arena WIP · SE R Race' },
 		'hub.lb': { zh: '排行榜', en: 'Leaderboard' },
+		'hub.chat': { zh: '广场聊天', en: 'Plaza chat' },
+		'hub.chat_ph': { zh: '回车发送…', en: 'Enter to send…' },
 		'hub.l2_title': { zh: 'L2 · 本周训练', en: 'L2 · This week' },
 		'hub.l2_body': {
 			zh: '工坊推车 · 训练场街区 · 赛车计时\n走近门 A / B / R 进入。电梯旁按 F 下楼。',

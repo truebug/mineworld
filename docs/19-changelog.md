@@ -8,6 +8,11 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-29 · Hub 广场聊天（可复用到 city/race）
+
+- `cmd.action=chat` → 同房广播 `event_type=chat`（限长 80、冷却 0.75s）；协议不绑 Hub。
+- Hub：左下聊天栏 + 头顶气泡；Web 输入时不抢 WASD。
+
 ## 2026-07-29 · Blocky 全套 a–r + 四角石像
 
 - Kenney Blocky 2.0 全套 18 皮入库；profile `skin` / gateway 透传扩到 `a..r`（`skin_pool=18` 时按 id 重哈希一次）。
