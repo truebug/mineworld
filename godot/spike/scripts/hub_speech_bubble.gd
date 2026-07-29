@@ -40,7 +40,7 @@ func setup(line_list: Array, accent: Color = Color(0.95, 0.9, 0.75), start_offse
 
 
 func flash(text: String, accent: Color = Color(0.95, 0.9, 0.75), hold: float = 4.5) -> void:
-	"""One-shot player chat bubble; fades out then hides."""
+	"""One-shot player chat bubble; high-contrast text (ignores dark accents)."""
 	var s := text.strip_edges()
 	if s == "":
 		return
@@ -49,11 +49,16 @@ func flash(text: String, accent: Color = Color(0.95, 0.9, 0.75), hold: float = 4
 	dwell_only = false
 	visible_wanted = true
 	lines = [s]
-	_accent = accent
+	# Readable on bright hangar / outdoor: near-white glyph + dark plate.
+	_accent = Color(0.98, 0.99, 1.0, 1.0)
 	_t = 0.0
 	_idx = 0
 	_phase = "hold"
 	_ensure_nodes()
+	if _label != null:
+		_label.outline_size = 14
+		_label.outline_modulate = Color(0.02, 0.03, 0.05, 1.0)
+		_label.font_size = 30
 	_apply_line(1.0)
 	visible = true
 
@@ -116,14 +121,22 @@ func _apply_line(alpha: float) -> void:
 		text = str(lines[_idx % lines.size()])
 	_label.text = text
 	var a := clampf(alpha, 0.0, 1.0)
-	_label.modulate = Color(_accent.r, _accent.g, _accent.b, a)
-	_mat.albedo_color = Color(0.08, 0.1, 0.14, 0.78 * a)
+	if one_shot:
+		_label.modulate = Color(1.0, 1.0, 1.0, a)
+		_mat.albedo_color = Color(0.04, 0.06, 0.1, 0.92 * a)
+	else:
+		_label.modulate = Color(_accent.r, _accent.g, _accent.b, a)
+		_mat.albedo_color = Color(0.08, 0.1, 0.14, 0.78 * a)
 	var pop := 0.92 + 0.08 * a
 	scale = Vector3(pop, pop, pop)
 	if a > 0.85:
 		_mat.emission_enabled = true
-		_mat.emission = Color(_accent.r, _accent.g, _accent.b) * 0.25
-		_mat.emission_energy_multiplier = 0.35
+		if one_shot:
+			_mat.emission = Color(0.15, 0.2, 0.28)
+			_mat.emission_energy_multiplier = 0.2
+		else:
+			_mat.emission = Color(_accent.r, _accent.g, _accent.b) * 0.25
+			_mat.emission_energy_multiplier = 0.35
 	else:
 		_mat.emission_enabled = false
 

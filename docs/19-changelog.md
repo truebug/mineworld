@@ -8,6 +8,11 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-29 · 聊天扩到 city/race + 气泡对比度
+
+- 气泡 one-shot：白字 + 深色底板/描边，避免跟 accent / 亮背景糊在一起。
+- `demo_city` / 公共 `demo_race` 复用同一 DOM 聊天栏与 `cmd.action=chat`（棋室后置）。
+
 ## 2026-07-29 · Hub 广场聊天（可复用到 city/race）
 
 - `cmd.action=chat` → 同房广播 `event_type=chat`（限长 80、冷却 0.75s）；协议不绑 Hub。

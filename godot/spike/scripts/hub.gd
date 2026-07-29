@@ -181,6 +181,7 @@ func _start_hub_session() -> void:
 			MWWebInput.web_key_event.connect(_on_hub_key_event)
 		JavaScriptBridge.eval(
 			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(false,true);}"
+			+ "if(typeof window.MW_SET_ROOM_CHAT==='function'){window.MW_SET_ROOM_CHAT(false);}"
 			+ "if(typeof window.MW_LAYOUT_HUB_CHROME==='function'){window.MW_LAYOUT_HUB_CHROME();}",
 			true
 		)

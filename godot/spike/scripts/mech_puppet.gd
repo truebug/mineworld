@@ -436,6 +436,25 @@ func apply_team_look() -> void:
 	tag.modulate = color
 
 
+func show_chat(text: String) -> void:
+	"""Flash a high-contrast plaza bubble above the mech."""
+	var s := text.strip_edges()
+	if s == "":
+		return
+	var bubble := get_node_or_null("PlayerChatBubble") as Node
+	if bubble == null:
+		var script := load("res://scripts/hub_speech_bubble.gd")
+		if script == null:
+			return
+		bubble = script.new()
+		bubble.name = "PlayerChatBubble"
+		add_child(bubble)
+		var y := 1.75 if use_kenney_car else 1.45
+		(bubble as Node3D).position = Vector3(0, y, 0)
+	if bubble.has_method("flash"):
+		bubble.call("flash", s, Color(1, 1, 1), 4.5)
+
+
 func _tint_mesh(mesh_inst: MeshInstance3D, color: Color) -> void:
 	"""Apply a simple albedo override."""
 	var mat := StandardMaterial3D.new()

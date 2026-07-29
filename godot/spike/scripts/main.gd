@@ -121,7 +121,8 @@ func _ready() -> void:
 			(
 				"if(typeof window.MW_SET_SHELL_UI==='function'){"
 				+ "window.MW_SET_SHELL_UI(%s,false,%s);}"
-			) % [play_js, no_joints],
+				+ "if(typeof window.MW_SET_ROOM_CHAT==='function'){window.MW_SET_ROOM_CHAT(%s);}"
+			) % [play_js, no_joints, "true" if _wants_room_chat() else "false"],
 			true
 		)
 		_sync_web_joints_ui()
@@ -338,6 +339,16 @@ func _resolve_room_id() -> String:
 	if level_id == "demo_race":
 		return "race"
 	return room_id
+
+
+func _wants_room_chat() -> bool:
+	"""Shared multiplayer yards: city + race public rooms (gateway already fans out chat)."""
+	if level_id == "demo_city":
+		return true
+	if level_id == "demo_race":
+		var rid := _joined_room_id if _joined_room_id != "" else _resolve_room_id()
+		return rid == "" or rid == "race"
+	return false
 
 
 func _own_mech() -> Node3D:
@@ -567,7 +578,58 @@ func _on_event(payload: Dictionary) -> void:
 			_hud.show_mission_result(false, str(payload.get("objective_id", "objective")), 0, ws.session_id)
 			if _controlled:
 				ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
+		"chat":
+			_on_chat_event(payload)
+			return
 	_update_hud()
+
+
+func _on_chat_event(payload: Dictionary) -> void:
+	"""Room chat log + bubble on speaker mech."""
+	var detail: Variant = payload.get("detail", {})
+	if typeof(detail) != TYPE_DICTIONARY:
+		detail = {}
+	var text := str((detail as Dictionary).get("text", "")).strip_edges()
+	if text == "":
+		return
+	var from_name := str((detail as Dictionary).get("from", "Guest")).strip_edges()
+	if from_name == "":
+		from_name = "Guest"
+	if _is_web:
+		var body := JSON.stringify({"from": from_name, "text": text})
+		JavaScriptBridge.eval(
+			"(function(){var p=%s;if(typeof window.MW_APPEND_HUB_CHAT==='function'){window.MW_APPEND_HUB_CHAT(p);}})()" % body,
+			true
+		)
+	var eid := str(payload.get("entity_id", ""))
+	if eid != "" and _puppets.has(eid):
+		var puppet: Node = _puppets[eid]
+		if puppet != null and puppet.has_method("show_chat"):
+			puppet.call("show_chat", text)
+
+
+func _poll_web_chat() -> void:
+	"""Send pending DOM plaza chat while in a shared play room."""
+	if not _is_web or not _wants_room_chat():
+		return
+	var raw := str(JavaScriptBridge.eval(
+		"(function(){var n=window.MW_HUB_CHAT_PENDING;window.MW_HUB_CHAT_PENDING=null;return n||''})()",
+		true
+	))
+	if raw == "":
+		return
+	_send_chat(raw)
+
+
+func _send_chat(text: String) -> void:
+	"""Gateway room chat cmd."""
+	var s := text.strip_edges()
+	if s == "" or ws == null or not _controlled:
+		return
+	if s.length() > 80:
+		s = s.substr(0, 80)
+	var payload := {"action": "chat", "text": s, "entity_id": _controlled_entity_id}
+	ws.send_cmd(payload)
 
 
 func _on_gateway_error(payload: Dictionary) -> void:
@@ -687,6 +749,8 @@ func _process(delta: float) -> void:
 			pan_f -= 1.0
 		camera_rig.pan_axes(pan_r, pan_f, delta)
 	_sync_first_person_mesh()
+	if _is_web:
+		_poll_web_chat()
 	if ws.session_id == "":
 		return
 	if not _controlled or _mission_done:

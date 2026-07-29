@@ -330,7 +330,8 @@ body.mw-hub #mw-hub-map {
 	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
-body.mw-hub #mw-hub-chat {
+body.mw-hub #mw-hub-chat,
+body.mw-play.mw-room-chat #mw-hub-chat {
 	display: block;
 }
 
@@ -860,6 +861,13 @@ const engine = new Engine(GODOT_CONFIG);
 		}
 	};
 
+	window.MW_SET_ROOM_CHAT = function (on) {
+		document.body.classList.toggle('mw-room-chat', !!on);
+		if (typeof window.MW_LAYOUT_HUB_CHROME === 'function') {
+			window.MW_LAYOUT_HUB_CHROME();
+		}
+	};
+
 	window.MW_CLEAR_MISSION = function () {
 		const suc = document.getElementById('mw-success');
 		if (suc) {
@@ -1288,7 +1296,9 @@ const engine = new Engine(GODOT_CONFIG);
 			}
 			const leftBoard = document.body.classList.contains('mw-hub-l2') ? l2 : lb;
 			const chat = document.getElementById('mw-hub-chat');
-			if (leftBoard) {
+			const roomChat = document.body.classList.contains('mw-room-chat');
+			const hubChat = document.body.classList.contains('mw-hub');
+			if (leftBoard && hubChat) {
 				const lw = Math.min(240, Math.max(140, r.width * 0.28));
 				leftBoard.style.width = lw + 'px';
 				leftBoard.style.left = Math.max(pad, r.left + pad) + 'px';
@@ -1297,7 +1307,7 @@ const engine = new Engine(GODOT_CONFIG);
 				leftBoard.style.bottom = 'auto';
 				const lh = leftBoard.offsetHeight || 120;
 				leftBoard.style.top = Math.max(pad, r.bottom - pad - lh) + 'px';
-				if (chat && document.body.classList.contains('mw-hub')) {
+				if (chat) {
 					const cw = Math.min(260, Math.max(160, r.width * 0.3));
 					chat.style.width = cw + 'px';
 					chat.style.left = Math.max(pad, r.left + pad) + 'px';
@@ -1307,8 +1317,15 @@ const engine = new Engine(GODOT_CONFIG);
 					const gap = 8;
 					chat.style.top = Math.max(pad, (parseFloat(leftBoard.style.top) || (r.bottom - pad - lh)) - gap - ch) + 'px';
 				}
-			} else if (chat) {
-				chat.style.display = document.body.classList.contains('mw-hub') ? 'block' : 'none';
+			} else if (chat && roomChat && document.body.classList.contains('mw-play')) {
+				const cw = Math.min(260, Math.max(160, r.width * 0.3));
+				chat.style.width = cw + 'px';
+				chat.style.left = Math.max(pad, r.left + pad) + 'px';
+				chat.style.right = 'auto';
+				chat.style.top = 'auto';
+				chat.style.bottom = 'auto';
+				const ch = chat.offsetHeight || 140;
+				chat.style.top = Math.max(pad, r.bottom - pad - ch) + 'px';
 			}
 		}
 		window.MW_LAYOUT_HUB_CHROME = layoutHubChrome;
