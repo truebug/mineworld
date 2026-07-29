@@ -99,6 +99,7 @@ class MechState:
     yaw: float = 0.0
     vx: float = 0.0
     vy: float = 0.0
+    vz: float = 0.0
     yaw_rate: float = 0.0
     controlled: bool = False
     joint_targets: dict[str, float] = field(default_factory=dict)
@@ -108,6 +109,8 @@ class MechState:
     brake: float = 0.0
     steer: float = 0.0
     handbrake: float = 0.0
+    # When True, velocity.vz integrates into z (XR pitch-fly demo).
+    fly_enabled: bool = False
 
     def reset_pose(self, pose: dict[str, Any]) -> None:
         self.x = float(pose.get("x", 0.0))
@@ -142,7 +145,7 @@ class MechState:
             return events
         if action == "release_control":
             self.controlled = False
-            self.vx = self.vy = self.yaw_rate = 0.0
+            self.vx = self.vy = self.vz = self.yaw_rate = 0.0
             self.throttle = self.brake = self.steer = self.handbrake = 0.0
             events.append(
                 {
@@ -161,6 +164,13 @@ class MechState:
             self.vx = float(payload.get("vx", 0.0))
             self.vy = float(payload.get("vy", 0.0))
             self.yaw_rate = float(payload.get("yaw_rate", 0.0))
+            self.vz = float(payload.get("vz", 0.0))
+            # Opt-in fly: extensions.mw.fly == 1 (XR pitch-climb demo).
+            ext = payload.get("extensions") if isinstance(payload.get("extensions"), dict) else {}
+            mw = ext.get("mw") if isinstance(ext.get("mw"), dict) else {}
+            self.fly_enabled = bool(mw.get("fly")) or payload.get("fly") in (1, True, "1")
+            if not self.fly_enabled:
+                self.vz = 0.0
         elif mode == "drive":
             # Analog driving: throttle/brake [0,1] (throttle<0 = reverse),
             # steer [-1,1] (+ = left), handbrake [0,1] (reserved).
@@ -169,6 +179,8 @@ class MechState:
             self.brake = clamp(payload.get("brake", 0.0), 0.0, 1.0)
             self.steer = clamp(payload.get("steer", 0.0), -1.0, 1.0)
             self.handbrake = clamp(payload.get("handbrake", 0.0), 0.0, 1.0)
+            self.vz = 0.0
+            self.fly_enabled = False
         if "joint_targets" in payload:
             self._apply_joint_targets(payload.get("joint_targets"))
         return events
@@ -181,6 +193,13 @@ class MechState:
         self.x += (c * self.vx - s * self.vy) * dt
         self.y += (s * self.vx + c * self.vy) * dt
         self.yaw += self.yaw_rate * dt
+        if self.fly_enabled:
+            self.z += self.vz * dt
+            self.z = max(0.0, min(5.0, self.z))
+        else:
+            # Keep planar default chassis height (matches puppet feet≈z).
+            self.z = 0.5
+            self.vz = 0.0
 
     def to_entity_state(self) -> dict[str, Any]:
         q = _yaw_to_quat(self.yaw)
@@ -193,7 +212,7 @@ class MechState:
                 "yaw": self.yaw,
                 **q,
             },
-            "velocities": {"vx": self.vx, "vy": self.vy, "vz": 0.0},
+            "velocities": {"vx": self.vx, "vy": self.vy, "vz": self.vz},
             "joints": {
                 "slide_x": self.x,
                 "slide_y": self.y,

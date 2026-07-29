@@ -18,6 +18,7 @@
 | **变更记录** | **[19-changelog.md](19-changelog.md)** |
 | **平台门户规划** | **[20-platform-portal.md](20-platform-portal.md)**（身份 / 积分 / Admin） |
 | **生态对接** | **[21-ecosystem-federation.md](21-ecosystem-federation.md)**（Hub↔PMS/Spaces；统一身份） |
+| **Pico WebXR** | **[27-pico-webxr.md](27-pico-webxr.md)**（头显遥操前台 · 计划建议书） |
 
 勾选约定：`[ ]` 未做 · `[x]` 完成 · `[-]` 取消 · `[~]` 暂缓
 
