@@ -37,7 +37,7 @@ func _build() -> void:
 	_place_mezzanine(root)
 	_place_room_shells(root)
 	_place_props(root)
-	_place_hero_prop(root)
+	_place_corner_statues(root)
 	_place_guide_paths(root)
 	_place_door_glows()
 	_place_wing_labels(root)
@@ -857,45 +857,58 @@ func _place_props(root: Node3D) -> void:
 		)
 
 
-func _place_hero_prop(root: Node3D) -> void:
-	"""Poly Haven gothic statue by Door A — carved stone folds for Web PBR fidelity."""
+func _place_corner_statues(root: Node3D) -> void:
+	"""Four Poly Haven gothic statues at hangar corners (shared mesh ~28k tris)."""
 	const PATH := "res://assets/polyhaven_gothic_statue/gothic_statue_2k.gltf"
 	if not ResourceLoader.exists(PATH):
 		return
 	var packed := load(PATH) as PackedScene
 	if packed == null:
 		return
-	# Simple plinth so the sculpture reads as a gallery piece.
-	var plinth := MeshInstance3D.new()
-	plinth.name = "HeroStatuePlinth"
-	var box := BoxMesh.new()
-	box.size = Vector3(1.15, 0.28, 1.15)
-	plinth.mesh = box
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.22, 0.24, 0.28)
-	mat.roughness = 0.55
-	mat.metallic = 0.15
-	plinth.material_override = mat
-	root.add_child(plinth)
-	plinth.position = Vector3(HALL_HALF_X - 5.2, 0.14, 8.2)
+	# Inset from walls; SE kept clear of elevator (16,15).
+	var inset_x := HALL_HALF_X - 2.8
+	var inset_z := HALL_HALF_Z - 2.8
+	var corners: Array = [
+		{"name": "NW", "x": -inset_x, "z": -inset_z},
+		{"name": "NE", "x": inset_x, "z": -inset_z},
+		{"name": "SW", "x": -inset_x, "z": inset_z},
+		{"name": "SE", "x": inset_x, "z": HALL_HALF_Z - 6.5},
+	]
+	var plinth_mat := StandardMaterial3D.new()
+	plinth_mat.albedo_color = Color(0.22, 0.24, 0.28)
+	plinth_mat.roughness = 0.55
+	plinth_mat.metallic = 0.15
+	var first := true
+	for item in corners:
+		var x := float(item["x"])
+		var z := float(item["z"])
+		var plinth := MeshInstance3D.new()
+		plinth.name = "CornerStatuePlinth_%s" % str(item["name"])
+		var box := BoxMesh.new()
+		box.size = Vector3(0.95, 0.24, 0.95)
+		plinth.mesh = box
+		plinth.material_override = plinth_mat
+		root.add_child(plinth)
+		plinth.position = Vector3(x, 0.12, z)
 
-	var node := packed.instantiate() as Node3D
-	node.name = "HeroGothicStatue"
-	root.add_child(node)
-	# Feet on plinth top (~0.28).
-	node.position = Vector3(HALL_HALF_X - 5.2, 0.28, 8.2)
-	node.rotation_degrees.y = -110.0
-	node.scale = Vector3(1.0, 1.0, 1.0)
-	var tag := Label3D.new()
-	MWFonts.apply_label3d(tag)
-	tag.text = MWi18n.t("哥特石像 · Poly Haven CC0", "Gothic statue · Poly Haven CC0")
-	tag.font_size = 36
-	tag.outline_size = 6
-	tag.pixel_size = 0.01
-	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	tag.modulate = Color(0.9, 0.93, 0.98, 0.92)
-	node.add_child(tag)
-	tag.position = Vector3(0, 1.95, 0)
+		var node := packed.instantiate() as Node3D
+		node.name = "CornerGothicStatue_%s" % str(item["name"])
+		root.add_child(node)
+		node.position = Vector3(x, 0.24, z)
+		node.scale = Vector3(0.72, 0.72, 0.72)
+		node.look_at(Vector3(0.0, node.position.y, 0.0), Vector3.UP)
+		if first:
+			first = false
+			var tag := Label3D.new()
+			MWFonts.apply_label3d(tag)
+			tag.text = MWi18n.t("哥特石像 · Poly Haven CC0", "Gothic statue · Poly Haven CC0")
+			tag.font_size = 32
+			tag.outline_size = 6
+			tag.pixel_size = 0.01
+			tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			tag.modulate = Color(0.9, 0.93, 0.98, 0.92)
+			node.add_child(tag)
+			tag.position = Vector3(0, 2.1, 0)
 
 
 func _spawn(parent: Node3D, asset: String, x: float, z: float, yaw_deg: float, s: float) -> void:

@@ -315,16 +315,19 @@ func _load_profile() -> Dictionary:
 
 
 func _ensure_profile_skin() -> void:
-	"""Assign stable Blocky letter a..d once (hash of profile id)."""
+	"""Assign stable Blocky letter a..r (rehash once when pool expands)."""
+	var letters := "abcdefghijklmnopqr"
+	var n := letters.length()
 	var cur := str(_profile.get("skin", "")).to_lower()
-	if cur in ["a", "b", "c", "d"]:
+	var pool := int(_profile.get("skin_pool", 0))
+	if cur.length() == 1 and letters.find(cur) >= 0 and pool == n:
 		return
-	var letters := ["a", "b", "c", "d"]
 	var pid := str(_profile.get("id", ""))
 	if pid == "":
 		_profile["id"] = _new_local_id()
 		pid = str(_profile["id"])
-	_profile["skin"] = letters[absi(hash(pid)) % 4]
+	_profile["skin"] = letters.substr(absi(hash(pid)) % n, 1)
+	_profile["skin_pool"] = n
 	_save_profile()
 
 

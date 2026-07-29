@@ -8,9 +8,14 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-29 · Blocky 全套 a–r + 四角石像
+
+- Kenney Blocky 2.0 全套 18 皮入库；profile `skin` / gateway 透传扩到 `a..r`（`skin_pool=18` 时按 id 重哈希一次）。
+- 大厅四角各一座 Poly Haven `gothic_statue`（同 mesh 复用、约 0.72 倍）；SE 略内收避开电梯。
+
 ## 2026-07-29 · Hub 傀儡按 profile 分配 Blocky 造型
 
-- 首次进母港按 profile id 哈希稳定分配 `skin: a|b|c|d`（Kenney Blocky）；join / state 透传，他人可见。
+- 首次进母港按 profile id 哈希稳定分配 `skin`（Kenney Blocky）；join / state 透传，他人可见。
 - 避免原先全员默认 accent 蓝 → 同一套皮。
 
 ## 2026-07-29 · Hub L2 栏杆缺口可跳下

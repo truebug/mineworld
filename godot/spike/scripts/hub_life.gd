@@ -464,7 +464,7 @@ func _place_npcs() -> void:
 	_npc(
 		"maya",
 		MWi18n.t("玛雅", "Maya"),
-		"character-a.glb", Vector3(5.8, 0, 2.4), -120.0, Color(1.0, 0.85, 0.4),
+		"character-e.glb", Vector3(5.8, 0, 2.4), -120.0, Color(1.0, 0.85, 0.4),
 		MWi18n.t("F · 与玛雅交谈", "F · Talk to Maya"),
 		[
 			MWi18n.t("跟橙灯带去工坊~", "Follow orange lights to Workshop~"),
@@ -476,7 +476,7 @@ func _place_npcs() -> void:
 	_npc(
 		"rex",
 		MWi18n.t("雷克斯", "Rex"),
-		"character-b.glb", Vector3(17.5, 0, 2.4), -90.0, Color(1.0, 0.55, 0.25),
+		"character-j.glb", Vector3(17.5, 0, 2.4), -90.0, Color(1.0, 0.55, 0.25),
 		MWi18n.t("F · 与雷克斯交谈", "F · Talk to Rex"),
 		[
 			MWi18n.t("橙门工坊就在前面！", "Orange gate Workshop ahead!"),
@@ -488,7 +488,7 @@ func _place_npcs() -> void:
 	_npc(
 		"jin",
 		MWi18n.t("金", "Jin"),
-		"character-c.glb", Vector3(-17.5, 0, 2.2), 90.0, Color(0.45, 0.8, 1.0),
+		"character-n.glb", Vector3(-17.5, 0, 2.2), 90.0, Color(0.45, 0.8, 1.0),
 		MWi18n.t("F · 与金交谈", "F · Talk to Jin"),
 		[
 			MWi18n.t("蓝门是训练场。", "Blue door = Training yard."),
@@ -500,7 +500,7 @@ func _place_npcs() -> void:
 	_npc(
 		"pip",
 		MWi18n.t("皮普", "Pip"),
-		"character-d.glb", Vector3(0.0, 0, -8.0), 0.0, Color(0.7, 0.9, 0.5),
+		"character-r.glb", Vector3(0.0, 0, -8.0), 0.0, Color(0.7, 0.9, 0.5),
 		MWi18n.t("F · 与皮普交谈", "F · Talk to Pip"),
 		[
 			MWi18n.t("中央碑有今日去处！", "Central board has today's routes!"),

@@ -5,6 +5,8 @@ class_name MWAvatarPuppet
 extends Node3D
 
 const BLOCKY_DIR := "res://assets/kenney_blocky/"
+## Kenney Blocky 2.0 letters a..r (18 skins).
+const SKIN_LETTERS := "abcdefghijklmnopqr"
 const BLOCKY_SCALE := 0.36
 ## Kenney face is typically −Z; rotate so facing matches puppet +X.
 const MESH_YAW_DEG := 90.0
@@ -79,7 +81,7 @@ func _ready() -> void:
 
 
 func _ensure_skin(force: bool = false) -> void:
-	"""Load character-a..d from accent / entity_id; rebuild when letter changes."""
+	"""Load character-{letter}.glb; rebuild when letter changes."""
 	var letter := _pick_skin_letter()
 	if not force and letter == _skin_letter and _mesh_root != null:
 		return
@@ -122,18 +124,23 @@ func _ensure_skin(force: bool = false) -> void:
 	call_deferred("_plant_feet")
 
 
+func _skin_letter_ok(letter: String) -> bool:
+	"""True if letter is a Kenney Blocky a..r skin id."""
+	return letter.length() == 1 and SKIN_LETTERS.find(letter) >= 0
+
+
 func _pick_skin_letter() -> String:
-	"""Prefer profile skin a..d; else accent hue; else entity_id hash."""
-	var letters := ["a", "b", "c", "d"]
+	"""Prefer profile skin a..r; else accent hue; else entity_id hash."""
+	var n := SKIN_LETTERS.length()
 	var forced := str(skin_letter).to_lower()
-	if forced in letters:
+	if _skin_letter_ok(forced):
 		return forced
 	var idx := 0
 	if accent.s >= 0.12:
-		idx = int(floor(accent.h * 4.0)) % 4
+		idx = int(floor(accent.h * float(n))) % n
 	else:
-		idx = absi(hash(entity_id)) % 4
-	return letters[idx]
+		idx = absi(hash(entity_id)) % n
+	return SKIN_LETTERS.substr(idx, 1)
 
 
 func _find_anim_player(n: Node) -> AnimationPlayer:
@@ -242,7 +249,7 @@ func set_display(name_text: String, accent_hex: String = "", skin: String = "") 
 		_label.text = name_text if name_text != "" else "Guest"
 		_label.font_size = 42 if name_text.find(" · #") >= 0 else 48
 	var skin_l := str(skin).to_lower()
-	if skin_l in ["a", "b", "c", "d"]:
+	if _skin_letter_ok(skin_l):
 		skin_letter = skin_l
 	if accent_hex != "":
 		var c := Color(accent_hex)

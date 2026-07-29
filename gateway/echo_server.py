@@ -2306,7 +2306,7 @@ class EchoGateway:
             if accent:
                 mw["accent"] = str(accent)
             skin = str(occupant.profile.get("skin") or "").strip().lower()[:1]
-            if skin in ("a", "b", "c", "d"):
+            if skin in "abcdefghijklmnopqr":
                 mw["skin"] = skin
             pid = occupant.profile.get("id")
             if pid:
