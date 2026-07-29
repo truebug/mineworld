@@ -12,6 +12,9 @@ extends Node3D
 
 const MOVE_SPEED := 1.0
 const TURN_SPEED := 1.0
+## 机甲训练场：行进 2×（MuJoCo velocity ctrlrange 允许到 ±3）。
+const MOVE_SPEED_CITY := 2.0
+const TURN_SPEED_CITY := 1.0
 ## demo_race: throttle/steer in [-1,1] (Ackermann: vx→RWD, yaw_rate→front steer).
 const MOVE_SPEED_RACE := 1.0
 const TURN_SPEED_RACE := 1.0
@@ -198,13 +201,21 @@ func _is_chassis_play() -> bool:
 
 
 func _move_speed() -> float:
-	"""Forward/strafe cmd scale (race uses high-speed chassis)."""
-	return MOVE_SPEED_RACE if level_id == "demo_race" else MOVE_SPEED
+	"""Forward/strafe cmd scale (city 2×; race uses high-speed chassis)."""
+	if level_id == "demo_race":
+		return MOVE_SPEED_RACE
+	if level_id == "demo_city":
+		return MOVE_SPEED_CITY
+	return MOVE_SPEED
 
 
 func _turn_speed() -> float:
 	"""Yaw rate cmd scale."""
-	return TURN_SPEED_RACE if level_id == "demo_race" else TURN_SPEED
+	if level_id == "demo_race":
+		return TURN_SPEED_RACE
+	if level_id == "demo_city":
+		return TURN_SPEED_CITY
+	return TURN_SPEED
 
 
 func _place_il_time_limit_s() -> float:
