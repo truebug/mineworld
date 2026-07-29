@@ -53,6 +53,8 @@ const HUB_FLOOR2_Y := 8.5
 var _last_render_pos := Vector3.ZERO
 var _speed_smooth := 0.0
 var _skin_letter := ""
+## Explicit Blocky letter a..d (from profile); empty → hue / entity hash.
+var skin_letter := ""
 var _mesh_root: Node3D = null
 var _anim: AnimationPlayer = null
 var _anim_playing := ""
@@ -121,8 +123,11 @@ func _ensure_skin(force: bool = false) -> void:
 
 
 func _pick_skin_letter() -> String:
-	"""Map accent hue → a..d; desaturated accents fall back to entity slot."""
+	"""Prefer profile skin a..d; else accent hue; else entity_id hash."""
 	var letters := ["a", "b", "c", "d"]
+	var forced := str(skin_letter).to_lower()
+	if forced in letters:
+		return forced
 	var idx := 0
 	if accent.s >= 0.12:
 		idx = int(floor(accent.h * 4.0)) % 4
@@ -230,19 +235,22 @@ func _add_box(parent: Node3D, pos: Vector3, size: Vector3, color: Color) -> void
 	mi.position = pos
 
 
-func set_display(name_text: String, accent_hex: String = "") -> void:
-	"""Update name tag; Hub short codes look like «Nick · #A1B2»."""
+func set_display(name_text: String, accent_hex: String = "", skin: String = "") -> void:
+	"""Update name tag / accent / Blocky skin letter."""
 	display_name = name_text
 	if _label != null:
 		_label.text = name_text if name_text != "" else "Guest"
 		_label.font_size = 42 if name_text.find(" · #") >= 0 else 48
+	var skin_l := str(skin).to_lower()
+	if skin_l in ["a", "b", "c", "d"]:
+		skin_letter = skin_l
 	if accent_hex != "":
 		var c := Color(accent_hex)
 		if c.a > 0.0:
 			accent = c
 			if _label != null:
 				_label.modulate = accent
-			_ensure_skin(false)
+	_ensure_skin(false)
 
 
 func set_local_cmd(vx: float, vy: float, yaw_rate: float) -> void:
@@ -330,8 +338,9 @@ func _apply_profile_ext(entity: Dictionary) -> void:
 		return
 	var dn := str(mw.get("display_name", ""))
 	var ac := str(mw.get("accent", ""))
-	if dn != "" or ac != "":
-		set_display(dn if dn != "" else display_name, ac)
+	var sk := str(mw.get("skin", ""))
+	if dn != "" or ac != "" or sk != "":
+		set_display(dn if dn != "" else display_name, ac, sk)
 	if mw.has("hub_floor"):
 		_apply_hub_floor_from_net(int(mw.get("hub_floor", 1)))
 	if mw.has("hop_y"):

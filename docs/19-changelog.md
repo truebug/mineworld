@@ -8,6 +8,11 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-29 · Hub 傀儡按 profile 分配 Blocky 造型
+
+- 首次进母港按 profile id 哈希稳定分配 `skin: a|b|c|d`（Kenney Blocky）；join / state 透传，他人可见。
+- 避免原先全员默认 accent 蓝 → 同一套皮。
+
 ## 2026-07-29 · Hub L2 栏杆缺口可跳下
 
 - 观景廊开敞边（电梯西侧）栏杆留缺口；走出 `bounds.floor2_drop_gap` → `hub_floor=1` 落地（视觉下落）。

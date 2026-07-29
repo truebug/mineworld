@@ -142,6 +142,7 @@ func _start_hub_session() -> void:
 	_reset_door_lockout()
 	_clear_held_keys()
 	_profile = _load_profile()
+	_ensure_profile_skin()
 	_apply_profile_ui()
 	ws.hello_received.connect(_on_hello)
 	ws.scene_received.connect(_on_scene)
@@ -309,7 +310,22 @@ func _load_profile() -> Dictionary:
 		"id": _new_local_id(),
 		"nickname": "Guest",
 		"accent": "#4aa3ff",
+		"skin": "",
 	}
+
+
+func _ensure_profile_skin() -> void:
+	"""Assign stable Blocky letter a..d once (hash of profile id)."""
+	var cur := str(_profile.get("skin", "")).to_lower()
+	if cur in ["a", "b", "c", "d"]:
+		return
+	var letters := ["a", "b", "c", "d"]
+	var pid := str(_profile.get("id", ""))
+	if pid == "":
+		_profile["id"] = _new_local_id()
+		pid = str(_profile["id"])
+	_profile["skin"] = letters[absi(hash(pid)) % 4]
+	_save_profile()
 
 
 func _save_profile() -> void:
@@ -353,6 +369,7 @@ func _push_web_profile() -> void:
 		"id": str(_profile.get("id", "")),
 		"nickname": str(_profile.get("nickname", "Guest")),
 		"accent": str(_profile.get("accent", "#4aa3ff")),
+		"skin": str(_profile.get("skin", "a")),
 	})
 	JavaScriptBridge.eval(
 		"(function(){var p=%s;if(typeof window.MW_SET_HUB_PROFILE==='function'){window.MW_SET_HUB_PROFILE(p);}})()" % payload,
@@ -444,6 +461,7 @@ func _send_join() -> void:
 			"id": str(_profile.get("id", "")),
 			"nickname": nick,
 			"accent": str(_profile.get("accent", "#4aa3ff")),
+			"skin": str(_profile.get("skin", "a")),
 		}
 	}
 	var space_id := _resolve_space_id()
@@ -505,6 +523,7 @@ func _ensure_puppets(entities: Array) -> void:
 		if eid == _controlled_entity_id:
 			node.set("accent", Color(str(_profile.get("accent", "#4aa3ff"))))
 			node.set("display_name", str(_profile.get("nickname", "Guest")))
+			node.set("skin_letter", str(_profile.get("skin", "a")))
 			# E9: own avatar local prediction between 20 Hz (or throttled) samples.
 			node.set("local_predict", true)
 			node.set("interp_delay", 0.03)
@@ -1328,7 +1347,12 @@ func _use_vendor() -> void:
 	_apply_profile_ui()
 	var own := _own_avatar()
 	if own != null and own.has_method("set_display"):
-		own.call("set_display", str(_profile.get("nickname", "Guest")), hex)
+		own.call(
+			"set_display",
+			str(_profile.get("nickname", "Guest")),
+			hex,
+			str(_profile.get("skin", "")),
+		)
 	elif own != null and "accent" in own:
 		own.set("accent", Color(hex))
 	_refresh_tips(
