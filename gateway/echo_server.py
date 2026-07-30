@@ -70,6 +70,9 @@ CITY_ROOM_ID = "city"
 CITY_ROOM_MAX = 5
 RACE_ROOM_ID = "race"
 RACE_ROOM_MAX = 6
+## B3 room modes (demo_race): solo practice / duel 1v1 / shared_ffa public brawl.
+RACE_MODES = ("solo", "duel", "shared_ffa")
+DUEL_MAX_RACERS = 2
 HUB_ROOM_ID = "hub"
 HUB_ROOM_MAX = 8
 ## Room chat (plaza): length + cooldown; any joined room (Hub UI first).
@@ -896,6 +899,8 @@ class Room:
     members: dict[str, Session] = field(default_factory=dict)
     tick: int = 0
     max_members: int = 1
+    ## B3 room mode for demo_race (solo|duel|shared_ffa); "" elsewhere.
+    mode: str = ""
     # F7: shared MuJoCo state so mechs collide; None for fake physics.
     mj_data: Any = None
     mj_substeps: int = 1
@@ -916,7 +921,7 @@ class Room:
         taken = {
             s.controlled_entity_id
             for s in self.members.values()
-            if s.controlled_entity_id and s.joined and not s.closed
+            if s.controlled_entity_id and s.joined and not s.closed and not s.spectate
         }
         for spawn in self.contract.get("mech_spawns") or []:
             eid = spawn.get("id")
@@ -1079,6 +1084,8 @@ class Session:
     level_id: str | None = None
     room: Room | None = None
     controlled_entity_id: str | None = None
+    ## B3 duel overflow: joined but no racer slot — watch only, no mech.
+    spectate: bool = False
     pending_events: list[dict[str, Any]] = field(default_factory=list)
     closed: bool = False
     recorder: SessionRecorder | None = None
@@ -1898,14 +1905,19 @@ class EchoGateway:
         Winner gets the event this tick (recorded + broadcast); other members
         via pending_events next tick. Round re-arms once every pending player
         also finishes (or leaves). Solo laps never settle a duel.
+        B3: `solo` rooms never settle; `duel` rooms hold exactly two racers
+        (join overflow spectates) so the >=2 arm guard works unchanged;
+        `shared_ffa` keeps the original public-brawl behavior.
         """
         if str(room.contract.get("level_id") or "") != "demo_race":
+            return []
+        if room.mode == "solo":
             return []
         if room.duel_armed_tick < 0:
             controlled_now = {
                 s.controlled_entity_id
                 for s in room.members.values()
-                if s.joined and not s.closed and s.controlled_entity_id
+                if s.joined and not s.closed and s.controlled_entity_id and not s.spectate
             }
             if len(controlled_now) >= 2:
                 room.duel_armed_tick = room.tick
@@ -1920,7 +1932,7 @@ class EchoGateway:
         controlled = {
             s.controlled_entity_id
             for s in room.members.values()
-            if s.joined and not s.closed and s.controlled_entity_id
+            if s.joined and not s.closed and s.controlled_entity_id and not s.spectate
         }
         if room.duel_settled:
             room.duel_pending.intersection_update(controlled)
@@ -1945,6 +1957,7 @@ class EchoGateway:
                 "participants": sorted(controlled),
                 "round": room.duel_round,
                 "level_id": "demo_race",
+                "mode": room.mode,
             },
         }
         for other in room.members.values():
@@ -2984,6 +2997,23 @@ class EchoGateway:
             )
             return
 
+        # B3: optional room mode from join extensions.mw.mode (demo_race only).
+        requested_mode = ""
+        join_ext_raw = payload.get("extensions")
+        if level_id == "demo_race" and isinstance(join_ext_raw, dict):
+            mw_raw = join_ext_raw.get("mw")
+            if isinstance(mw_raw, dict):
+                raw_mode = str(mw_raw.get("mode") or "").strip()
+                if raw_mode in RACE_MODES:
+                    requested_mode = raw_mode
+                elif raw_mode:
+                    LOG.info(
+                        "session=%s ignoring unknown room mode %r (valid: %s)",
+                        session.session_id,
+                        raw_mode,
+                        ",".join(RACE_MODES),
+                    )
+
         # Private room when omitted (= W2.3 isolation), except hub / city / race defaults.
         room_id = str(payload.get("room_id") or session.session_id)
         hub = is_hub_contract(contract)
@@ -2998,10 +3028,13 @@ class EchoGateway:
                 room_id = CITY_ROOM_ID
         elif level_id == "demo_race":
             # Shared oval `race` max 6; private/smoke rooms are solo.
+            # B3 duel rooms: 2 racers + up to 4 spectators.
             if not payload.get("room_id"):
                 room_id = RACE_ROOM_ID
                 max_members = RACE_ROOM_MAX
             elif room_id == RACE_ROOM_ID:
+                max_members = RACE_ROOM_MAX
+            elif requested_mode == "duel":
                 max_members = RACE_ROOM_MAX
             else:
                 max_members = 1
@@ -3092,12 +3125,16 @@ class EchoGateway:
             mechs, props, mj_data, mj_substeps, grasp_eq = self._make_room_mechs(
                 contract, mj_model
             )
+            room_mode = ""
+            if level_id == "demo_race":
+                room_mode = "shared_ffa" if room_id == RACE_ROOM_ID else (requested_mode or "solo")
             room = Room(
                 room_id=room_id,
                 contract=contract,
                 mechs=mechs,
                 props=props,
                 max_members=max_members,
+                mode=room_mode,
                 mj_data=mj_data,
                 mj_substeps=mj_substeps,
                 grasp_eq=grasp_eq,
@@ -3119,18 +3156,44 @@ class EchoGateway:
 
         entity_id = room.free_spawn_id()
         if entity_id is None:
-            await send_json(
-                session.ws,
-                envelope(
-                    "error",
-                    session_id=session.session_id,
-                    payload={
-                        "code": "ROOM_FULL",
-                        "message": f"no free mech spawn in room {room_id}",
-                    },
-                ),
-            )
-            return
+            # B3: duel overflow joins as spectator — same scene, no mech slot.
+            if room.mode == "duel":
+                session.contract = room.contract
+                session.level_id = level_id
+                session.joined = True
+                session.spectate = True
+                session.room = room
+                session.join_tick = room.tick
+                session.controlled_entity_id = ""
+                session.player_name = player_name
+                session.profile = profile
+                session.space_id = space_id
+                session.route_kind = route_kind
+                session.completed_objectives.clear()
+                session.outcome = None
+                session.pending_events.clear()
+                session.hub_floor = 1
+                session.hub_hop_y = 0.0
+                session.presence_state_divisor = 1
+                room.members[session.session_id] = session
+                LOG.info(
+                    "session=%s room=%s mode=duel spectate (racer slots full)",
+                    session.session_id,
+                    room_id,
+                )
+            else:
+                await send_json(
+                    session.ws,
+                    envelope(
+                        "error",
+                        session_id=session.session_id,
+                        payload={
+                            "code": "ROOM_FULL",
+                            "message": f"no free mech spawn in room {room_id}",
+                        },
+                    ),
+                )
+                return
 
         # Free slots are by definition unclaimed (free_spawn_id); leaving a
         # room parks the car off-track, so every join MUST reset to the grid
@@ -3143,40 +3206,42 @@ class EchoGateway:
             HUB_ROOM_ID,
             CHESS_ROOM_ID,
         )
-        spawn = next(
-            (s for s in (room.contract.get("mech_spawns") or []) if s.get("id") == entity_id),
-            None,
-        )
-        pose = (spawn or {}).get("pose") or {}
-        room.mechs[entity_id].reset_pose(pose)
-        room.mechs[entity_id].controlled = False
-        room.mechs[entity_id].vx = room.mechs[entity_id].vy = room.mechs[entity_id].yaw_rate = 0.0
-        if not public_room:
-            room.tick = 0
+        if not session.spectate:
+            spawn = next(
+                (s for s in (room.contract.get("mech_spawns") or []) if s.get("id") == entity_id),
+                None,
+            )
+            pose = (spawn or {}).get("pose") or {}
+            room.mechs[entity_id].reset_pose(pose)
+            room.mechs[entity_id].controlled = False
+            room.mechs[entity_id].vx = room.mechs[entity_id].vy = room.mechs[entity_id].yaw_rate = 0.0
+            if not public_room:
+                room.tick = 0
 
-        session.contract = room.contract
-        session.level_id = level_id
-        session.joined = True
-        session.room = room
-        session.join_tick = room.tick
-        session.controlled_entity_id = entity_id
-        session.player_name = player_name
-        session.profile = profile
-        session.space_id = space_id
-        session.route_kind = route_kind
-        session.completed_objectives.clear()
-        session.outcome = None
-        session.pending_events.clear()
-        session.hub_floor = 1
-        session.hub_hop_y = 0.0
-        session.presence_state_divisor = 1
-        room.members[session.session_id] = session
+        if not session.spectate:
+            session.contract = room.contract
+            session.level_id = level_id
+            session.joined = True
+            session.room = room
+            session.join_tick = room.tick
+            session.controlled_entity_id = entity_id
+            session.player_name = player_name
+            session.profile = profile
+            session.space_id = space_id
+            session.route_kind = route_kind
+            session.completed_objectives.clear()
+            session.outcome = None
+            session.pending_events.clear()
+            session.hub_floor = 1
+            session.hub_hop_y = 0.0
+            session.presence_state_divisor = 1
+            room.members[session.session_id] = session
 
         self._close_recorder(session, outcome="abort")
         # Hub presence is not teleop capture — skip recordings.
         # Bots (AI driver resident) also skip: their laps flood session index.
         is_bot = bool((profile or {}).get("bot"))
-        if self.record_dir is not None and not hub and not is_bot:
+        if self.record_dir is not None and not hub and not is_bot and not session.spectate:
             software: dict[str, Any] = {"gateway_version": PROTOCOL_VERSION}
             if self.physics == "mujoco" and mujoco is not None:
                 software["mujoco_version"] = getattr(mujoco, "__version__", "unknown")
@@ -3252,6 +3317,8 @@ class EchoGateway:
                         "mw": {
                             "room_id": room_id,
                             "controlled_entity_id": entity_id,
+                            "mode": room.mode,
+                            "spectate": session.spectate,
                         }
                     },
                 },

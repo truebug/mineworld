@@ -1,0 +1,19 @@
+{
+  "type": "join",
+  "session_id": "00000000-0000-4000-8000-0000000000b3",
+  "payload": {
+    "level_id": "demo_race",
+    "player_name": "Demo Pilot",
+    "room_id": "race-duel-a1",
+    "extensions": {
+      "mw": {
+        "mode": "duel",
+        "profile": {
+          "id": "local-demo-id",
+          "nickname": "Demo Pilot",
+          "accent": "#4aa3ff"
+        }
+      }
+    }
+  }
+}

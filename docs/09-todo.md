@@ -81,13 +81,13 @@
 ### Phase B · Now（成绩竞技壳 · B1–B2 Done）
 
 > E9 + B1（`demo_race`）+ **B2 薄 1v1（竞速 duel）** 已落地。不必等 E6–E8 / PMS。  
-> **Next = B3 房间模式字段**（把现网 race/`duel_result` 收成显式 `solo|duel|shared_ffa`）→ 可穿插 Chess-P4 / E6–E7。
+> **B3 房间模式字段 Done**（race/`duel_result` 已收成显式 `solo|duel|shared_ffa`）→ Next 候选 = E6–E7 / XR-2 / 棋室聊天接入。
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
 | B1 | 计时竞速关 | 契约时限/检查点；通关写时长榜（复用 A2 `level_id`） | [x] `demo_race` ~755 m · **Ackermann v3**（W/S/X · QE）· room=`race` · max 6 |
 | B2 | 薄 1v1 | 双人同房目标竞速；`duel_result` 可录；单人可 AI 陪练 | [x] `duel_result` + HUD WIN/LOSE + 领先差；`duel_smoke`；B2.5 `ai_driver --forever` |
-| B3 | 房间模式字段 | join/`extensions.mw.mode`：`solo \| duel \| shared_ffa` | [ ] **Next** · 见下「B3 可执行切片」 |
+| B3 | 房间模式字段 | join/`extensions.mw.mode`：`solo \| duel \| shared_ffa` | [x] race=`shared_ffa` 固定；私房默认 `solo`；duel 超员旁观；`duel_smoke` 分模式断言 |
 | Chess-P | 棋牌室对齐传送门 | Hub 式 FakeMech + `room=chess`；薄桌面 `chess_*` cmd / `chess_table_update`；人机/PvP | [x] `demo_chessroom` · `scripts/chessroom_smoke.py` |
 | Chess-P2 | 多桌类型 + 跳棋 | 甲乙五子棋 / 丙跳棋 Halma / 丁军棋 stub；壳层说明 | [x] |
 | Chess-P3 | 军棋可玩 + 规则 UI | SSOT `26`；权威裁判；暗棋透视；规则说明显隐 | [x] 人机可玩；随机→手调→确认；认输/举手；离座判负 |
