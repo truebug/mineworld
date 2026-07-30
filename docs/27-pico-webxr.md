@@ -93,8 +93,15 @@
 ### XR-1.5 · 遥操打磨（可用性）
 
 - 摇杆轴向可切换（localStorage）；HUD：房间 / 控权 / 延迟 / 链路；掉线自动重连。
-- CC0 类人 GLB 傀儡跟 `base_pose`；Portal / Hub shell 链到 `/xr/`。
-- **验收**：Pico 连续遥操可配手感、掉线可回。
+- CC0 Quaternius GLB 傀儡跟 `base_pose`（`SkeletonUtils.clone`，去 Hand* 漂浮）；`?puppet=box` 回退。
+- Portal / Hub shell 链到 `/xr/`；代码仓 JihuLab `databall-group/infra/mine-world-xr`。
+- **验收**：Pico 连续遥操可配手感、掉线可回；机体整机跟动（已通）。
+
+### XR-1.6 · 臂遥操（下一步，未做）
+
+- 今日 XR 桌面 **Panda 臂 = 纯视觉皮**（固定 home 关节 + URL 摆位），**未**接 Gateway / MuJoCo。
+- Godot **workshop** 的 DiffBot 臂/爪才是 MuJoCo：`cmd.joint_targets` → 权威 `state.joints`（见 [16](16-value-sprint.md) §6）。
+- 建议竖切：XR 进 `demo_workshop` → 右手柄映射 `arm_*`/`gripper`（或简化 2～3 DoF）→ 同协议；视觉可先跟 DiffBot 简臂，再对齐 Panda 7DoF。
 
 ### XR-2 · 环境呈现（视频优先）
 

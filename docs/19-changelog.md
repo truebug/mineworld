@@ -8,6 +8,12 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-30 · XR 傀儡验收 + JihuLab 入库
+
+- Quaternius 机甲：`SkeletonUtils.clone` + 去 Hand*，整机跟 `base_pose`（不再漂臂/蓝盒默认）。
+- 并列仓正式远程：JihuLab `databall-group/infra/mine-world-xr`；playground `MW_XR_BUILD=20260730-110053`。
+- 文档澄清：XR 桌面 Panda 臂仍是视觉皮；MuJoCo 臂/爪仅 workshop DiffBot（XR-1.6 下一步）。见 [27](27-pico-webxr.md)。
+
 ## 2026-07-29 · 聊天扩到 city/race + 气泡对比度
 
 - 气泡 one-shot：白字 + 深色底板/描边，避免跟 accent / 亮背景糊在一起。
