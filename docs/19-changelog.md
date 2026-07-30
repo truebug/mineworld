@@ -8,6 +8,13 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-30 · B3 房间模式 solo|duel|shared_ffa
+
+- join `extensions.mw.mode`（schema 枚举 + `examples/ws/join_race_duel.json`，非法值拒绝）；公共 `race` 房固定 `shared_ffa`，私房默认 `solo`。
+- Gateway：`solo` 永不 `duel_result`；`duel` 恰好 2 手武装、超员转旁观（同场景、无机位、不录 session）；`shared_ffa` 保持原行为；`duel_result.detail.mode` 回传。
+- 客户端：`?mode=duel` 进私房对决，HUD room 行显示 单/双/混；旁观者不建傀儡不抢控制。
+- 验收：`duel_smoke` 按三模式 + 旁观断言；jsonschema 校验通过；playground 发版待下一刀。
+
 ## 2026-07-29 · 聊天扩到 city/race + 气泡对比度
 
 - 气泡 one-shot：白字 + 深色底板/描边，避免跟 accent / 亮背景糊在一起。

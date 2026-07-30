@@ -111,7 +111,28 @@
           },
           "additionalProperties": true
         },
-        "extensions": { "$ref": "common.v0.json#/$defs/extensions" }
+        "extensions": {
+          "allOf": [
+            { "$ref": "common.v0.json#/$defs/extensions" },
+            {
+              "type": "object",
+              "properties": {
+                "mw": {
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "type": "string",
+                      "enum": ["solo", "duel", "shared_ffa"],
+                      "description": "B3 room mode (demo_race): solo = practice, never duel_result; duel = exactly 2 racers armed, extras join as spectators; shared_ffa = public free-for-all (default for room `race`)."
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": true
+            }
+          ]
+        }
       },
       "additionalProperties": true
     },

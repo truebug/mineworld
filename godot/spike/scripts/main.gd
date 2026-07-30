@@ -26,6 +26,8 @@ const CMD_HZ := 20.0
 @export var gateway_url := "ws://127.0.0.1:8765"
 ## Empty = private room (gateway uses session_id). Set "demo" for shared room.
 @export var room_id := ""
+## B3: demo_race room mode override (solo|duel|shared_ffa); web ?mode= wins.
+@export var room_mode_export := ""
 
 @onready var ws = $WsClient
 @onready var mech = $MechPlayer
@@ -59,6 +61,9 @@ var _web_key_logged := false
 var _puppets: Dictionary = {}
 var _controlled_entity_id := "mech_player"
 var _joined_room_id := ""
+## B3 room mode echoed by gateway scene.extensions.mw (demo_race only).
+var _race_mode := ""
+var _spectate := false
 var _hud: MWHud = null
 ## D8: offline frame replay (?replay=<session_id>); skips gateway.
 var _replay: MWReplay = null
@@ -341,6 +346,22 @@ func _resolve_room_id() -> String:
 	return room_id
 
 
+func _resolve_room_mode() -> String:
+	"""B3: ?mode=solo|duel|shared_ffa for demo_race join (default = gateway)."""
+	if level_id != "demo_race":
+		return ""
+	if _is_web:
+		var from_q := str(JavaScriptBridge.eval(
+			"(function(){try{return new URLSearchParams(location.search).get('mode')||''}catch(e){return ''}})()",
+			true
+		))
+		if from_q in ["solo", "duel", "shared_ffa"]:
+			return from_q
+	if room_mode_export != "":
+		return room_mode_export
+	return ""
+
+
 func _wants_room_chat() -> bool:
 	"""Shared multiplayer yards: city + race public rooms (gateway already fans out chat)."""
 	if level_id == "demo_city":
@@ -397,6 +418,9 @@ func _on_hello(payload: Dictionary) -> void:
 			"accent": str(_profile.get("accent", "#4aa3ff")),
 		}
 	}
+	var room_mode := _resolve_room_mode()
+	if room_mode != "":
+		mw["mode"] = room_mode
 	var space_id := _resolve_space_id()
 	if space_id != "":
 		mw["space_id"] = space_id
@@ -434,7 +458,15 @@ func _on_scene(payload: Dictionary) -> void:
 				_controlled_entity_id = str(mw.get("controlled_entity_id"))
 			if str(mw.get("room_id", "")) != "":
 				_joined_room_id = str(mw.get("room_id"))
+			_race_mode = str(mw.get("mode", ""))
+			_spectate = bool(mw.get("spectate", false))
 	_ensure_puppets(payload.get("entities", []) as Array)
+	if _spectate:
+		# B3 duel overflow: watch only — no mech assigned, never take control.
+		_controlled = false
+		_status_line = MWi18n.t("旁观中 · 对决房满员", "Spectating · duel room full")
+		_update_hud()
+		return
 	var own := _own_mech()
 	if camera_rig != null and camera_rig.has_method("set_target"):
 		camera_rig.set_target(own)
@@ -1099,7 +1131,10 @@ func _update_hud(tick: int = -1, t_sim: float = 0.0) -> void:
 	text += "link: %s | control: %s | entity: %s\n" % [
 		state_name, "ON" if _controlled else "OFF", _controlled_entity_id,
 	]
-	text += "room: %s\n" % (_joined_room_id if _joined_room_id != "" else "(private)")
+	text += "room: %s%s\n" % [
+		_joined_room_id if _joined_room_id != "" else "(private)",
+		" · %s" % {"solo": MWi18n.t("单", "solo"), "duel": MWi18n.t("双", "duel"), "shared_ffa": MWi18n.t("混", "ffa")}.get(_race_mode, "") if _race_mode != "" else "",
+	]
 	var space_id := _resolve_space_id()
 	if space_id != "":
 		text += "space_id: %s · route: pms_space\n" % space_id

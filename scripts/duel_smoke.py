@@ -85,6 +85,54 @@ def main() -> int:
     a.room = room2
     evs5 = gateway._evaluate_race_duel(a, room2, [finish_event()])
     assert evs5 == []
+    a.room = room
+
+    # 6) B3 solo: two racers but mode=solo → never duel_result
+    solo = gw.Room(room_id="rs", contract={"level_id": "demo_race"}, mode="solo")
+    solo.tick = 100
+    solo.mechs = dict(room.mechs)
+    solo.members = {"sa": a, "sb": b}
+    b.room = solo
+    a.room = solo
+    evs6 = gateway._evaluate_race_duel(a, solo, [finish_event()])
+    assert evs6 == [], f"solo mode must never settle, got {evs6}"
+    assert solo.duel_settled is False
+
+    # 7) B3 duel: exactly two racers settles; mode echoed in detail
+    duel = gw.Room(room_id="rd", contract={"level_id": "demo_race"}, mode="duel")
+    duel.tick = 100
+    duel.mechs = dict(room.mechs)
+    duel.members = {"sa": a, "sb": b}
+    a.room = duel
+    b.room = duel
+    evs7 = gateway._evaluate_race_duel(a, duel, [finish_event()])
+    assert len(evs7) == 1, f"duel mode with 2 racers must settle, got {evs7}"
+    assert evs7[0]["detail"]["mode"] == "duel"
+    assert evs7[0]["detail"]["round"] == 1
+
+    # 8) B3 shared_ffa + spectator: watcher excluded from arm/participants
+    ffa = gw.Room(room_id="rf", contract={"level_id": "demo_race"}, mode="shared_ffa")
+    ffa.tick = 100
+    ffa.mechs = dict(room.mechs)
+    watcher = make_session("sc", "", "Carol")
+    watcher.spectate = True
+    ffa.members = {"sa": a, "sb": b, "sc": watcher}
+    a.room = ffa
+    b.room = ffa
+    watcher.room = ffa
+    evs8 = gateway._evaluate_race_duel(a, ffa, [finish_event()])
+    assert len(evs8) == 1, f"ffa with spectator must still settle, got {evs8}"
+    assert sorted(evs8[0]["detail"]["participants"]) == ["mech_player", "mech_player_b"]
+    assert len(watcher.pending_events) == 1, "spectator must receive duel_result"
+
+    # 9) B3 shared_ffa arming ignores spectators (watcher alone with 1 racer)
+    ffa2 = gw.Room(room_id="rf2", contract={"level_id": "demo_race"}, mode="shared_ffa")
+    ffa2.tick = 100
+    ffa2.mechs = dict(room.mechs)
+    ffa2.members = {"sa": a, "sc": watcher}
+    a.room = ffa2
+    evs9 = gateway._evaluate_race_duel(a, ffa2, [finish_event()])
+    assert evs9 == [], f"1 racer + spectator must not settle, got {evs9}"
 
     print("duel smoke OK")
     return 0
