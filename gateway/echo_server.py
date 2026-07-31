@@ -70,6 +70,10 @@ CITY_ROOM_ID = "city"
 CITY_ROOM_MAX = 5
 RACE_ROOM_ID = "race"
 RACE_ROOM_MAX = 6
+## F6 kinematic DiffBot wheels for fake physics (match diffbot_planar.xml:
+## wheel radius 0.15, axle y=±0.5 → track 1.0).
+FAKE_WHEEL_R = 0.15
+FAKE_WHEEL_TRACK = 1.0
 ## B3 room modes (demo_race): solo practice / duel 1v1 / shared_ffa public brawl.
 RACE_MODES = ("solo", "duel", "shared_ffa")
 DUEL_MAX_RACERS = 2
@@ -192,6 +196,17 @@ class MechState:
             self._apply_joint_targets(payload.get("joint_targets"))
         return events
 
+    ## F6 fake wheels: kinematic angles from body vx/ω (rad, unbounded).
+    wheel_angle_l: float = 0.0
+    wheel_angle_r: float = 0.0
+
+    def wheel_speeds(self) -> tuple[float, float]:
+        """F6 diff-drive: body vx/ω → (ω_L, ω_R) rad/s."""
+        half_l = 0.5 * FAKE_WHEEL_TRACK
+        w_l = (self.vx - self.yaw_rate * half_l) / FAKE_WHEEL_R
+        w_r = (self.vx + self.yaw_rate * half_l) / FAKE_WHEEL_R
+        return w_l, w_r
+
     def step(self, dt: float) -> None:
         if not self.controlled:
             return
@@ -200,6 +215,9 @@ class MechState:
         self.x += (c * self.vx - s * self.vy) * dt
         self.y += (s * self.vx + c * self.vy) * dt
         self.yaw += self.yaw_rate * dt
+        w_l, w_r = self.wheel_speeds()
+        self.wheel_angle_l += w_l * dt
+        self.wheel_angle_r += w_r * dt
         if self.fly_enabled:
             self.z += self.vz * dt
             self.z = max(0.0, min(5.0, self.z))
@@ -224,11 +242,15 @@ class MechState:
                 "slide_x": self.x,
                 "slide_y": self.y,
                 "yaw_z": self.yaw,
+                "left_wheel_joint": self.wheel_angle_l,
+                "right_wheel_joint": self.wheel_angle_r,
             },
             "joint_vels": {
                 "slide_x": self.vx,
                 "slide_y": self.vy,
                 "yaw_z": self.yaw_rate,
+                "left_wheel_joint": self.wheel_speeds()[0],
+                "right_wheel_joint": self.wheel_speeds()[1],
             },
         }
 

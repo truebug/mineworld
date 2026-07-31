@@ -94,6 +94,11 @@ func _ready() -> void:
 			"if(typeof window.MW_SET_SHELL_UI==='function'){window.MW_SET_SHELL_UI(true,false,true);}",
 			true
 		)
+		# Room chat DOM bar (same shell chat as hub/city/race).
+		JavaScriptBridge.eval(
+			"if(typeof window.MW_SET_ROOM_CHAT==='function'){window.MW_SET_ROOM_CHAT(true);}",
+			true
+		)
 	_build_board_ui()
 	ws.hello_received.connect(_on_hello)
 	ws.scene_received.connect(_on_scene)
@@ -323,6 +328,65 @@ func _on_state(_tick: int, t_sim: float, payload: Dictionary) -> void:
 				puppet.set("accent", Color(str(mw.get("accent"))))
 
 
+func _on_chat_event(payload: Dictionary) -> void:
+	"""Room chat log + bubble on the speaker avatar (hub pattern)."""
+	var detail: Variant = payload.get("detail", {})
+	if typeof(detail) != TYPE_DICTIONARY:
+		detail = {}
+	var text := str((detail as Dictionary).get("text", "")).strip_edges()
+	if text == "":
+		return
+	var from_name := str((detail as Dictionary).get("from", "Guest")).strip_edges()
+	if from_name == "":
+		from_name = "Guest"
+	_append_chat_log(from_name, text)
+	var eid := str(payload.get("entity_id", ""))
+	if eid != "" and _puppets.has(eid):
+		var puppet: Node = _puppets[eid]
+		if puppet != null and puppet.has_method("show_chat"):
+			puppet.call("show_chat", text)
+
+
+func _append_chat_log(from_name: String, text: String) -> void:
+	"""Push one line into DOM chat log (Web) or stdout (desktop dev)."""
+	if _is_web:
+		var payload := JSON.stringify({"from": from_name, "text": text})
+		JavaScriptBridge.eval(
+			"(function(){var p=%s;if(typeof window.MW_APPEND_HUB_CHAT==='function'){window.MW_APPEND_HUB_CHAT(p);}})()" % payload,
+			true
+		)
+		return
+	print("[MW] chess chat %s: %s" % [from_name, text])
+
+
+func _poll_web_chat() -> void:
+	"""Send pending DOM room chat as cmd.action=chat."""
+	if not _is_web:
+		return
+	var raw := str(JavaScriptBridge.eval(
+		"(function(){var n=window.MW_HUB_CHAT_PENDING;window.MW_HUB_CHAT_PENDING=null;return n||''})()",
+		true
+	))
+	if raw == "":
+		return
+	_send_chat(raw)
+
+
+func _send_chat(text: String) -> void:
+	"""Gateway room chat cmd (any joined room)."""
+	var s := text.strip_edges()
+	if s == "" or ws == null:
+		return
+	if not _controlled:
+		return
+	if s.length() > 80:
+		s = s.substr(0, 80)
+	var payload := {"action": "chat", "text": s}
+	if _controlled_entity_id != "":
+		payload["entity_id"] = _controlled_entity_id
+	ws.send_cmd(payload)
+
+
 func _on_event(payload: Dictionary) -> void:
 	var et := str(payload.get("event_type", ""))
 	if et == "player_take_control":
@@ -330,6 +394,9 @@ func _on_event(payload: Dictionary) -> void:
 		return
 	if et == "player_release_control":
 		_controlled = false
+		return
+	if et == "chat":
+		_on_chat_event(payload)
 		return
 	if et == "chess_reject":
 		_on_chess_reject(payload.get("detail", {}))
@@ -379,6 +446,7 @@ func _on_gateway_error(payload: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	_poll_web_chat()
 	_tick_piece_anims(delta)
 	_cmd_timer += delta
 	if _cmd_timer >= 1.0 / CMD_HZ:

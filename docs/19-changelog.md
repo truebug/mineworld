@@ -6,7 +6,11 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
-> 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
+
+## 2026-07-31 · F6 假物理车轮回归修复 + 棋室聊天
+
+- FakeMech 补 F6 运动学车轮导出（`left_wheel_joint`/`right_wheel_joint`，半径 0.15 轮距 1.0 对齐 diffbot_planar.xml）；`ws_smoke` 恢复 `smoke OK`。
+- 棋室复用 hub/city/race 同一 DOM 聊天栏与 `cmd.action=chat`：进房开 `MW_SET_ROOM_CHAT`，头顶气泡走 avatar `show_chat`，桌面端 print 兜底。
 
 ## 2026-07-31 · demo_workshop 物理边界 50×50 m
 
