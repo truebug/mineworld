@@ -65,13 +65,13 @@
       "id": "wall_n",
       "shape": "box",
       "size": [
-        30.0,
+        50.0,
         0.5,
         4.0
       ],
       "pose": {
-        "x": 15.0,
-        "y": -12.0,
+        "x": 25.0,
+        "y": -25.0,
         "z": 2.0,
         "yaw": 0.0
       },
@@ -81,13 +81,13 @@
       "id": "wall_s",
       "shape": "box",
       "size": [
-        30.0,
+        50.0,
         0.5,
         4.0
       ],
       "pose": {
-        "x": 15.0,
-        "y": 12.0,
+        "x": 25.0,
+        "y": 25.0,
         "z": 2.0,
         "yaw": 0.0
       },
@@ -98,7 +98,7 @@
       "shape": "box",
       "size": [
         0.5,
-        24.0,
+        50.0,
         4.0
       ],
       "pose": {
@@ -114,11 +114,11 @@
       "shape": "box",
       "size": [
         0.5,
-        24.0,
+        50.0,
         4.0
       ],
       "pose": {
-        "x": 30.0,
+        "x": 50.0,
         "y": 0.0,
         "z": 2.0,
         "yaw": 0.0
@@ -222,7 +222,7 @@
     },
     "mw.editor": {
       "client_scene": "res://demo_workshop.tscn",
-      "notes": "prop_crate stow; prop_block grasp→place on workbench (IL primary)."
+      "notes": "prop_crate stow; prop_block grasp→place on workbench (IL primary). Physics envelope 50×50 m (x 0..50, y ±25) for XR InteriorGS roam."
     }
   }
 }

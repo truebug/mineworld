@@ -8,6 +8,10 @@
 
 > 按时间倒序记「已入库」切片；待办与路线见 [09](09-todo.md)。不替代 git log，只记产品/架构向摘要。
 
+## 2026-07-31 · demo_workshop 物理边界 50×50 m
+
+- `examples/contracts/demo_workshop.json` 四面墙由约 30×24 扩到 **50×50**（x∈[0,50]，y∈[-25,25]），方便 XR InteriorGS 漫游；出生点/道具位未改。
+
 ## 2026-07-30 · XR 傀儡验收 + JihuLab 入库
 
 - Quaternius 机甲：`SkeletonUtils.clone` + 去 Hand*，整机跟 `base_pose`（不再漂臂/蓝盒默认）。
