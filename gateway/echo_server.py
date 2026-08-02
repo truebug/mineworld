@@ -76,7 +76,6 @@ FAKE_WHEEL_R = 0.15
 FAKE_WHEEL_TRACK = 1.0
 ## B3 room modes (demo_race): solo practice / duel 1v1 / shared_ffa public brawl.
 RACE_MODES = ("solo", "duel", "shared_ffa")
-DUEL_MAX_RACERS = 2
 HUB_ROOM_ID = "hub"
 HUB_ROOM_MAX = 8
 ## Room chat (plaza): length + cooldown; any joined room (Hub UI first).
@@ -2313,6 +2312,8 @@ class EchoGateway:
         session.room = None
         session.controlled_entity_id = None
         session.joined = False
+        # B3: clear duel-overflow spectate so a later join can take a slot.
+        session.spectate = False
         if not room.members:
             self.rooms.pop(room.room_id, None)
             LOG.info("room=%s empty, removed", room.room_id)

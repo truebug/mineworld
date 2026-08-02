@@ -7,6 +7,11 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-02 · B3 旁观态复位热修
+
+- `_leave_room` 复位 `session.spectate`：duel 旁观者再 join 不再卡「joined 但不在 members」僵尸态；`duel_smoke` 回归断言。
+- 清理死常量 `DUEL_MAX_RACERS`（超员判断实际走 `free_spawn_id`）。
+
 ## 2026-07-31 · F6 假物理车轮回归修复 + 棋室聊天
 
 - FakeMech 补 F6 运动学车轮导出（`left_wheel_joint`/`right_wheel_joint`，半径 0.15 轮距 1.0 对齐 diffbot_planar.xml）；`ws_smoke` 恢复 `smoke OK`。

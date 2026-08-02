@@ -134,6 +134,17 @@ def main() -> int:
     evs9 = gateway._evaluate_race_duel(a, ffa2, [finish_event()])
     assert evs9 == [], f"1 racer + spectator must not settle, got {evs9}"
 
+    # 10) P0: _leave_room resets spectate so a later join can take a slot
+    ffa2.members = {"sa": a, "sc": watcher}
+    a.room = ffa2
+    watcher.room = ffa2
+    watcher.spectate = True
+    gateway._leave_room(watcher)
+    assert watcher.spectate is False, "leave_room must reset spectate"
+    assert watcher.joined is False
+    assert watcher.room is None
+    assert "sc" not in ffa2.members
+
     print("duel smoke OK")
     return 0
 
