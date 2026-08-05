@@ -35,6 +35,11 @@
 - [28-hw-real-robot-plan.md](28-hw-real-robot-plan.md)：桌面键鼠遥操真机（SO-101/JetRover→G1/Go），**黑盒对接仓外闭源 arm-bridge**；协议/前端/录制在本仓，凭证与实现永不入库。
 - Next 候选改：**HW-0–HW-2**（可开）/ E6–E7（blocked 待 PMS）；XR-1.6/XR-2 划线——Pico 线归仓外 mine-world-arm（真机臂遥操+视频已通）。
 
+## 2026-08-05 · E8 参观者壳侧栏文档
+
+- `#mw-visitor-shell` 加右侧 doc 面板（280px）：标题 + 展柜 lore + `space_id`；空则自动隐藏；关壳清空。
+- Hub 进展柜时把 `lore_zh`/`lore_en` 作为 `doc` 传给 `MW_OPEN_VISITOR_SHELL`；E8 薄壳「中央 iframe + 侧栏文档 + 关闭」三件套补齐。
+
 ## 2026-08-02 · B3 旁观态复位热修
 
 - `_leave_room` 复位 `session.spectate`：duel 旁观者再 join 不再卡「joined 但不在 members」僵尸态；`duel_smoke` 回归断言。
