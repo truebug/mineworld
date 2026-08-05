@@ -30,7 +30,7 @@ const JUNQI_LABEL := {
 ## Fallback meta until first chess_table_update arrives.
 const TABLE_META := {
 	"table_1": {"game": "gomoku", "title_zh": "五子棋 · 甲桌", "title_en": "Gomoku A", "accent": Color(0.95, 0.55, 0.2)},
-	"table_2": {"game": "gomoku", "title_zh": "五子棋 · 乙桌", "title_en": "Gomoku B", "accent": Color(0.95, 0.7, 0.35)},
+	"table_2": {"game": "blackjack", "title_zh": "21 点 · 乙桌", "title_en": "Blackjack", "accent": Color(0.95, 0.7, 0.35)},
 	"table_3": {"game": "checkers", "title_zh": "跳棋", "title_en": "Halma", "accent": Color(0.35, 0.75, 0.95)},
 	"table_4": {"game": "junqi", "title_zh": "军棋", "title_en": "Junqi", "accent": Color(0.75, 0.45, 0.9)},
 }
@@ -121,11 +121,11 @@ func _push_chess_shell_tips() -> void:
 	var full := MWi18n.t(
 		"棋牌室\n"
 		+ "走近棋桌按 F 落座 · Esc 起身/回母港\n"
-		+ "甲/乙桌：五子棋 · 丙桌：跳棋 · 丁桌：军棋\n"
+		+ "甲桌：五子棋 · 乙桌：21 点 · 丙桌：跳棋 · 丁桌：军棋\n"
 		+ "WASD 平移 · Q/E 转向 · 人机可单人开局，第二人入座变对战",
 		"Chess Lounge\n"
 		+ "Walk to a table · F sit · Esc stand / Hub\n"
-		+ "A/B Gomoku · C Halma · D Junqi\n"
+		+ "A Gomoku · B Blackjack · C Halma · D Junqi\n"
 		+ "WASD move · Q/E turn · solo vs AI; second sitter → PvP"
 	)
 	var collapsed := MWi18n.t("棋牌室 · 提示 ›（点击）", "Chess · tips › (click)")
@@ -514,6 +514,12 @@ func _on_web_key_event(code: String, down: bool) -> void:
 				_toggle_board()
 			"Escape":
 				_on_escape()
+			"KeyH":
+				if _view_game() == "blackjack":
+					_on_bj_hit()
+			"KeyS":
+				if _view_game() == "blackjack":
+					_on_bj_stand()
 
 
 func _unhandled_input(event: InputEvent) -> void:

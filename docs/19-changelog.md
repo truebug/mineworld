@@ -15,6 +15,11 @@
 - 冒烟：`scripts/blackjack_smoke.py`（坐下→发牌→hit→stand→庄家≥17 或爆→结算断言）；`chessroom_smoke` / `ws_smoke` 回归绿。
 - 素材：先代码牌面（零依赖）；Kenney Playing Cards 包替换留待下一刀（CC0，需联网下载 + `ASSETS.md` 台账）。
 
+## 2026-08-06 · 21 点修复：桌签/提示文案 + Web 端 H/S 快捷键
+
+- `TABLE_META` 兜底桌签与房间提示语改为「乙桌：21 点」（此前仍写五子棋乙桌）。
+- Web 端 `_on_web_key_event` 补 `KeyH`/`KeyS`（此前 H/S 仅桌面 `_unhandled_input` 生效，Web 被 `_is_web` 短路）。
+
 ## 2026-08-05 · 热修：mujoco 模式 join hw 契约崩连
 
 - 线上 playground gateway 跑 `--physics mujoco`；join `demo_arm_lab` 时 `_ensure_mj_model` 试图编译 `hw/so101`（非 MJCF）→ handler 异常断连。
