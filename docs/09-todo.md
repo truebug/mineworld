@@ -81,7 +81,8 @@
 ### Phase B · Now（成绩竞技壳 · B1–B2 Done）
 
 > E9 + B1（`demo_race`）+ **B2 薄 1v1（竞速 duel）** 已落地。不必等 E6–E8 / PMS。  
-> **B3 房间模式字段 Done**（race/`duel_result` 已收成显式 `solo|duel|shared_ffa`）→ Next 候选 = E6–E7 / XR-2 / 棋室聊天接入。
+> **B3 房间模式字段 Done**（race/`duel_result` 已收成显式 `solo|duel|shared_ffa`）；棋室聊天已接入（2026-07-31）。  
+> Next 候选 = **XR-1.6 臂遥操**（可立即开）/ E6–E7（blocked：待 PMS API）/ XR-2 视频层（排 XR-1.6 后）。
 
 | ID | 任务 | 验收 | 状态 |
 |----|------|------|------|
