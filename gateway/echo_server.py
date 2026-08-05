@@ -35,6 +35,7 @@ from websockets.asyncio.server import ServerConnection, serve
 
 from recorder import SessionRecorder
 from score_client import build_and_post
+from hw_machines import HW_PROFILES, HwArmSim
 from gomoku import BLACK, EMPTY, WHITE, GomokuBoard
 from checkers import CheckersBoard, SIZE as CHECKERS_SIZE
 from checkers import BLACK as CK_BLACK, WHITE as CK_WHITE, EMPTY as CK_EMPTY
@@ -251,7 +252,47 @@ class MechState:
                 "left_wheel_joint": self.wheel_speeds()[0],
                 "right_wheel_joint": self.wheel_speeds()[1],
             },
+            "extensions": {"mw": {}},
         }
+
+
+class HwArmMech(MechState):
+    """HW-0 fake real-machine arm (ADR-004): kinematic SO-101 profile.
+
+    cmd.joint_targets → rate-limited chase with soft-limit clamps; chassis
+    velocity inputs are ignored (arm is bolted to the bench).
+    """
+
+    def __init__(self, entity_id: str, machine_id: str):
+        super().__init__(entity_id)
+        self.machine_id = machine_id
+        self.sim = HwArmSim(profile=HW_PROFILES[machine_id])
+
+    def _apply_joint_targets(self, targets: Any) -> None:
+        if not isinstance(targets, dict):
+            raise CmdRejected("BAD_JOINT_TARGETS", "joint_targets must be an object")
+        known = set(self.sim.profile.joint_names)
+        unknown = [str(k) for k in targets if str(k) not in known]
+        if unknown:
+            raise CmdRejected(
+                "UNKNOWN_JOINT",
+                f"unknown joint_targets: {', '.join(unknown)}",
+            )
+        self.sim.enabled = True
+        self.sim.set_targets({str(k): float(v) for k, v in targets.items()})
+        self.joint_targets = dict(self.sim.target)
+
+    def step(self, dt: float) -> None:
+        self.sim.step(dt)
+
+    def to_entity_state(self) -> dict[str, Any]:
+        state = super().to_entity_state()
+        state["joints"] = dict(self.sim.present)
+        state["joint_vels"] = self.sim.joint_vels()
+        mw = state.setdefault("extensions", {}).setdefault("mw", {})
+        mw["hw_machine"] = self.machine_id
+        mw["hw_enabled"] = self.sim.enabled
+        return state
 
 
 class MujocoMech(MechState):
@@ -1872,6 +1913,8 @@ class EchoGateway:
 
     def _feature_flags(self) -> list[str]:
         """Return hello/recording feature tags for the active physics backend."""
+        if self.physics == "hw_fake":
+            return ["hw_fake_kinematics"]
         return ["fake_kinematics" if self.physics == "fake" else "mujoco"]
 
     def _close_recorder(self, session: Session, outcome: str) -> None:
@@ -2239,10 +2282,16 @@ class EchoGateway:
             substeps = max(1, int(round(DT / model.opt.timestep)))
             grasp_eq = self._grasp_eq_map(model, contract)
         drive_cfg = contract_mw_drive(contract)
+        ## HW-0: hw_machine contract → fake kinematic arm (ADR-004).
+        hw_machine = str(
+            (contract.get("extensions") or {}).get("mw", {}).get("hw_machine") or ""
+        )
         for spawn in contract.get("mech_spawns") or []:
             eid = str(spawn.get("id", "mech_player"))
             pose = spawn.get("pose") or {}
-            if shared is not None and model is not None:
+            if hw_machine and hw_machine in HW_PROFILES:
+                mech = HwArmMech(eid, hw_machine)
+            elif shared is not None and model is not None:
                 mech = MujocoMech(eid, model, shared, prefix=f"{eid}/")
                 mech.drive_cfg = drive_cfg
             else:
@@ -3551,9 +3600,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--physics",
-        choices=["fake", "mujoco"],
+        choices=["fake", "mujoco", "hw_fake"],
         default="fake",
-        help="Physics backend: fake (POC-A fallback) or mujoco (real sim)",
+        help="Physics backend: fake (POC-A fallback), mujoco (real sim), or hw_fake (HW-0 arm)",
     )
     parser.add_argument(
         "--model",
@@ -3591,6 +3640,10 @@ def main() -> None:
         help="PL2 admin HTTP port (0=disable)",
     )
     args = parser.parse_args()
+
+    ## HW-0: hw_fake defaults to the arm-lab contract (open params only, ADR-004).
+    if args.physics == "hw_fake" and args.contract == DEFAULT_CONTRACT:
+        args.contract = REPO_ROOT / "examples" / "contracts" / "demo_arm_lab.json"
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,

@@ -82,7 +82,7 @@
 
 > E9 + B1（`demo_race`）+ **B2 薄 1v1（竞速 duel）** 已落地。不必等 E6–E8 / PMS。  
 > **B3 房间模式字段 Done**（race/`duel_result` 已收成显式 `solo|duel|shared_ffa`）；棋室聊天已接入（2026-07-31）。  
-> Next 候选 = **HW-0–HW-2 真机接入**（桌面键鼠遥操真机，黑盒对接仓外 arm-bridge；[28](28-hw-real-robot-plan.md)，可立即开）/ E6–E7（blocked：待 PMS API）。  
+> Next 候选 = **HW-1–HW-2 真机接入**（HW-0 `hw_fake` 已 Done）（桌面键鼠遥操真机，黑盒对接仓外 arm-bridge；[28](28-hw-real-robot-plan.md)，可立即开）/ E6–E7（blocked：待 PMS API）。  
 > ~~XR-1.6 仿真臂 XR 遥操 / XR-2 视频层~~：Pico 线归仓外 mine-world-arm（真机臂遥操+四路视频已通），本仓不再开。
 
 | ID | 任务 | 验收 | 状态 |

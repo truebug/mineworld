@@ -1,0 +1,37 @@
+{
+  "contract_version": "0.1",
+  "level_id": "demo_arm_lab",
+  "seed": 1,
+  "frame": "mineworld_zup_m",
+  "sim": {
+    "dt": 0.02
+  },
+  "extensions": {
+    "mw": {
+      "hw_machine": "so101",
+      "hw_note": "HW-0: fake kinematic SO-101 arm (ADR-004); real machine via closed external arm-bridge."
+    }
+  },
+  "mech_spawns": [
+    {
+      "id": "arm_0",
+      "model_ref": "hw/so101",
+      "pose": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "yaw": 0.0
+      },
+      "player_slot": 0,
+      "control_mode": "joint_targets",
+      "physics_role": "hw_authoritative"
+    }
+  ],
+  "objectives": [],
+  "bounds": {
+    "x_min": -2.0,
+    "x_max": 2.0,
+    "y_min": -2.0,
+    "y_max": 2.0
+  }
+}

@@ -7,6 +7,12 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-05 · HW-0：hw_fake 真机仿真后端 + ADR-004
+
+- [ADR-004](adr/004-hw-real-robot-boundary.md) 冻结边界：黑盒外部桥、本仓零私有资产、安全归边缘、无真机可开发。
+- `--physics hw_fake`：`gateway/hw_machines.py` SO-101 公开参数表（6 关节弧度限位/HOME/速率）+ `HwArmMech`（joint_targets 限速追踪 + 软限位 clamp + 未知关节拒绝）；契约 `demo_arm_lab`。
+- 冒烟 `scripts/hw_fake_smoke.py`：HOME 位姿 / 追踪 / clamp / UNKNOWN_JOINT 全过；既有 `ws_smoke`（fake）无回归。
+
 ## 2026-08-05 · 真机接入计划入库（docs/28）+ Next 候选改向
 
 - [28-hw-real-robot-plan.md](28-hw-real-robot-plan.md)：桌面键鼠遥操真机（SO-101/JetRover→G1/Go），**黑盒对接仓外闭源 arm-bridge**；协议/前端/录制在本仓，凭证与实现永不入库。
