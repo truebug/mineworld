@@ -1825,11 +1825,9 @@ class EchoGateway:
         ## PL2: in-memory level disable set (join rejected until enable / restart).
         self.disabled_levels: set[str] = set()
         ## HW-2: closed external arm-bridge (ADR-004); URL/token via env only.
-        self.hw_bridge: HwBridgeClient | None = None
-        if physics == "hw_bridge":
-            self.hw_bridge = HwBridgeClient.from_env()
-            if self.hw_bridge is None:
-                raise SystemExit("--physics hw_bridge requires MW_HW_BRIDGE_URL env")
+        ## Env activates the link on ANY physics mode; hw_machine contracts
+        ## route to the bridge when linked, else to the kinematic fake arm.
+        self.hw_bridge: HwBridgeClient | None = HwBridgeClient.from_env()
         if physics == "mujoco":
             if mujoco is None:
                 raise SystemExit("mujoco not installed: pip install mujoco==3.6.0")
@@ -1957,11 +1955,12 @@ class EchoGateway:
 
     def _feature_flags(self) -> list[str]:
         """Return hello/recording feature tags for the active physics backend."""
+        flags = ["fake_kinematics" if self.physics == "fake" else "mujoco"]
         if self.physics == "hw_fake":
-            return ["hw_fake_kinematics"]
-        if self.physics == "hw_bridge":
-            return ["hw_bridge_link"]
-        return ["fake_kinematics" if self.physics == "fake" else "mujoco"]
+            flags = ["hw_fake_kinematics"]
+        if self.hw_bridge is not None:
+            flags.append("hw_bridge_link")
+        return flags
 
     def _close_recorder(self, session: Session, outcome: str) -> None:
         """Finalize session recording if one is open; report score on success."""
@@ -2335,7 +2334,7 @@ class EchoGateway:
         for spawn in contract.get("mech_spawns") or []:
             eid = str(spawn.get("id", "mech_player"))
             pose = spawn.get("pose") or {}
-            if hw_machine and self.physics == "hw_bridge" and self.hw_bridge is not None:
+            if hw_machine and self.hw_bridge is not None:
                 mech = HwBridgeMech(eid, hw_machine, self.hw_bridge)
             elif hw_machine and hw_machine in HW_PROFILES:
                 mech = HwArmMech(eid, hw_machine)

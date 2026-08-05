@@ -7,6 +7,12 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-05 · HW-2.5a：bridge 激活改 env 驱动 + playground 发版
+
+- 重构：`MW_HW_BRIDGE_URL` 存在即在任意 physics 模式激活 bridge client；`hw_machine` 契约自动路由（有链走真桥，无链回退仿真臂）；`--physics hw_fake/hw_bridge` 保留为显式选择。
+- 效果：playground 不设 env → `?level=demo_arm_lab` 公网仿真臂即玩；设 env → 同源切真臂 B，无需改代码/重启策略。
+- 回归：默认 fake 模式 hw_fake_smoke / hw_bridge_smoke / ws_smoke 三绿。
+
 ## 2026-08-05 · HW-2：真机桥翻译层（hw_bridge）
 
 - `gateway/hw_bridge_client.py`：连仓外 arm-bridge（env `MW_HW_BRIDGE_URL`/`MW_HW_BRIDGE_TOKEN`，ADR-004 零凭证入库）；hello 软限位建表；rad↔counts 线性映射（pan 翻转）；outbox fire-and-forget + 断线指数重连。

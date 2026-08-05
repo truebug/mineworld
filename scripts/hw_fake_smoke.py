@@ -44,7 +44,7 @@ async def main() -> int:
         hello = json.loads(await asyncio.wait_for(ws.recv(), timeout=5))
         assert hello.get("type") == "hello", hello
         features = hello["payload"].get("features") or []
-        assert "hw_fake_kinematics" in features, features
+        assert "fake_kinematics" in features or "hw_fake_kinematics" in features, features
         session_id = hello["session_id"]
         print("hello ok · features =", features)
 
