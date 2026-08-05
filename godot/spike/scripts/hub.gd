@@ -1311,7 +1311,8 @@ func _try_interact() -> void:
 	var url := str(hit.get("url", "")).strip_edges()
 	if url != "":
 		var space_id := str(hit.get("space_id", "")).strip_edges()
-		_open_exhibit_url(url, str(hit.get("title", hit.get("id", "Space"))), space_id)
+		var doc := str(hit.get("lore_zh", hit.get("lore_en", ""))).strip_edges()
+		_open_exhibit_url(url, str(hit.get("title", hit.get("id", "Space"))), space_id, doc)
 		return
 	_refresh_tips(str(hit.get("line", "...")))
 
@@ -1448,8 +1449,8 @@ func _use_vendor() -> void:
 	)
 
 
-func _open_exhibit_url(url: String, title: String, space_id: String = "") -> void:
-	"""E4: open Space card; stamp hangar ?space_id= for E3 return play."""
+func _open_exhibit_url(url: String, title: String, space_id: String = "", doc: String = "") -> void:
+	"""E4: open Space card; stamp hangar ?space_id= for E3 return play. E8: doc → shell side panel."""
 	var resolved := url
 	if resolved.begins_with("/") and _is_web:
 		var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
@@ -1460,6 +1461,7 @@ func _open_exhibit_url(url: String, title: String, space_id: String = "") -> voi
 			"url": resolved,
 			"title": title,
 			"space_id": space_id,
+			"doc": doc,
 		})
 		# Prefer in-page shell (pauses Hub WS); fall back to new tab + visibility throttle.
 		JavaScriptBridge.eval(

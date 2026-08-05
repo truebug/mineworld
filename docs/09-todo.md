@@ -75,7 +75,7 @@
 | Hub-look | 学院暖港首印象 | 中央碑+灯带+中环 NPC+巡逻 | [x] |
 | E5c | PMS 课程/展柜候选入库 | `exhibits.v0.json` 按 demos 索引筛选（classroom/gallery/lab/foresight）；见 [21 §PMS catalog](21-ecosystem-federation.md) | [x] 元数据；enter URL 待 Spaces 核验 |
 | E5d | Hub 北翼挂载 curated 列表 | 教室走廊 / 展柜按 `role` 分组展示（仍 TYPE B，不迁物理） | [x] classroom/gallery 北墙 + lab/foresight 西墙 |
-| E6–E8 | PMS 参观者壳 | 见 [21 §P1b](21-ecosystem-federation.md)；E8 薄壳已挂 E9 降频钩子 | [ ] E6/E7 待 PMS API；E8 侧栏文档后补 |
+| E6–E8 | PMS 参观者壳 | 见 [21 §P1b](21-ecosystem-federation.md)；E8 薄壳已挂 E9 降频钩子 | [ ] E6/E7 待 PMS API；E8 侧栏文档 Done（2026-08-05） |
 | E9 | Hub 公网插值/降频 | 远端不瞬移；开壳降 WS | [x] 插值限速+自机预测；`presence_throttle`；薄参观壳 |
 
 ### Phase B · Now（成绩竞技壳 · B1–B2 Done）

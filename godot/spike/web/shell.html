@@ -645,11 +645,41 @@ body.mw-play.mw-no-joints #mw-joints {
 #mw-visitor-shell .mw-vs-close:hover {
 	background: #243040;
 }
+#mw-visitor-shell .mw-vs-body {
+	display: flex;
+	flex: 1 1 auto;
+	min-height: 0;
+}
 #mw-visitor-shell iframe {
 	flex: 1 1 auto;
 	width: 100%;
 	border: 0;
 	background: #05070c;
+}
+/* E8: side doc panel (exhibit lore). */
+#mw-visitor-shell .mw-vs-doc {
+	flex: 0 0 280px;
+	max-width: 280px;
+	overflow-y: auto;
+	padding: 14px 16px;
+	background: #10161f;
+	border-left: 1px solid #2a3545;
+	color: #c2ceda;
+	font: 12px/1.6 ui-sans-serif, system-ui, sans-serif;
+}
+#mw-visitor-shell .mw-vs-doc:empty {
+	display: none;
+}
+#mw-visitor-shell .mw-vs-doc h3 {
+	margin: 0 0 8px;
+	font: 600 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+	color: #d8e2ee;
+}
+#mw-visitor-shell .mw-vs-doc .mw-vs-doc-space {
+	margin-top: 12px;
+	font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace;
+	color: #7f8ea0;
+	word-break: break-all;
 }
 		</style>
 		$GODOT_HEAD_INCLUDE
@@ -747,7 +777,10 @@ body.mw-play.mw-no-joints #mw-joints {
 				<div class="mw-vs-title" id="mw-vs-title">Space</div>
 				<button type="button" class="mw-vs-close" id="mw-vs-close" data-i18n="hub.vs_close">关闭 · 回母港</button>
 			</div>
-			<iframe id="mw-vs-frame" title="Visitor space" referrerpolicy="no-referrer"></iframe>
+			<div class="mw-vs-body">
+				<iframe id="mw-vs-frame" title="Visitor space" referrerpolicy="no-referrer"></iframe>
+				<aside class="mw-vs-doc" id="mw-vs-doc"></aside>
+			</div>
 		</div>
 
 		<script src="/mw_i18n.js"></script>
@@ -786,11 +819,30 @@ const engine = new Engine(GODOT_CONFIG);
 		const url = opts && opts.url ? String(opts.url) : '';
 		const title = opts && opts.title ? String(opts.title) : 'Space';
 		const spaceId = opts && opts.space_id ? String(opts.space_id) : '';
+		const doc = opts && opts.doc ? String(opts.doc) : '';
 		if (!url) {
 			return;
 		}
 		if (titleEl) {
 			titleEl.textContent = title;
+		}
+		const docEl = document.getElementById('mw-vs-doc');
+		if (docEl) {
+			docEl.textContent = '';
+			if (doc) {
+				const h = document.createElement('h3');
+				h.textContent = title;
+				const p = document.createElement('div');
+				p.textContent = doc;
+				docEl.appendChild(h);
+				docEl.appendChild(p);
+				if (spaceId) {
+					const s = document.createElement('div');
+					s.className = 'mw-vs-doc-space';
+					s.textContent = 'space_id: ' + spaceId;
+					docEl.appendChild(s);
+				}
+			}
 		}
 		frame.src = url;
 		shell.classList.add('open');
@@ -807,6 +859,10 @@ const engine = new Engine(GODOT_CONFIG);
 	window.MW_CLOSE_VISITOR_SHELL = function () {
 		const shell = document.getElementById('mw-visitor-shell');
 		const frame = document.getElementById('mw-vs-frame');
+		const docEl = document.getElementById('mw-vs-doc');
+		if (docEl) {
+			docEl.textContent = '';
+		}
 		if (frame) {
 			frame.src = 'about:blank';
 		}
