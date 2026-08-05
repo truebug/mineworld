@@ -7,6 +7,11 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-05 · 真机接入计划入库（docs/28）+ Next 候选改向
+
+- [28-hw-real-robot-plan.md](28-hw-real-robot-plan.md)：桌面键鼠遥操真机（SO-101/JetRover→G1/Go），**黑盒对接仓外闭源 arm-bridge**；协议/前端/录制在本仓，凭证与实现永不入库。
+- Next 候选改：**HW-0–HW-2**（可开）/ E6–E7（blocked 待 PMS）；XR-1.6/XR-2 划线——Pico 线归仓外 mine-world-arm（真机臂遥操+视频已通）。
+
 ## 2026-08-02 · B3 旁观态复位热修
 
 - `_leave_room` 复位 `session.spectate`：duel 旁观者再 join 不再卡「joined 但不在 members」僵尸态；`duel_smoke` 回归断言。
