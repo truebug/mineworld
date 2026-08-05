@@ -36,6 +36,7 @@ from websockets.asyncio.server import ServerConnection, serve
 from recorder import SessionRecorder
 from score_client import build_and_post
 from hw_machines import HW_PROFILES, HwArmSim
+from hw_bridge_client import HwBridgeClient
 from gomoku import BLACK, EMPTY, WHITE, GomokuBoard
 from checkers import CheckersBoard, SIZE as CHECKERS_SIZE
 from checkers import BLACK as CK_BLACK, WHITE as CK_WHITE, EMPTY as CK_EMPTY
@@ -292,6 +293,43 @@ class HwArmMech(MechState):
         mw = state.setdefault("extensions", {}).setdefault("mw", {})
         mw["hw_machine"] = self.machine_id
         mw["hw_enabled"] = self.sim.enabled
+        return state
+
+
+class HwBridgeMech(MechState):
+    """HW-2 real machine via closed external arm-bridge (ADR-004).
+
+    joint_targets (rad) → bridge joint_targets (counts); state mirrors the
+    bridge broadcast (authoritative). Local step() is a no-op.
+    """
+
+    def __init__(self, entity_id: str, machine_id: str, client: HwBridgeClient):
+        super().__init__(entity_id)
+        self.machine_id = machine_id
+        self.client = client
+
+    def _apply_joint_targets(self, targets: Any) -> None:
+        if not isinstance(targets, dict):
+            raise CmdRejected("BAD_JOINT_TARGETS", "joint_targets must be an object")
+        known = {"shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"}
+        unknown = [str(k) for k in targets if str(k) not in known]
+        if unknown:
+            raise CmdRejected("UNKNOWN_JOINT", f"unknown joint_targets: {', '.join(unknown)}")
+        if not self.client.connected:
+            raise CmdRejected("HW_LINK_DOWN", "arm-bridge not connected")
+        self.client.send_joint_targets_rad({str(k): float(v) for k, v in targets.items()})
+        self.joint_targets = {str(k): float(v) for k, v in targets.items()}
+
+    def step(self, dt: float) -> None:
+        return  # authority lives on the bridge/edge
+
+    def to_entity_state(self) -> dict[str, Any]:
+        state = super().to_entity_state()
+        state["joints"] = dict(self.client.present_rad)
+        state["joint_vels"] = {k: 0.0 for k in self.client.present_rad}
+        mw = state.setdefault("extensions", {}).setdefault("mw", {})
+        mw["hw_machine"] = self.machine_id
+        mw["hw_enabled"] = self.client.connected
         return state
 
 
@@ -1786,6 +1824,12 @@ class EchoGateway:
         self.mj_model = None
         ## PL2: in-memory level disable set (join rejected until enable / restart).
         self.disabled_levels: set[str] = set()
+        ## HW-2: closed external arm-bridge (ADR-004); URL/token via env only.
+        self.hw_bridge: HwBridgeClient | None = None
+        if physics == "hw_bridge":
+            self.hw_bridge = HwBridgeClient.from_env()
+            if self.hw_bridge is None:
+                raise SystemExit("--physics hw_bridge requires MW_HW_BRIDGE_URL env")
         if physics == "mujoco":
             if mujoco is None:
                 raise SystemExit("mujoco not installed: pip install mujoco==3.6.0")
@@ -1915,6 +1959,8 @@ class EchoGateway:
         """Return hello/recording feature tags for the active physics backend."""
         if self.physics == "hw_fake":
             return ["hw_fake_kinematics"]
+        if self.physics == "hw_bridge":
+            return ["hw_bridge_link"]
         return ["fake_kinematics" if self.physics == "fake" else "mujoco"]
 
     def _close_recorder(self, session: Session, outcome: str) -> None:
@@ -2289,7 +2335,9 @@ class EchoGateway:
         for spawn in contract.get("mech_spawns") or []:
             eid = str(spawn.get("id", "mech_player"))
             pose = spawn.get("pose") or {}
-            if hw_machine and hw_machine in HW_PROFILES:
+            if hw_machine and self.physics == "hw_bridge" and self.hw_bridge is not None:
+                mech = HwBridgeMech(eid, hw_machine, self.hw_bridge)
+            elif hw_machine and hw_machine in HW_PROFILES:
                 mech = HwArmMech(eid, hw_machine)
             elif shared is not None and model is not None:
                 mech = MujocoMech(eid, model, shared, prefix=f"{eid}/")
@@ -3558,6 +3606,8 @@ async def run(
         start_admin_http(gateway, host=admin_host, port=admin_port)
     except Exception:
         LOG.exception("admin HTTP failed to start (WS still runs)")
+    if gateway.hw_bridge is not None:
+        await gateway.hw_bridge.start()
     asyncio.create_task(gateway.sim_loop())
 
     LOG.info(
@@ -3600,7 +3650,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--physics",
-        choices=["fake", "mujoco", "hw_fake"],
+        choices=["fake", "mujoco", "hw_fake", "hw_bridge"],
         default="fake",
         help="Physics backend: fake (POC-A fallback), mujoco (real sim), or hw_fake (HW-0 arm)",
     )
@@ -3642,7 +3692,7 @@ def main() -> None:
     args = parser.parse_args()
 
     ## HW-0: hw_fake defaults to the arm-lab contract (open params only, ADR-004).
-    if args.physics == "hw_fake" and args.contract == DEFAULT_CONTRACT:
+    if args.physics in ("hw_fake", "hw_bridge") and args.contract == DEFAULT_CONTRACT:
         args.contract = REPO_ROOT / "examples" / "contracts" / "demo_arm_lab.json"
 
     logging.basicConfig(

@@ -7,6 +7,12 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-05 · HW-2：真机桥翻译层（hw_bridge）
+
+- `gateway/hw_bridge_client.py`：连仓外 arm-bridge（env `MW_HW_BRIDGE_URL`/`MW_HW_BRIDGE_TOKEN`，ADR-004 零凭证入库）；hello 软限位建表；rad↔counts 线性映射（pan 翻转）；outbox fire-and-forget + 断线指数重连。
+- `HwBridgeMech` + `--physics hw_bridge`：`joint_targets` 转发真桥；state 镜像 bridge present（权威在边缘）；链路断开报 `HW_LINK_DOWN`。
+- 冒烟 `scripts/hw_bridge_smoke.py`（内嵌假桥全闭环）：UNKNOWN_JOINT / rad→counts 回环 pan=0.499 / 软限位 clamp 1.92 全过；hw_fake 回归绿。
+
 ## 2026-08-05 · HW-1：桌面键鼠臂遥操前端（demo_arm_lab）
 
 - 新场景 `demo_arm_lab.tscn` + 自包含 `arm_lab.gd`：1-6 选关节、,/. 或 ←/→ 调目标（20 Hz `joint_targets`）、H 回 HOME、左键点台面 shoulder_pan 对准；HUD ASCII 关节条 present→target。
