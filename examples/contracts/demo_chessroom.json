@@ -91,9 +91,9 @@
         },
         {
           "id": "table_2",
-          "game": "gomoku",
-          "title_zh": "五子棋 · 乙桌",
-          "title_en": "Gomoku B"
+          "game": "blackjack",
+          "title_zh": "21 点 · 乙桌",
+          "title_en": "Blackjack"
         },
         {
           "id": "table_3",

@@ -7,6 +7,14 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-06 · 21 点（Blackjack）接入棋牌室 · 替换乙桌五子棋
+
+- Gateway `gateway/blackjack.py`：4 副牌靴、单人 vs 庄家（17 停）、soft ace、黑杰克/爆牌/平局判定；新 cmd `card_hit` / `card_stand`（`chess_reset` 重发一局）；`chess_table_update.detail` 带 `player_cards`/`dealer_cards`/点数/`phase`/`result`（庄家暗牌 `??` 结算前隐藏）。
+- 契约：`demo_chessroom.json` `table_2` 改为 `game=blackjack`（乙桌 21 点）；坐庄单座（第二人旁观/不占座）。
+- 客户端：代码绘制牌面（♠♥♦♣ Unicode + 点数），发牌滑入动画 + 庄家翻牌 flip 动画（`_bj_anims`）；要牌/停牌/再来一局按钮（H/S 快捷键）；庄家/玩家点数常显；结果横幅（Blackjack/赢/输/平）。
+- 冒烟：`scripts/blackjack_smoke.py`（坐下→发牌→hit→stand→庄家≥17 或爆→结算断言）；`chessroom_smoke` / `ws_smoke` 回归绿。
+- 素材：先代码牌面（零依赖）；Kenney Playing Cards 包替换留待下一刀（CC0，需联网下载 + `ASSETS.md` 台账）。
+
 ## 2026-08-05 · 热修：mujoco 模式 join hw 契约崩连
 
 - 线上 playground gateway 跑 `--physics mujoco`；join `demo_arm_lab` 时 `_ensure_mj_model` 试图编译 `hw/so101`（非 MJCF）→ handler 异常断连。

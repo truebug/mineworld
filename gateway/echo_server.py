@@ -37,6 +37,7 @@ from recorder import SessionRecorder
 from score_client import build_and_post
 from hw_machines import HW_PROFILES, HwArmSim
 from hw_bridge_client import HwBridgeClient
+from blackjack import BlackjackBoard
 from gomoku import BLACK, EMPTY, WHITE, GomokuBoard
 from checkers import CheckersBoard, SIZE as CHECKERS_SIZE
 from checkers import BLACK as CK_BLACK, WHITE as CK_WHITE, EMPTY as CK_EMPTY
@@ -863,6 +864,8 @@ def _new_board_for_game(game: str) -> Any:
         return CheckersBoard()
     if game == "junqi":
         return JunqiBoard()
+    if game == "blackjack":
+        return BlackjackBoard()
     return GomokuBoard()
 
 
@@ -889,11 +892,28 @@ class ChessTable:
         self.last_hand = None
         if self.game == "junqi":
             self.status = "layout"
+        elif self.game == "blackjack":
+            self.status = "idle"  # promoted to playing after deal()
         else:
             self.status = "playing"
 
     def to_detail(self, viewer_sid: str | None = None) -> dict[str, Any]:
         """Snapshot for chess_table_update. Junqi: fog by viewer_sid (no open board leak)."""
+        if self.game == "blackjack" and isinstance(self.board, BlackjackBoard):
+            out = {
+                "table_id": self.table_id,
+                "game": self.game,
+                "title_zh": self.title_zh,
+                "title_en": self.title_en,
+                "black_sid": self.black_sid,
+                "white_sid": self.white_sid,
+                "vs_ai": self.vs_ai,
+                "status": self.status,
+            }
+            out.update(self.board.to_detail())
+            if self.last_hand:
+                out["last_hand"] = dict(self.last_hand)
+            return out
         if self.game == "junqi" and isinstance(self.board, JunqiBoard):
             base = {
                 "table_id": self.table_id,
@@ -2551,6 +2571,22 @@ class EchoGateway:
         if table is None:
             return
         if action == "chess_sit":
+            if table.game == "blackjack":
+                # Single-player vs dealer: only the black seat; one sitter only.
+                if sid == table.black_sid:
+                    self._broadcast_chess_table(room, table)
+                    return
+                if table.black_sid is not None:
+                    return
+                self._chess_free_session(room, sid, broadcast=True)
+                table.black_sid = sid
+                table.white_sid = None
+                table.vs_ai = True
+                table.reset_board()
+                if isinstance(table.board, BlackjackBoard):
+                    table.board.deal()
+                self._broadcast_chess_table(room, table)
+                return
             if sid in (table.black_sid, table.white_sid):
                 self._broadcast_chess_table(room, table)
                 return
@@ -2574,6 +2610,20 @@ class EchoGateway:
             if sid not in (table.black_sid, table.white_sid):
                 return
             table.reset_board()
+            if table.game == "blackjack" and isinstance(table.board, BlackjackBoard):
+                table.board.deal()
+            self._broadcast_chess_table(room, table)
+            return
+        if action in ("card_hit", "card_stand"):
+            if table.game != "blackjack" or not isinstance(table.board, BlackjackBoard):
+                return
+            if sid != table.black_sid:
+                return
+            err = table.board.hit() if action == "card_hit" else table.board.stand()
+            if err is not None:
+                self._chess_reject(session, code=err, message=action, table_id=table_id)
+                return
+            table.status = "playing" if table.board.phase == "playing" else "finished"
             self._broadcast_chess_table(room, table)
             return
         if action == "chess_resign":
@@ -2584,6 +2634,9 @@ class EchoGateway:
             if table.game == "junqi" and isinstance(table.board, JunqiBoard):
                 loser = "black" if table.black_sid == sid else "red"
                 table.board.forfeit(loser)
+                table.status = "finished"
+            elif table.game == "blackjack" and isinstance(table.board, BlackjackBoard):
+                table.board.resign()
                 table.status = "finished"
             elif table.game in ("gomoku", "checkers"):
                 if table.black_sid == sid:
@@ -2876,6 +2929,8 @@ class EchoGateway:
             "chess_resign",
             "chess_hand",
             "junqi_layout",
+            "card_hit",
+            "card_stand",
         ):
             self._handle_chess_cmd(session, action, payload)
             return

@@ -63,6 +63,9 @@ var _confirm_btn: Button = null
 var _resign_btn: Button = null
 var _hand_btn: Button = null
 var _rules_btn: Button = null
+var _hit_btn: Button = null
+var _stand_btn: Button = null
+var _deal_btn: Button = null
 var _rules_label: Label = null
 var _rules_visible := false
 var _tables: Dictionary = {}
@@ -75,6 +78,9 @@ var _pending_junqi_move: Dictionary = {}
 ## Chess-FX: per-cell piece animation state. Key "x,y" → {kind, t, dur}.
 ## kind: "place" (scale bounce), "capture" (fade+sink), "flip" (junqi reveal).
 var _piece_anims: Dictionary = {}
+## Blackjack (21点): card anims keyed "P0"/"D1" → {kind, t, dur}; prev hands for diffing.
+var _bj_anims: Dictionary = {}
+var _bj_prev: Dictionary = {}
 var _prev_cells: Array = []  ## previous board cells for diff detection
 
 
@@ -448,6 +454,7 @@ func _on_gateway_error(payload: Dictionary) -> void:
 func _process(delta: float) -> void:
 	_poll_web_chat()
 	_tick_piece_anims(delta)
+	_tick_bj_anims(delta)
 	_cmd_timer += delta
 	if _cmd_timer >= 1.0 / CMD_HZ:
 		_cmd_timer = 0.0
@@ -519,6 +526,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		elif ek.keycode == KEY_ESCAPE:
 			_on_escape()
+			get_viewport().set_input_as_handled()
+		elif ek.keycode == KEY_H and _view_game() == "blackjack":
+			_on_bj_hit()
+			get_viewport().set_input_as_handled()
+		elif ek.keycode == KEY_S and _view_game() == "blackjack":
+			_on_bj_stand()
 			get_viewport().set_input_as_handled()
 
 
@@ -670,6 +683,21 @@ func _build_board_ui() -> void:
 	_rules_btn.visible = false
 	_rules_btn.pressed.connect(_toggle_junqi_rules)
 	btn_row.add_child(_rules_btn)
+	_hit_btn = Button.new()
+	_hit_btn.text = MWi18n.t("要牌 (H)", "Hit (H)")
+	_hit_btn.visible = false
+	_hit_btn.pressed.connect(_on_bj_hit)
+	btn_row.add_child(_hit_btn)
+	_stand_btn = Button.new()
+	_stand_btn.text = MWi18n.t("停牌 (S)", "Stand (S)")
+	_stand_btn.visible = false
+	_stand_btn.pressed.connect(_on_bj_stand)
+	btn_row.add_child(_stand_btn)
+	_deal_btn = Button.new()
+	_deal_btn.text = MWi18n.t("再来一局", "Deal again")
+	_deal_btn.visible = false
+	_deal_btn.pressed.connect(_on_bj_redeal)
+	btn_row.add_child(_deal_btn)
 	_rules_label = Label.new()
 	_rules_label.visible = false
 	_rules_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -717,7 +745,7 @@ func _apply_board_fonts() -> void:
 	for lab in [_title_label, _status_label, _result_label, _rules_label]:
 		if lab != null:
 			lab.add_theme_font_override("font", f)
-	for btn in [_layout_btn, _confirm_btn, _resign_btn, _hand_btn, _rules_btn]:
+	for btn in [_layout_btn, _confirm_btn, _resign_btn, _hand_btn, _rules_btn, _hit_btn, _stand_btn, _deal_btn]:
 		if btn != null:
 			btn.add_theme_font_override("font", f)
 
@@ -783,6 +811,24 @@ func _on_chess_hand() -> void:
 	})
 
 
+func _on_bj_hit() -> void:
+	if _view_table_id == "" or _view_game() != "blackjack":
+		return
+	ws.send_cmd({"action": "card_hit", "table_id": _view_table_id})
+
+
+func _on_bj_stand() -> void:
+	if _view_table_id == "" or _view_game() != "blackjack":
+		return
+	ws.send_cmd({"action": "card_stand", "table_id": _view_table_id})
+
+
+func _on_bj_redeal() -> void:
+	if _view_table_id == "" or _view_game() != "blackjack":
+		return
+	ws.send_cmd({"action": "chess_reset", "table_id": _view_table_id})
+
+
 func _board_px() -> float:
 	if _board_ctrl != null and _board_ctrl.custom_minimum_size.x > 10.0:
 		return _board_ctrl.custom_minimum_size.x
@@ -825,7 +871,13 @@ func _fit_board_panel() -> void:
 		return
 	var pw := 560.0
 	var ph := 700.0
-	if _view_game() == "junqi":
+	if _view_game() == "blackjack":
+		var felt := Vector2(clampf(vp.x - 48.0, 420.0, 680.0), clampf(vp.y - 190.0, 260.0, 380.0))
+		if _board_ctrl != null:
+			_board_ctrl.custom_minimum_size = felt
+		pw = clampf(felt.x + 48.0, 400.0, vp.x - 24.0)
+		ph = clampf(felt.y + 150.0, 380.0, vp.y - 24.0)
+	elif _view_game() == "junqi":
 		var bs := _junqi_board_size()
 		if _board_ctrl != null:
 			_board_ctrl.custom_minimum_size = bs
@@ -895,6 +947,9 @@ func _draw_board() -> void:
 	var game := _view_game()
 	if game == "junqi":
 		_draw_junqi_board()
+		return
+	if game == "blackjack":
+		_draw_blackjack_board()
 		return
 	if game == "checkers":
 		_draw_checkers_board()
@@ -1095,8 +1150,20 @@ func _junqi_is_my_turn(d: Dictionary) -> bool:
 
 func _sync_junqi_chrome(status: String) -> void:
 	var is_jq := _view_game() == "junqi"
+	var is_bj := _view_game() == "blackjack"
 	var my := _my_junqi_side()
 	var seated := my != "" or _my_color() != GomokuScript.EMPTY
+	if is_bj:
+		var d := _view_detail()
+		seated = str(d.get("black_sid", "")).strip_edges() == _effective_sid()
+		var playing := seated and status == "playing"
+		var finished := seated and status == "finished"
+		if _hit_btn != null:
+			_hit_btn.visible = playing
+		if _stand_btn != null:
+			_stand_btn.visible = playing
+		if _deal_btn != null:
+			_deal_btn.visible = finished
 	if _rules_btn != null:
 		_rules_btn.visible = is_jq
 		if is_jq:
@@ -1127,7 +1194,7 @@ func _sync_junqi_chrome(status: String) -> void:
 		if _confirm_btn != null:
 			_confirm_btn.visible = false
 	if _resign_btn != null:
-		_resign_btn.visible = seated and status == "playing"
+		_resign_btn.visible = (seated and status == "playing") and not is_bj
 	if _hand_btn != null:
 		_hand_btn.visible = seated and status in ["layout", "playing"]
 	_fit_board_panel()
@@ -1193,6 +1260,40 @@ func _refresh_board_from_authority() -> void:
 		_result_label.visible = false
 	if game == "junqi":
 		_refresh_junqi_status(d, status, vs_ai)
+		if _board_ctrl != null:
+			_board_ctrl.queue_redraw()
+		return
+	if game == "blackjack":
+		_detect_bj_changes(d)
+		var my_sid := _effective_sid()
+		var seated := str(d.get("black_sid", "")).strip_edges() == my_sid
+		var phase := str(d.get("phase", "idle"))
+		var result := str(d.get("result", ""))
+		if status == "finished":
+			var label := ""
+			if result == "blackjack":
+				label = MWi18n.t("21 点！Blackjack！", "Blackjack!")
+			elif result == "win":
+				label = MWi18n.t("你赢了 🎉", "You win 🎉")
+			elif result == "lose":
+				label = MWi18n.t("你输了 · 爆牌/庄家更大", "You lose")
+			elif result == "push":
+				label = MWi18n.t("平局 · 点数相同", "Push")
+			else:
+				label = MWi18n.t("终局", "Game over")
+			if _result_label != null:
+				_result_label.text = label
+				_result_label.visible = true
+			if seated:
+				_set_status(MWi18n.t("再来一局？", "Deal again?"))
+			else:
+				_set_status(MWi18n.t("旁观 · 等待新一局", "Spectating · next round"))
+		elif not seated:
+			_set_status(MWi18n.t("旁观 · 坐下开牌", "Spectating · sit to play"))
+		elif phase == "playing":
+			_set_status(MWi18n.t("要牌 (H) 或 停牌 (S)", "Hit (H) or stand (S)"))
+		else:
+			_set_status(MWi18n.t("等待发牌…", "Dealing…"))
 		if _board_ctrl != null:
 			_board_ctrl.queue_redraw()
 		return
@@ -1956,6 +2057,115 @@ func _set_status(msg: String) -> void:
 
 # ── Chess-FX ──────────────────────────────────────────────────────────
 
+const _BJ_CARD_W := 64.0
+const _BJ_CARD_H := 92.0
+const _BJ_GAP := 10.0
+
+
+func _bj_hand_origin(count: int, row_y: float, area: Vector2) -> Vector2:
+	"""Center a hand of `count` cards horizontally at row_y."""
+	var total := count * _BJ_CARD_W + maxi(count - 1, 0) * _BJ_GAP
+	return Vector2((area.x - total) * 0.5, row_y)
+
+
+func _bj_deck_pos(area: Vector2) -> Vector2:
+	"""Shoe stub at top-right corner of the felt."""
+	return Vector2(area.x - _BJ_CARD_W - 14.0, 14.0)
+
+
+func _draw_bj_card(pos: Vector2, card: String, scale_x: float = 1.0, alpha: float = 1.0) -> void:
+	"""Code-drawn card face; '??' = face-down back. scale_x<1 fakes the flip."""
+	var w := _BJ_CARD_W * maxf(scale_x, 0.02)
+	var rect := Rect2(pos + Vector2((_BJ_CARD_W - w) * 0.5, 0), Vector2(w, _BJ_CARD_H))
+	if card == "??":
+		_board_ctrl.draw_rect(rect, Color(0.16, 0.3, 0.52, alpha))
+		_board_ctrl.draw_rect(rect.grow(-4.0), Color(0.24, 0.42, 0.66, alpha))
+		_board_ctrl.draw_rect(rect.grow(-4.0), Color(0.1, 0.18, 0.32, alpha), false, 1.5)
+		_board_ctrl.draw_rect(rect, Color(0.06, 0.1, 0.2, alpha), false, 2.0)
+		return
+	_board_ctrl.draw_rect(rect, Color(0.96, 0.95, 0.92, alpha))
+	_board_ctrl.draw_rect(rect, Color(0.55, 0.5, 0.45, alpha), false, 1.5)
+	var suit := card.right(1)
+	var rank := card.left(card.length() - 1)
+	var red := suit == "H" or suit == "D"
+	var ink := Color(0.78, 0.16, 0.14, alpha) if red else Color(0.12, 0.12, 0.14, alpha)
+	var suit_glyphs: Dictionary = {"S": "♠", "H": "♥", "D": "♦", "C": "♣"}
+	var glyph: String = str(suit_glyphs.get(suit, "?"))
+	if scale_x > 0.55:
+		var f: Font = MWFonts.font() if MWFonts != null else null
+		_board_ctrl.draw_string(
+			f if f != null else ThemeDB.fallback_font,
+			rect.position + Vector2(7.0, 22.0),
+			rank, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, ink
+		)
+		_board_ctrl.draw_string(
+			f if f != null else ThemeDB.fallback_font,
+			rect.position + Vector2(7.0, 42.0),
+			glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, ink
+		)
+		_board_ctrl.draw_string(
+			f if f != null else ThemeDB.fallback_font,
+			rect.position + Vector2(rect.size.x * 0.5, rect.size.y * 0.62),
+			glyph, HORIZONTAL_ALIGNMENT_CENTER, -1, 30, Color(ink.r, ink.g, ink.b, alpha * 0.35)
+		)
+
+
+func _bj_anim_for(key: String) -> Dictionary:
+	return _bj_anims.get(key, {})
+
+
+func _draw_blackjack_board() -> void:
+	"""Green felt: dealer row (top) / player row (bottom) + deal & flip anims."""
+	var d := _view_detail()
+	var sz: Vector2 = _board_ctrl.custom_minimum_size
+	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.38, 0.22, 0.1))
+	var pad := 8.0
+	var felt := Rect2(Vector2(pad, pad), sz - Vector2(pad, pad) * 2.0)
+	_board_ctrl.draw_rect(felt, Color(0.1, 0.38, 0.24))
+	_board_ctrl.draw_rect(felt, Color(0.05, 0.2, 0.12, 0.8), false, 2.0)
+	var area := felt.size
+	var deck := _bj_deck_pos(area)
+	# Shoe stub.
+	_draw_bj_card(deck, "??", 1.0, 0.85)
+	var dealer: Array = d.get("dealer_cards", [])
+	var player: Array = d.get("player_cards", [])
+	var rows := {"D": {"cards": dealer, "y": 22.0}, "P": {"cards": player, "y": area.y - _BJ_CARD_H - 22.0}}
+	for side in rows:
+		var cards: Array = rows[side]["cards"]
+		var origin := _bj_hand_origin(cards.size(), float(rows[side]["y"]), area)
+		for i in cards.size():
+			var key := "%s%d" % [side, i]
+			var target := origin + Vector2(i * (_BJ_CARD_W + _BJ_GAP), 0)
+			var card := str(cards[i])
+			var anim := _bj_anim_for(key)
+			var pos := target
+			var sx := 1.0
+			if not anim.is_empty():
+				var t := clampf(float(anim.get("t", 1.0)) / float(anim.get("dur", 1.0)), 0.0, 1.0)
+				match str(anim.get("kind", "")):
+					"deal":
+						pos = deck.lerp(target, ease(t, -1.6))
+					"flip":
+						sx = absf(cos(t * PI))
+						if t < 0.5:
+							card = "??"
+			_draw_bj_card(pos, card, sx)
+	# Hand values next to each row.
+	var f: Font = MWFonts.font() if MWFonts != null else null
+	var font := f if f != null else ThemeDB.fallback_font
+	if not dealer.is_empty():
+		var dv := int(d.get("dealer_value", 0))
+		var dhide := false
+		for c in dealer:
+			if str(c) == "??":
+				dhide = true
+		var dtext := ("%s: %s" % [MWi18n.t("庄家", "Dealer"), "?" if dhide else str(dv)])
+		_board_ctrl.draw_string(font, Vector2(16.0, 40.0), dtext, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.92, 0.94, 0.9))
+	if not player.is_empty():
+		var ptext := "%s: %d" % [MWi18n.t("你", "You"), int(d.get("player_value", 0))]
+		_board_ctrl.draw_string(font, Vector2(16.0, area.y - 30.0), ptext, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.92, 0.94, 0.9))
+
+
 func _detect_piece_changes(d: Dictionary, game: String) -> void:
 	"""Diff prev/new board cells → populate _piece_anims for animations."""
 	var cells: Array = d.get("cells", [])
@@ -2005,6 +2215,44 @@ func _detect_piece_changes(d: Dictionary, game: String) -> void:
 			}
 			break
 	_prev_cells = cells.duplicate()
+
+
+func _detect_bj_changes(d: Dictionary) -> void:
+	"""Diff player/dealer hands → deal-in anims + hole-card flip."""
+	var player: Array = d.get("player_cards", [])
+	var dealer: Array = d.get("dealer_cards", [])
+	var prev_p: Array = _bj_prev.get("player", [])
+	var prev_d: Array = _bj_prev.get("dealer", [])
+	var now := Time.get_ticks_msec() / 1000.0
+	for i in player.size():
+		var key := "P%d" % i
+		if i >= prev_p.size():
+			_bj_anims[key] = {"kind": "deal", "t": 0.0, "dur": 0.4}
+	for i in dealer.size():
+		var key := "D%d" % i
+		if i >= prev_d.size():
+			_bj_anims[key] = {"kind": "deal", "t": 0.0, "dur": 0.4}
+	if prev_d.size() >= 2 and dealer.size() >= 2 and str(prev_d[1]) == "??" and str(dealer[1]) != "??":
+		_bj_anims["D1"] = {"kind": "flip", "t": 0.0, "dur": 0.45}
+	_bj_prev = {"player": player.duplicate(), "dealer": dealer.duplicate()}
+
+
+func _tick_bj_anims(delta: float) -> void:
+	if _bj_anims.is_empty():
+		return
+	var dirty := false
+	var done: Array[String] = []
+	for key in _bj_anims:
+		var a: Dictionary = _bj_anims[key]
+		a["t"] = float(a.get("t", 0.0)) + delta
+		if float(a["t"]) >= float(a.get("dur", 1.0)):
+			done.append(key)
+		else:
+			dirty = true
+	for key in done:
+		_bj_anims.erase(key)
+	if dirty and _board_ctrl != null:
+		_board_ctrl.queue_redraw()
 
 
 func _cell_val_at(cells: Array, idx: int, game: String) -> int:
