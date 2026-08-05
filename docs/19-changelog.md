@@ -20,6 +20,12 @@
 - `TABLE_META` 兜底桌签与房间提示语改为「乙桌：21 点」（此前仍写五子棋乙桌）。
 - Web 端 `_on_web_key_event` 补 `KeyH`/`KeyS`（此前 H/S 仅桌面 `_unhandled_input` 生效，Web 被 `_is_web` 短路）。
 
+## 2026-08-06 · 21 点卡死修复：status 与 phase 同步
+
+- **卡死根因**：`chess_sit`/`chess_reset` 发牌后只更新 `board.phase`，`table.status` 停在 `idle` → 客户端按 `status=="playing"` 显隐要牌/停牌按钮，按钮永不出现（首手/重开一局均卡死）。
+- 修复：gateway 发牌后同步 `table.status` 到 `playing|finished`；客户端 `_refresh_board_from_authority` 对 blackjack 以 `phase` 为权威兜底。
+- `blackjack_smoke` 增补：坐下→首手自然 Blackjack 容错、结算→`chess_reset` 重开→继续玩全流程断言；3 轮连跑 + 全套回归（chessroom/ws/hub_chat/duel）+ 6 场景编译门全绿。
+
 ## 2026-08-05 · 热修：mujoco 模式 join hw 契约崩连
 
 - 线上 playground gateway 跑 `--physics mujoco`；join `demo_arm_lab` 时 `_ensure_mj_model` 试图编译 `hw/so101`（非 MJCF）→ handler 异常断连。

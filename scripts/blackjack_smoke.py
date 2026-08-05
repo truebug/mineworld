@@ -64,7 +64,8 @@ async def main() -> int:
         assert d.get("black_sid") == sid
         assert d.get("vs_ai") is True
         assert len(d.get("player_cards")) == 2, d
-        assert d.get("dealer_cards", ["?", "?"])[1] == "??", "hole card must be hidden"
+        if d.get("phase") == "playing":
+            assert d.get("dealer_cards", ["?", "?"])[1] == "??", "hole card must be hidden"
         assert d.get("phase") in ("playing", "finished"), d
         print(f"sit ok phase={d['phase']} player={d['player_cards']}({d['player_value']}) dealer={d['dealer_cards']}")
 
@@ -110,6 +111,50 @@ async def main() -> int:
             "payload": {"action": "chess_leave", "table_id": "table_2"},
         }))
         await asyncio.sleep(0.3)
+
+        # redeal flow: sit → finished (stand early) → reset → playing again
+        await ws.send(json.dumps({
+            "type": "cmd", "session_id": sid,
+            "payload": {"action": "chess_sit", "table_id": "table_2"},
+        }))
+        upd = await _recv_until(
+            ws,
+            lambda m: _is_table(m, "table_2")
+            and (m["payload"]["detail"].get("black_sid") == sid),
+        )
+        d = upd["payload"]["detail"]
+        assert d.get("status") in ("playing", "finished"), (
+            "status must follow phase after sit, got %s" % d.get("status")
+        )
+        # force a quick finish (stand immediately if playing)
+        if d.get("phase") == "playing":
+            await ws.send(json.dumps({
+                "type": "cmd", "session_id": sid,
+                "payload": {"action": "card_stand", "table_id": "table_2"},
+            }))
+            upd = await _recv_until(
+                ws,
+                lambda m: _is_table(m, "table_2")
+                and (m["payload"]["detail"].get("phase") == "finished"),
+            )
+            d = upd["payload"]["detail"]
+        assert d.get("status") == "finished"
+        # reset → redeal
+        await ws.send(json.dumps({
+            "type": "cmd", "session_id": sid,
+            "payload": {"action": "chess_reset", "table_id": "table_2"},
+        }))
+        upd = await _recv_until(
+            ws,
+            lambda m: _is_table(m, "table_2")
+            and (m["payload"]["detail"].get("phase") in ("playing", "finished")),
+        )
+        d = upd["payload"]["detail"]
+        assert d.get("status") in ("playing", "finished"), (
+            "status must follow phase after reset, got %s" % d.get("status")
+        )
+        assert len(d.get("player_cards", [])) == 2, "redeal must give 2 player cards"
+        print(f"redeal ok phase={d['phase']} status={d['status']}")
 
     print("blackjack smoke OK")
     return 0

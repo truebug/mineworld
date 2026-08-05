@@ -2585,6 +2585,9 @@ class EchoGateway:
                 table.reset_board()
                 if isinstance(table.board, BlackjackBoard):
                     table.board.deal()
+                    table.status = (
+                        "playing" if table.board.phase == "playing" else "finished"
+                    )
                 self._broadcast_chess_table(room, table)
                 return
             if sid in (table.black_sid, table.white_sid):
@@ -2612,6 +2615,9 @@ class EchoGateway:
             table.reset_board()
             if table.game == "blackjack" and isinstance(table.board, BlackjackBoard):
                 table.board.deal()
+                table.status = (
+                    "playing" if table.board.phase == "playing" else "finished"
+                )
             self._broadcast_chess_table(room, table)
             return
         if action in ("card_hit", "card_stand"):

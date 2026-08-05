@@ -1259,6 +1259,11 @@ func _refresh_board_from_authority() -> void:
 		else:
 			_title_label.text = title + MWi18n.t(" · 人对人", " · PvP")
 	var status := str(d.get("status", "idle"))
+	if game == "blackjack":
+		# phase is authoritative for blackjack — status may lag one broadcast.
+		var bj_phase := str(d.get("phase", ""))
+		if bj_phase in ["playing", "finished"]:
+			status = bj_phase
 	if game == "junqi":
 		status = _junqi_resolved_status(d)
 	_sync_junqi_chrome(status)
@@ -2229,7 +2234,6 @@ func _detect_bj_changes(d: Dictionary) -> void:
 	var dealer: Array = d.get("dealer_cards", [])
 	var prev_p: Array = _bj_prev.get("player", [])
 	var prev_d: Array = _bj_prev.get("dealer", [])
-	var now := Time.get_ticks_msec() / 1000.0
 	for i in player.size():
 		var key := "P%d" % i
 		if i >= prev_p.size():
