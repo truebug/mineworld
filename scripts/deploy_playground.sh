@@ -51,6 +51,9 @@ for var, val in [("MW_BUILD", build), ("MINEWORLD_GATEWAY", gw)]:
     pat = rf'window\.{var}\s*=\s*"[^"]*"'
     inj = f'window.{var}="{val}"'
     s = re.sub(pat, inj, s) if re.search(pat, s) else s.replace('<head>', f'<head>\n<script>{inj};</script>', 1)
+# Cache-bust the immutable pck URL: index.pck?v=<build> so browsers/CDN
+# that hold a 30-day immutable cache still fetch the new game content.
+s = re.sub(r'"index\.pck"', f'"index.pck?v={build}"', s)
 open(p, 'w').write(s)
 print(f"MW_BUILD={build}")
 PY
