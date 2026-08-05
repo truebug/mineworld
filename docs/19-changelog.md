@@ -7,6 +7,11 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-05 · HW-1：桌面键鼠臂遥操前端（demo_arm_lab）
+
+- 新场景 `demo_arm_lab.tscn` + 自包含 `arm_lab.gd`：1-6 选关节、,/. 或 ←/→ 调目标（20 Hz `joint_targets`）、H 回 HOME、左键点台面 shoulder_pan 对准；HUD ASCII 关节条 present→target。
+- 程序化 3 段臂 + 夹爪视觉（近似 FK，权威仍在 gateway）；Web 走 `MWWebInput` 键桥。
+
 ## 2026-08-05 · HW-0：hw_fake 真机仿真后端 + ADR-004
 
 - [ADR-004](adr/004-hw-real-robot-boundary.md) 冻结边界：黑盒外部桥、本仓零私有资产、安全归边缘、无真机可开发。

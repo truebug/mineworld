@@ -5,7 +5,7 @@
 set -u
 GODOT="${GODOT_BIN:-/Applications/Godot.app/Contents/MacOS/Godot}"
 PROJ="$(cd "$(dirname "$0")/../godot/spike" && pwd)"
-SCENES="${MW_CHECK_SCENES:-res://demo_hub.tscn res://demo_race.tscn res://demo_workshop.tscn res://demo_city.tscn res://demo_chessroom.tscn}"
+SCENES="${MW_CHECK_SCENES:-res://demo_hub.tscn res://demo_race.tscn res://demo_workshop.tscn res://demo_city.tscn res://demo_chessroom.tscn res://demo_arm_lab.tscn}"
 BOOT_S="${MW_CHECK_BOOT_S:-12}"
 fail=0
 for scene in $SCENES; do

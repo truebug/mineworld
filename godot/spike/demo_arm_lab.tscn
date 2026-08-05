@@ -1,0 +1,122 @@
+[gd_scene load_steps=13 format=3 uid="uid://b0mineworldarmlab"]
+
+[ext_resource type="Script" path="res://scripts/arm_lab.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/ws_client.gd" id="2_ws"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="5_camrig"]
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
+sky_top_color = Color(0.62, 0.66, 0.72, 1)
+sky_horizon_color = Color(0.82, 0.8, 0.76, 1)
+ground_bottom_color = Color(0.28, 0.28, 0.3, 1)
+ground_horizon_color = Color(0.5, 0.48, 0.46, 1)
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_mat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("sky")
+ambient_light_source = 2
+ambient_light_color = Color(0.86, 0.84, 0.8, 1)
+ambient_light_energy = 0.85
+tonemap_mode = 2
+tonemap_exposure = 1.05
+
+[sub_resource type="StandardMaterial3D" id="mat_ground"]
+albedo_color = Color(0.45, 0.44, 0.42, 1)
+roughness = 0.9
+
+[sub_resource type="PlaneMesh" id="mesh_ground"]
+material = SubResource("mat_ground")
+size = Vector2(8, 8)
+
+[sub_resource type="StandardMaterial3D" id="mat_bench"]
+albedo_color = Color(0.55, 0.42, 0.28, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="mesh_bench"]
+material = SubResource("mat_bench")
+size = Vector3(2.4, 0.08, 1.6)
+
+[sub_resource type="StandardMaterial3D" id="mat_grid"]
+albedo_color = Color(0.2, 0.6, 0.9, 0.35)
+transparency = 1
+
+[sub_resource type="CylinderMesh" id="mesh_reach"]
+material = SubResource("mat_grid")
+top_radius = 0.45
+bottom_radius = 0.45
+height = 0.02
+
+[node name="DemoArmLab" type="Node3D"]
+script = ExtResource("1_main")
+level_id = "demo_arm_lab"
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 3, 4, 2)
+light_color = Color(1, 0.97, 0.92, 1)
+light_energy = 0.8
+shadow_enabled = true
+
+[node name="Fill" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.707107, -0.25, -0.661438, 0, 0.935414, -0.353553, 0.707107, -0.25, -0.661438, 3, 3, -2)
+light_color = Color(0.78, 0.86, 0.95, 1)
+light_energy = 0.5
+shadow_enabled = false
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("5_camrig")
+distance = 2.2
+min_distance = 0.8
+max_distance = 6.0
+pitch = -0.6
+yaw = 0.3
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh_ground")
+
+[node name="Bench" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("mesh_bench")
+
+[node name="ReachRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+mesh = SubResource("mesh_reach")
+
+[node name="WsClient" type="Node" parent="."]
+script = ExtResource("2_ws")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Margin" type="MarginContainer" parent="Hud"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+
+[node name="PanelContainer" type="PanelContainer" parent="Hud/Margin"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+custom_minimum_size = Vector2(460, 0)
+
+[node name="MarginContainer" type="MarginContainer" parent="Hud/Margin/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Label" type="Label" parent="Hud/Margin/PanelContainer/MarginContainer"]
+layout_mode = 2
+text = "ARM LAB · hw_fake so101"
