@@ -3238,8 +3238,13 @@ class EchoGateway:
                 return
         if room is None:
             # Hub is presence-only: never compile MuJoCo even if process uses --physics mujoco.
+            # HW machines (ADR-004) likewise: arm authority is the bridge/fake sim,
+            # their model_ref is not an MJCF — compiling one crashes the join.
+            hw_contract = bool(
+                (contract.get("extensions") or {}).get("mw", {}).get("hw_machine")
+            )
             mj_model = None
-            if self.physics == "mujoco" and not hub:
+            if self.physics == "mujoco" and not hub and not hw_contract:
                 mj_model = self._ensure_mj_model(contract)
             mechs, props, mj_data, mj_substeps, grasp_eq = self._make_room_mechs(
                 contract, mj_model

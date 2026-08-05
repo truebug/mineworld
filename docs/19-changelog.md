@@ -7,6 +7,12 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-05 · 热修：mujoco 模式 join hw 契约崩连
+
+- 线上 playground gateway 跑 `--physics mujoco`；join `demo_arm_lab` 时 `_ensure_mj_model` 试图编译 `hw/so101`（非 MJCF）→ handler 异常断连。
+- 修复：hw_machine 契约与 Hub 同待遇——跳过 MuJoCo 编译，直接走 HwArmMech/HwBridgeMech。
+- 验证：本地 mujoco 模式 hw_fake_smoke 全绿（hello/scene/chase/clamp）。
+
 ## 2026-08-05 · HW-2.5a：bridge 激活改 env 驱动 + playground 发版
 
 - 重构：`MW_HW_BRIDGE_URL` 存在即在任意 physics 模式激活 bridge client；`hw_machine` 契约自动路由（有链走真桥，无链回退仿真臂）；`--physics hw_fake/hw_bridge` 保留为显式选择。
