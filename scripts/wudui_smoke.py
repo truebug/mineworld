@@ -89,12 +89,28 @@ async def main() -> int:
     assert disc not in t.get("black_cards", []), t
     print("black discard ok · top discard =", t.get("discard_pile"))
 
-    # p2 (red) pass + discard.
+    # p2 (red) pass + discard. pass_turn draws BEFORE validating the discard,
+    # so the pre-pick can get paired by the draw (WUDUI_BAD_DISCARD) — refresh
+    # the hand via re-sit broadcast and retry with a fresh pick.
     red = list(t.get("red_cards", []))
     rdisc = pick_unmatched(red)
-    await b.send(json.dumps({"type": "cmd", "session_id": sb,
-                             "payload": {"action": "card_pass", "table_id": TID, "discard": rdisc}}))
-    msg = await _recv_until(b, lambda m: _is_table(m) and _table(m).get("turn") == "black" and _table(m).get("last_action") == "pass")
+    assert rdisc, "red has no unmatched card to discard"
+    for _attempt in range(8):
+        await b.send(json.dumps({"type": "cmd", "session_id": sb,
+                                 "payload": {"action": "card_pass", "table_id": TID, "discard": rdisc}}))
+        msg = await _recv_until(b, lambda m: (_is_table(m) and _table(m).get("turn") == "black" and _table(m).get("last_action") == "pass")
+                                 or (m.get("payload") or {}).get("event_type") == "chess_reject")
+        if _is_table(msg):
+            break
+        # Reject (WUDUI_BAD_DISCARD): red drew a card that paired the pick.
+        await b.send(json.dumps({"type": "cmd", "session_id": sb,
+                                 "payload": {"action": "chess_sit", "table_id": TID}}))
+        msg = await _recv_until(b, lambda m: _is_table(m))
+        red = list(_table(msg).get("red_cards", []))
+        rdisc = pick_unmatched(red)
+        assert rdisc, "no unmatched discard after reject"
+    else:
+        raise AssertionError("red pass retries exhausted")
     t = _table(msg)
     assert t.get("turn") == "black", t
     assert t.get("last_action") == "pass", t

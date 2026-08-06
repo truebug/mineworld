@@ -95,6 +95,7 @@
 | Chess-P3 | 军棋可玩 + 规则 UI | SSOT `26`；权威裁判；暗棋透视；规则说明显隐 | [x] 人机可玩；随机→手调→确认；认输/举手；离座判负 |
 | Chess-P4 | 军棋暗棋 hardening | 按 session 单播 view、去掉 `junqi_open`；公网 PvP 门槛 | [x] 2026-07-27 单播+拒着；明文盘已去 |
 | Chess-P5 | 五对双人纸牌 + 扩容 | 54 张 5 对胜负；先手 11 后手 10；吃/过/弃/认输；房扩 32×22 + 丙五子棋/己五对 | [x] `gateway/wudui.py` · `card_discard/eat/pass` · `wudui_smoke` · Table5/Table6 · 2026-08-06 |
+| Chess-P6 | 牌面贴图 + 规则弹窗 | Kenney CC0 牌面替换代码绘制；规则按钮各桌可用 | [x] `kenney_cards/` 台账 · `_rules_text_for` · 2026-08-06 |
 
 #### B2 已交付（勿再当 Next）
 

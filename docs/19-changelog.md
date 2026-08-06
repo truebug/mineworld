@@ -7,6 +7,13 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-06 · 棋牌室：Kenney CC0 牌面贴图 + 规则说明弹窗
+
+- 牌面美术：入库 Kenney Playing Cards Pack（CC0 · `godot/spike/assets/kenney_cards/`，含 `License.txt` 与目录台账；根 `ASSETS.md` 台账已登记）；`chessroom.gd` `_draw_bj_card` 改为贴图绘制（wire `AS`/`10H`/`JOKER`/`??` → `card_<suit>_<rank>.png` / `card_back.png`，contain-fit 保持 64×64 原比例，`scale_x<1` 翻牌动画兼容），21 点与五对共用；加载失败回退原代码绘制。
+- 规则说明弹窗：`_rules_btn` 从仅军棋扩展到所有棋桌；`_rules_text_for()` 按游戏给出 zh/en 规则摘要（五子棋/跳棋/21 点/五对/军棋），`_toggle_junqi_rules` 泛化 + `_apply_rules_text()` 随当前桌刷新。
+- 修复：`_card_tex_path` 字典 `.get()` 返回 Variant 触发「推断为 Variant」编译门 → 显式 `str()` 强转。
+- 冒烟：`wudui_smoke.py` 修复红色过牌偶发 flake（`pass_turn` 先抓牌后验弃牌，预选散牌可能被补牌配成对 → `WUDUI_BAD_DISCARD`；改为拒着后 `chess_sit` 刷新手牌重选，8 次重试）；wudui/blackjack/ws 三回归 + 6 场景编译门全绿。
+
 ## 2026-08-06 · 五对（WuDui）双人纸牌桌 + 棋牌室扩容
 
 - 棋牌室扩容：地板 32×22、墙 ±16/±11；新增 Table5（五子棋 丙桌）与 Table6（五对 双人桌）；契约 `demo_chessroom.json` bounds 扩到 half_x=16 / half_y=11，walkable ±15.5/±10.5。

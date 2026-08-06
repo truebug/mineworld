@@ -777,11 +777,36 @@ func _apply_board_fonts() -> void:
 			btn.add_theme_font_override("font", f)
 
 
+func _rules_text_for(game: String) -> Dictionary:
+	"""Per-game concise rules (SSOT summaries, zh/en)."""
+	match game:
+		"gomoku":
+			return {"zh": "五子棋 · 双方轮流落子\n横竖斜先连成五子者胜", "en": "Gomoku: take turns placing stones\nfirst to five in a row (any direction) wins"}
+		"checkers":
+			return {"zh": "跳棋 · 每步走一格，或隔子连跳\n先把自己的棋子全部跳进对角营者胜", "en": "Halma: move one step or hop chains\nfirst to fill the far camp wins"}
+		"blackjack":
+			return {"zh": "21 点 · 要牌 (H) 逼近 21，停牌 (S) 定局\n超过 21 爆牌即负 · 庄家 17 点停\n首手 21 = Blackjack 直接胜 · 点数相同为平局", "en": "Blackjack: Hit (H) toward 21, Stand (S) to lock\nbust over 21 loses · dealer stands on 17\nnatural 21 wins · equal points push"}
+		"wudui":
+			return {"zh": "五对 · 54 张含双王 · 各发 10 张，先手 11 张\n凑成五对即胜 · 先手首弃即成五对 = 天和\n先手回合必弃一张散牌，再抓 1 张\n后手可吃牌（凑对后弃一张）或过牌（抓 1 再弃 1）\n可认输 · 对局中离座判负", "en": "WuDui: 54 cards incl. jokers · 10 each, first gets 11\nfive pairs win · first discard leaving 5 pairs = Tianhe\nfirst must discard an unmatched card, then draws one\nsecond may eat (pair + discard) or pass (draw + discard)\nresign allowed · leaving mid-game forfeits"}
+		"junqi":
+			return {"zh": "12×5 · 行营免战 · 铁路工兵可拐弯\n军旗必在大本营 · 地雷仅后两行 · 炸弹不上底线\n公路一步 · 铁路直线（工兵可拐）· 行营离营限一格\n任意己子走进对方军旗即胜（无需清雷）\n司令阵亡→公开该方军旗位置", "en": "12x5 · camps safe · engineer turns on rail\nFlag in HQ · mines last 2 rows · bombs not on back row\nRoad 1-step · rail straight (engineer bends)\nany piece onto the enemy flag wins (no mine-clear)\ncommander lost → reveal that side's flag"}
+		_:
+			return {"zh": "", "en": ""}
+
+
+func _apply_rules_text() -> void:
+	"""Refresh label text for the currently-viewed game."""
+	var pair := _rules_text_for(_view_game())
+	if _rules_label != null and pair["zh"] != "":
+		_rules_label.text = MWi18n.t(pair["zh"], pair["en"])
+
+
 func _toggle_junqi_rules() -> void:
-	"""Show / hide concise junqi rules (SSOT summary)."""
+	"""Show / hide concise rules for the current game (SSOT summary)."""
 	_rules_visible = not _rules_visible
+	_apply_rules_text()
 	if _rules_label != null:
-		_rules_label.visible = _rules_visible and _view_game() == "junqi"
+		_rules_label.visible = _rules_visible
 	if _rules_btn != null:
 		_rules_btn.text = (
 			MWi18n.t("隐藏规则", "Hide rules")
@@ -1360,15 +1385,15 @@ func _sync_junqi_chrome(status: String) -> void:
 		if _deal_btn != null:
 			_deal_btn.visible = finished
 	if _rules_btn != null:
-		_rules_btn.visible = is_jq
-		if is_jq:
-			_rules_btn.text = (
-				MWi18n.t("隐藏规则", "Hide rules")
-				if _rules_visible
-				else MWi18n.t("规则说明", "Rules")
-			)
+		_rules_btn.visible = true
+		_rules_btn.text = (
+			MWi18n.t("隐藏规则", "Hide rules")
+			if _rules_visible
+			else MWi18n.t("规则说明", "Rules")
+		)
 	if _rules_label != null:
-		_rules_label.visible = is_jq and _rules_visible
+		_apply_rules_text()
+		_rules_label.visible = _rules_visible
 	var draft := false
 	if is_jq and status == "layout" and my != "":
 		var ready: Dictionary = _view_detail().get("layout_ready", {}) as Dictionary
@@ -2268,6 +2293,7 @@ func _set_status(msg: String) -> void:
 const _BJ_CARD_W := 64.0
 const _BJ_CARD_H := 92.0
 const _BJ_GAP := 10.0
+var _card_tex: Dictionary = {}
 
 
 func _bj_hand_origin(count: int, row_y: float, area: Vector2) -> Vector2:
@@ -2281,10 +2307,48 @@ func _bj_deck_pos(area: Vector2) -> Vector2:
 	return Vector2(area.x - _BJ_CARD_W - 14.0, 14.0)
 
 
+func _card_tex_path(card: String) -> String:
+	"""Wire card ('AS' / '10H' / 'JOKER' / '??') → Kenney texture path."""
+	if card == "??":
+		return "res://assets/kenney_cards/card_back.png"
+	if card == "JOKER":
+		return "res://assets/kenney_cards/card_joker_black.png"
+	var suit := card.right(1)
+	var rank := card.left(card.length() - 1)
+	var suit_name: String = str({"S": "spades", "H": "hearts", "D": "diamonds", "C": "clubs"}.get(suit, ""))
+	if suit_name == "":
+		return ""
+	if rank.length() == 1 and rank.is_valid_int():
+		rank = "0" + rank
+	return "res://assets/kenney_cards/card_%s_%s.png" % [suit_name, rank]
+
+
+func _card_texture(card: String) -> Texture2D:
+	if _card_tex.has(card):
+		return _card_tex[card]
+	var tex: Texture2D = load(_card_tex_path(card)) as Texture2D if _card_tex_path(card) != "" else null
+	_card_tex[card] = tex
+	return tex
+
+
 func _draw_bj_card(pos: Vector2, card: String, scale_x: float = 1.0, alpha: float = 1.0) -> void:
 	"""Code-drawn card face; '??' = face-down back. scale_x<1 fakes the flip."""
 	var w := _BJ_CARD_W * maxf(scale_x, 0.02)
 	var rect := Rect2(pos + Vector2((_BJ_CARD_W - w) * 0.5, 0), Vector2(w, _BJ_CARD_H))
+	var tex := _card_texture(card)
+	if tex != null:
+		# Contain-fit: Kenney textures are square 64x64; keep aspect inside the
+		# portrait slot so card art isn't stretched (scale_x<1 fakes the flip).
+		var tr := rect
+		var tw := float(tex.get_width())
+		var th := float(tex.get_height())
+		if tw > 0.0 and th > 0.0:
+			var fit := minf(rect.size.x / tw, rect.size.y / th)
+			var fw := tw * fit
+			var fh := th * fit
+			tr = Rect2(rect.position + Vector2((rect.size.x - fw) * 0.5, (rect.size.y - fh) * 0.5), Vector2(fw, fh))
+		_board_ctrl.draw_texture_rect(tex, tr, false, Color(1, 1, 1, alpha))
+		return
 	if card == "??":
 		_board_ctrl.draw_rect(rect, Color(0.16, 0.3, 0.52, alpha))
 		_board_ctrl.draw_rect(rect.grow(-4.0), Color(0.24, 0.42, 0.66, alpha))

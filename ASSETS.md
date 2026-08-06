@@ -34,6 +34,7 @@
 | Metal Toolbox（2K） | [polyhaven.com/a/metal_toolbox](https://polyhaven.com/a/metal_toolbox) | CC0 | 资产保留；Hub 大厅不再摆（尺度过碎） | 无 | 2026-07-22 |
 | Covered Car（2K） | [polyhaven.com/a/covered_car](https://polyhaven.com/a/covered_car) | CC0 | 资产保留；Hub 不再摆（篷布遮挡细部） | 无 | 2026-07-22 |
 | Gothic Statue（2K） | [polyhaven.com/a/gothic_statue](https://polyhaven.com/a/gothic_statue) | CC0 | Hub 门 A 湾侧英雄展陈（石像）；`godot/spike/assets/polyhaven_gothic_statue/` | 无（可署名 Poly Haven） | 2026-07-22 |
+| Playing Cards Pack（large 子集） | [kenney.nl/assets/playing-cards-pack](https://kenney.nl/assets/playing-cards-pack) | CC0 | 棋牌室 21 点 / 五对 牌面贴图；`godot/spike/assets/kenney_cards/` | 无（可署名 Kenney） | 2026-08-06 |
 
 ### 候选（未入库 · demo_race 皮）
 
