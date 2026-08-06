@@ -1022,7 +1022,10 @@ func _refresh_wudui_status(d: Dictionary, status: String) -> void:
 	if my_side == "":
 		_set_status(MWi18n.t("旁观 · 坐下开局", "Spectating · sit to start"))
 	elif my_side == "black" and turn == "black":
-		_set_status(MWi18n.t("轮到你 · 点散牌再「出牌」", "Your turn — pick a card, then Discard"))
+		if status != "playing":
+			_set_status(MWi18n.t("等待对手加入… 5 秒后无人将匹配 AI", "Waiting… AI fills in after 5s"))
+		else:
+			_set_status(MWi18n.t("轮到你 · 点散牌再「出牌」", "Your turn — pick a card, then Discard"))
 	elif my_side == "red" and turn == "red":
 		_set_status(MWi18n.t("轮到你 · 点散牌「吃牌」或「过牌」", "Your turn — Eat or Pass"))
 	else:

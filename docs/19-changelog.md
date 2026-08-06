@@ -7,6 +7,14 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-06 · 五对支持人机（5 秒无人加入自动匹配 AI）
+
+- 规则不变、模式复用五子棋/军棋 `vs_ai` 机制：黑座（先手）坐下后启动 5 秒计时，无第二人加入则 `vs_ai=True` 自动发牌（AI 执红）；5 秒内真人入座则取消计时、立即双人发牌。
+- `gateway/wudui.py` 新增 `ai_red_move()`：顶弃牌能凑对且有另一张散牌可弃则吃牌，否则过牌（抓 1 弃随机散牌）；天和/五对胜负照常判定。
+- echo_server：`ChessTable.ai_task` 承载计时任务；黑方 `card_discard` 成功后 AI 同步走红方并广播；真人中途入座白座 → 取消 vs_ai、重新发牌接管红方；黑方离座/计时守卫防悬空任务。
+- 客户端：黑方等待期状态行提示「等待对手加入… 5 秒后无人将匹配 AI」。
+- 冒烟：`wudui_smoke.py` 新增三段——AI 补位发牌断言（vs_ai、黑 11/红 10）、黑弃牌后 AI 同步应答（`last_action∈{pass,eat}`、turn 回黑）、真人入座接管（vs_ai=False、重新发牌）。
+
 ## 2026-08-06 · 21 点升级为多人共享庄家（双座多手牌）
 
 - Gateway `gateway/blackjack.py` 重写为多人权威：`players`（入座顺序，黑先白后）/ `hands{sid}` / `active_sid` 轮转 / `results{sid}`；天牌 21 直接 blackjack 并入 stands；庄家全员行动后统一补到 ≥17 再逐手结算（win/lose/push/blackjack）；`to_detail()` 新增 `players`/`hands`/`hand_values`/`active_sid`/`results`，保留 `player_cards`/`player_value`/`result` 向后兼容（取第一手）。

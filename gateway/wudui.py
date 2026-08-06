@@ -163,6 +163,37 @@ class WuDuiBoard:
             self.winner = "red" if side == "black" else "black"
             self.reason = "resign"
 
+    def ai_red_move(self) -> None:
+        """One AI move as red (vs_ai mode): eat if the discard pairs, else pass.
+
+        Strategy (KISS): eat whenever the top discard completes a pair and a
+        different unmatched card can be discarded; otherwise draw and discard
+        a random unmatched card.
+        """
+        if self.phase != "playing" or self.turn != "red":
+            return
+        top = self.discard_pile[-1] if self.discard_pile else ""
+        unmatched = self._unmatched(self.red)
+        if top and unmatched and rank_of(top) in {rank_of(c) for c in unmatched}:
+            partners = [c for c in unmatched if rank_of(c) != rank_of(top)]
+            if partners and self.eat(top, random.choice(partners)) is None:
+                return
+        # Pass path: draw one, then discard a random unmatched from new hand.
+        self.discard_pile = []
+        self.red.append(self._draw())
+        if self._finish_if_paired("red"):
+            return
+        choices = self._discardable(self.red)
+        if not choices:
+            return
+        discard = random.choice(choices)
+        self.red.remove(discard)
+        self.discard_pile.append(discard)
+        if self._finish_if_paired("red"):
+            return
+        self.turn = "black"
+        self.last_action = "pass"
+
     def to_detail(self) -> dict:
         return {
             "black_cards": list(self.black),

@@ -140,8 +140,64 @@ async def main() -> int:
     assert t.get("phase") == "playing" and t.get("last_action") == "deal", t
     print("redeal ok · phase=playing")
 
-    await a.close()
+    # --- vs_ai fill: p1 sits alone → 5s later AI fills red and deals ---
+    await a.send(json.dumps({"type": "cmd", "session_id": sa,
+                             "payload": {"action": "chess_leave", "table_id": TID}}))
+    await b.send(json.dumps({"type": "cmd", "session_id": sb,
+                             "payload": {"action": "chess_leave", "table_id": TID}}))
     await b.close()
+    await asyncio.sleep(0.3)
+    await a.send(json.dumps({"type": "cmd", "session_id": sa,
+                             "payload": {"action": "chess_sit", "table_id": TID}}))
+    msg = await _recv_until(a, lambda m: _is_table(m) and _table(m).get("black_sid") == sa)
+    assert _table(msg).get("status") == "idle", "waiting for second before AI fill"
+    msg = await _recv_until(
+        a,
+        lambda m: _is_table(m) and _table(m).get("vs_ai") is True
+        and _table(m).get("phase") in ("playing", "finished"),
+        timeout=9.0,
+    )
+    t = _table(msg)
+    assert len(t.get("black_cards", [])) == 11, t
+    assert len(t.get("red_cards", [])) == 10, t
+    print("ai fill ok · vs_ai dealt black=11 red=10")
+
+    # black discards → AI red answers synchronously (turn back to black)
+    if t.get("phase") == "playing":
+        hand = t["black_cards"]
+        ranks = {}
+        for c in hand:
+            r = "JOKER" if c == "JOKER" else c[:-1]
+            ranks[r] = ranks.get(r, 0) + 1
+        odd = {r for r, n in ranks.items() if n % 2 == 1}
+        discard = next(c for c in hand if ("JOKER" if c == "JOKER" else c[:-1]) in odd)
+        await a.send(json.dumps({"type": "cmd", "session_id": sa,
+                                 "payload": {"action": "card_discard", "table_id": TID,
+                                             "card": discard}}))
+        msg = await _recv_until(a, lambda m: _is_table(m) and _table(m).get("last_action") != "deal")
+        t = _table(msg)
+        assert t.get("last_action") in ("pass", "eat"), t  # AI moved as red
+        assert t.get("turn") == "black" or t.get("phase") == "finished", t
+        assert len(t.get("black_cards", [])) == 11, t
+        print("ai red answered ok · last_action=%s turn=%s" % (
+            t.get("last_action"), t.get("turn")))
+
+    # human sits mid-AI-round → takes red from next round (reset)
+    b2 = await websockets.connect(URL)
+    sb2 = json.loads(await asyncio.wait_for(b2.recv(), 5))["session_id"]
+    await b2.send(json.dumps({"type": "join", "session_id": sb2,
+                              "payload": {"level_id": "demo_chessroom", "player_name": "p3"}}))
+    await _recv_until(b2, lambda m: m.get("type") == "scene")
+    await b2.send(json.dumps({"type": "cmd", "session_id": sb2,
+                              "payload": {"action": "chess_sit", "table_id": TID}}))
+    msg = await _recv_until(b2, lambda m: _is_table(m) and _table(m).get("white_sid") == sb2)
+    t = _table(msg)
+    assert t.get("vs_ai") is False, "second human cancels vs_ai"
+    assert t.get("phase") == "playing" and len(t.get("red_cards", [])) == 10, t
+    print("human takeover ok · vs_ai=False redeal phase=playing")
+    await b2.close()
+
+    await a.close()
     print("wudui smoke OK")
     return 0
 

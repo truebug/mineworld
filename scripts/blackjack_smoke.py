@@ -195,10 +195,17 @@ async def main() -> int:
             assert d.get("vs_ai") is False, "two humans must not be vs_ai"
             # p2 joined mid-round → watches; finish round, then reset deals both.
             if d.get("phase") == "playing":
-                await ws.send(json.dumps({
-                    "type": "cmd", "session_id": sid,
-                    "payload": {"action": "card_stand", "table_id": "table_2"},
-                }))
+                # stand in active-first order (naturals may shift the turn)
+                active = str(d.get("active_sid") or "")
+                order = [(ws, sid), (ws2, sid2)]
+                if active == sid2:
+                    order.reverse()
+                for cur_ws, cur_sid in order:
+                    await cur_ws.send(json.dumps({
+                        "type": "cmd", "session_id": cur_sid,
+                        "payload": {"action": "card_stand", "table_id": "table_2"},
+                    }))
+                    await asyncio.sleep(0.3)
                 upd = await _recv_until(
                     ws,
                     lambda m: _is_table(m, "table_2")

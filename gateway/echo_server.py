@@ -887,6 +887,7 @@ class ChessTable:
     status: str = "idle"  # idle | layout | playing | finished | stub
     turn: int = BLACK
     last_hand: dict[str, Any] | None = None
+    ai_task: Any = None  # pending asyncio task (wudui AI-fill timer)
 
     def reset_board(self) -> None:
         """Reset underlying board for a new round."""
@@ -2592,6 +2593,29 @@ class EchoGateway:
             if broadcast:
                 self._broadcast_chess_table(room, table)
 
+    @staticmethod
+    def _wudui_cancel_ai_timer(table: ChessTable) -> None:
+        """Cancel pending AI-fill timer (second human sat / table reset)."""
+        task = table.ai_task
+        table.ai_task = None
+        if task is not None and not task.done():
+            task.cancel()
+
+    async def _wudui_ai_arrive(self, room: Room, table: ChessTable) -> None:
+        """5s after black sits with no second human → vs_ai deal (red = AI)."""
+        try:
+            await asyncio.sleep(5.0)
+        except asyncio.CancelledError:
+            return
+        table.ai_task = None
+        if table.game != "wudui" or table.white_sid is not None:
+            return
+        if table.black_sid is None or table.status != "idle":
+            return
+        table.vs_ai = True
+        table.reset_board()
+        self._broadcast_chess_table(room, table)
+
     def _handle_chess_cmd(
         self, session: Session, action: str, payload: dict[str, Any]
     ) -> None:
@@ -2640,12 +2664,18 @@ class EchoGateway:
             if table.black_sid is None:
                 table.black_sid = sid
                 if table.game == "wudui":
-                    # Two-player only: wait for the second sitter to deal.
+                    # Wait 5s for a second human; else fill with AI and deal.
+                    self._wudui_cancel_ai_timer(table)
+                    table.ai_task = asyncio.create_task(
+                        self._wudui_ai_arrive(room, table)
+                    )
                     self._broadcast_chess_table(room, table)
                     return
             elif table.white_sid is None:
                 table.white_sid = sid
                 table.vs_ai = False
+                if table.game == "wudui":
+                    self._wudui_cancel_ai_timer(table)
                 table.reset_board()
                 self._broadcast_chess_table(room, table)
                 return
@@ -2713,6 +2743,14 @@ class EchoGateway:
             if err is not None:
                 self._chess_reject(session, code=err, message=action, table_id=table_id)
                 return
+            # vs_ai: AI plays red immediately after black's discard.
+            if (
+                action == "card_discard"
+                and table.vs_ai
+                and table.board.phase == "playing"
+                and table.board.turn == "red"
+            ):
+                table.board.ai_red_move()
             table.status = "playing" if table.board.phase == "playing" else "finished"
             self._broadcast_chess_table(room, table)
             return
