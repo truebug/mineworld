@@ -2579,6 +2579,7 @@ class EchoGateway:
                 continue
             humans = [s for s in (table.black_sid, table.white_sid) if s]
             if not humans:
+                self._wudui_cancel_ai_timer(table)
                 table.board = _new_board_for_game(table.game)
                 table.vs_ai = False
                 table.turn = BLACK

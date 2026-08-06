@@ -7,6 +7,15 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-06 · 代码自审修复：五对牌堆唯一性 + 21 点旁观视角
+
+- **五对牌堆 bug（744ca38 遗留）**：`_new_deck()` 误建 4×54 张（docstring 写明 54 张），同一张牌可同时出现在手牌与弃牌堆，客户端按牌面字符串选牌会一次选中多张、冒烟断言偶发失败；改为单副 54 张。
+- **JOKER 身份歧义**：两张王牌共用 `"JOKER"` 字符串，弃牌后再摸到另一张即「手牌+弃牌堆同牌」；改为 `JOKER1`/`JOKER2` 唯一 ID（`rank_of` 及客户端 `_wudui_rank`/`_card_tex_path` 统一 `begins_with("JOKER")` 归一）。
+- **重洗污染**：`_draw()` 牌不足时整副重洗会带回在场牌 → 重洗排除双方手牌与弃牌堆；300 局随机+AI 对打 sanity 全程无重复牌。
+- **21 点旁观视角**：旁观者不再把第一手牌（player_cards 回退）画在底行冒充「你」，全部手牌按对手行渲染；`_detect_bj_changes` 同步。
+- **整洁**：删 `blackjack.py _settle_dealer` 未使用的 `live`；黑方 5 秒内离座时取消 AI 补位计时（原先靠守卫空转兜底）。
+- 冒烟：wudui ×2 + blackjack 全绿；gdscript lint + py_compile 全绿。
+
 ## 2026-08-06 · 五对支持人机（5 秒无人加入自动匹配 AI）
 
 - 规则不变、模式复用五子棋/军棋 `vs_ai` 机制：黑座（先手）坐下后启动 5 秒计时，无第二人加入则 `vs_ai=True` 自动发牌（AI 执红）；5 秒内真人入座则取消计时、立即双人发牌。

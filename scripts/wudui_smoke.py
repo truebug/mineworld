@@ -75,8 +75,8 @@ async def main() -> int:
     # p1 (black) discards an unmatched card.
     def pick_unmatched(cards: list):
         from collections import Counter
-        cnt = Counter(c[:-1] if c != "JOKER" else "JOKER" for c in cards)
-        return next(c for c in cards if cnt[(c[:-1] if c != "JOKER" else "JOKER")] % 2 == 1)
+        cnt = Counter(c[:-1] if not c.startswith("JOKER") else "JOKER" for c in cards)
+        return next(c for c in cards if cnt[(c[:-1] if not c.startswith("JOKER") else "JOKER")] % 2 == 1)
 
     black = list(t.get("black_cards", []))
     disc = pick_unmatched(black)
@@ -167,10 +167,10 @@ async def main() -> int:
         hand = t["black_cards"]
         ranks = {}
         for c in hand:
-            r = "JOKER" if c == "JOKER" else c[:-1]
+            r = "JOKER" if c.startswith("JOKER") else c[:-1]
             ranks[r] = ranks.get(r, 0) + 1
         odd = {r for r, n in ranks.items() if n % 2 == 1}
-        discard = next(c for c in hand if ("JOKER" if c == "JOKER" else c[:-1]) in odd)
+        discard = next(c for c in hand if ("JOKER" if c.startswith("JOKER") else c[:-1]) in odd)
         await a.send(json.dumps({"type": "cmd", "session_id": sa,
                                  "payload": {"action": "card_discard", "table_id": TID,
                                              "card": discard}}))

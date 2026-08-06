@@ -101,7 +101,6 @@ class BlackjackBoard:
     def _settle_dealer(self) -> None:
         """All players done → dealer plays out; settle each hand."""
         self.dealer_hole_hidden = False
-        live = [sid for sid in self.players if self.results.get(sid) not in ("lose",)]
         # Dealer only needs to draw if someone can still win on points.
         need_draw = any(
             self.results.get(sid, "") not in ("blackjack", "lose") for sid in self.players

@@ -894,7 +894,7 @@ func _wudui_my_side() -> String:
 
 
 func _wudui_rank(card: String) -> String:
-	return "JOKER" if card == "JOKER" else card.left(card.length() - 1)
+	return "JOKER" if card.begins_with("JOKER") else card.left(card.length() - 1)
 
 
 func _wudui_can_eat(d: Dictionary) -> bool:
@@ -2341,7 +2341,7 @@ func _card_tex_path(card: String) -> String:
 	"""Wire card ('AS' / '10H' / 'JOKER' / '??') → Kenney texture path."""
 	if card == "??":
 		return "res://assets/kenney_cards/card_back.png"
-	if card == "JOKER":
+	if card.begins_with("JOKER"):
 		return "res://assets/kenney_cards/card_joker_black.png"
 	var suit := card.right(1)
 	var rank := card.left(card.length() - 1)
@@ -2445,7 +2445,12 @@ func _draw_blackjack_board() -> void:
 			others.append(str(sid))
 	for i in others.size():
 		rows.append({"key": "O%d" % i, "cards": hands.get(others[i], []), "y": 96.0 + i * 86.0})
-	var mine: Array = hands.get(my_sid, d.get("player_cards", []))
+	# Spectator: no own hand — all hands render as opponent rows (no fake "你").
+	var mine: Array = []
+	if hands.has(my_sid):
+		mine = hands.get(my_sid, [])
+	elif hands.is_empty():
+		mine = d.get("player_cards", [])  # legacy single-hand payload
 	rows.append({"key": "P", "cards": mine, "y": area.y - _BJ_CARD_H - 22.0})
 	for side in rows:
 		var cards: Array = rows[side]["cards"]
@@ -2569,7 +2574,11 @@ func _detect_bj_changes(d: Dictionary) -> void:
 	var my_sid := _effective_sid()
 	var hands: Dictionary = d.get("hands", {}) as Dictionary
 	var players: Array = d.get("players", []) as Array
-	var mine: Array = hands.get(my_sid, d.get("player_cards", []))
+	var mine: Array = []
+	if hands.has(my_sid):
+		mine = hands.get(my_sid, [])
+	elif hands.is_empty():
+		mine = d.get("player_cards", [])
 	var dealer: Array = d.get("dealer_cards", [])
 	var prev_hands: Dictionary = _bj_prev.get("hands", {}) as Dictionary
 	var prev_p: Array = prev_hands.get(my_sid, _bj_prev.get("player", []))

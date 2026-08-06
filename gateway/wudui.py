@@ -22,14 +22,16 @@ _TEN_HANDS = 10
 
 
 def _new_deck() -> list[str]:
-    deck = [r + s for _ in range(4) for r in _RANKS for s in _SUITS]
-    deck += ["JOKER", "JOKER"]
+    # One 54-card deck (4 suits × 13 ranks + 2 jokers) — duplicates would
+    # make card-string identity ambiguous (same card in hand AND pile).
+    deck = [r + s for s in _SUITS for r in _RANKS]
+    deck += ["JOKER1", "JOKER2"]  # distinct ids; both rank as JOKER
     random.shuffle(deck)
     return deck
 
 
 def rank_of(card: str) -> str:
-    return "JOKER" if card == "JOKER" else card[:-1]
+    return "JOKER" if card.startswith("JOKER") else card[:-1]
 
 
 class WuDuiBoard:
@@ -48,7 +50,10 @@ class WuDuiBoard:
 
     def _draw(self) -> str:
         if len(self.deck) < 4:
-            self.deck = _new_deck()
+            # Reshuffle must exclude in-play cards, else a drawn card can
+            # duplicate one already in a hand / the discard pile.
+            in_play = set(self.black) | set(self.red) | set(self.discard_pile)
+            self.deck = [c for c in _new_deck() if c not in in_play]
         return self.deck.pop()
 
     def _unmatched(self, hand: list[str]) -> list[str]:
