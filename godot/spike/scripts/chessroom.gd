@@ -991,6 +991,12 @@ func _refresh_wudui_status(d: Dictionary, status: String) -> void:
 	var my_side := _wudui_my_side()
 	var turn := str(d.get("turn", "black"))
 	var phase := str(d.get("phase", "idle"))
+	if phase != "playing":
+		_wudui_sel = ""
+	else:
+		var hand: Array = d.get("black_cards", []) if my_side == "black" else d.get("red_cards", [])
+		if _wudui_sel != "" and not hand.has(_wudui_sel):
+			_wudui_sel = ""
 	_wudui_discard_btn.visible = phase == "playing" and my_side == "black" and turn == "black" and status == "playing"
 	_wudui_eat_btn.visible = phase == "playing" and my_side == "red" and turn == "red" and status == "playing" and _wudui_can_eat(d)
 	_wudui_pass_btn.visible = phase == "playing" and my_side == "red" and turn == "red" and status == "playing"
@@ -1371,12 +1377,25 @@ func _junqi_is_my_turn(d: Dictionary) -> bool:
 func _sync_junqi_chrome(status: String) -> void:
 	var is_jq := _view_game() == "junqi"
 	var is_bj := _view_game() == "blackjack"
+	var is_wd := _view_game() == "wudui"
+	if not is_wd:
+		if _wudui_discard_btn != null:
+			_wudui_discard_btn.visible = false
+		if _wudui_eat_btn != null:
+			_wudui_eat_btn.visible = false
+		if _wudui_pass_btn != null:
+			_wudui_pass_btn.visible = false
 	var my := _my_junqi_side()
 	var seated := my != "" or _my_color() != GomokuScript.EMPTY
 	if is_bj:
 		var d := _view_detail()
-		seated = str(d.get("black_sid", "")).strip_edges() == _effective_sid()
-		var playing := seated and status == "playing"
+		var my_sid := _effective_sid()
+		seated = (
+			str(d.get("black_sid", "")).strip_edges() == my_sid
+			or str(d.get("white_sid", "")).strip_edges() == my_sid
+		)
+		var my_turn := str(d.get("active_sid", "")).strip_edges() == my_sid
+		var playing := seated and status == "playing" and my_turn
 		var finished := seated and status == "finished"
 		if _hit_btn != null:
 			_hit_btn.visible = playing
@@ -1491,9 +1510,13 @@ func _refresh_board_from_authority() -> void:
 	if game == "blackjack":
 		_detect_bj_changes(d)
 		var my_sid := _effective_sid()
-		var seated := str(d.get("black_sid", "")).strip_edges() == my_sid
+		var seated := (
+			str(d.get("black_sid", "")).strip_edges() == my_sid
+			or str(d.get("white_sid", "")).strip_edges() == my_sid
+		)
 		var phase := str(d.get("phase", "idle"))
-		var result := str(d.get("result", ""))
+		var results: Dictionary = d.get("results", {}) as Dictionary
+		var result := str(results.get(my_sid, d.get("result", "")))
 		if status == "finished":
 			var label := ""
 			if result == "blackjack":
@@ -1516,7 +1539,11 @@ func _refresh_board_from_authority() -> void:
 		elif not seated:
 			_set_status(MWi18n.t("旁观 · 坐下开牌", "Spectating · sit to play"))
 		elif phase == "playing":
-			_set_status(MWi18n.t("要牌 (H) 或 停牌 (S)", "Hit (H) or stand (S)"))
+			var active := str(d.get("active_sid", "")).strip_edges()
+			if active == my_sid:
+				_set_status(MWi18n.t("要牌 (H) 或 停牌 (S)", "Hit (H) or stand (S)"))
+			else:
+				_set_status(MWi18n.t("等待对手行动…", "Waiting for opponent…"))
 		else:
 			_set_status(MWi18n.t("等待发牌…", "Dealing…"))
 		if _board_ctrl != null:
@@ -2387,7 +2414,7 @@ func _bj_anim_for(key: String) -> Dictionary:
 
 
 func _draw_blackjack_board() -> void:
-	"""Green felt: dealer row (top) / player row (bottom) + deal & flip anims."""
+	"""Green felt: dealer (top) / opponents (mid) / my hand (bottom) + anims."""
 	var d := _view_detail()
 	var sz: Vector2 = _board_ctrl.custom_minimum_size
 	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.38, 0.22, 0.1))
@@ -2399,14 +2426,29 @@ func _draw_blackjack_board() -> void:
 	var deck := _bj_deck_pos(area)
 	# Shoe stub.
 	_draw_bj_card(deck, "??", 1.0, 0.85)
+	var my_sid := _effective_sid()
+	var hands: Dictionary = d.get("hands", {}) as Dictionary
+	var values: Dictionary = d.get("hand_values", {}) as Dictionary
+	var players: Array = d.get("players", []) as Array
+	var results: Dictionary = d.get("results", {}) as Dictionary
+	var active := str(d.get("active_sid", "")).strip_edges()
 	var dealer: Array = d.get("dealer_cards", [])
-	var player: Array = d.get("player_cards", [])
-	var rows := {"D": {"cards": dealer, "y": 22.0}, "P": {"cards": player, "y": area.y - _BJ_CARD_H - 22.0}}
+	# Row layout: dealer top, other players middle (top-down), my hand bottom.
+	var rows: Array = []
+	rows.append({"key": "D", "cards": dealer, "y": 22.0})
+	var others: Array = []
+	for sid in players:
+		if str(sid) != my_sid:
+			others.append(str(sid))
+	for i in others.size():
+		rows.append({"key": "O%d" % i, "cards": hands.get(others[i], []), "y": 96.0 + i * 86.0})
+	var mine: Array = hands.get(my_sid, d.get("player_cards", []))
+	rows.append({"key": "P", "cards": mine, "y": area.y - _BJ_CARD_H - 22.0})
 	for side in rows:
 		var cards: Array = rows[side]["cards"]
 		var origin := _bj_hand_origin(cards.size(), float(rows[side]["y"]), area)
 		for i in cards.size():
-			var key := "%s%d" % [side, i]
+			var key := "%s%d" % [str(side["key"]), i]
 			var target := origin + Vector2(i * (_BJ_CARD_W + _BJ_GAP), 0)
 			var card := str(cards[i])
 			var anim := _bj_anim_for(key)
@@ -2422,7 +2464,7 @@ func _draw_blackjack_board() -> void:
 						if t < 0.5:
 							card = "??"
 			_draw_bj_card(pos, card, sx)
-	# Hand values next to each row.
+	# Hand values next to each row + result/active markers.
 	var f: Font = MWFonts.font() if MWFonts != null else null
 	var font := f if f != null else ThemeDB.fallback_font
 	if not dealer.is_empty():
@@ -2433,9 +2475,39 @@ func _draw_blackjack_board() -> void:
 				dhide = true
 		var dtext := ("%s: %s" % [MWi18n.t("庄家", "Dealer"), "?" if dhide else str(dv)])
 		_board_ctrl.draw_string(font, Vector2(16.0, 40.0), dtext, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.92, 0.94, 0.9))
-	if not player.is_empty():
-		var ptext := "%s: %d" % [MWi18n.t("你", "You"), int(d.get("player_value", 0))]
+	for i in others.size():
+		var osid: String = others[i]
+		var ocards: Array = hands.get(osid, [])
+		if ocards.is_empty():
+			continue
+		var otext := "%s: %s" % [MWi18n.t("对手", "Opponent"), str(values.get(osid, 0))]
+		if active == osid:
+			otext += MWi18n.t(" ⏳", " ⏳")
+		var ores := str(results.get(osid, ""))
+		if ores != "":
+			otext += "  " + _bj_result_text(ores)
+		_board_ctrl.draw_string(font, Vector2(16.0, 96.0 + i * 86.0 + 18.0), otext, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.92, 0.94, 0.9))
+	if not mine.is_empty():
+		var ptext := "%s: %s" % [MWi18n.t("你", "You"), str(values.get(my_sid, d.get("player_value", 0)))]
+		if active == my_sid:
+			ptext += MWi18n.t(" ⏳", " ⏳")
+		var mres := str(results.get(my_sid, ""))
+		if mres != "":
+			ptext += "  " + _bj_result_text(mres)
 		_board_ctrl.draw_string(font, Vector2(16.0, area.y - 30.0), ptext, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.92, 0.94, 0.9))
+
+
+func _bj_result_text(result: String) -> String:
+	match result:
+		"blackjack":
+			return MWi18n.t("21点！", "Blackjack!")
+		"win":
+			return MWi18n.t("胜 🎉", "Win 🎉")
+		"lose":
+			return MWi18n.t("负", "Lose")
+		"push":
+			return MWi18n.t("平", "Push")
+	return ""
 
 
 func _detect_piece_changes(d: Dictionary, game: String) -> void:
@@ -2491,21 +2563,39 @@ func _detect_piece_changes(d: Dictionary, game: String) -> void:
 
 func _detect_bj_changes(d: Dictionary) -> void:
 	"""Diff player/dealer hands → deal-in anims + hole-card flip."""
-	var player: Array = d.get("player_cards", [])
+	var my_sid := _effective_sid()
+	var hands: Dictionary = d.get("hands", {}) as Dictionary
+	var players: Array = d.get("players", []) as Array
+	var mine: Array = hands.get(my_sid, d.get("player_cards", []))
 	var dealer: Array = d.get("dealer_cards", [])
-	var prev_p: Array = _bj_prev.get("player", [])
+	var prev_hands: Dictionary = _bj_prev.get("hands", {}) as Dictionary
+	var prev_p: Array = prev_hands.get(my_sid, _bj_prev.get("player", []))
 	var prev_d: Array = _bj_prev.get("dealer", [])
-	for i in player.size():
+	for i in mine.size():
 		var key := "P%d" % i
 		if i >= prev_p.size():
 			_bj_anims[key] = {"kind": "deal", "t": 0.0, "dur": 0.4}
+	var oi := 0
+	for sid in players:
+		var osid := str(sid)
+		if osid == my_sid:
+			continue
+		var ocards: Array = hands.get(osid, [])
+		var prev_o: Array = prev_hands.get(osid, [])
+		for i in ocards.size():
+			if i >= prev_o.size():
+				_bj_anims["O%d%d" % [oi, i]] = {"kind": "deal", "t": 0.0, "dur": 0.4}
+		oi += 1
 	for i in dealer.size():
 		var key := "D%d" % i
 		if i >= prev_d.size():
 			_bj_anims[key] = {"kind": "deal", "t": 0.0, "dur": 0.4}
 	if prev_d.size() >= 2 and dealer.size() >= 2 and str(prev_d[1]) == "??" and str(dealer[1]) != "??":
 		_bj_anims["D1"] = {"kind": "flip", "t": 0.0, "dur": 0.45}
-	_bj_prev = {"player": player.duplicate(), "dealer": dealer.duplicate()}
+	var new_hands := {}
+	for sid in hands:
+		new_hands[str(sid)] = (hands[sid] as Array).duplicate()
+	_bj_prev = {"hands": new_hands, "dealer": dealer.duplicate()}
 
 
 func _tick_bj_anims(delta: float) -> void:

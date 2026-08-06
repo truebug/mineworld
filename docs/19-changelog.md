@@ -7,6 +7,14 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-06 · 21 点升级为多人共享庄家（双座多手牌）
+
+- Gateway `gateway/blackjack.py` 重写为多人权威：`players`（入座顺序，黑先白后）/ `hands{sid}` / `active_sid` 轮转 / `results{sid}`；天牌 21 直接 blackjack 并入 stands；庄家全员行动后统一补到 ≥17 再逐手结算（win/lose/push/blackjack）；`to_detail()` 新增 `players`/`hands`/`hand_values`/`active_sid`/`results`，保留 `player_cards`/`player_value`/`result` 向后兼容（取第一手）。
+- echo_server 接线：乙桌双座可坐（黑先白后）；第二人入座时若局已结束立即对双座发牌，局中入座则旁观至下一局；`chess_reset` 仅 idle/finished 可用（**禁止局中重置**，防止对家掀桌）；离座 `remove_player` 自动判负并推进轮转；resign 后 status 跟随 `board.phase`（修复原先写死 finished 掩盖对手仍在行动的 bug）。
+- 客户端 `chessroom.gd`：桌面三行布局（庄家顶行 / 对手中行带点数与结果标签 / 自己底行带结果标签）；hit/stand 按钮改为 `active_sid == 自己` 才显示；状态行区分「要牌 (H) 或 停牌 (S)」与「等待对手行动…」；结果横幅按 `results[my_sid]` 渲染；发牌/翻牌动画扩展到对手手牌（`_bj_prev` 按 sid 记录）。
+- 五对顺手修复：结算后清 `_wudui_sel`、手牌无选中卡自动清选中、跨桌隐藏五对操作按钮。
+- 冒烟：`scripts/blackjack_smoke.py` 扩展双人全流程（双 client 入座 → 双人发牌断言 → 错回合 `BJ_NOT_YOUR_TURN` 拒着 → 轮流停牌 → 各自 result + 庄家 ≥17 规则断言 → 旁观入座 → reset 双人发牌）；ws/chessroom/wudui/hub_chat/duel 五回归 + 6 场景编译门全绿。
+
 ## 2026-08-06 · 棋牌室：Kenney CC0 牌面贴图 + 规则说明弹窗
 
 - 牌面美术：入库 Kenney Playing Cards Pack（CC0 · `godot/spike/assets/kenney_cards/`，含 `License.txt` 与目录台账；根 `ASSETS.md` 台账已登记）；`chessroom.gd` `_draw_bj_card` 改为贴图绘制（wire `AS`/`10H`/`JOKER`/`??` → `card_<suit>_<rank>.png` / `card_back.png`，contain-fit 保持 64×64 原比例，`scale_x<1` 翻牌动画兼容），21 点与五对共用；加载失败回退原代码绘制。

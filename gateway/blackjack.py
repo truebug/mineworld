@@ -1,8 +1,12 @@
-"""Blackjack (21点) authority for the chess lounge — single player vs dealer.
+"""Blackjack (21点) authority for the chess lounge — multi-hand vs shared dealer.
 
-KISS: one human (black seat) vs built-in dealer; 4-deck shoe; dealer stands
-on all 17. No splits/doubles/insurance. Second sitter is rejected client-side
-(white seat unused).
+Casino rules (KISS): every seated player gets an independent hand vs one
+shared dealer; 4-deck shoe; dealer stands on all 17; players act in join
+order (black seat first); no splits/doubles/insurance.
+
+Phases: idle → playing (dealt, one active player) → finished (all players
+bust/stand/blackjack, dealer played out, results settled per player).
+Players joining mid-round watch until the next deal.
 """
 
 from __future__ import annotations
@@ -43,14 +47,17 @@ def hand_value(cards: list[str]) -> tuple[int, bool]:
 
 
 class BlackjackBoard:
-    """Authority state for one blackjack table."""
+    """Authority state for one blackjack table (multi-hand, shared dealer)."""
 
     def __init__(self) -> None:
         self.shoe: list[str] = _new_shoe()
-        self.player: list[str] = []
+        self.players: list[str] = []  # join order (sids); set at deal time
+        self.hands: dict[str, list[str]] = {}
+        self.stands: set[str] = set()
+        self.results: dict[str, str] = {}  # win | lose | push | blackjack
         self.dealer: list[str] = []
+        self.active_idx: int = 0
         self.phase: str = "idle"  # idle | playing | finished
-        self.result: str = ""  # win | lose | push | blackjack
         self.dealer_hole_hidden: bool = True
 
     def _draw(self) -> str:
@@ -58,74 +65,145 @@ class BlackjackBoard:
             self.shoe = _new_shoe()
         return self.shoe.pop()
 
-    def deal(self) -> None:
-        """Start a round: two cards each."""
-        self.player = [self._draw(), self._draw()]
+    @property
+    def active_sid(self) -> str:
+        if self.phase != "playing" or self.active_idx >= len(self.players):
+            return ""
+        return self.players[self.active_idx]
+
+    def deal(self, sids: list[str]) -> None:
+        """Deal two cards to every seated player + dealer; skip naturals."""
+        self.players = list(sids)
+        self.hands = {sid: [self._draw(), self._draw()] for sid in self.players}
         self.dealer = [self._draw(), self._draw()]
-        self.result = ""
+        self.stands = set()
+        self.results = {}
         self.dealer_hole_hidden = True
-        pv, _ = hand_value(self.player)
-        if pv == 21:
-            self.phase = "finished"
-            self.dealer_hole_hidden = False
-            dv, _ = hand_value(self.dealer)
-            self.result = "push" if dv == 21 else "blackjack"
-        else:
-            self.phase = "playing"
+        self.active_idx = 0
+        self.phase = "playing"
+        # Naturals (21 on deal) settle instantly, no action needed.
+        for sid in self.players:
+            pv, _ = hand_value(self.hands[sid])
+            if pv == 21:
+                self.results[sid] = "blackjack"
+                self.stands.add(sid)
+        self._advance()
 
-    def hit(self) -> str | None:
-        """Player draws one card; returns error code or None."""
-        if self.phase != "playing":
-            return "BJ_NOT_PLAYING"
-        self.player.append(self._draw())
-        pv, _ = hand_value(self.player)
-        if pv > 21:
-            self.phase = "finished"
-            self.dealer_hole_hidden = False
-            self.result = "lose"
-        return None
+    def _advance(self) -> None:
+        """Move to next player still needing action; settle dealer when done."""
+        while self.active_idx < len(self.players):
+            sid = self.players[self.active_idx]
+            if sid not in self.stands and sid not in self.results:
+                return
+            self.active_idx += 1
+        self._settle_dealer()
 
-    def stand(self) -> str | None:
-        """Player stands; dealer plays out and result settles."""
-        if self.phase != "playing":
-            return "BJ_NOT_PLAYING"
+    def _settle_dealer(self) -> None:
+        """All players done → dealer plays out; settle each hand."""
         self.dealer_hole_hidden = False
-        while True:
+        live = [sid for sid in self.players if self.results.get(sid) not in ("lose",)]
+        # Dealer only needs to draw if someone can still win on points.
+        need_draw = any(
+            self.results.get(sid, "") not in ("blackjack", "lose") for sid in self.players
+        )
+        while need_draw:
             dv, _ = hand_value(self.dealer)
             if dv < 17:
                 self.dealer.append(self._draw())
             else:
                 break
-        pv, _ = hand_value(self.player)
         dv, _ = hand_value(self.dealer)
-        if dv > 21 or pv > dv:
-            self.result = "win"
-        elif pv == dv:
-            self.result = "push"
-        else:
-            self.result = "lose"
+        dbj = dv == 21 and len(self.dealer) == 2
+        for sid in self.players:
+            if sid in self.results:
+                if self.results[sid] == "blackjack" and dbj:
+                    self.results[sid] = "push"
+                continue
+            pv, _ = hand_value(self.hands[sid])
+            if dv > 21 or pv > dv:
+                self.results[sid] = "win"
+            elif pv == dv:
+                self.results[sid] = "push"
+            else:
+                self.results[sid] = "lose"
         self.phase = "finished"
+
+    def hit(self, sid: str) -> str | None:
+        if self.phase != "playing":
+            return "BJ_NOT_PLAYING"
+        if sid != self.active_sid:
+            return "BJ_NOT_YOUR_TURN"
+        self.hands[sid].append(self._draw())
+        pv, _ = hand_value(self.hands[sid])
+        if pv > 21:
+            self.results[sid] = "lose"
+            self._advance()
+        elif pv == 21:
+            self.stands.add(sid)  # 21 stands automatically
+            self._advance()
         return None
 
-    def resign(self) -> None:
-        if self.phase == "playing":
-            self.phase = "finished"
-            self.dealer_hole_hidden = False
-            self.result = "lose"
+    def stand(self, sid: str) -> str | None:
+        if self.phase != "playing":
+            return "BJ_NOT_PLAYING"
+        if sid != self.active_sid:
+            return "BJ_NOT_YOUR_TURN"
+        self.stands.add(sid)
+        self._advance()
+        return None
+
+    def resign(self, sid: str) -> None:
+        """Player forfeits their hand (counts as lose); may end round."""
+        if self.phase != "playing" or sid not in self.hands:
+            return
+        self.results[sid] = "lose"
+        self.stands.add(sid)
+        if sid == self.active_sid:
+            self._advance()
+        elif all(s in self.stands or s in self.results for s in self.players):
+            self._settle_dealer()
+
+    def remove_player(self, sid: str) -> None:
+        """Drop a leaving player's hand; advance if they were active."""
+        if sid not in self.hands:
+            return
+        self.resign(sid)
+        if self.phase != "playing":
+            return
+        self.players.remove(sid)
+        self.hands.pop(sid, None)
+        self.stands.discard(sid)
+        self.results.pop(sid, None)
+        if self.active_idx > 0:
+            self.active_idx -= 1
+        if not self.players:
+            self.phase = "idle"
+        else:
+            self._advance()
 
     def to_detail(self) -> dict:
-        pv, _ = hand_value(self.player) if self.player else (0, False)
         if self.dealer_hole_hidden and self.dealer:
             dealer_cards = [self.dealer[0], "??"]
             dv, _ = hand_value([self.dealer[0]])
         else:
             dealer_cards = list(self.dealer)
             dv, _ = hand_value(self.dealer) if self.dealer else (0, False)
-        return {
-            "player_cards": list(self.player),
-            "player_value": pv,
+        values = {
+            sid: hand_value(cards)[0] for sid, cards in self.hands.items()
+        }
+        # Back-compat single-player fields (first hand) for older clients.
+        first = self.players[0] if self.players else None
+        out = {
+            "players": list(self.players),
+            "hands": {sid: list(cards) for sid, cards in self.hands.items()},
+            "hand_values": values,
+            "active_sid": self.active_sid,
+            "results": dict(self.results),
             "dealer_cards": dealer_cards,
             "dealer_value": dv,
             "phase": self.phase,
-            "result": self.result,
+            "player_cards": list(self.hands.get(first, [])) if first else [],
+            "player_value": values.get(first, 0),
+            "result": self.results.get(first, "") if first else "",
         }
+        return out

@@ -62,7 +62,7 @@ async def main() -> int:
         d = upd["payload"]["detail"]
         assert d.get("game") == "blackjack", d.get("game")
         assert d.get("black_sid") == sid
-        assert d.get("vs_ai") is True
+        assert d.get("vs_ai") is False, "blackjack is always vs shared dealer"
         assert len(d.get("player_cards")) == 2, d
         if d.get("phase") == "playing":
             assert d.get("dealer_cards", ["?", "?"])[1] == "??", "hole card must be hidden"
@@ -155,6 +155,165 @@ async def main() -> int:
         )
         assert len(d.get("player_cards", [])) == 2, "redeal must give 2 player cards"
         print(f"redeal ok phase={d['phase']} status={d['status']}")
+
+        # --- two-player multi-hand: second client sits white, shared dealer ---
+        async with websockets.connect(URL) as ws2:
+            hello2 = await _recv_until(ws2, lambda m: m.get("type") == "hello")
+            sid2 = str(hello2.get("session_id") or "")
+            assert sid2 and sid2 != sid
+            await ws2.send(json.dumps({
+                "type": "join",
+                "session_id": sid2,
+                "payload": {"level_id": "demo_chessroom", "player_name": "BJ Smoke 2"},
+            }))
+            await _recv_until(ws2, lambda m: m.get("type") == "scene")
+            # player 1 leaves first so both start a fresh round together
+            await ws.send(json.dumps({
+                "type": "cmd", "session_id": sid,
+                "payload": {"action": "chess_leave", "table_id": "table_2"},
+            }))
+            await asyncio.sleep(0.3)
+            await ws.send(json.dumps({
+                "type": "cmd", "session_id": sid,
+                "payload": {"action": "chess_sit", "table_id": "table_2"},
+            }))
+            await _recv_until(
+                ws,
+                lambda m: _is_table(m, "table_2")
+                and (m["payload"]["detail"].get("black_sid") == sid),
+            )
+            await ws2.send(json.dumps({
+                "type": "cmd", "session_id": sid2,
+                "payload": {"action": "chess_sit", "table_id": "table_2"},
+            }))
+            upd = await _recv_until(
+                ws2,
+                lambda m: _is_table(m, "table_2")
+                and (m["payload"]["detail"].get("white_sid") == sid2),
+            )
+            d = upd["payload"]["detail"]
+            assert d.get("vs_ai") is False, "two humans must not be vs_ai"
+            # p2 joined mid-round → watches; finish round, then reset deals both.
+            if d.get("phase") == "playing":
+                await ws.send(json.dumps({
+                    "type": "cmd", "session_id": sid,
+                    "payload": {"action": "card_stand", "table_id": "table_2"},
+                }))
+                upd = await _recv_until(
+                    ws,
+                    lambda m: _is_table(m, "table_2")
+                    and (m["payload"]["detail"].get("phase") == "finished"),
+                )
+            await ws2.send(json.dumps({
+                "type": "cmd", "session_id": sid2,
+                "payload": {"action": "chess_reset", "table_id": "table_2"},
+            }))
+            upd = await _recv_until(
+                ws2,
+                lambda m: _is_table(m, "table_2")
+                and len((m["payload"]["detail"].get("hands") or {})) == 2,
+            )
+            d = upd["payload"]["detail"]
+            hands = d.get("hands") or {}
+            assert set(hands.keys()) == {sid, sid2}, hands.keys()
+            assert len(hands[sid]) == 2 and len(hands[sid2]) == 2, hands
+            assert d.get("players") == [sid, sid2], d.get("players")
+            print(f"two-player dealt p1={hands[sid]} p2={hands[sid2]} active={d.get('active_sid')}")
+
+            # out-of-turn hit must be rejected
+            active = str(d.get("active_sid") or "")
+            if active == sid:
+                idle_ws, idle_sid, act_ws, act_sid = ws2, sid2, ws, sid
+            else:
+                idle_ws, idle_sid, act_ws, act_sid = ws, sid, ws2, sid2
+            if d.get("phase") == "playing" and active:
+                await idle_ws.send(json.dumps({
+                    "type": "cmd", "session_id": idle_sid,
+                    "payload": {"action": "card_hit", "table_id": "table_2"},
+                }))
+                rej = await _recv_until(
+                    idle_ws,
+                    lambda m: m.get("type") == "event"
+                    and (m.get("payload") or {}).get("event_type") == "chess_reject",
+                )
+                assert rej["payload"]["detail"].get("code") == "BJ_NOT_YOUR_TURN", rej
+                print("out-of-turn hit rejected ok")
+
+            # both stand (active player first, then the other)
+            for cur_ws, cur_sid in ((act_ws, act_sid), (idle_ws, idle_sid)):
+                # skip if this hand already settled (natural blackjack)
+                await cur_ws.send(json.dumps({
+                    "type": "cmd", "session_id": cur_sid,
+                    "payload": {"action": "card_stand", "table_id": "table_2"},
+                }))
+                try:
+                    upd = await _recv_until(
+                        cur_ws,
+                        lambda m: _is_table(m, "table_2"),
+                        timeout=3.0,
+                    )
+                    d = upd["payload"]["detail"]
+                except (AssertionError, asyncio.TimeoutError):
+                    # rejected (already blackjack) — keep going
+                    pass
+            upd = await _recv_until(
+                ws2,
+                lambda m: _is_table(m, "table_2")
+                and (m["payload"]["detail"].get("phase") == "finished"),
+            )
+            d = upd["payload"]["detail"]
+            results = d.get("results") or {}
+            assert sid in results and sid2 in results, results
+            for s, r in results.items():
+                assert r in ("win", "lose", "push", "blackjack"), (s, r)
+            assert "??" not in d.get("dealer_cards", []), "hole must reveal"
+            assert d.get("active_sid", "x") == "", "no active player after settle"
+            dv = d.get("dealer_value", 0)
+            live = [s for s in (sid, sid2) if results[s] not in ("blackjack", "lose")]
+            if live:
+                assert dv >= 17 or dv > 21, f"dealer must stand >=17 or bust, got {dv}"
+            print(f"two-player settled results={results} dealer={d['dealer_cards']}({dv})")
+
+            # mid-round reset blocked: only between rounds
+            await ws2.send(json.dumps({
+                "type": "cmd", "session_id": sid2,
+                "payload": {"action": "chess_reset", "table_id": "table_2"},
+            }))
+            upd = await _recv_until(
+                ws2,
+                lambda m: _is_table(m, "table_2")
+                and (m["payload"]["detail"].get("phase") in ("playing", "finished")),
+            )
+            d = upd["payload"]["detail"]
+            if d.get("phase") == "playing":
+                # reset during play must be ignored (no new deal broadcast)
+                await ws.send(json.dumps({
+                    "type": "cmd", "session_id": sid,
+                    "payload": {"action": "chess_reset", "table_id": "table_2"},
+                }))
+                await asyncio.sleep(0.4)
+                # both stand out to finish, then reset works
+                active = str(d.get("active_sid") or "")
+                order = [(ws, sid), (ws2, sid2)]
+                if active == sid2:
+                    order.reverse()
+                for cur_ws, cur_sid in order:
+                    await cur_ws.send(json.dumps({
+                        "type": "cmd", "session_id": cur_sid,
+                        "payload": {"action": "card_stand", "table_id": "table_2"},
+                    }))
+                    await asyncio.sleep(0.2)
+                upd = await _recv_until(
+                    ws,
+                    lambda m: _is_table(m, "table_2")
+                    and (m["payload"]["detail"].get("phase") == "finished"),
+                )
+            # cleanup: both leave
+            await ws2.send(json.dumps({
+                "type": "cmd", "session_id": sid2,
+                "payload": {"action": "chess_leave", "table_id": "table_2"},
+            }))
+            await asyncio.sleep(0.3)
 
     print("blackjack smoke OK")
     return 0

@@ -2558,6 +2558,14 @@ class EchoGateway:
                     side = "black" if left_black else "red"
                     table.board.resign(side)
                     table.status = "finished"
+                elif table.game == "blackjack" and isinstance(table.board, BlackjackBoard):
+                    leaver_sid = session_id
+                    table.board.remove_player(leaver_sid)
+                    table.status = (
+                        "playing"
+                        if table.board.phase == "playing"
+                        else ("finished" if table.board.phase == "finished" else "idle")
+                    )
                 elif table.game in ("gomoku", "checkers"):
                     # Leaver was black → white wins; leaver white → black wins.
                     if left_black:
@@ -2603,22 +2611,26 @@ class EchoGateway:
             return
         if action == "chess_sit":
             if table.game == "blackjack":
-                # Single-player vs dealer: only the black seat; one sitter only.
-                if sid == table.black_sid:
+                # Multi-hand vs shared dealer: two seats, both play next round.
+                if sid in (table.black_sid, table.white_sid):
                     self._broadcast_chess_table(room, table)
                     return
-                if table.black_sid is not None:
+                if table.black_sid is not None and table.white_sid is not None:
                     return
                 self._chess_free_session(room, sid, broadcast=True)
-                table.black_sid = sid
-                table.white_sid = None
-                table.vs_ai = True
-                table.reset_board()
+                if table.black_sid is None:
+                    table.black_sid = sid
+                else:
+                    table.white_sid = sid
+                table.vs_ai = False
                 if isinstance(table.board, BlackjackBoard):
-                    table.board.deal()
-                    table.status = (
-                        "playing" if table.board.phase == "playing" else "finished"
-                    )
+                    if table.board.phase in ("idle", "finished"):
+                        # Fresh table or between rounds: deal immediately.
+                        sids = [s for s in (table.black_sid, table.white_sid) if s]
+                        table.board.deal(sids)
+                        table.status = (
+                            "playing" if table.board.phase == "playing" else "finished"
+                        )
                 self._broadcast_chess_table(room, table)
                 return
             if sid in (table.black_sid, table.white_sid):
@@ -2647,20 +2659,24 @@ class EchoGateway:
         if action == "chess_reset":
             if sid not in (table.black_sid, table.white_sid):
                 return
-            table.reset_board()
             if table.game == "blackjack" and isinstance(table.board, BlackjackBoard):
-                table.board.deal()
+                # No mid-round reset: only between rounds (idle/finished).
+                if table.board.phase == "playing":
+                    return
+                table.board.__init__()
+                sids = [s for s in (table.black_sid, table.white_sid) if s]
+                table.board.deal(sids)
                 table.status = (
                     "playing" if table.board.phase == "playing" else "finished"
                 )
+            else:
+                table.reset_board()
             self._broadcast_chess_table(room, table)
             return
         if action in ("card_hit", "card_stand"):
             if table.game != "blackjack" or not isinstance(table.board, BlackjackBoard):
                 return
-            if sid != table.black_sid:
-                return
-            err = table.board.hit() if action == "card_hit" else table.board.stand()
+            err = table.board.hit(sid) if action == "card_hit" else table.board.stand(sid)
             if err is not None:
                 self._chess_reject(session, code=err, message=action, table_id=table_id)
                 return
@@ -2710,8 +2726,10 @@ class EchoGateway:
                 table.board.forfeit(loser)
                 table.status = "finished"
             elif table.game == "blackjack" and isinstance(table.board, BlackjackBoard):
-                table.board.resign()
-                table.status = "finished"
+                table.board.resign(sid)
+                table.status = (
+                    "playing" if table.board.phase == "playing" else "finished"
+                )
             elif table.game == "wudui" and isinstance(table.board, WuDuiBoard):
                 side = "black" if table.black_sid == sid else "red"
                 table.board.resign(side)
