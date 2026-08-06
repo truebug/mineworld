@@ -59,8 +59,9 @@ print(f"MW_BUILD={build}")
 PY
 
 echo "== 4/6 rsync =="
-# No --delete: shared /opt/mineworld hosts dist/xr + dist/arm from other repos.
+# No --delete: shared /opt/mineworld hosts dist/xr + dist/arm + dist/g1 from other repos.
 # Whole-tree --delete previously wiped those (see docs/ops.local.md §5.1–5.2).
+# Neighbour routes: /xr/ (mine-world-xr), /arm/ (mine-world-arm), /g1/ (g1claw) — do not reclaim.
 rsync -az \
   --exclude '.venv/' --exclude '.git/' --exclude 'recordings/' \
   --exclude 'mw_platform/data/*.sqlite' --exclude 'godot/spike/.godot/' \
