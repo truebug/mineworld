@@ -7,6 +7,14 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-06 · 五对（WuDui）双人纸牌桌 + 棋牌室扩容
+
+- 棋牌室扩容：地板 32×22、墙 ±16/±11；新增 Table5（五子棋 丙桌）与 Table6（五对 双人桌）；契约 `demo_chessroom.json` bounds 扩到 half_x=16 / half_y=11，walkable ±15.5/±10.5。
+- 新游戏「五对」（`gateway/wudui.py` 权威裁判）：54 张（含双王），双方各 10 张、先手 11 张；先手必弃散牌（剩牌恰好 5 对 = 天和胜出）；后手可吃牌（凑对后弃散牌）或过牌（抓 1 再弃 1）；任一方五对即胜，可认输；`chess_resign` 双人分支（离座判负 + 认输）皆接入。
+- 新 cmd：`card_discard` / `card_eat` / `card_pass`；错座位/错回合回 `WUDUI_NOT_TURN` 拒着（`chess_reject`），非法牌回 `WUDUI_BAD_CARD` / `WUDUI_NOT_UNMATCHED` 等错误码。
+- 客户端 `chessroom.gd`：五对面板（明牌双人、弃牌堆、回合/对数提示、选牌高亮）+ 出牌/吃牌/过牌按钮；房间标签更新为「甲乙丙五子棋 / 丁跳棋 / 戊军棋 / 己五对」。
+- 冒烟：`scripts/wudui_smoke.py`（双人 sit→deal 11/10→弃→过→错回合拒着→认输→redeal 全链断言）；`ws_smoke` / `blackjack_smoke` 回归绿；`demo_chessroom` 场景编译门绿。
+
 ## 2026-08-06 · 21 点（Blackjack）接入棋牌室 · 替换乙桌五子棋
 
 - Gateway `gateway/blackjack.py`：4 副牌靴、单人 vs 庄家（17 停）、soft ace、黑杰克/爆牌/平局判定；新 cmd `card_hit` / `card_stand`（`chess_reset` 重发一局）；`chess_table_update.detail` 带 `player_cards`/`dealer_cards`/点数/`phase`/`result`（庄家暗牌 `??` 结算前隐藏）。

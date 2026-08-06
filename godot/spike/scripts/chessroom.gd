@@ -33,6 +33,8 @@ const TABLE_META := {
 	"table_2": {"game": "blackjack", "title_zh": "21 点 · 乙桌", "title_en": "Blackjack", "accent": Color(0.95, 0.7, 0.35)},
 	"table_3": {"game": "checkers", "title_zh": "跳棋", "title_en": "Halma", "accent": Color(0.35, 0.75, 0.95)},
 	"table_4": {"game": "junqi", "title_zh": "军棋", "title_en": "Junqi", "accent": Color(0.75, 0.45, 0.9)},
+	"table_5": {"game": "gomoku", "title_zh": "五子棋 · 丙桌", "title_en": "Gomoku C", "accent": Color(0.85, 0.6, 0.25)},
+	"table_6": {"game": "wudui", "title_zh": "五对 · 双人桌", "title_en": "WuDui 2P", "accent": Color(0.95, 0.5, 0.6)},
 }
 
 @export var level_id := "demo_chessroom"
@@ -66,6 +68,10 @@ var _rules_btn: Button = null
 var _hit_btn: Button = null
 var _stand_btn: Button = null
 var _deal_btn: Button = null
+var _wudui_sel := ""
+var _wudui_discard_btn: Button = null
+var _wudui_eat_btn: Button = null
+var _wudui_pass_btn: Button = null
 var _rules_label: Label = null
 var _rules_visible := false
 var _tables: Dictionary = {}
@@ -159,8 +165,8 @@ func _label_tables() -> void:
 	var room_lab := get_node_or_null("RoomLabel") as Label3D
 	if room_lab != null:
 		room_lab.text = MWi18n.t(
-			"棋牌室 · 走近棋桌按 F · 甲乙五子棋 / 丙跳棋 / 丁军棋",
-			"Chess · F to sit · A/B Gomoku · C Halma · D Junqi"
+			"棋牌室 · 走近棋桌按 F · 甲乙丙五子棋 / 丁跳棋 / 戊军棋 / 己五对",
+			"Chess · F to sit · A/B/C Gomoku · D Halma · E Junqi · F WuDui"
 		)
 		MWFonts.apply_label3d(room_lab)
 	for t in get_tree().get_nodes_in_group("chess_tables"):
@@ -704,6 +710,21 @@ func _build_board_ui() -> void:
 	_deal_btn.visible = false
 	_deal_btn.pressed.connect(_on_bj_redeal)
 	btn_row.add_child(_deal_btn)
+	_wudui_discard_btn = Button.new()
+	_wudui_discard_btn.text = MWi18n.t("出牌", "Discard")
+	_wudui_discard_btn.visible = false
+	_wudui_discard_btn.pressed.connect(_on_wudui_discard)
+	btn_row.add_child(_wudui_discard_btn)
+	_wudui_eat_btn = Button.new()
+	_wudui_eat_btn.text = MWi18n.t("吃牌", "Eat")
+	_wudui_eat_btn.visible = false
+	_wudui_eat_btn.pressed.connect(_on_wudui_eat)
+	btn_row.add_child(_wudui_eat_btn)
+	_wudui_pass_btn = Button.new()
+	_wudui_pass_btn.text = MWi18n.t("过牌", "Pass")
+	_wudui_pass_btn.visible = false
+	_wudui_pass_btn.pressed.connect(_on_wudui_pass)
+	btn_row.add_child(_wudui_pass_btn)
 	_rules_label = Label.new()
 	_rules_label.visible = false
 	_rules_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -834,6 +855,171 @@ func _on_bj_redeal() -> void:
 		return
 	ws.send_cmd({"action": "chess_reset", "table_id": _view_table_id})
 
+## --- WuDui (五对) board ---
+
+func _wudui_my_side() -> String:
+	"""black = first player seat, red = second."""
+	var d := _view_detail()
+	var my_sid := _effective_sid()
+	if str(d.get("black_sid", "")).strip_edges() == my_sid:
+		return "black"
+	if str(d.get("white_sid", "")).strip_edges() == my_sid:
+		return "red"
+	return ""
+
+
+func _wudui_rank(card: String) -> String:
+	return "JOKER" if card == "JOKER" else card.left(card.length() - 1)
+
+
+func _wudui_can_eat(d: Dictionary) -> bool:
+	var pile: Array = d.get("discard_pile", [])
+	if pile.is_empty():
+		return false
+	var top := str(pile[-1])
+	var hand: Array = d.get("red_cards", [])
+	var count := 0
+	for c in hand:
+		if _wudui_rank(str(c)) == _wudui_rank(top):
+			count += 1
+	return count % 2 == 1
+
+
+func _wudui_hand_origin(count: int, y: float, area: Vector2) -> Vector2:
+	var total := count * _BJ_CARD_W + maxi(count - 1, 0) * _BJ_GAP
+	return Vector2(maxf((area.x - total) * 0.5, 8.0), y)
+
+
+func _wudui_card_pos(index: int, count: int, y: float, area: Vector2) -> Vector2:
+	return _wudui_hand_origin(count, y, area) + Vector2(index * (_BJ_CARD_W + _BJ_GAP), 0)
+
+
+func _draw_wudui_board() -> void:
+	var d := _view_detail()
+	var sz: Vector2 = _board_ctrl.custom_minimum_size
+	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.38, 0.22, 0.1))
+	var pad := 8.0
+	var felt := Rect2(Vector2(pad, pad), sz - Vector2(pad, pad) * 2.0)
+	_board_ctrl.draw_rect(felt, Color(0.12, 0.22, 0.42))
+	_board_ctrl.draw_rect(felt, Color(0.07, 0.12, 0.26, 0.8), false, 2.0)
+	var area := felt.size
+	var black: Array = d.get("black_cards", [])
+	var red: Array = d.get("red_cards", [])
+	var pile: Array = d.get("discard_pile", [])
+	var my_side := _wudui_my_side()
+	# Opponent row (top) — face up (pair race, both see all).
+	for i in red.size():
+		var pos := _wudui_card_pos(i, red.size(), 14.0, area)
+		_draw_bj_card(pos, str(red[i]), 1.0, 0.9)
+	# Discard pile (center) + turn marker.
+	var pile_pos := Vector2((area.x - _BJ_CARD_W) * 0.5, (area.y - _BJ_CARD_H) * 0.5)
+	if not pile.is_empty():
+		_draw_bj_card(pile_pos, str(pile[-1]), 1.0, 1.0)
+	else:
+		_draw_bj_card(pile_pos, "??", 1.0, 0.35)
+	var turn := str(d.get("turn", "black"))
+	var turn_txt := MWi18n.t("黑方行 · 弃散牌", "Black turn · discard") if turn == "black" else MWi18n.t("红方行 · 吃或过", "Red turn · eat or pass")
+	var f: Font = MWFonts.font() if MWFonts != null else null
+	_board_ctrl.draw_string(
+		f if f != null else ThemeDB.fallback_font,
+		Vector2(pile_pos.x + _BJ_CARD_W + 14.0, pile_pos.y + 30.0),
+		turn_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0.95, 0.92, 0.85)
+	)
+	_board_ctrl.draw_string(
+		f if f != null else ThemeDB.fallback_font,
+		Vector2(pile_pos.x + _BJ_CARD_W + 14.0, pile_pos.y + 54.0),
+		"黑 %d 对 · 红 %d 对" % [int(d.get("black_pairs", 0)), int(d.get("red_pairs", 0))],
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.8, 0.8, 0.85)
+	)
+	# My row (bottom) — selectable highlight.
+	for i in black.size():
+		var pos := _wudui_card_pos(i, black.size(), area.y - _BJ_CARD_H - 14.0, area)
+		_draw_bj_card(pos, str(black[i]), 1.0, 1.0)
+		if my_side == "black" and str(black[i]) == _wudui_sel:
+			_board_ctrl.draw_rect(Rect2(pos, Vector2(_BJ_CARD_W, _BJ_CARD_H)).grow(3.0), Color(1, 0.85, 0.2), false, 3.0)
+	var hand: Array = black if my_side == "black" else red
+	for i in hand.size():
+		var y := area.y - _BJ_CARD_H - 14.0 if my_side == "black" else 14.0
+		var pos := _wudui_card_pos(i, hand.size(), y, area)
+		if str(hand[i]) == _wudui_sel:
+			_board_ctrl.draw_rect(Rect2(pos, Vector2(_BJ_CARD_W, _BJ_CARD_H)).grow(3.0), Color(1, 0.85, 0.2), false, 3.0)
+
+
+func _on_wudui_click(pos: Vector2, d: Dictionary) -> void:
+	var my_side := _wudui_my_side()
+	if my_side == "":
+		return
+	if str(d.get("phase", "idle")) != "playing":
+		return
+	var area: Vector2 = _board_ctrl.custom_minimum_size
+	var hand: Array = d.get("black_cards", []) if my_side == "black" else d.get("red_cards", [])
+	var y := area.y - _BJ_CARD_H - 14.0 if my_side == "black" else 14.0
+	for i in hand.size():
+		var r := Rect2(_wudui_card_pos(i, hand.size(), y, area), Vector2(_BJ_CARD_W, _BJ_CARD_H))
+		if r.has_point(pos):
+			_wudui_sel = str(hand[i])
+			_board_ctrl.queue_redraw()
+			return
+
+
+func _refresh_wudui_status(d: Dictionary, status: String) -> void:
+	var my_side := _wudui_my_side()
+	var turn := str(d.get("turn", "black"))
+	var phase := str(d.get("phase", "idle"))
+	_wudui_discard_btn.visible = phase == "playing" and my_side == "black" and turn == "black" and status == "playing"
+	_wudui_eat_btn.visible = phase == "playing" and my_side == "red" and turn == "red" and status == "playing" and _wudui_can_eat(d)
+	_wudui_pass_btn.visible = phase == "playing" and my_side == "red" and turn == "red" and status == "playing"
+	_wudui_discard_btn.disabled = _wudui_sel == ""
+	_wudui_eat_btn.disabled = _wudui_sel == ""
+	_wudui_pass_btn.disabled = _wudui_sel == ""
+	if phase != "playing" or status == "finished":
+		var winner := str(d.get("winner", ""))
+		var reason := str(d.get("reason", ""))
+		var label := ""
+		if winner == "black":
+			label = MWi18n.t("黑方五对胜", "Black wins") + (" · 天和!" if reason == "tianhe" else "")
+		elif winner == "red":
+			label = MWi18n.t("红方五对胜", "Red wins")
+		elif reason == "resign":
+			label = MWi18n.t("认输终局", "Resign")
+		if label != "":
+			_set_status(MWi18n.t("再来一局？", "Deal again?"))
+			if _result_label != null:
+				_result_label.text = label
+				_result_label.visible = true
+		return
+	if my_side == "":
+		_set_status(MWi18n.t("旁观 · 坐下开局", "Spectating · sit to start"))
+	elif my_side == "black" and turn == "black":
+		_set_status(MWi18n.t("轮到你 · 点散牌再「出牌」", "Your turn — pick a card, then Discard"))
+	elif my_side == "red" and turn == "red":
+		_set_status(MWi18n.t("轮到你 · 点散牌「吃牌」或「过牌」", "Your turn — Eat or Pass"))
+	else:
+		_set_status(MWi18n.t("等待对手…", "Waiting for opponent…"))
+
+
+func _on_wudui_discard() -> void:
+	if _wudui_sel == "" or _view_table_id == "":
+		return
+	ws.send_cmd({"action": "card_discard", "table_id": _view_table_id, "card": _wudui_sel})
+
+
+func _on_wudui_eat() -> void:
+	if _wudui_sel == "" or _view_table_id == "":
+		return
+	var d := _view_detail()
+	var pile: Array = d.get("discard_pile", [])
+	if pile.is_empty():
+		return
+	ws.send_cmd({"action": "card_eat", "table_id": _view_table_id,
+		"card": str(pile[-1]), "discard": _wudui_sel})
+
+
+func _on_wudui_pass() -> void:
+	if _wudui_sel == "" or _view_table_id == "":
+		return
+	ws.send_cmd({"action": "card_pass", "table_id": _view_table_id, "discard": _wudui_sel})
+
 
 func _board_px() -> float:
 	if _board_ctrl != null and _board_ctrl.custom_minimum_size.x > 10.0:
@@ -877,7 +1063,7 @@ func _fit_board_panel() -> void:
 		return
 	var pw := 560.0
 	var ph := 700.0
-	if _view_game() == "blackjack":
+	if _view_game() in ["blackjack", "wudui"]:
 		var felt := Vector2(clampf(vp.x - 48.0, 420.0, 680.0), clampf(vp.y - 190.0, 260.0, 380.0))
 		if _board_ctrl != null:
 			_board_ctrl.custom_minimum_size = felt
@@ -956,6 +1142,9 @@ func _draw_board() -> void:
 		return
 	if game == "blackjack":
 		_draw_blackjack_board()
+		return
+	if game == "wudui":
+		_draw_wudui_board()
 		return
 	if game == "checkers":
 		_draw_checkers_board()
@@ -1305,6 +1494,11 @@ func _refresh_board_from_authority() -> void:
 			_set_status(MWi18n.t("要牌 (H) 或 停牌 (S)", "Hit (H) or stand (S)"))
 		else:
 			_set_status(MWi18n.t("等待发牌…", "Dealing…"))
+		if _board_ctrl != null:
+			_board_ctrl.queue_redraw()
+		return
+	if game == "wudui":
+		_refresh_wudui_status(d, status)
 		if _board_ctrl != null:
 			_board_ctrl.queue_redraw()
 		return
@@ -1889,6 +2083,9 @@ func _on_board_input(event: InputEvent) -> void:
 	var game := str(d.get("game", "gomoku"))
 	if game == "junqi":
 		_on_junqi_board_click(mb.position, d)
+		return
+	if game == "wudui":
+		_on_wudui_click(mb.position, d)
 		return
 	if str(d.get("status", "")) != "playing":
 		return

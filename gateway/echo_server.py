@@ -36,6 +36,7 @@ from websockets.asyncio.server import ServerConnection, serve
 from recorder import SessionRecorder
 from score_client import build_and_post
 from hw_machines import HW_PROFILES, HwArmSim
+from wudui import WuDuiBoard
 from hw_bridge_client import HwBridgeClient
 from blackjack import BlackjackBoard
 from gomoku import BLACK, EMPTY, WHITE, GomokuBoard
@@ -866,6 +867,8 @@ def _new_board_for_game(game: str) -> Any:
         return JunqiBoard()
     if game == "blackjack":
         return BlackjackBoard()
+    if game == "wudui":
+        return WuDuiBoard()
     return GomokuBoard()
 
 
@@ -894,11 +897,35 @@ class ChessTable:
             self.status = "layout"
         elif self.game == "blackjack":
             self.status = "idle"  # promoted to playing after deal()
+        elif self.game == "wudui":
+            if isinstance(self.board, WuDuiBoard):
+                self.board.deal()
+            self.status = "playing"
         else:
             self.status = "playing"
 
     def to_detail(self, viewer_sid: str | None = None) -> dict[str, Any]:
         """Snapshot for chess_table_update. Junqi: fog by viewer_sid (no open board leak)."""
+        if self.game == "wudui" and isinstance(self.board, WuDuiBoard):
+            out = {
+                "table_id": self.table_id,
+                "game": self.game,
+                "title_zh": self.title_zh,
+                "title_en": self.title_en,
+                "black_sid": self.black_sid,
+                "white_sid": self.white_sid,
+                "vs_ai": self.vs_ai,
+                "status": self.status,
+                "turn": self.board.turn,
+            }
+            out.update(self.board.to_detail())
+            # Explicit mover sid (clients must not infer from side labels).
+            out["turn_sid"] = (
+                self.black_sid if self.board.turn == "black" else self.white_sid
+            )
+            if self.last_hand:
+                out["last_hand"] = dict(self.last_hand)
+            return out
         if self.game == "blackjack" and isinstance(self.board, BlackjackBoard):
             out = {
                 "table_id": self.table_id,
@@ -2527,6 +2554,10 @@ class EchoGateway:
                     loser = "black" if left_black else "red"
                     table.board.forfeit(loser)
                     table.status = "finished"
+                elif table.game == "wudui" and isinstance(table.board, WuDuiBoard):
+                    side = "black" if left_black else "red"
+                    table.board.resign(side)
+                    table.status = "finished"
                 elif table.game in ("gomoku", "checkers"):
                     # Leaver was black → white wins; leaver white → black wins.
                     if left_black:
@@ -2596,6 +2627,10 @@ class EchoGateway:
             self._chess_free_session(room, sid, broadcast=True)
             if table.black_sid is None:
                 table.black_sid = sid
+                if table.game == "wudui":
+                    # Two-player only: wait for the second sitter to deal.
+                    self._broadcast_chess_table(room, table)
+                    return
             elif table.white_sid is None:
                 table.white_sid = sid
                 table.vs_ai = False
@@ -2632,6 +2667,39 @@ class EchoGateway:
             table.status = "playing" if table.board.phase == "playing" else "finished"
             self._broadcast_chess_table(room, table)
             return
+        if action in ("card_discard", "card_eat", "card_pass"):
+            if table.game != "wudui" or not isinstance(table.board, WuDuiBoard):
+                return
+            if action == "card_discard":
+                if sid != table.black_sid:
+                    self._chess_reject(
+                        session, code="WUDUI_NOT_TURN", message=action, table_id=table_id
+                    )
+                    return
+                err = table.board.discard(str(payload.get("card") or ""))
+            elif action == "card_eat":
+                if sid != table.white_sid:
+                    self._chess_reject(
+                        session, code="WUDUI_NOT_TURN", message=action, table_id=table_id
+                    )
+                    return
+                err = table.board.eat(
+                    str(payload.get("card") or ""),
+                    str(payload.get("discard") or ""),
+                )
+            else:
+                if sid != table.white_sid:
+                    self._chess_reject(
+                        session, code="WUDUI_NOT_TURN", message=action, table_id=table_id
+                    )
+                    return
+                err = table.board.pass_turn(str(payload.get("discard") or ""))
+            if err is not None:
+                self._chess_reject(session, code=err, message=action, table_id=table_id)
+                return
+            table.status = "playing" if table.board.phase == "playing" else "finished"
+            self._broadcast_chess_table(room, table)
+            return
         if action == "chess_resign":
             if sid not in (table.black_sid, table.white_sid):
                 return
@@ -2643,6 +2711,10 @@ class EchoGateway:
                 table.status = "finished"
             elif table.game == "blackjack" and isinstance(table.board, BlackjackBoard):
                 table.board.resign()
+                table.status = "finished"
+            elif table.game == "wudui" and isinstance(table.board, WuDuiBoard):
+                side = "black" if table.black_sid == sid else "red"
+                table.board.resign(side)
                 table.status = "finished"
             elif table.game in ("gomoku", "checkers"):
                 if table.black_sid == sid:
@@ -2937,6 +3009,9 @@ class EchoGateway:
             "junqi_layout",
             "card_hit",
             "card_stand",
+            "card_discard",
+            "card_eat",
+            "card_pass",
         ):
             self._handle_chess_cmd(session, action, payload)
             return
