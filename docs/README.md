@@ -22,6 +22,7 @@
 16. [09-todo.md](09-todo.md) — **可执行待办（Now / Next）**
 17. [19-changelog.md](19-changelog.md) — **变更记录**
 18. [25-qa-local-export.md](25-qa-local-export.md) — **本地 Web / Hub 验收清单**
+19. [29-wudui-report.md](29-wudui-report.md) — **五对双人桌 + 棋牌室扩容实施报告（2026-08-06）**
 18. [11-poc-mvp-architecture.md](11-poc-mvp-architecture.md) — POC 规格 + MVP 薄架构
 19. [12-status-review.md](12-status-review.md) — 阶段回顾
 20. [13-web-multiplayer-demo.md](13-web-multiplayer-demo.md) — Web / 多人
