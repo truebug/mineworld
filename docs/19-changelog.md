@@ -7,6 +7,13 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-07 · Fun-H Hub 母港氛围（昼夜循环 + 全息环灯）
+
+- 新增 `hub_daynight.gd`：150 秒昼夜周期，正弦驱动 Sun 能量/色温/角度、环境光、星空 shader（`star_brightness`/`nebula_a/b`），深夜→星云黎明→暖昼→黄昏平滑过渡。
+- 新增 `hub_orbit_ring.gd`：广场上方 10.5m 全息吊灯——外环 5.2m 青色缓旋 + 3 颗卫星、内环 3.1m 品红反向倾斜自旋、整体轻微浮沉；自发光材质吃 glow。
+- NPC 游走（`hub_patrol_npc` ×3 带气泡）与机房低鸣（`hub_ambient_hum` 程序化音频）此前会话已就绪，本次仅补缺的两项。
+- 接线均在 `hub_life.gd::_build`；纯 viewer 装饰，Gateway 无变更；lint 0 finding + 6 场景编译门全绿。
+
 ## 2026-08-07 · Fun-Q 一键开局（棋牌室快速入座）
 
 - `chessroom.gd` 新增右下「⚡ 快速入座 (J)」按钮 + J 快捷键：扫描 `chess_table_update` 缓存的 `_tables`，免走路直接入座有空位的桌并开牌界面。

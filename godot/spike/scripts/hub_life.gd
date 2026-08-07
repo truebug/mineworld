@@ -29,6 +29,8 @@ func _build() -> void:
 	_place_npcs()
 	_place_patrols()
 	_start_ambient_hum()
+	_place_orbit_ring()
+	_start_daynight()
 	print("[MW] hub life: mid-ring + %d interactables" % interactables.size())
 
 
@@ -831,3 +833,27 @@ func _start_ambient_hum() -> void:
 	filler.name = "AmbientHumFiller"
 	filler.set("player", player)
 	add_child(filler)
+
+
+func _place_orbit_ring() -> void:
+	"""Fun-H: rotating holo-ring chandelier high above the plaza."""
+	var ring: Node3D = preload("res://scripts/hub_orbit_ring.gd").new()
+	ring.name = "OrbitRing"
+	ring.position = Vector3(5.0, 10.5, 0.0)
+	add_child(ring)
+
+
+func _start_daynight() -> void:
+	"""Fun-H: wire slow day/night drift into sky + sun + ambient."""
+	var world := get_parent().get_node_or_null("WorldEnvironment") as WorldEnvironment
+	if world == null:
+		return
+	var dn: Node = preload("res://scripts/hub_daynight.gd").new()
+	dn.name = "DayNight"
+	add_child(dn)
+	dn.call(
+		"setup",
+		world.environment,
+		get_parent().get_node_or_null("Sun") as DirectionalLight3D,
+		get_parent().get_node_or_null("AcademyKey") as OmniLight3D
+	)
