@@ -2453,8 +2453,8 @@ func _draw_blackjack_board() -> void:
 		mine = d.get("player_cards", [])  # legacy single-hand payload
 	rows.append({"key": "P", "cards": mine, "y": area.y - _BJ_CARD_H - 22.0})
 	for side in rows:
-		var cards: Array = rows[side]["cards"]
-		var origin := _bj_hand_origin(cards.size(), float(rows[side]["y"]), area)
+		var cards: Array = side["cards"]
+		var origin := _bj_hand_origin(cards.size(), float(side["y"]), area)
 		for i in cards.size():
 			var key := "%s%d" % [str(side["key"]), i]
 			var target := origin + Vector2(i * (_BJ_CARD_W + _BJ_GAP), 0)
