@@ -17,7 +17,7 @@
 | ID | 任务 | 验收 | 建议做法 |
 |----|------|------|----------|
 | Fun-H | Hub 母港氛围 | 天空盒昼夜渐变、环形装饰旋转、NPC 简单游走、母港环境音乐（demo_hub 硬刷新可见） | 天空盒：`demo_hub.tscn` 现有 `ProceduralSkyMaterial`（`sky_mat`）做 keyframe 昼夜；装饰旋转挂 Tween/AnimationPlayer；NPC 游走复用现有 `_talk_npc` 加 `_physics_process` 移动 + 随机点；环境音乐用 AudioStreamPlayer（CC0 音效包，需下载入 `ASSETS.md`） |
-| Fun-Q | 一键开局 | Hub「快速入座」按钮 → 自动送到有空位的桌（跨五子棋/21点/五对） | Gateway 无需改（桌位信息已在 `chess_table_update`）；客户端 `_sync_junqi_chrome` 附近扫描 `_tables` 找 `black_sid`/`white_sid` 空位，按优先级入座；全满提示 |
+| ~~Fun-Q~~ ✅ | 一键开局 **Done 2026-08-07** | chessroom 右下「⚡ 快速入座 (J)」+ J 键；优先加入 AI 单机组（不重置），全满聊天提示 | 纯客户端 `chessroom.gd`；见 [19-changelog.md](19-changelog.md) |
 | Fun-S | 皮肤自选 | Portal「我的」页选 Blocky 皮肤（18 款 character-a..r）存 player profile；Hub/桌面对应 | `mw_platform` players 表加 `skin` 字段；`me.html` 加下拉/缩略图；Gateway join 时下发；`paper_doll` 换 `model_ref` |
 | Fun-R | 邀请链接 | `?room=xxx` 私密房码，复制链接拉人开黑（双人进同房） | join 已支持 `room_id`（`gateway/echo_server.py:3330`）；Web 端读 query 参数注入 join payload；UI 加「复制邀请链接」按钮 |
 | Fun-G | 幽灵挑战 | `MWGhost` 今日最佳榜 + 一键挑战，每日重置（demo_race 可见幽灵车） | `mw/ghost_car.gd` 已 fetch 最快 session；加「今日最佳」筛选（按 date）+ HUD 一键挑战按钮 + 每日重置逻辑 |

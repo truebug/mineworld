@@ -7,6 +7,13 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-07 · Fun-Q 一键开局（棋牌室快速入座）
+
+- `chessroom.gd` 新增右下「⚡ 快速入座 (J)」按钮 + J 快捷键：扫描 `chess_table_update` 缓存的 `_tables`，免走路直接入座有空位的桌并开牌界面。
+- 选桌策略：优先加入 `status=playing` 的单人 AI 局（入座变 PvP 不重置棋局），其次空桌/等人的桌；牌盘打开时按钮自动隐藏。
+- 全满时在房间聊天流提示「所有牌桌已满」；入座成功回执桌名（i18n 中英）。
+- 纯客户端改动，Gateway 无变更（`chess_sit` 本无距离校验）；gdscript lint 0 finding + 6 场景编译门 + ws smoke 全绿。
+
 ## 2026-08-06 · 代码自审修复：五对牌堆唯一性 + 21 点旁观视角
 
 - **五对牌堆 bug（744ca38 遗留）**：`_new_deck()` 误建 4×54 张（docstring 写明 54 张），同一张牌可同时出现在手牌与弃牌堆，客户端按牌面字符串选牌会一次选中多张、冒烟断言偶发失败；改为单副 54 张。

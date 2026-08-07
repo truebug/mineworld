@@ -68,6 +68,7 @@ var _rules_btn: Button = null
 var _hit_btn: Button = null
 var _stand_btn: Button = null
 var _deal_btn: Button = null
+var _quick_sit_btn: Button = null
 var _wudui_sel := ""
 var _wudui_discard_btn: Button = null
 var _wudui_eat_btn: Button = null
@@ -112,6 +113,7 @@ func _ready() -> void:
 			true
 		)
 	_build_board_ui()
+	_build_quick_sit_button()
 	ws.hello_received.connect(_on_hello)
 	ws.scene_received.connect(_on_scene)
 	ws.state_received.connect(_on_state)
@@ -526,6 +528,8 @@ func _on_web_key_event(code: String, down: bool) -> void:
 			"KeyS":
 				if _view_game() == "blackjack":
 					_on_bj_stand()
+			"KeyJ":
+				_on_quick_sit()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -542,9 +546,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif ek.keycode == KEY_H and _view_game() == "blackjack":
 			_on_bj_hit()
 			get_viewport().set_input_as_handled()
-		elif ek.keycode == KEY_S and _view_game() == "blackjack":
-			_on_bj_stand()
-			get_viewport().set_input_as_handled()
+	elif ek.keycode == KEY_S and _view_game() == "blackjack":
+		_on_bj_stand()
+		get_viewport().set_input_as_handled()
+	elif ek.keycode == KEY_J or ek.physical_keycode == KEY_J:
+		_on_quick_sit()
+		get_viewport().set_input_as_handled()
 
 
 func _on_escape() -> void:
@@ -621,6 +628,7 @@ func _toggle_board() -> void:
 	_board_layer.visible = true
 	_fit_board_panel()
 	_refresh_board_from_authority()
+	_sync_quick_sit_button()
 
 
 func _close_board() -> void:
@@ -635,6 +643,80 @@ func _close_board() -> void:
 	if _seated_table_id != "":
 		ws.send_cmd({"action": "chess_leave", "table_id": _seated_table_id})
 	_view_table_id = ""
+	_sync_quick_sit_button()
+
+
+func _build_quick_sit_button() -> void:
+	"""Fun-Q: one-click seat at the best table with a free seat."""
+	var layer := CanvasLayer.new()
+	layer.layer = 10
+	add_child(layer)
+	_quick_sit_btn = Button.new()
+	_quick_sit_btn.text = MWi18n.t("⚡ 快速入座 (J)", "⚡ Quick sit (J)")
+	_quick_sit_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_quick_sit_btn.position = Vector2(-230, -64)
+	_quick_sit_btn.size = Vector2(200, 44)
+	_quick_sit_btn.pressed.connect(_on_quick_sit)
+	layer.add_child(_quick_sit_btn)
+
+
+func _sync_quick_sit_button() -> void:
+	if _quick_sit_btn != null:
+		_quick_sit_btn.visible = not _board_open()
+
+
+func _on_quick_sit() -> void:
+	"""Pick the best free-seat table and sit without walking over."""
+	if _board_open():
+		return
+	var tid := _pick_quick_sit_table()
+	if tid == "":
+		_append_chat_log(
+			"MW",
+			MWi18n.t("所有牌桌已满，先逛逛或稍后再来", "All tables full — come back later")
+		)
+		return
+	_view_table_id = tid
+	_sel = Vector2i(-1, -1)
+	_rules_visible = false
+	ws.send_cmd({"action": "chess_sit", "table_id": tid})
+	_board_layer.visible = true
+	_fit_board_panel()
+	_refresh_board_from_authority()
+	_sync_quick_sit_button()
+	var meta: Dictionary = TABLE_META.get(tid, {})
+	var title := MWi18n.t(
+		str(meta.get("title_zh", tid)),
+		str(meta.get("title_en", tid))
+	)
+	_append_chat_log("MW", MWi18n.t("已入座 %s", "Seated at %s") % title)
+
+
+func _pick_quick_sit_table() -> String:
+	"""Joinable = free seat. Prefer mid-play AI solo (no reset) → idle tables."""
+	var ids := _tables.keys()
+	ids.sort()
+	var playing: Array = []
+	var idle: Array = []
+	for tid in ids:
+		if _seated_table_id == str(tid):
+			continue
+		var d: Dictionary = _tables[tid]
+		var black := str(d.get("black_sid", "")).strip_edges()
+		var white := str(d.get("white_sid", "")).strip_edges()
+		if black != "" and white != "":
+			continue
+		if black == "" and white == "":
+			idle.append(tid)
+		elif str(d.get("status", "")) == "playing":
+			playing.append(tid)
+		else:
+			idle.append(tid)
+	if not playing.is_empty():
+		return str(playing[0])
+	if not idle.is_empty():
+		return str(idle[0])
+	return ""
 
 
 func _build_board_ui() -> void:
