@@ -816,6 +816,8 @@ func _input(event: InputEvent) -> void:
 				KEY_R:
 					if _controlled:
 						ws.send_cmd({"action": "release_control", "entity_id": _controlled_entity_id})
+				KEY_G:
+					_challenge_today_ghost()
 
 
 func _set_held(code: int, pressed: bool) -> void:
@@ -910,7 +912,19 @@ func _race_forward_speed() -> float:
 
 
 func _on_ghost_loaded(ghost_name: String) -> void:
-	_status_line = "幽灵车 · %s 的最快圈" % ghost_name
+	if _ghost != null:
+		_status_line = _ghost.describe()
+	else:
+		_status_line = "幽灵车 · %s 的最快圈" % ghost_name
+	_update_hud()
+
+
+func _challenge_today_ghost() -> void:
+	"""Fun-G: reload today's-best ghost (每日重置 · 一键挑战)."""
+	if level_id != "demo_race" or _ghost == null:
+		return
+	_ghost.reload()
+	_status_line = MWi18n.t("刷新今日幽灵挑战…", "Refreshing today's ghost…")
 	_update_hud()
 
 

@@ -648,16 +648,7 @@ func _close_board() -> void:
 
 func _build_quick_sit_button() -> void:
 	"""Fun-Q: one-click seat at the best table with a free seat."""
-	var layer := CanvasLayer.new()
-	layer.layer = 10
-	add_child(layer)
-	_quick_sit_btn = Button.new()
-	_quick_sit_btn.text = MWi18n.t("⚡ 快速入座 (J)", "⚡ Quick sit (J)")
-	_quick_sit_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_quick_sit_btn.position = Vector2(-230, -64)
-	_quick_sit_btn.size = Vector2(200, 44)
-	_quick_sit_btn.pressed.connect(_on_quick_sit)
-	layer.add_child(_quick_sit_btn)
+	_quick_sit_btn = MWQuickSit.build_button(self, _on_quick_sit)
 
 
 func _sync_quick_sit_button() -> void:
@@ -669,7 +660,7 @@ func _on_quick_sit() -> void:
 	"""Pick the best free-seat table and sit without walking over."""
 	if _board_open():
 		return
-	var tid := _pick_quick_sit_table()
+	var tid := MWQuickSit.pick_table(_tables, _seated_table_id)
 	if tid == "":
 		_append_chat_log(
 			"MW",
@@ -690,33 +681,6 @@ func _on_quick_sit() -> void:
 		str(meta.get("title_en", tid))
 	)
 	_append_chat_log("MW", MWi18n.t("已入座 %s", "Seated at %s") % title)
-
-
-func _pick_quick_sit_table() -> String:
-	"""Joinable = free seat. Prefer mid-play AI solo (no reset) → idle tables."""
-	var ids := _tables.keys()
-	ids.sort()
-	var playing: Array = []
-	var idle: Array = []
-	for tid in ids:
-		if _seated_table_id == str(tid):
-			continue
-		var d: Dictionary = _tables[tid]
-		var black := str(d.get("black_sid", "")).strip_edges()
-		var white := str(d.get("white_sid", "")).strip_edges()
-		if black != "" and white != "":
-			continue
-		if black == "" and white == "":
-			idle.append(tid)
-		elif str(d.get("status", "")) == "playing":
-			playing.append(tid)
-		else:
-			idle.append(tid)
-	if not playing.is_empty():
-		return str(playing[0])
-	if not idle.is_empty():
-		return str(idle[0])
-	return ""
 
 
 func _build_board_ui() -> void:

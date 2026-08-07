@@ -7,6 +7,14 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-07 · Fun-G 幽灵挑战（今日最佳 + 一键挑战）+ Fun-Q 模块化重构
+
+- 平台：`/api/platform/best_lap` 新增 `today=1` 参数，`store.best_lap_session(level_id, since=)` 按 `created_at >= 当日 00:00 UTC` 过滤（每日重置天然成立）；SQLite 断言验证 all-time/今日/空结果三态。
+- `mw/ghost_car.gd`：进场景先取今日最佳、落空自动回退全服最快；`reload()` 一键重载今日挑战；代际守卫（`_gen`）防快速重载时旧 HTTP 回包串档；`describe()` 承载 HUD 文案（今日最佳/全服最快 · 圈速 · G 提示）。
+- `main.gd` 只剩分发：G 键（web + 原生双路径）→ `_challenge_today_ghost()`；`_on_ghost_loaded` 直接用 `MWGhost.describe()`。
+- 重构：Fun-Q 选桌策略 + 按钮构建抽成 `mw/quick_sit.gd`（`MWQuickSit.pick_table/build_button` 静态方法），chessroom.gd 只留胶水——此前 Fun-Q 直塞 2871 行 god-object 的欠账还清。
+- 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + platform smoke 全绿。
+
 ## 2026-08-07 · Fun-H Hub 母港氛围（昼夜循环 + 全息环灯）
 
 - 新增 `hub_daynight.gd`：150 秒昼夜周期，正弦驱动 Sun 能量/色温/角度、环境光、星空 shader（`star_brightness`/`nebula_a/b`），深夜→星云黎明→暖昼→黄昏平滑过渡。

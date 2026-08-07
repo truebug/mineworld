@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urlparse
 
 from mw_platform.config import admin_key, auth_enabled, db_url, federation_stub_key, gateway_key
 from mw_platform.scoring import compute_points
-from mw_platform.store import ensure_demo_player, get_store, player_to_json
+from mw_platform.store import _iso, _utc_now, ensure_demo_player, get_store, player_to_json
 
 SendJson = Callable[[Any, int], None]
 ReadBody = Callable[[], dict[str, Any] | None]
@@ -97,9 +97,15 @@ def handle_platform_get(
         return True
     if path == "/api/platform/best_lap":
         level_id = (qs.get("level_id") or [""])[0].strip()
-        row = get_store().best_lap_session(level_id)  # type: ignore[attr-defined]
+        today = (qs.get("today") or [""])[0].strip() in ("1", "true", "yes")
+        since = None
+        if today:
+            # Fun-G daily challenge: runs since 00:00 UTC today (每日重置).
+            now = _utc_now()
+            since = _iso(now.replace(hour=0, minute=0, second=0, microsecond=0))
+        row = get_store().best_lap_session(level_id, since=since)  # type: ignore[attr-defined]
         send_json(
-            {"ok": True, "level_id": level_id, "best": row},
+            {"ok": True, "level_id": level_id, "today": today, "best": row},
             200,
         )
         return True

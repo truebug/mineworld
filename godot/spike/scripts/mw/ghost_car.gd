@@ -9,24 +9,66 @@ signal loaded(ghost_name: String)
 var frames: Array = []
 var puppet: Node3D = null
 var ghost_name := ""
+var ghost_lap_s := 0.0
+## Fun-G: true when the loaded ghost is today's best (每日重置).
+var is_today_best := false
 var own_mech_getter: Callable = Callable()
 
 var _t := 0.0
 var _loading := false
+var _gen := 0
 
 
 func fetch_best() -> void:
-	"""Query platform for the fastest demo_race session (no-op off web)."""
+	"""Query today's best first, fall back to all-time fastest (no-op off web)."""
 	if _loading or not OS.has_feature("web"):
 		return
 	_loading = true
+	_gen += 1
+	_fetch(true)
+
+
+func reload() -> void:
+	"""Fun-G: drop current ghost and re-fetch today's best (一键挑战)."""
+	if puppet != null:
+		puppet.queue_free()
+		puppet = null
+	frames.clear()
+	ghost_name = ""
+	ghost_lap_s = 0.0
+	is_today_best = false
+	_t = 0.0
+	_loading = false
+	_gen += 1
+	fetch_best()
+
+
+func describe() -> String:
+	"""HUD status line for the loaded ghost (今日最佳 / 全服最快 · lap)."""
+	var lap := ""
+	if ghost_lap_s > 0.0:
+		lap = " · %.1fs" % ghost_lap_s
+	var scope := MWi18n.t("今日最佳", "today's best")
+	if not is_today_best:
+		scope = MWi18n.t("全服最快", "all-time")
+	return (
+		MWi18n.t("幽灵车 · %s · %s%s（G 重载今日挑战）", "Ghost · %s · %s%s (G reload)")
+		% [ghost_name, scope, lap]
+	)
+
+
+func _fetch(today_only: bool) -> void:
 	var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
 	if origin == "":
 		return
+	var gen := _gen
 	var http := HTTPRequest.new()
 	add_child(http)
-	http.request_completed.connect(_on_best_http.bind(http))
-	http.request("%s/api/platform/best_lap?level_id=demo_race" % origin)
+	http.request_completed.connect(_on_best_http.bind(http, today_only, gen))
+	var url := "%s/api/platform/best_lap?level_id=demo_race" % origin
+	if today_only:
+		url += "&today=1"
+	http.request(url)
 
 
 func advance(delta: float) -> void:
@@ -41,9 +83,17 @@ func is_running() -> bool:
 
 
 func _on_best_http(
-	result: int, code: int, _h: PackedStringArray, body: PackedByteArray, http: HTTPRequest
+	result: int,
+	code: int,
+	_h: PackedStringArray,
+	body: PackedByteArray,
+	http: HTTPRequest,
+	today_only: bool,
+	gen: int
 ) -> void:
 	http.queue_free()
+	if gen != _gen:
+		return
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		return
 	var data: Variant = JSON.parse_string(body.get_string_from_utf8())
@@ -51,22 +101,34 @@ func _on_best_http(
 		return
 	var best: Variant = (data as Dictionary).get("best")
 	if typeof(best) != TYPE_DICTIONARY:
+		if today_only:
+			# No lap today yet — fall back to all-time fastest.
+			_fetch(false)
 		return  # no successful lap recorded yet — ghost stays off
 	var sid := str((best as Dictionary).get("session_id", ""))
 	ghost_name = str((best as Dictionary).get("display_name", "ghost"))
+	ghost_lap_s = float((best as Dictionary).get("duration_sim_s", 0.0))
+	is_today_best = today_only
 	if sid == "":
 		return
 	var origin := str(JavaScriptBridge.eval("location.origin || ''", true))
 	var http2 := HTTPRequest.new()
 	add_child(http2)
-	http2.request_completed.connect(_on_frames_http.bind(http2))
+	http2.request_completed.connect(_on_frames_http.bind(http2, gen))
 	http2.request("%s/api/recordings/%s/frames" % [origin, sid.uri_encode()])
 
 
 func _on_frames_http(
-	result: int, code: int, _h: PackedStringArray, body: PackedByteArray, http: HTTPRequest
+	result: int,
+	code: int,
+	_h: PackedStringArray,
+	body: PackedByteArray,
+	http: HTTPRequest,
+	gen: int
 ) -> void:
 	http.queue_free()
+	if gen != _gen:
+		return
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		return
 	for line in body.get_string_from_utf8().split("\n", false):
