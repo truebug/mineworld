@@ -546,12 +546,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif ek.keycode == KEY_H and _view_game() == "blackjack":
 			_on_bj_hit()
 			get_viewport().set_input_as_handled()
-	elif ek.keycode == KEY_S and _view_game() == "blackjack":
-		_on_bj_stand()
-		get_viewport().set_input_as_handled()
-	elif ek.keycode == KEY_J or ek.physical_keycode == KEY_J:
-		_on_quick_sit()
-		get_viewport().set_input_as_handled()
+		elif ek.keycode == KEY_S and _view_game() == "blackjack":
+			_on_bj_stand()
+			get_viewport().set_input_as_handled()
+		elif ek.keycode == KEY_J or ek.physical_keycode == KEY_J:
+			_on_quick_sit()
+			get_viewport().set_input_as_handled()
 
 
 func _on_escape() -> void:
