@@ -96,6 +96,12 @@
 | Chess-P4 | 军棋暗棋 hardening | 按 session 单播 view、去掉 `junqi_open`；公网 PvP 门槛 | [x] 2026-07-27 单播+拒着；明文盘已去 |
 | Chess-P5 | 五对双人纸牌 + 扩容 | 54 张 5 对胜负；先手 11 后手 10；吃/过/弃/认输；房扩 32×22 + 丙五子棋/己五对 | [x] `gateway/wudui.py` · `card_discard/eat/pass` · `wudui_smoke` · Table5/Table6 · 2026-08-06 |
 | Chess-P6 | 牌面贴图 + 规则弹窗 | Kenney CC0 牌面替换代码绘制；规则按钮各桌可用 | [x] `kenney_cards/` 台账 · `_rules_text_for` · 2026-08-06 |
+| Fun-H | Hub 母港氛围 | 天空盒昼夜渐变、环形装饰旋转、NPC 游走、母港环境音乐 | [ ] demo_hub 硬刷新可见 |
+| Fun-Q | 一键开局 | Hub「快速入座」按钮自动送到有空位的桌 | [ ] 无座提示 |
+| Fun-S | 皮肤自选 | Portal「我的」选 Blocky 皮肤（18 款）存 profile，Hub/桌面对应 | [ ] 刷新生效 |
+| Fun-R | 邀请链接 | `?room=xxx` 私密房码，复制链接拉人开黑 | [ ] 双人进同房 |
+| Fun-G | 幽灵挑战 | `MWGhost` 今日最佳榜 + 一键挑战，每日重置 | [ ] 可见幽灵车 |
+| Fun-E | 围观席 + 表情 | 桌满可旁观牌局；快捷表情/喝彩复用 chat 通道 | [ ] 旁观视角 + 表情广播 |
 
 #### B2 已交付（勿再当 Next）
 
