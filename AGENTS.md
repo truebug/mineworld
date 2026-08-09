@@ -75,3 +75,17 @@ No unit-test framework is configured yet. Every gateway change must pass `python
   `godot_pos = Vector3(mw.x, mw.z, -mw.y)` and `rotation.y = mw.yaw`.
 - Never commit `.venv/`, `recordings/`, or `gdevelop/**/Exported/`; bind the gateway to `127.0.0.1` for local dev.
 - Third-party assets: only CC0/MIT (CC-BY requires attribution); every asset commit must include an `ASSETS.md` ledger entry — never commit NC/SA-licensed content.
+
+## Agent 输出预算管理（运行规范 · 2026-08-09）
+
+背景：单轮输出预算有限。`deploy_playground.sh` / Godot web 导出 / `check_scenes_boot.sh`
+一次可吐出 1 万+ token（实测出现过 18K 截断），曾导致「写下一步声明后、工具调用还没执行，
+轮次就被截断」。本规范用于避免复发：
+
+- 大输出命令一律先过滤再展示：`2>&1 | tail -60`，或重定向到 `/tmp/*.log` 后只回显尾部
+  关键行（`MW_BUILD=`、`DEPLOY OK`、`BOOT OK|FAIL`、`ERROR`、`smoke OK`）。
+- 需要保留退出码时：`cmd > /tmp/x.log 2>&1; rc=$?; tail -40 /tmp/x.log; exit $rc`，
+  不要用裸管道吞掉失败状态。
+- 读文件用 `rg` / `sed -n 'a,bp'` / `head`，不对大文件整段 `cat`。
+- 大段工具输出之后的「下一步声明」控制在 1–2 句；长任务分步执行，每步只回显结论行。
+- 冒烟链、编译门、deploy 的完整输出默认不进转录（需要排查时再定向查看日志文件）。
