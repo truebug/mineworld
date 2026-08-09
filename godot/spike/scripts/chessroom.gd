@@ -76,6 +76,9 @@ var _deal_btn: Button = null
 var _quick_sit_btn: Button = null
 var _wudui_sel := ""
 var _wudui_btn_rect := Rect2()
+var _wudui_anims: Dictionary = {}
+var _wudui_prev: Dictionary = {}
+var _wudui_celebrated := false
 var _wudui_discard_btn: Button = null
 var _wudui_eat_btn: Button = null
 var _wudui_pass_btn: Button = null
@@ -471,6 +474,7 @@ func _process(delta: float) -> void:
 	_poll_web_chat()
 	_tick_piece_anims(delta)
 	_tick_bj_anims(delta)
+	_tick_wudui_anims(delta)
 	_cmd_timer += delta
 	if _cmd_timer >= 1.0 / CMD_HZ:
 		_cmd_timer = 0.0
@@ -667,6 +671,9 @@ func _close_board() -> void:
 	_board_layer.visible = false
 	_ai_fill_at = 0.0
 	_sync_ai_countdown()
+	_wudui_anims.clear()
+	_wudui_prev = {}
+	_wudui_celebrated = false
 	_sel = Vector2i(-1, -1)
 	_pending_junqi_move = {}
 	_rules_visible = false
@@ -1152,6 +1159,206 @@ func _on_wudui_primary() -> void:
 			_on_wudui_pass()
 
 
+# ── 五对动画（diff → tick → draw 插值，与棋类/21 点同模式）────────────
+
+func _wudui_rank_counts(hand: Array) -> Dictionary:
+	var counts := {}
+	for c in hand:
+		var r := _wudui_rank(str(c))
+		counts[r] = int(counts.get(r, 0)) + 1
+	return counts
+
+
+func _wudui_anim_for(card: String, side: String) -> Dictionary:
+	"""Active wudui anim covering `card` on `side` ({} when none)."""
+	for key in _wudui_anims:
+		var a: Dictionary = _wudui_anims[key]
+		if str(a.get("side", "")) == side and str(a.get("card", "")) == card:
+			return a
+	return {}
+
+
+func _wudui_flying_out(card: String) -> bool:
+	"""True while `card` is animating out of a hand toward the discard pile."""
+	for key in _wudui_anims:
+		var a: Dictionary = _wudui_anims[key]
+		if str(a.get("kind", "")) == "fly_out" and str(a.get("card", "")) == card:
+			return true
+	return false
+
+
+func _wudui_side_rects(hand: Array, area: Vector2, side: String) -> Array:
+	var y := area.y - _wudui_row_h(hand, area) - 14.0 if side == "black" else 14.0
+	return _wudui_hand_rects(hand, area, y)
+
+
+func _wudui_slot_of(hand: Array, area: Vector2, side: String, card: String) -> Rect2:
+	for e in _wudui_side_rects(hand, area, side):
+		if str(e["card"]) == card:
+			return e["rect"]
+	return Rect2()
+
+
+func _wudui_completed_pair_cards(prev_hand: Array, hand: Array) -> Array:
+	"""Cards whose rank just went odd→even (a new pair formed)."""
+	var prev_counts := _wudui_rank_counts(prev_hand)
+	var new_counts := _wudui_rank_counts(hand)
+	var out: Array = []
+	for r in new_counts:
+		if int(new_counts[r]) >= 2 and int(new_counts[r]) % 2 == 0 and int(prev_counts.get(r, 0)) % 2 == 1:
+			for c in hand:
+				if _wudui_rank(str(c)) == r:
+					out.append(c)
+	return out
+
+
+func _detect_wudui_changes(d: Dictionary) -> void:
+	"""Diff prev/new wudui state → _wudui_anims（发牌/摸牌/出牌/吃牌/配对闪光/五对达成）。"""
+	var black: Array = d.get("black_cards", [])
+	var red: Array = d.get("red_cards", [])
+	var pile: Array = d.get("discard_pile", [])
+	if _wudui_prev.is_empty():
+		_wudui_prev = {"black": black.duplicate(), "red": red.duplicate(), "pile": pile.duplicate()}
+		return
+	var prev_black: Array = _wudui_prev.get("black", [])
+	var prev_red: Array = _wudui_prev.get("red", [])
+	var area: Vector2 = _board_ctrl.custom_minimum_size if _board_ctrl != null else Vector2(920.0, 520.0)
+	var pile_pos := Vector2((area.x - _BJ_CARD_W) * 0.5, (area.y - _BJ_CARD_H) * 0.5)
+	var last_action := str(d.get("last_action", ""))
+	var is_deal := last_action == "deal" and (black.size() + red.size()) > 0
+	if is_deal:
+		_wudui_celebrated = false
+	var played_deal := false
+	var played_swoosh := false
+	for side in ["black", "red"]:
+		var hand: Array = black if side == "black" else red
+		var prev_hand: Array = prev_black if side == "black" else prev_red
+		var entered: Array = []
+		for c in hand:
+			if not prev_hand.has(c):
+				entered.append(c)
+		var left: Array = []
+		for c in prev_hand:
+			if not hand.has(c):
+				left.append(c)
+		var stagger := 0.0
+		if is_deal:
+			stagger = 0.06  # 发牌：整手牌从牌堆依次飞出（60ms 错峰）
+		var entered_ranks := {}
+		for c in entered:
+			entered_ranks[_wudui_rank(str(c))] = true
+		for i in entered.size():
+			var card := str(entered[i])
+			var idx := hand.find(card)
+			var slot := _wudui_slot_of(hand, area, side, card)
+			_wudui_anims["%s_in_%s" % [card, side]] = {
+				"kind": "fly_in", "card": card, "side": side,
+				"from": pile_pos, "to": slot.position, "size": slot.size,
+				"t": -float(idx) * stagger, "dur": 0.32,
+			}
+			if not played_deal:
+				_play_sfx("deal")
+				played_deal = true
+		for i in left.size():
+			var card := str(left[i])
+			var slot := _wudui_slot_of(prev_hand, area, side, card)
+			_wudui_anims["%s_out_%s" % [card, side]] = {
+				"kind": "fly_out", "card": card, "side": side,
+				"from": slot.position, "to": pile_pos, "size": slot.size,
+				"t": 0.0, "dur": 0.28,
+			}
+			if not played_swoosh:
+				_play_sfx("swoosh")
+				played_swoosh = true
+		for card in _wudui_completed_pair_cards(prev_hand, hand):
+			var delay := -0.28 if entered_ranks.has(_wudui_rank(str(card))) else 0.0
+			_wudui_anims["%s_flash_%s" % [card, side]] = {
+				"kind": "flash", "card": str(card), "side": side,
+				"t": delay, "dur": 0.6,
+			}
+	if str(d.get("phase", "")) == "finished" and not _wudui_celebrated:
+		_wudui_celebrated = true
+		var winner := str(d.get("winner", ""))
+		if winner == "black" or winner == "red":
+			var win_hand: Array = black if winner == "black" else red
+			for i in win_hand.size():
+				_wudui_anims["win_%s_%d" % [winner, i]] = {
+					"kind": "win", "card": str(win_hand[i]), "side": winner,
+					"t": -float(i) * 0.08, "dur": 0.9,
+				}
+			_play_sfx("win")
+	_wudui_prev = {"black": black.duplicate(), "red": red.duplicate(), "pile": pile.duplicate()}
+
+
+func _tick_wudui_anims(delta: float) -> void:
+	if _wudui_anims.is_empty():
+		return
+	var done: Array = []
+	var dirty := false
+	for key in _wudui_anims:
+		var a: Dictionary = _wudui_anims[key]
+		a["t"] = float(a.get("t", 0.0)) + delta
+		if float(a["t"]) >= float(a.get("dur", 1.0)):
+			done.append(key)
+		else:
+			dirty = true
+	for key in done:
+		_wudui_anims.erase(key)
+	if dirty and _board_ctrl != null:
+		_board_ctrl.queue_redraw()
+
+
+func _draw_wudui_card_at(pos: Vector2, size: Vector2, card: String, rot_deg: float, alpha: float) -> void:
+	"""Draw a card with rotation (flying overlay)."""
+	if absf(rot_deg) < 0.5:
+		_draw_card_sized(pos, size, card, 1.0, alpha)
+		return
+	var center := pos + size * 0.5
+	_board_ctrl.draw_set_transform(center, deg_to_rad(rot_deg), Vector2.ONE)
+	_draw_card_sized(-size * 0.5, size, card, 1.0, alpha)
+	_board_ctrl.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_wudui_anim_overlay(d: Dictionary, area: Vector2, pile_pos: Vector2) -> void:
+	"""Flying cards + pair-flash / win pulse drawn on top of the static board."""
+	for key in _wudui_anims:
+		var a: Dictionary = _wudui_anims[key]
+		var kind := str(a.get("kind", ""))
+		var card := str(a.get("card", ""))
+		if kind == "fly_in" or kind == "fly_out":
+			var t := float(a.get("t", 0.0))
+			if t < 0.0:
+				continue
+			var dur := float(a.get("dur", 1.0))
+			var e := clampf(t / dur, 0.0, 1.0)
+			var from: Vector2 = a.get("from", pile_pos)
+			var to: Vector2 = a.get("to", pile_pos)
+			var k := e * e if kind == "fly_out" else 1.0 - pow(1.0 - e, 3.0)
+			var pos := from.lerp(to, k) + Vector2(0.0, -sin(e * PI) * 44.0)
+			var rot := lerpf(-10.0, 0.0, k) if kind == "fly_out" else lerpf(8.0, 0.0, k)
+			var size: Vector2 = a.get("size", Vector2(_BJ_CARD_W, _BJ_CARD_H))
+			if kind == "fly_in":
+				size *= lerpf(0.65, 1.0, k)
+			_draw_wudui_card_at(pos, size, card, rot, 1.0)
+		elif kind == "flash" or kind == "win":
+			var side := str(a.get("side", ""))
+			var hand: Array = d.get("black_cards", []) if side == "black" else d.get("red_cards", [])
+			var slot := _wudui_slot_of(hand, area, side, card)
+			if slot.size.x <= 0.0:
+				continue
+			var t := float(a.get("t", 0.0))
+			if t < 0.0:
+				continue
+			var dur := float(a.get("dur", 1.0))
+			var e := clampf(t / dur, 0.0, 1.0)
+			var alpha := sin(e * PI)
+			var grow := 5.0 + 12.0 * alpha
+			var col := Color(1.0, 0.85, 0.2, 0.55 * alpha)
+			if kind == "win":
+				col = Color(1.0, 0.9, 0.35, 0.7 * alpha)
+			_board_ctrl.draw_rect(slot.grow(grow), col, false, 3.0)
+
+
 func _draw_wudui_board() -> void:
 	_wudui_btn_rect = Rect2()
 	var d := _view_detail()
@@ -1168,14 +1375,15 @@ func _draw_wudui_board() -> void:
 	var my_side := _wudui_my_side()
 	# Rows are face up (pair race, both see all): pairs left, scattered right.
 	var red_rects := _wudui_hand_rects(red, area, 14.0)
-	_draw_wudui_hand_row(red_rects, my_side == "red", d, area)
+	_draw_wudui_hand_row(red_rects, "red", my_side == "red", d, area)
 	var black_y := area.y - _wudui_row_h(black, area) - 14.0
 	var black_rects := _wudui_hand_rects(black, area, black_y)
-	_draw_wudui_hand_row(black_rects, my_side == "black", d, area)
+	_draw_wudui_hand_row(black_rects, "black", my_side == "black", d, area)
 	# Discard pile (center) + turn marker.
 	var pile_pos := Vector2((area.x - _BJ_CARD_W) * 0.5, (area.y - _BJ_CARD_H) * 0.5)
 	if not pile.is_empty():
-		_draw_bj_card(pile_pos, str(pile[-1]), 1.0, 1.0)
+		var top := str(pile[-1])
+		_draw_bj_card(pile_pos, top, 1.0, 0.25 if _wudui_flying_out(top) else 1.0)
 	else:
 		_draw_bj_card(pile_pos, "??", 1.0, 0.35)
 	var turn := str(d.get("turn", "black"))
@@ -1192,17 +1400,21 @@ func _draw_wudui_board() -> void:
 		"黑 %d 对 · 红 %d 对" % [int(d.get("black_pairs", 0)), int(d.get("red_pairs", 0))],
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.8, 0.8, 0.85)
 	)
+	_draw_wudui_anim_overlay(d, area, pile_pos)
 
 
-func _draw_wudui_hand_row(rects: Array, interactive: bool, d: Dictionary, area: Vector2) -> void:
+func _draw_wudui_hand_row(rects: Array, side: String, interactive: bool, d: Dictionary, area: Vector2) -> void:
 	var sel_idx := -1
 	for i in rects.size():
 		var e: Dictionary = rects[i]
+		var card := str(e["card"])
+		var anim := _wudui_anim_for(card, side)
+		var flying := not anim.is_empty() and str(anim.get("kind", "")) == "fly_in"
 		_draw_card_sized(
-			e["rect"].position, e["rect"].size, str(e["card"]),
-			1.0, 0.92 if interactive else 0.85
+			e["rect"].position, e["rect"].size, card,
+			1.0, 0.0 if flying else (0.92 if interactive else 0.85)
 		)
-		if interactive and bool(e["scattered"]) and str(e["card"]) == _wudui_sel:
+		if interactive and not flying and bool(e["scattered"]) and card == _wudui_sel:
 			sel_idx = i
 	# Divider between the pair block and the scattered block.
 	var sep := 0
@@ -1844,6 +2056,7 @@ func _refresh_board_from_authority() -> void:
 			_board_ctrl.queue_redraw()
 		return
 	if game == "wudui":
+		_detect_wudui_changes(d)
 		_refresh_wudui_status(d, status)
 		if _board_ctrl != null:
 			_board_ctrl.queue_redraw()
@@ -3067,6 +3280,12 @@ func _play_sfx(name: String) -> void:
 		"flip":
 			freq = 600
 			dur = 0.08
+		"deal":
+			freq = 520
+			dur = 0.1
+		"swoosh":
+			freq = 640
+			dur = 0.09
 		"win":
 			freq = 1200
 			dur = 0.3

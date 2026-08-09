@@ -7,6 +7,15 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-09 · 五对动画套件（发牌/出牌/吃牌飞行 + 配对闪光 + 五对达成）
+
+- **发牌动画**：开局/重发全手按 60ms 错峰飞入（`fly_in`，0.32s ease-out，0.65→1.0 缩放，8°→0 旋转），视觉上「牌飞上桌」。
+- **出牌/吃牌动画**：出牌 `fly_out`（0.28s ease-in，-10°→0 旋转，飞向牌堆 ghost alpha 0.25）；吃牌 = 弃牌顶飞入红手 + 配对金环闪光（`flash` 0.6s，奇→偶 rank 触发，吃牌场景延迟 -0.28s 对齐）。
+- **五对达成**：赢家整手胜利脉冲（0.9s 错峰 0.08s 缩放 + 金色高亮）。
+- **音效**：`_play_sfx` 新增 `deal`/`swoosh`（web 一次性触发，每批节流只播一次，避免批量 AudioContext）。
+- **实现**：`_wudui_anims` 走 diff→tick→draw 模式（与 `_piece_anims`/`_bj_anims` 一致），`_detect_wudui_changes` 在 `_refresh_board_from_authority` 的 wudui 分支调用；飞行中牌行内 alpha 0、由 `_draw_wudui_anim_overlay` 叠加绘制（旋转用 `draw_set_transform`）；首帧/开局快照只记录不动画。
+- 验证：gdscript lint 0 finding + 6 场景编译门两次全绿（纯客户端，gateway 无变更）。
+
 ## 2026-08-09 · 五对手牌体验（配对归组 + 键盘出牌 + 智能选牌）+ AI 记牌策略 + Web 丢包修复
 
 - **配对自动归组**：双方手牌按「对子 | 散牌」分区绘制（`_wudui_grouped_hand`/`_wudui_hand_rects`，绘制与热区共用同一布局），对子与散牌间画分隔线，一眼看出差几对。

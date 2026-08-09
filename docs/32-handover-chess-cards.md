@@ -9,11 +9,13 @@
 
 ## 0. 当前状态一句话
 
-21 点已升级为**双座多手牌共享庄家**（轮转行动、旁观入座、禁止局中重置）；五对支持**人机**（5 秒无人加入自动匹配 AI 执红）并新增**显式 5 秒倒计时**（`ai_fill_at` 字段 + 客户端倒计时标签）；五对牌堆唯一性 bug（4×54 误建 + JOKER 身份歧义）、手牌溢出桌布 UI 均已修复；blackjack/wudui 牌桌已放大（felt 上限 920×520）；手牌配对归组 + 键盘选牌出牌 + AI 记牌策略 + Web 丢包修复已上线。线上 build `20260809-102943`（三批发版）。
+21 点已升级为**双座多手牌共享庄家**（轮转行动、旁观入座、禁止局中重置）；五对支持**人机**（5 秒无人加入自动匹配 AI 执红）并新增**显式 5 秒倒计时**（`ai_fill_at` 字段 + 客户端倒计时标签）；五对牌堆唯一性 bug（4×54 误建 + JOKER 身份歧义）、手牌溢出桌布 UI 均已修复；blackjack/wudui 牌桌已放大（felt 上限 920×520）；手牌配对归组 + 键盘选牌出牌 + AI 记牌策略 + Web 丢包修复 + 五对动画套件（发牌/出牌/吃牌飞行 + 配对闪光 + 胜利脉冲）已上线。线上 build `<BUILD>`（四批发版）。
 
 > 2026-08-09 二批：五对倒计时 + 牌桌放大（见 [19-changelog.md](19-changelog.md) 同日条目）。`chess_table_update` wudui detail 新增 `ai_fill_at`（unix 截止时间戳，仅等待期下发）；客户端 `_sync_ai_countdown`/`_tick_ai_countdown` 0.25s Timer 驱动标签，关闭牌桌即停。验证链同第 2 节，wudui_smoke 已加 `ai_fill_at` 三态断言（等待期存在 / 双人入座清零 / AI 补位后清零）。
 
 > 2026-08-09 三批：五对手牌体验 + AI 记牌 + Web 丢包修复（见 19-changelog 同日条目）。手牌按「对子|散牌」分区绘制（`_wudui_grouped_hand`/`_wudui_hand_rects` 绘制热区同函数）；轮到我自动选中风险最低散牌（`_wudui_default_discard`，与 AI `_ai_choose_discard` 同评分）；←/→ 切散牌、↑ 一键出牌（黑出牌/红吃或过），选中卡放大 + 卡上「出牌/吃牌/过牌」按钮。`wudui.py` 记牌靠 `_remaining_by_rank()`（deck 余量即出过牌），`to_detail` 新增 `deck_remaining`。Web 控制台 `Buffer payload full` 已缓解：出站缓冲 256KB + 空闲速度命令去重 + `ws.outbound_full()` 水位保护。wudui_smoke 新增 AI 选牌确定性断言 + `deck_remaining` 断言。
+
+> 2026-08-09 四批：五对动画套件（发牌/出牌/吃牌飞行 + 配对闪光 + 胜利脉冲，见 19-changelog 同日条目）。纯客户端：`_wudui_anims` 走 diff→tick→draw 模式（与 `_piece_anims`/`_bj_anims` 一致），`_detect_wudui_changes` 在 `_refresh_board_from_authority` 的 wudui 分支调用；发牌全手 60ms 错峰飞入（0.32s ease-out、0.65→1.0 缩放、8°→0 旋转）；出牌 `fly_out`（0.28s ease-in、-10°→0、牌堆 ghost alpha 0.25）；吃牌 = 弃牌顶飞入红手 + 金环闪光（0.6s，奇→偶 rank 触发）；五对达成赢家整手胜利脉冲（0.9s 错峰 0.08s）。`_play_sfx` 新增 deal/swoosh（每批节流只播一次）。飞行中牌行内 alpha 0、由 `_draw_wudui_anim_overlay` 叠加绘制；首帧/开局快照只记录不动画。验证链 lint + 6 场景编译门全绿（gateway 无变更）。
 
 ## 1. 本批次交付清单（git）
 
