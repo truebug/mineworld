@@ -59,6 +59,7 @@ async def main() -> int:
     msg = await _recv_until(a, lambda m: _is_table(m) and _table(m).get("black_sid") == sa)
     assert _table(msg).get("game") == "wudui"
     assert _table(msg).get("phase") == "idle"  # waiting for second
+    assert _table(msg).get("ai_fill_at", 0) > 0, "AI-fill countdown deadline should be present"
     print("p1 seated black · waiting for second")
 
     await b.send(json.dumps({"type": "cmd", "session_id": sb,
@@ -66,6 +67,7 @@ async def main() -> int:
     msg = await _recv_until(b, lambda m: _is_table(m) and _table(m).get("phase") == "playing")
     t = _table(msg)
     assert t.get("phase") == "playing", t
+    assert t.get("ai_fill_at", 0) == 0, "countdown cleared after second player deals"
     assert len(t.get("black_cards", [])) == 11, t
     assert len(t.get("red_cards", [])) == 10, t
     assert t.get("turn") == "black", t
@@ -151,6 +153,7 @@ async def main() -> int:
                              "payload": {"action": "chess_sit", "table_id": TID}}))
     msg = await _recv_until(a, lambda m: _is_table(m) and _table(m).get("black_sid") == sa)
     assert _table(msg).get("status") == "idle", "waiting for second before AI fill"
+    assert _table(msg).get("ai_fill_at", 0) > 0, "countdown deadline present while waiting"
     msg = await _recv_until(
         a,
         lambda m: _is_table(m) and _table(m).get("vs_ai") is True
@@ -160,6 +163,7 @@ async def main() -> int:
     t = _table(msg)
     assert len(t.get("black_cards", [])) == 11, t
     assert len(t.get("red_cards", [])) == 10, t
+    assert t.get("ai_fill_at", 0) == 0, "countdown cleared when AI fills"
     print("ai fill ok · vs_ai dealt black=11 red=10")
 
     # black discards → AI red answers synchronously (turn back to black)

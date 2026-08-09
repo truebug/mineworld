@@ -7,6 +7,16 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-09 · 棋牌室卡牌双人化发版 + 五对 5 秒倒计时显式呈现 + 牌桌放大
+
+- **21 点多人**（ac8ff78）：`gateway/blackjack.py` 重写为 `players`/`hands{sid}`/`active_sid`/`results{sid}`，双座入座、resign status 跟随 phase、`chess_reset` 仅局间可用；客户端三行牌桌（庄家/对手/我）+ 对手手牌动画。
+- **五对人机**（9d227eb）：黑座入座后 5 秒无人加入则 AI 执红（`wudui.py ai_red_move` 能吃则吃否则过牌）；真人入座白座取消 vs_ai 接管；等待提示。
+- **自审修复**（85fd5ac）：五对牌堆 4×54 误建→单副 54、`JOKER1/JOKER2` 唯一 ID、重洗排除在场牌；21 点旁观视角不再冒充「你」。
+- **UI 修复**（72b87fb）：11 张手牌动态缩放（最小 40px/间距 4px，绘制+热区同函数）；按钮行间距/字号收紧；`MWQuickSit` 显式 preload（headless 类缓存漏注册）。
+- **5 秒倒计时显式呈现**（本批）：`chess_table_update` wudui detail 新增 `ai_fill_at`（AI 补位截止时间戳，黑方入座即下发）；客户端 0.25s Timer 驱动倒计时标签「无人加入 · N 秒后自动匹配 AI」（i18n 中英）；第二人入座/离座/计时到期/重置均清零。
+- **牌桌放大**（本批）：`_fit_board_panel` 对 blackjack/wudui 的 felt 上限 680×380 → 920×520（面板高度余量 150→170），1280×720 下约 968×680。
+- 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + wudui（含 `ai_fill_at` 三态断言）/blackjack/chessroom/ws 冒烟全绿。
+
 ## 2026-08-07 · Fun-G 幽灵挑战（今日最佳 + 一键挑战）+ Fun-Q 模块化重构
 
 - 平台：`/api/platform/best_lap` 新增 `today=1` 参数，`store.best_lap_session(level_id, since=)` 按 `created_at >= 当日 00:00 UTC` 过滤（每日重置天然成立）；SQLite 断言验证 all-time/今日/空结果三态。

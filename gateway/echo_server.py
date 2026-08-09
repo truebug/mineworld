@@ -888,6 +888,7 @@ class ChessTable:
     turn: int = BLACK
     last_hand: dict[str, Any] | None = None
     ai_task: Any = None  # pending asyncio task (wudui AI-fill timer)
+    ai_fill_at: float = 0.0  # unix deadline for the 5s AI-fill countdown (0 = none)
 
     def reset_board(self) -> None:
         """Reset underlying board for a new round."""
@@ -920,6 +921,8 @@ class ChessTable:
                 "turn": self.board.turn,
             }
             out.update(self.board.to_detail())
+            if self.ai_fill_at > 0.0:
+                out["ai_fill_at"] = self.ai_fill_at
             # Explicit mover sid (clients must not infer from side labels).
             out["turn_sid"] = (
                 self.black_sid if self.board.turn == "black" else self.white_sid
@@ -2599,6 +2602,7 @@ class EchoGateway:
         """Cancel pending AI-fill timer (second human sat / table reset)."""
         task = table.ai_task
         table.ai_task = None
+        table.ai_fill_at = 0.0
         if task is not None and not task.done():
             task.cancel()
 
@@ -2609,6 +2613,7 @@ class EchoGateway:
         except asyncio.CancelledError:
             return
         table.ai_task = None
+        table.ai_fill_at = 0.0
         if table.game != "wudui" or table.white_sid is not None:
             return
         if table.black_sid is None or table.status != "idle":
@@ -2667,6 +2672,7 @@ class EchoGateway:
                 if table.game == "wudui":
                     # Wait 5s for a second human; else fill with AI and deal.
                     self._wudui_cancel_ai_timer(table)
+                    table.ai_fill_at = time.time() + 5.0
                     table.ai_task = asyncio.create_task(
                         self._wudui_ai_arrive(room, table)
                     )

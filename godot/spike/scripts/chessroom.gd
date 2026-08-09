@@ -61,6 +61,9 @@ var _status_label: Label = null
 var _title_label: Label = null
 var _result_label: Label = null
 var _tips_label: Label = null
+var _ai_fill_at := 0.0  # unix deadline for wudui AI-fill countdown (0 = none)
+var _ai_countdown_label: Label = null
+var _ai_countdown_timer: Timer = null
 var _layout_btn: Button = null
 var _confirm_btn: Button = null
 var _resign_btn: Button = null
@@ -437,6 +440,8 @@ func _on_event(payload: Dictionary) -> void:
 		if not _pending_junqi_move.is_empty():
 			_pending_junqi_move = {}
 			_sel = Vector2i(-1, -1)
+		_ai_fill_at = float(detail.get("ai_fill_at", 0.0))
+		_sync_ai_countdown()
 		_refresh_board_from_authority()
 
 
@@ -629,12 +634,16 @@ func _toggle_board() -> void:
 	_board_layer.visible = true
 	_fit_board_panel()
 	_refresh_board_from_authority()
+	_ai_fill_at = float(_view_detail().get("ai_fill_at", 0.0))
+	_sync_ai_countdown()
 	_sync_quick_sit_button()
 
 
 func _close_board() -> void:
 	_auto_exit_gen += 1
 	_board_layer.visible = false
+	_ai_fill_at = 0.0
+	_sync_ai_countdown()
 	_sel = Vector2i(-1, -1)
 	_pending_junqi_move = {}
 	_rules_visible = false
@@ -675,6 +684,8 @@ func _on_quick_sit() -> void:
 	_board_layer.visible = true
 	_fit_board_panel()
 	_refresh_board_from_authority()
+	_ai_fill_at = float(_view_detail().get("ai_fill_at", 0.0))
+	_sync_ai_countdown()
 	_sync_quick_sit_button()
 	var meta: Dictionary = TABLE_META.get(tid, {})
 	var title := MWi18n.t(
@@ -800,6 +811,12 @@ func _build_board_ui() -> void:
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(_status_label)
+	_ai_countdown_label = Label.new()
+	_ai_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ai_countdown_label.visible = false
+	_ai_countdown_label.add_theme_font_size_override("font_size", 22)
+	_ai_countdown_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.3))
+	vbox.add_child(_ai_countdown_label)
 	_result_label = Label.new()
 	_result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_result_label.visible = false
@@ -807,6 +824,11 @@ func _build_board_ui() -> void:
 	_result_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
 	vbox.add_child(_result_label)
 	_apply_board_fonts()
+	_ai_countdown_timer = Timer.new()
+	_ai_countdown_timer.wait_time = 0.25
+	_ai_countdown_timer.one_shot = false
+	_ai_countdown_timer.timeout.connect(_tick_ai_countdown)
+	add_child(_ai_countdown_timer)
 	_fit_board_panel()
 	if not get_viewport().size_changed.is_connected(_fit_board_panel):
 		get_viewport().size_changed.connect(_fit_board_panel)
@@ -816,7 +838,7 @@ func _apply_board_fonts() -> void:
 	var f: Font = MWFonts.font() if MWFonts != null else null
 	if f == null:
 		return
-	for lab in [_title_label, _status_label, _result_label, _rules_label]:
+	for lab in [_title_label, _status_label, _ai_countdown_label, _result_label, _rules_label]:
 		if lab != null:
 			lab.add_theme_font_override("font", f)
 	for btn in [_layout_btn, _confirm_btn, _resign_btn, _hand_btn, _rules_btn, _hit_btn, _stand_btn, _deal_btn]:
@@ -1175,11 +1197,11 @@ func _fit_board_panel() -> void:
 	var pw := 560.0
 	var ph := 700.0
 	if _view_game() in ["blackjack", "wudui"]:
-		var felt := Vector2(clampf(vp.x - 48.0, 420.0, 680.0), clampf(vp.y - 190.0, 260.0, 380.0))
+		var felt := Vector2(clampf(vp.x - 48.0, 420.0, 920.0), clampf(vp.y - 190.0, 260.0, 520.0))
 		if _board_ctrl != null:
 			_board_ctrl.custom_minimum_size = felt
 		pw = clampf(felt.x + 48.0, 400.0, vp.x - 24.0)
-		ph = clampf(felt.y + 150.0, 380.0, vp.y - 24.0)
+		ph = clampf(felt.y + 170.0, 380.0, vp.y - 24.0)
 	elif _view_game() == "junqi":
 		var bs := _junqi_board_size()
 		if _board_ctrl != null:
@@ -2393,6 +2415,33 @@ func _on_junqi_layout_click(row: int, col: int, d: Dictionary, my: String) -> vo
 func _set_status(msg: String) -> void:
 	if _status_label != null:
 		_status_label.text = msg
+
+
+func _sync_ai_countdown() -> void:
+	"""Show/hide the wudui AI-fill countdown for the open board."""
+	if _ai_countdown_label == null or _ai_countdown_timer == null:
+		return
+	if not _board_open() or _ai_fill_at <= 0.0:
+		_ai_countdown_label.visible = false
+		_ai_countdown_timer.stop()
+		return
+	_ai_countdown_timer.start()
+	_tick_ai_countdown()
+
+
+func _tick_ai_countdown() -> void:
+	if _ai_countdown_label == null or _ai_fill_at <= 0.0:
+		return
+	var remain := int(ceili(_ai_fill_at - Time.get_unix_time_from_system()))
+	if remain <= 0:
+		# AI fills momentarily; hide until the next broadcast confirms.
+		_ai_fill_at = 0.0
+		_sync_ai_countdown()
+		return
+	_ai_countdown_label.text = MWi18n.t(
+		"无人加入 · %d 秒后自动匹配 AI", "No player — AI joins in %ds"
+	) % remain
+	_ai_countdown_label.visible = true
 
 
 # ── Chess-FX ──────────────────────────────────────────────────────────
