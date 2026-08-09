@@ -8,6 +8,7 @@ const CMD_HZ := 20.0
 const SIT_DIST := 2.4
 const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const GomokuScript := preload("res://scripts/gomoku.gd")
+const MWQuickSit := preload("res://scripts/mw/quick_sit.gd")
 const AUTO_EXIT_S := 2.4
 const JUNQI_ROWS := 12
 const JUNQI_COLS := 5
@@ -714,7 +715,7 @@ func _build_board_ui() -> void:
 	vbox.add_child(_title_label)
 	var btn_row := HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	btn_row.add_theme_constant_override("separation", 10)
+	btn_row.add_theme_constant_override("separation", 6)
 	vbox.add_child(btn_row)
 	_layout_btn = Button.new()
 	_layout_btn.text = MWi18n.t("随机布阵", "Auto layout")
@@ -821,6 +822,10 @@ func _apply_board_fonts() -> void:
 	for btn in [_layout_btn, _confirm_btn, _resign_btn, _hand_btn, _rules_btn, _hit_btn, _stand_btn, _deal_btn]:
 		if btn != null:
 			btn.add_theme_font_override("font", f)
+	# Compact the chrome row so 4+ buttons fit a 560px panel (wudui adds 3).
+	for btn in [_layout_btn, _confirm_btn, _resign_btn, _hand_btn, _rules_btn, _hit_btn, _stand_btn, _deal_btn, _wudui_discard_btn, _wudui_eat_btn, _wudui_pass_btn]:
+		if btn != null:
+			btn.add_theme_font_size_override("font_size", 14)
 
 
 func _rules_text_for(game: String) -> Dictionary:
@@ -957,12 +962,29 @@ func _wudui_can_eat(d: Dictionary) -> bool:
 
 
 func _wudui_hand_origin(count: int, y: float, area: Vector2) -> Vector2:
-	var total := count * _BJ_CARD_W + maxi(count - 1, 0) * _BJ_GAP
+	var total := count * _wudui_card_w(count, area) + maxi(count - 1, 0) * _wudui_gap(count, area)
 	return Vector2(maxf((area.x - total) * 0.5, 8.0), y)
 
 
 func _wudui_card_pos(index: int, count: int, y: float, area: Vector2) -> Vector2:
-	return _wudui_hand_origin(count, y, area) + Vector2(index * (_BJ_CARD_W + _BJ_GAP), 0)
+	return _wudui_hand_origin(count, y, area) + Vector2(index * (_wudui_card_w(count, area) + _wudui_gap(count, area)), 0)
+
+
+func _wudui_card_w(count: int, area: Vector2) -> float:
+	"""Shrink card width when the hand can't fit the felt (11 cards ≈ 804px)."""
+	var avail := area.x - 16.0
+	var need := count * _BJ_CARD_W + maxi(count - 1, 0) * 4.0
+	if need <= avail:
+		return _BJ_CARD_W
+	return maxf((avail - maxi(count - 1, 0) * 4.0) / count, 40.0)
+
+
+func _wudui_gap(count: int, area: Vector2) -> float:
+	var avail := area.x - 16.0
+	var need := count * _BJ_CARD_W + maxi(count - 1, 0) * _BJ_GAP
+	if need <= avail:
+		return _BJ_GAP
+	return 4.0
 
 
 func _draw_wudui_board() -> void:
@@ -978,10 +1000,15 @@ func _draw_wudui_board() -> void:
 	var red: Array = d.get("red_cards", [])
 	var pile: Array = d.get("discard_pile", [])
 	var my_side := _wudui_my_side()
+	# Dynamic sizing so 11-card hands never overflow the felt.
+	var w_top := _wudui_card_w(red.size(), area)
+	var h_top := w_top * _BJ_CARD_H / _BJ_CARD_W
+	var w_bot := _wudui_card_w(black.size(), area)
+	var h_bot := w_bot * _BJ_CARD_H / _BJ_CARD_W
 	# Opponent row (top) — face up (pair race, both see all).
 	for i in red.size():
 		var pos := _wudui_card_pos(i, red.size(), 14.0, area)
-		_draw_bj_card(pos, str(red[i]), 1.0, 0.9)
+		_draw_card_sized(pos, Vector2(w_top, h_top), str(red[i]), 1.0, 0.9)
 	# Discard pile (center) + turn marker.
 	var pile_pos := Vector2((area.x - _BJ_CARD_W) * 0.5, (area.y - _BJ_CARD_H) * 0.5)
 	if not pile.is_empty():
@@ -1004,16 +1031,18 @@ func _draw_wudui_board() -> void:
 	)
 	# My row (bottom) — selectable highlight.
 	for i in black.size():
-		var pos := _wudui_card_pos(i, black.size(), area.y - _BJ_CARD_H - 14.0, area)
-		_draw_bj_card(pos, str(black[i]), 1.0, 1.0)
+		var pos := _wudui_card_pos(i, black.size(), area.y - h_bot - 14.0, area)
+		_draw_card_sized(pos, Vector2(w_bot, h_bot), str(black[i]), 1.0, 1.0)
 		if my_side == "black" and str(black[i]) == _wudui_sel:
-			_board_ctrl.draw_rect(Rect2(pos, Vector2(_BJ_CARD_W, _BJ_CARD_H)).grow(3.0), Color(1, 0.85, 0.2), false, 3.0)
+			_board_ctrl.draw_rect(Rect2(pos, Vector2(w_bot, h_bot)).grow(3.0), Color(1, 0.85, 0.2), false, 3.0)
 	var hand: Array = black if my_side == "black" else red
+	var w_h := w_bot if my_side == "black" else w_top
+	var h_h := h_bot if my_side == "black" else h_top
 	for i in hand.size():
-		var y := area.y - _BJ_CARD_H - 14.0 if my_side == "black" else 14.0
+		var y := area.y - h_bot - 14.0 if my_side == "black" else 14.0
 		var pos := _wudui_card_pos(i, hand.size(), y, area)
 		if str(hand[i]) == _wudui_sel:
-			_board_ctrl.draw_rect(Rect2(pos, Vector2(_BJ_CARD_W, _BJ_CARD_H)).grow(3.0), Color(1, 0.85, 0.2), false, 3.0)
+			_board_ctrl.draw_rect(Rect2(pos, Vector2(w_h, h_h)).grow(3.0), Color(1, 0.85, 0.2), false, 3.0)
 
 
 func _on_wudui_click(pos: Vector2, d: Dictionary) -> void:
@@ -1024,9 +1053,11 @@ func _on_wudui_click(pos: Vector2, d: Dictionary) -> void:
 		return
 	var area: Vector2 = _board_ctrl.custom_minimum_size
 	var hand: Array = d.get("black_cards", []) if my_side == "black" else d.get("red_cards", [])
-	var y := area.y - _BJ_CARD_H - 14.0 if my_side == "black" else 14.0
+	var w_h := _wudui_card_w(hand.size(), area)
+	var h_h := w_h * _BJ_CARD_H / _BJ_CARD_W
+	var y := area.y - h_h - 14.0 if my_side == "black" else 14.0
 	for i in hand.size():
-		var r := Rect2(_wudui_card_pos(i, hand.size(), y, area), Vector2(_BJ_CARD_W, _BJ_CARD_H))
+		var r := Rect2(_wudui_card_pos(i, hand.size(), y, area), Vector2(w_h, h_h))
 		if r.has_point(pos):
 			_wudui_sel = str(hand[i])
 			_board_ctrl.queue_redraw()
@@ -2408,9 +2439,14 @@ func _card_texture(card: String) -> Texture2D:
 
 
 func _draw_bj_card(pos: Vector2, card: String, scale_x: float = 1.0, alpha: float = 1.0) -> void:
+	_draw_card_sized(pos, Vector2(_BJ_CARD_W, _BJ_CARD_H), card, scale_x, alpha)
+
+
+func _draw_card_sized(pos: Vector2, size: Vector2, card: String, scale_x: float = 1.0, alpha: float = 1.0) -> void:
 	"""Code-drawn card face; '??' = face-down back. scale_x<1 fakes the flip."""
-	var w := _BJ_CARD_W * maxf(scale_x, 0.02)
-	var rect := Rect2(pos + Vector2((_BJ_CARD_W - w) * 0.5, 0), Vector2(w, _BJ_CARD_H))
+	var w := size.x * maxf(scale_x, 0.02)
+	var h := size.y
+	var rect := Rect2(pos + Vector2((size.x - w) * 0.5, 0), Vector2(w, h))
 	var tex := _card_texture(card)
 	if tex != null:
 		# Contain-fit: Kenney textures are square 64x64; keep aspect inside the
