@@ -52,6 +52,7 @@ var _joined_room_id := "chess"
 var _controlled_entity_id := "avatar_0"
 var _controlled := false
 var _cmd_timer := 0.0
+var _last_idle_cmd := false
 var _puppets: Dictionary = {}
 var _profile: Dictionary = {}
 var _board_layer: CanvasLayer = null
@@ -74,6 +75,7 @@ var _stand_btn: Button = null
 var _deal_btn: Button = null
 var _quick_sit_btn: Button = null
 var _wudui_sel := ""
+var _wudui_btn_rect := Rect2()
 var _wudui_discard_btn: Button = null
 var _wudui_eat_btn: Button = null
 var _wudui_pass_btn: Button = null
@@ -511,6 +513,12 @@ func _send_velocity_cmd() -> void:
 		own.call("set_local_cmd", vx, vy, yaw_rate)
 	if _session_id == "":
 		return
+	var idle := vx == 0.0 and vy == 0.0 and yaw_rate == 0.0
+	if idle and _last_idle_cmd:
+		return
+	if ws.outbound_full():
+		return
+	_last_idle_cmd = idle
 	ws.send_cmd({
 		"entity_id": _controlled_entity_id,
 		"control_mode": "velocity",
@@ -534,6 +542,12 @@ func _on_web_key_event(code: String, down: bool) -> void:
 			"KeyS":
 				if _view_game() == "blackjack":
 					_on_bj_stand()
+			"ArrowLeft":
+				_wudui_cycle_sel(-1)
+			"ArrowRight":
+				_wudui_cycle_sel(1)
+			"ArrowUp":
+				_on_wudui_primary()
 			"KeyJ":
 				_on_quick_sit()
 
@@ -554,6 +568,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		elif ek.keycode == KEY_S and _view_game() == "blackjack":
 			_on_bj_stand()
+			get_viewport().set_input_as_handled()
+		elif ek.keycode == KEY_LEFT or ek.physical_keycode == KEY_LEFT:
+			_wudui_cycle_sel(-1)
+			get_viewport().set_input_as_handled()
+		elif ek.keycode == KEY_RIGHT or ek.physical_keycode == KEY_RIGHT:
+			_wudui_cycle_sel(1)
+			get_viewport().set_input_as_handled()
+		elif ek.keycode == KEY_UP or ek.physical_keycode == KEY_UP:
+			_on_wudui_primary()
 			get_viewport().set_input_as_handled()
 		elif ek.keycode == KEY_J or ek.physical_keycode == KEY_J:
 			_on_quick_sit()
@@ -1009,7 +1032,128 @@ func _wudui_gap(count: int, area: Vector2) -> float:
 	return 4.0
 
 
+func _wudui_row_h(hand: Array, area: Vector2) -> float:
+	var w := _wudui_card_w(hand.size(), area)
+	return w * _BJ_CARD_H / _BJ_CARD_W
+
+
+func _wudui_grouped_hand(hand: Array) -> Dictionary:
+	"""Split hand into pair cards (even rank count) and scattered (odd count)."""
+	var counts := {}
+	for c in hand:
+		var r := _wudui_rank(str(c))
+		counts[r] = int(counts.get(r, 0)) + 1
+	var pairs: Array = []
+	var scattered: Array = []
+	for c in hand:
+		if int(counts.get(_wudui_rank(str(c)), 0)) % 2 == 0:
+			pairs.append(c)
+		else:
+			scattered.append(c)
+	return {"pairs": pairs, "scattered": scattered}
+
+
+func _wudui_hand_rects(hand: Array, area: Vector2, y: float) -> Array:
+	"""Slot rects for one hand row: pairs left, scattered right (绘制/热区同函数)."""
+	var group := _wudui_grouped_hand(hand)
+	var ordered: Array = group["pairs"] + group["scattered"]
+	var count := ordered.size()
+	if count == 0:
+		return []
+	var w := _wudui_card_w(count, area)
+	var h := w * _BJ_CARD_H / _BJ_CARD_W
+	var gap := _wudui_gap(count, area)
+	var total := count * w + maxi(count - 1, 0) * gap
+	var origin := Vector2(maxf((area.x - total) * 0.5, 8.0), y)
+	var sep := (group["pairs"] as Array).size()
+	var rects: Array = []
+	for i in count:
+		rects.append({
+			"card": str(ordered[i]),
+			"rect": Rect2(origin + Vector2(i * (w + gap), 0), Vector2(w, h)),
+			"scattered": i >= sep,
+		})
+	return rects
+
+
+func _wudui_default_discard(d: Dictionary, hand: Array, opponent: Array) -> String:
+	"""Scattered card least likely to be paired by the opponent (mirror of the
+	AI picker: odd opponent copies = immediate eat threat, then unseen deck)."""
+	var scattered: Array = _wudui_grouped_hand(hand)["scattered"]
+	if scattered.is_empty():
+		return ""
+	var remaining: Dictionary = d.get("deck_remaining", {}) as Dictionary
+	var known: Array = d.get("black_cards", []) + d.get("red_cards", []) + d.get("discard_pile", [])
+	var best := ""
+	var best_risk := INF
+	for c in scattered:
+		var card := str(c)
+		var r := _wudui_rank(card)
+		var opp_copies := 0
+		for o in opponent:
+			if _wudui_rank(str(o)) == r:
+				opp_copies += 1
+		var deck_copies := int(remaining.get(r, -1))
+		if deck_copies < 0:
+			var seen := 0
+			for k in known:
+				if _wudui_rank(str(k)) == r:
+					seen += 1
+			deck_copies = maxi((2 if r == "JOKER" else 4) - seen, 0)
+		var risk := float(deck_copies) + (1000.0 if opp_copies % 2 == 1 else 0.0)
+		if risk < best_risk:
+			best_risk = risk
+			best = card
+	return best
+
+
+func _wudui_cycle_sel(dir: int) -> void:
+	"""←/→ cycle the selected scattered card on my turn."""
+	var d := _view_detail()
+	if not _board_open() or str(d.get("game", "")) != "wudui":
+		return
+	if str(d.get("phase", "idle")) != "playing":
+		return
+	var my_side := _wudui_my_side()
+	var turn := str(d.get("turn", "black"))
+	if my_side == "" or not (
+		(my_side == "black" and turn == "black")
+		or (my_side == "red" and turn == "red")
+	):
+		return
+	var hand: Array = d.get("black_cards", []) if my_side == "black" else d.get("red_cards", [])
+	var scattered: Array = _wudui_grouped_hand(hand)["scattered"]
+	if scattered.is_empty():
+		return
+	var opponent: Array = d.get("red_cards", []) if my_side == "black" else d.get("black_cards", [])
+	if _wudui_sel == "" or not scattered.has(_wudui_sel):
+		_wudui_sel = _wudui_default_discard(d, hand, opponent)
+	else:
+		var idx := scattered.find(_wudui_sel)
+		idx = posmod(idx + dir, scattered.size())
+		_wudui_sel = str(scattered[idx])
+	_board_ctrl.queue_redraw()
+
+
+func _on_wudui_primary() -> void:
+	"""↑ / on-card button: play the selected scattered card (black discards;
+	red eats when the pile pairs, else passes)."""
+	if _wudui_sel == "" or _view_table_id == "":
+		return
+	var d := _view_detail()
+	var my_side := _wudui_my_side()
+	var turn := str(d.get("turn", "black"))
+	if my_side == "black" and turn == "black":
+		_on_wudui_discard()
+	elif my_side == "red" and turn == "red":
+		if _wudui_can_eat(d):
+			_on_wudui_eat()
+		else:
+			_on_wudui_pass()
+
+
 func _draw_wudui_board() -> void:
+	_wudui_btn_rect = Rect2()
 	var d := _view_detail()
 	var sz: Vector2 = _board_ctrl.custom_minimum_size
 	_board_ctrl.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.38, 0.22, 0.1))
@@ -1022,15 +1166,12 @@ func _draw_wudui_board() -> void:
 	var red: Array = d.get("red_cards", [])
 	var pile: Array = d.get("discard_pile", [])
 	var my_side := _wudui_my_side()
-	# Dynamic sizing so 11-card hands never overflow the felt.
-	var w_top := _wudui_card_w(red.size(), area)
-	var h_top := w_top * _BJ_CARD_H / _BJ_CARD_W
-	var w_bot := _wudui_card_w(black.size(), area)
-	var h_bot := w_bot * _BJ_CARD_H / _BJ_CARD_W
-	# Opponent row (top) — face up (pair race, both see all).
-	for i in red.size():
-		var pos := _wudui_card_pos(i, red.size(), 14.0, area)
-		_draw_card_sized(pos, Vector2(w_top, h_top), str(red[i]), 1.0, 0.9)
+	# Rows are face up (pair race, both see all): pairs left, scattered right.
+	var red_rects := _wudui_hand_rects(red, area, 14.0)
+	_draw_wudui_hand_row(red_rects, my_side == "red", d, area)
+	var black_y := area.y - _wudui_row_h(black, area) - 14.0
+	var black_rects := _wudui_hand_rects(black, area, black_y)
+	_draw_wudui_hand_row(black_rects, my_side == "black", d, area)
 	# Discard pile (center) + turn marker.
 	var pile_pos := Vector2((area.x - _BJ_CARD_W) * 0.5, (area.y - _BJ_CARD_H) * 0.5)
 	if not pile.is_empty():
@@ -1051,20 +1192,65 @@ func _draw_wudui_board() -> void:
 		"黑 %d 对 · 红 %d 对" % [int(d.get("black_pairs", 0)), int(d.get("red_pairs", 0))],
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.8, 0.8, 0.85)
 	)
-	# My row (bottom) — selectable highlight.
-	for i in black.size():
-		var pos := _wudui_card_pos(i, black.size(), area.y - h_bot - 14.0, area)
-		_draw_card_sized(pos, Vector2(w_bot, h_bot), str(black[i]), 1.0, 1.0)
-		if my_side == "black" and str(black[i]) == _wudui_sel:
-			_board_ctrl.draw_rect(Rect2(pos, Vector2(w_bot, h_bot)).grow(3.0), Color(1, 0.85, 0.2), false, 3.0)
-	var hand: Array = black if my_side == "black" else red
-	var w_h := w_bot if my_side == "black" else w_top
-	var h_h := h_bot if my_side == "black" else h_top
-	for i in hand.size():
-		var y := area.y - h_bot - 14.0 if my_side == "black" else 14.0
-		var pos := _wudui_card_pos(i, hand.size(), y, area)
-		if str(hand[i]) == _wudui_sel:
-			_board_ctrl.draw_rect(Rect2(pos, Vector2(w_h, h_h)).grow(3.0), Color(1, 0.85, 0.2), false, 3.0)
+
+
+func _draw_wudui_hand_row(rects: Array, interactive: bool, d: Dictionary, area: Vector2) -> void:
+	var sel_idx := -1
+	for i in rects.size():
+		var e: Dictionary = rects[i]
+		_draw_card_sized(
+			e["rect"].position, e["rect"].size, str(e["card"]),
+			1.0, 0.92 if interactive else 0.85
+		)
+		if interactive and bool(e["scattered"]) and str(e["card"]) == _wudui_sel:
+			sel_idx = i
+	# Divider between the pair block and the scattered block.
+	var sep := 0
+	for e in rects:
+		if bool(e["scattered"]):
+			break
+		sep += 1
+	if sep > 0 and sep < rects.size():
+		var a: Dictionary = rects[sep - 1]
+		var b: Dictionary = rects[sep]
+		var mid_x: float = (a["rect"].end.x + b["rect"].position.x) * 0.5
+		_board_ctrl.draw_line(
+			Vector2(mid_x, a["rect"].position.y + 4.0),
+			Vector2(mid_x, a["rect"].end.y - 4.0),
+			Color(1, 1, 1, 0.28), 2.0
+		)
+	if sel_idx < 0:
+		return
+	var my_side := _wudui_my_side()
+	var slot: Rect2 = rects[sel_idx]["rect"]
+	var big := slot.size * 1.25
+	var big_pos := Vector2(
+		slot.position.x + (slot.size.x - big.x) * 0.5,
+		slot.position.y - (16.0 if my_side == "black" else -16.0)
+	)
+	_draw_card_sized(big_pos, big, str(rects[sel_idx]["card"]), 1.0, 1.0)
+	_board_ctrl.draw_rect(Rect2(big_pos, big).grow(3.0), Color(1, 0.85, 0.2), false, 3.0)
+	# On-card action button: above the slot for black, below for red.
+	var btn_h := 28.0
+	var btn := Rect2(
+		Vector2(
+			slot.position.x,
+			slot.position.y - btn_h - 6.0 if my_side == "black" else slot.position.y + slot.size.y + 6.0
+		),
+		Vector2(slot.size.x, btn_h)
+	)
+	_wudui_btn_rect = btn
+	var txt := MWi18n.t("出牌", "Discard")
+	if my_side == "red":
+		txt = MWi18n.t("吃牌", "Eat") if _wudui_can_eat(d) else MWi18n.t("过牌", "Pass")
+	var f: Font = MWFonts.font() if MWFonts != null else null
+	_board_ctrl.draw_rect(btn, Color(0.16, 0.55, 0.28, 0.95))
+	_board_ctrl.draw_rect(btn, Color(0.85, 1.0, 0.8, 1.0), false, 2.0)
+	_board_ctrl.draw_string(
+		f if f != null else ThemeDB.fallback_font,
+		btn.position + Vector2(0.0, (btn_h + 18.0) * 0.5),
+		txt, HORIZONTAL_ALIGNMENT_CENTER, btn.size.x, 18, Color(1, 1, 1)
+	)
 
 
 func _on_wudui_click(pos: Vector2, d: Dictionary) -> void:
@@ -1073,15 +1259,17 @@ func _on_wudui_click(pos: Vector2, d: Dictionary) -> void:
 		return
 	if str(d.get("phase", "idle")) != "playing":
 		return
+	if _wudui_btn_rect.size.x > 0.0 and _wudui_btn_rect.has_point(pos):
+		_on_wudui_primary()
+		return
 	var area: Vector2 = _board_ctrl.custom_minimum_size
 	var hand: Array = d.get("black_cards", []) if my_side == "black" else d.get("red_cards", [])
-	var w_h := _wudui_card_w(hand.size(), area)
-	var h_h := w_h * _BJ_CARD_H / _BJ_CARD_W
-	var y := area.y - h_h - 14.0 if my_side == "black" else 14.0
-	for i in hand.size():
-		var r := Rect2(_wudui_card_pos(i, hand.size(), y, area), Vector2(w_h, h_h))
-		if r.has_point(pos):
-			_wudui_sel = str(hand[i])
+	var y := area.y - _wudui_row_h(hand, area) - 14.0 if my_side == "black" else 14.0
+	for e in _wudui_hand_rects(hand, area, y):
+		if not bool(e["scattered"]):
+			continue
+		if e["rect"].has_point(pos):
+			_wudui_sel = str(e["card"])
 			_board_ctrl.queue_redraw()
 			return
 
@@ -1096,6 +1284,10 @@ func _refresh_wudui_status(d: Dictionary, status: String) -> void:
 		var hand: Array = d.get("black_cards", []) if my_side == "black" else d.get("red_cards", [])
 		if _wudui_sel != "" and not hand.has(_wudui_sel):
 			_wudui_sel = ""
+		var my_turn := (my_side == "black" and turn == "black") or (my_side == "red" and turn == "red")
+		if my_turn and _wudui_sel == "":
+			var opponent: Array = d.get("red_cards", []) if my_side == "black" else d.get("black_cards", [])
+			_wudui_sel = _wudui_default_discard(d, hand, opponent)
 	_wudui_discard_btn.visible = phase == "playing" and my_side == "black" and turn == "black" and status == "playing"
 	_wudui_eat_btn.visible = phase == "playing" and my_side == "red" and turn == "red" and status == "playing" and _wudui_can_eat(d)
 	_wudui_pass_btn.visible = phase == "playing" and my_side == "red" and turn == "red" and status == "playing"
@@ -1124,9 +1316,9 @@ func _refresh_wudui_status(d: Dictionary, status: String) -> void:
 		if status != "playing":
 			_set_status(MWi18n.t("等待对手加入… 5 秒后无人将匹配 AI", "Waiting… AI fills in after 5s"))
 		else:
-			_set_status(MWi18n.t("轮到你 · 点散牌再「出牌」", "Your turn — pick a card, then Discard"))
+			_set_status(MWi18n.t("轮到你 · ←/→ 选散牌 · ↑ 出牌", "Your turn — ←/→ pick · ↑ discard"))
 	elif my_side == "red" and turn == "red":
-		_set_status(MWi18n.t("轮到你 · 点散牌「吃牌」或「过牌」", "Your turn — Eat or Pass"))
+		_set_status(MWi18n.t("轮到你 · ←/→ 选散牌 · ↑ 吃/过牌", "Your turn — ←/→ pick · ↑ eat/pass"))
 	else:
 		_set_status(MWi18n.t("等待对手…", "Waiting for opponent…"))
 

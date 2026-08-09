@@ -13,6 +13,8 @@
 
 > 2026-08-09 二批：五对倒计时 + 牌桌放大（见 [19-changelog.md](19-changelog.md) 同日条目）。`chess_table_update` wudui detail 新增 `ai_fill_at`（unix 截止时间戳，仅等待期下发）；客户端 `_sync_ai_countdown`/`_tick_ai_countdown` 0.25s Timer 驱动标签，关闭牌桌即停。验证链同第 2 节，wudui_smoke 已加 `ai_fill_at` 三态断言（等待期存在 / 双人入座清零 / AI 补位后清零）。
 
+> 2026-08-09 三批：五对手牌体验 + AI 记牌 + Web 丢包修复（见 19-changelog 同日条目）。手牌按「对子|散牌」分区绘制（`_wudui_grouped_hand`/`_wudui_hand_rects` 绘制热区同函数）；轮到我自动选中风险最低散牌（`_wudui_default_discard`，与 AI `_ai_choose_discard` 同评分）；←/→ 切散牌、↑ 一键出牌（黑出牌/红吃或过），选中卡放大 + 卡上「出牌/吃牌/过牌」按钮。`wudui.py` 记牌靠 `_remaining_by_rank()`（deck 余量即出过牌），`to_detail` 新增 `deck_remaining`。Web 控制台 `Buffer payload full` 已缓解：出站缓冲 256KB + 空闲速度命令去重 + `ws.outbound_full()` 水位保护。wudui_smoke 新增 AI 选牌确定性断言 + `deck_remaining` 断言。
+
 ## 1. 本批次交付清单（git）
 
 | 提交 | 内容 |

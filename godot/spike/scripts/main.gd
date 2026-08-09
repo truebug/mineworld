@@ -1027,6 +1027,8 @@ func _send_velocity_cmd() -> void:
 	# Workshop arm only — city/race DiffBot rejects arm_* (UNKNOWN_JOINT spam).
 	if not _is_chassis_play():
 		payload["joint_targets"] = _read_joint_targets()
+	if ws.outbound_full():
+		return
 	ws.send_cmd(payload)
 
 

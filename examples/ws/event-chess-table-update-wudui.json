@@ -1,0 +1,34 @@
+{
+  "type": "event",
+  "session_id": "c1c1c1c1-0000-4000-8000-0000000000c1",
+  "tick": 42,
+  "t_sim": 0.84,
+  "payload": {
+    "event_type": "chess_table_update",
+    "detail": {
+      "table_id": "table_6",
+      "game": "wudui",
+      "title_zh": "五对 · 双人桌",
+      "title_en": "WuDui 2P",
+      "black_sid": "c1c1c1c1-0000-4000-8000-0000000000c1",
+      "white_sid": null,
+      "vs_ai": true,
+      "status": "idle",
+      "turn": "black",
+      "black_cards": [],
+      "red_cards": [],
+      "discard_pile": [],
+      "phase": "idle",
+      "winner": "",
+      "reason": "",
+      "last_action": "deal",
+      "black_pairs": 0,
+      "red_pairs": 0,
+      "ai_fill_at": 1754190000.0,
+      "deck_remaining": {
+        "A": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4,
+        "8": 4, "9": 4, "10": 4, "J": 4, "Q": 4, "K": 4, "JOKER": 2
+      }
+    }
+  }
+}

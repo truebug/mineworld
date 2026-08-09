@@ -7,6 +7,16 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-09 · 五对手牌体验（配对归组 + 键盘出牌 + 智能选牌）+ AI 记牌策略 + Web 丢包修复
+
+- **配对自动归组**：双方手牌按「对子 | 散牌」分区绘制（`_wudui_grouped_hand`/`_wudui_hand_rects`，绘制与热区共用同一布局），对子与散牌间画分隔线，一眼看出差几对。
+- **默认选中智能散牌**：轮到我时自动选中风险最低的散牌（`_wudui_default_discard`，与 AI 同款评分：对手奇张可立即吃 → 1000 惩罚 + 牌堆剩余张数）。
+- **键盘出牌**：←/→ 切换散牌选中（`_wudui_cycle_sel`），↑ 一键出牌（黑=出牌，红=可吃则吃否则过牌，`_on_wudui_primary`）；Web（ArrowLeft/Right/Up）+ 原生（KEY_LEFT/RIGHT/UP）双路径。
+- **选中卡放大 + 卡上按钮**：选中的散牌放大 1.25× 并上浮（黑↑/红↓），旁边渲染「出牌/吃牌/过牌」按钮（`_wudui_btn_rect` 参与点击判定）。
+- **AI 记牌策略**：`gateway/wudui.py` 新增 `_remaining_by_rank()`（牌堆余量 = 权威记牌）与 `_ai_choose_discard()`（对手奇张吃牌威胁 1000 惩罚 + 牌堆剩余概率，min 选最安全散牌），吃牌弃牌与过牌弃牌都走该策略；`to_detail` 新增 `deck_remaining` 下发，客户端默认选牌与 AI 同源。
+- **Web 丢包修复**：Godot Web 导出 WebSocket 出站缓冲满（`Buffer payload full! Dropping data.`）→ 出站缓冲 64KB→256KB（`ws_client.gd`）+ 空闲速度命令去重（棋牌室/母港，全零命令不再每 tick 发送）+ 出站水位保护 `ws.outbound_full()`（拥堵时跳过 lossy 速度命令，main.gd 同步）。
+- 验证：gdscript lint 0 finding + 6 场景编译门 + wudui（含 AI 选牌确定性断言、`deck_remaining` 断言）/blackjack/chessroom/ws 冒烟全绿。
+
 ## 2026-08-09 · 棋牌室卡牌双人化发版 + 五对 5 秒倒计时显式呈现 + 牌桌放大
 
 - **21 点多人**（ac8ff78）：`gateway/blackjack.py` 重写为 `players`/`hands{sid}`/`active_sid`/`results{sid}`，双座入座、resign status 跟随 phase、`chess_reset` 仅局间可用；客户端三行牌桌（庄家/对手/我）+ 对手手牌动画。

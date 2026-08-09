@@ -69,6 +69,45 @@ class WuDuiBoard:
             by_rank[rank_of(c)] = by_rank.get(rank_of(c), 0) + 1
         return sum(n // 2 for n in by_rank.values())
 
+    def _remaining_by_rank(self) -> dict[str, int]:
+        """Ranks still in the deck (54 − hands − played/discarded).
+
+        This is the authority's memory of every played card: deck only ever
+        contains unseen cards (dealt hands and discards leave it), so a per-
+        rank count over ``self.deck`` is exact without extra bookkeeping.
+        """
+        counts: dict[str, int] = {}
+        for c in self.deck:
+            r = rank_of(c)
+            counts[r] = counts.get(r, 0) + 1
+        return counts
+
+    def _ai_choose_discard(
+        self,
+        hand: list[str],
+        opponent: list[str],
+        exclude_rank: str = "",
+    ) -> str | None:
+        """Pick the scattered card least likely to be paired by the opponent.
+
+        Risk: an opponent already holding an odd count of the rank can eat the
+        discard immediately (dominant), plus the chance the opponent later
+        draws a matching copy (deck copies still unseen). Lower is safer.
+        """
+        choices = [
+            c for c in self._discardable(hand) if rank_of(c) != exclude_rank
+        ]
+        if not choices:
+            return None
+        remaining = self._remaining_by_rank()
+
+        def risk(card: str) -> float:
+            r = rank_of(card)
+            opp_copies = sum(1 for c in opponent if rank_of(c) == r)
+            deck_copies = remaining.get(r, 0)
+            return float(deck_copies) + (1000.0 if opp_copies % 2 == 1 else 0.0)
+
+        return min(choices, key=risk)
     def _discardable(self, hand: list[str]) -> list[str]:
         if len(hand) <= 1:
             return []
@@ -180,18 +219,22 @@ class WuDuiBoard:
         top = self.discard_pile[-1] if self.discard_pile else ""
         unmatched = self._unmatched(self.red)
         if top and unmatched and rank_of(top) in {rank_of(c) for c in unmatched}:
-            partners = [c for c in unmatched if rank_of(c) != rank_of(top)]
-            if partners and self.eat(top, random.choice(partners)) is None:
+            discard = self._ai_choose_discard(
+                self.red, self.black, exclude_rank=rank_of(top)
+            )
+            if discard is None:
+                partners = [c for c in unmatched if rank_of(c) != rank_of(top)]
+                discard = random.choice(partners) if partners else None
+            if discard is not None and self.eat(top, discard) is None:
                 return
         # Pass path: draw one, then discard a random unmatched from new hand.
         self.discard_pile = []
         self.red.append(self._draw())
         if self._finish_if_paired("red"):
             return
-        choices = self._discardable(self.red)
-        if not choices:
+        discard = self._ai_choose_discard(self.red, self.black)
+        if discard is None:
             return
-        discard = random.choice(choices)
         self.red.remove(discard)
         self.discard_pile.append(discard)
         if self._finish_if_paired("red"):
@@ -211,4 +254,5 @@ class WuDuiBoard:
             "last_action": self.last_action,
             "black_pairs": self._pairs_count(self.black),
             "red_pairs": self._pairs_count(self.red),
+            "deck_remaining": self._remaining_by_rank(),
         }

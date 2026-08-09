@@ -15,9 +15,31 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "gateway"))
 
 import websockets  # noqa: E402
+import wudui  # noqa: E402
 
 URL = "ws://127.0.0.1:8765"
 TID = "table_6"
+
+
+def _test_ai_discard_picker() -> None:
+    """AI must discard the scattered card least likely to be paired."""
+    b = wudui.WuDuiBoard()
+    b.phase = "playing"
+    b.turn = "red"
+    # Black can eat rank 2 / 3 immediately (odd copies) → AI must avoid them.
+    # Ranks 4–7 are safe (black holds pairs, 3 copies already seen).
+    b.black = ["2S", "3S", "4S", "4H", "5S", "5H", "6S", "6H", "7S", "7H"]
+    b.red = ["2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "10D", "QD"]
+    b.discard_pile = []  # no eat available → AI draws then discards
+    b.deck = ["AS", "AH", "AD", "AC", "KS", "KH", "KD", "KC", "QS", "QH", "QC"]
+    b.ai_red_move()
+    assert b.last_action == "pass", b.last_action
+    assert b.discard_pile, "AI should have discarded"
+    r = wudui.rank_of(b.discard_pile[-1])
+    assert r not in ("2", "3"), f"AI discarded dangerous rank {r}"
+    remaining = b._remaining_by_rank()
+    assert sum(remaining.values()) == len(b.deck), remaining
+    print("ai discard picker ok · discarded", b.discard_pile[-1], "· deck_remaining", remaining)
 
 
 async def _recv_until(ws, pred, timeout: float = 8.0):
@@ -42,6 +64,7 @@ def _is_table(msg, tid: str = TID) -> bool:
 
 
 async def main() -> int:
+    _test_ai_discard_picker()
     a = await websockets.connect(URL)
     b = await websockets.connect(URL)
     sa = json.loads(await asyncio.wait_for(a.recv(), 5))["session_id"]
@@ -68,6 +91,8 @@ async def main() -> int:
     t = _table(msg)
     assert t.get("phase") == "playing", t
     assert t.get("ai_fill_at", 0) == 0, "countdown cleared after second player deals"
+    dr = t.get("deck_remaining", {})
+    assert dr and sum(int(v) for v in dr.values()) == 33, "deck_remaining should total 54-21"
     assert len(t.get("black_cards", [])) == 11, t
     assert len(t.get("red_cards", [])) == 10, t
     assert t.get("turn") == "black", t

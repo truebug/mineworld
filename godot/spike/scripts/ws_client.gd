@@ -21,7 +21,7 @@ var session_id := ""
 var _ws := WebSocketPeer.new()
 
 const WS_INBOUND_BUF := 262144   # 256 KB — junqi fog views + full room state
-const WS_OUTBOUND_BUF := 65536   # 64 KB — commands are small
+const WS_OUTBOUND_BUF := 262144  # 256 KB — web JS socket can lag (throttled tabs)
 var _connecting := false
 var _intentional_close := false
 var _was_open := false
@@ -119,6 +119,18 @@ func send_msg(msg: Dictionary) -> void:
 
 func send_cmd(payload: Dictionary) -> void:
 	send_msg({"type": "cmd", "session_id": session_id, "payload": payload})
+
+
+func outbound_full(threshold: float = 0.5) -> bool:
+	"""True when the JS WebSocket send buffer is past the watermark.
+
+	Lossy-tolerant traffic (velocity/drive cmds) should be skipped while
+	congested instead of overflowing Godot's web packet buffer (which logs
+	"Buffer payload full! Dropping data." and drops the packet anyway).
+	"""
+	if _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		return true
+	return _ws.get_current_outbound_buffered_amount() >= float(WS_OUTBOUND_BUF) * threshold
 
 
 func join(
