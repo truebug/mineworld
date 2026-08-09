@@ -103,6 +103,8 @@
 | Fun-G | 幽灵挑战 | `MWGhost` 今日最佳榜 + 一键挑战，每日重置 | [x] best_lap?today=1 + G 键重载 + 状态行文案 · 2026-08-07 |
 | Fun-E | 围观席 + 表情 | 桌满可旁观牌局；快捷表情/喝彩复用 chat 通道 | [ ] 旁观视角 + 表情广播 |
 
+> 交接：棋牌室卡牌双人化（21点多人/五对人机/牌堆与UI修复）见 [32-handover-chess-cards.md](32-handover-chess-cards.md)；Fun-S/R/E 入口与验证链同文档。
+
 #### B2 已交付（勿再当 Next）
 
 - Gateway：`demo_race` ≥2 受控 → 武装；首过 `obj_race_finish` → `duel_result`（胜者当帧、其余次帧）；全员完赛 re-arm；单人不 settle。
