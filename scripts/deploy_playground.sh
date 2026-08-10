@@ -54,6 +54,17 @@ for var, val in [("MW_BUILD", build), ("MINEWORLD_GATEWAY", gw)]:
 # Cache-bust the immutable pck URL: index.pck?v=<build> so browsers/CDN
 # that hold a 30-day immutable cache still fetch the new game content.
 s = re.sub(r'"index\.pck"', f'"index.pck?v={build}"', s)
+# Cache-bust touch pad (nginx marks *.js immutable 30d — Pico was stuck on old/empty behavior).
+s = re.sub(
+    r'src="mw_touch_pad\.js[^"]*"',
+    f'src="mw_touch_pad.js?v={build}"',
+    s,
+)
+if f'mw_touch_pad.js?v={build}' not in s:
+    s = s.replace(
+        '<script src="mw_touch_pad.js"></script>',
+        f'<script src="mw_touch_pad.js?v={build}"></script>',
+    )
 open(p, 'w').write(s)
 print(f"MW_BUILD={build}")
 PY
