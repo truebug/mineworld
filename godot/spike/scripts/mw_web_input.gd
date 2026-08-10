@@ -13,6 +13,8 @@ const WEB_BLOCK_CODES := {
 }
 
 var _held_codes: Dictionary = {}
+## Previous _mw_keys snapshot — emit web_key_event on rising/falling edges (touch F/Space).
+var _mw_keys_prev: Dictionary = {}
 var _web_key_cb
 var _web_blur_cb
 var _initialized := false
@@ -60,10 +62,28 @@ func _process(_delta: float) -> void:
 	var parsed: Variant = JSON.parse_string(raw)
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
+	var mirror := parsed as Dictionary
 	# Only codes present in the mirror — do not wipe DOM-listener keys when
 	# _mw_keys is empty/uninstalled (would cancel all Web WASD).
-	for k in (parsed as Dictionary).keys():
-		_held_codes[str(k)] = bool((parsed as Dictionary)[k])
+	for k in mirror.keys():
+		var code := str(k)
+		var down := bool(mirror[k])
+		var before_held := bool(_held_codes.get(code, false))
+		_held_codes[code] = down
+		# Emit only when held state changes (DOM listener may already have
+		# applied the same key — avoid double F/Space interact).
+		if down != before_held:
+			web_key_event.emit(code, down)
+		_mw_keys_prev[code] = down
+	# Codes that disappeared from mirror → treat as release once.
+	for k in _mw_keys_prev.keys():
+		var code2 := str(k)
+		if mirror.has(code2):
+			continue
+		if bool(_held_codes.get(code2, false)):
+			_held_codes[code2] = false
+			web_key_event.emit(code2, false)
+		_mw_keys_prev[code2] = false
 
 
 func _on_dom_key_event(args: Array) -> void:
@@ -99,6 +119,7 @@ func _typing_in_field() -> bool:
 
 func clear() -> void:
 	_held_codes.clear()
+	_mw_keys_prev.clear()
 
 
 func get_axis(positive: String, negative: String) -> float:
