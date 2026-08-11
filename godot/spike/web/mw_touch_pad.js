@@ -38,12 +38,26 @@
 		}
 	}
 
+	function desktopOS() {
+		/* Mac/Win/Linux desktop UA — never treat as Pico/phone even if
+		 * matchMedia lies or sticky localStorage remains from ?touch=1 tests. */
+		try {
+			var ua = navigator.userAgent || "";
+			if (/Pico|PICO|Android|Mobile|Quest/i.test(ua)) return false;
+			return /Macintosh|Mac OS X|Windows|Linux/i.test(ua);
+		} catch (e) {
+			return false;
+		}
+	}
+
 	function coarsePointer() {
+		/* Desktop browsers must keep trackpad/mouse → canvas. */
+		if (desktopOS()) return false;
 		try {
 			if (window.matchMedia && matchMedia("(pointer: coarse)").matches) return true;
 		} catch (e) { /* ignore */ }
 		try {
-			return /Pico|PICO|Android|Mobile|Quest|XR/i.test(navigator.userAgent || "");
+			return /Pico|PICO|Android|Mobile|Quest/i.test(navigator.userAgent || "");
 		} catch (e2) { /* ignore */ }
 		return false;
 	}
@@ -52,16 +66,17 @@
 		var t = qs("touch").toLowerCase();
 		if (t === "0" || t === "false" || t === "off") return false;
 		if (t === "1" || t === "true" || t === "on") return true;
+		/* Fine-pointer / desktop: never auto-open. Ignore sticky
+		 * localStorage=1 (common after clicking「虚拟键」or Pico testing in
+		 * the same browser profile) — that left Mac trackpad under a
+		 * full-screen overlay and looked like "touchpad dead". */
+		if (!coarsePointer()) return false;
 		try {
 			var ls = localStorage.getItem("mw-touch-pad");
 			if (ls === "0") return false;
 			if (ls === "1") return true;
 		} catch (e2) { /* ignore */ }
-		/* Auto-enable only for real coarse-pointer/touch devices.
-		 * Do NOT trust navigator.maxTouchPoints>0 alone (touchscreen laptops)
-		 * or navigator.xr alone (desktop Chrome exposes WebXR without a headset):
-		 * both would show the pad on a plain desktop browser and kill the mouse. */
-		return coarsePointer();
+		return true;
 	}
 
 	function setKey(code, down) {
@@ -188,7 +203,10 @@
 		"#mw-touch-pad .mw-tp-extra{pointer-events:none;display:flex;gap:6px;}" +
 		"#mw-touch-pad .mw-tp-dir.mw-tp-down,#mw-touch-pad .mw-tp-btn.mw-tp-down{background:rgba(61,139,253,0.65);}" +
 		"#mw-visitor-shell.open ~ #mw-touch-pad{visibility:hidden;}" +
-		"body.mw-tp-canvas-lock #canvas{pointer-events:none !important;}";
+		/* Only headset/coarse builds may lock the game canvas. */
+		"body.mw-tp-canvas-lock #canvas{pointer-events:none !important;}" +
+		/* Collapsed on desktop: no full-screen stacking layer — chip only. */
+		"#mw-touch-pad.mw-tp-collapsed{inset:auto;left:0;right:0;bottom:0;height:72px;width:100%;}";
 
 	function setKnob(id, dx, dy) {
 		var knob = document.getElementById(id);
@@ -209,11 +227,17 @@
 		var shown =
 			root.classList.contains("mw-tp-on") &&
 			!root.classList.contains("mw-tp-collapsed");
-		/* Lock the canvas ONLY on coarse-pointer devices; a fine mouse must
-		 * keep driving the canvas even when the pad is shown (?touch=1 desktop). */
-		var lock = shown && coarsePointer();
-		window._MW_CANVAS_LOCKED = lock;
-		document.body.classList.toggle("mw-tp-canvas-lock", lock);
+		/* Never lock on desktop/trackpad. Even ?touch=1 keeps canvas live. */
+		var lock = shown && coarsePointer() && !desktopOS();
+		window._MW_CANVAS_LOCKED = !!lock;
+		document.body.classList.toggle("mw-tp-canvas-lock", !!lock);
+		if (!lock) {
+			try {
+				document.body.classList.remove("mw-tp-canvas-lock");
+				var c = document.getElementById("canvas");
+				if (c) c.style.pointerEvents = "";
+			} catch (e) { /* ignore */ }
+		}
 	}
 
 	function setBanner(text, gpOk) {
@@ -229,6 +253,14 @@
 		/* Last in body: win stacking vs Hub chat (z …646). */
 		document.body.appendChild(root);
 		root.classList.add("mw-tp-on");
+		/* Drop sticky desktop preference so Mac trackpad isn't stuck under pads. */
+		if (!coarsePointer()) {
+			try {
+				if (localStorage.getItem("mw-touch-pad") === "1") {
+					localStorage.removeItem("mw-touch-pad");
+				}
+			} catch (e0) { /* ignore */ }
+		}
 		if (wantPad()) root.classList.remove("mw-tp-collapsed");
 		else root.classList.add("mw-tp-collapsed");
 		syncCanvasLock();
@@ -477,9 +509,12 @@
 		}
 		if (showBtn) {
 			showBtn.addEventListener("click", function (ev) {
-				try {
-					localStorage.setItem("mw-touch-pad", "1");
-				} catch (e) { /* ignore */ }
+				/* Persist only on coarse devices; desktop is session-only. */
+				if (coarsePointer()) {
+					try {
+						localStorage.setItem("mw-touch-pad", "1");
+					} catch (e) { /* ignore */ }
+				}
 				root.classList.remove("mw-tp-collapsed");
 				syncCanvasLock();
 				ev.preventDefault();

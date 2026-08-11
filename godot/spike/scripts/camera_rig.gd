@@ -268,13 +268,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _touch_pad_locks_mouse() -> bool:
-	"""True when shell touch pad actively locks the canvas (coarse-pointer devices)."""
-	return bool(
-		JavaScriptBridge.eval(
-			"(function(){try{return !!window._MW_CANVAS_LOCKED}catch(e){return false}})()",
-			true
-		)
+	"""True only for an explicit JS boolean true (avoid bool(\"false\")==true)."""
+	var v: Variant = JavaScriptBridge.eval(
+		"(function(){try{return window._MW_CANVAS_LOCKED===true}catch(e){return false}})()",
+		true
 	)
+	return v == true
 
 
 func _refresh_drag_kind() -> void:

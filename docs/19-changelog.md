@@ -7,6 +7,13 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-11 · 修复：Mac 触控板被粘性虚拟盘盖住
+
+- **现象**：MacBook 强刷后左右虚拟盘仍全开，触控板点 canvas 无响应；另一台 PC 外接鼠标正常。
+- **根因**：桌面点过「虚拟键」或 `?touch=1` 后 `localStorage.mw-touch-pad=1` 持久展开全屏叠层；即便不锁 `pointer-events`，高层 `#mw-touch-pad` 仍干扰触控板命中。
+- **修复**：`desktopOS()` 排除 Mac/Win/Linux 桌面；桌面忽略粘性 localStorage、启动清掉 `=1`、收起态去掉全屏 inset；`camera_rig` 仅当 JS 严格 `=== true` 才吞鼠标。Pico/粗指针行为不变。
+- 现网：`MW_BUILD=20260811-095606`。
+
 ## 2026-08-11 · 触控/手柄方向修正 + 出站缓冲加固（Buffer payload full）
 
 - **摇杆方向修正**：`mw_touch_pad.js` `stickInvertOn()` 原默认开启（仅 `?stickInvert=0` 才关），叠加「上→W、右→E」自然映射后变成双重取反——上推后退、右推左转。改为默认不反转（`?stickInvert=1` 才反转），虚拟摇杆与 Gamepad 轴统一为自然方向（上=前进、右=右转）。
