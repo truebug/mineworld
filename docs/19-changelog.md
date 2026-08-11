@@ -7,11 +7,35 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
-## 2026-08-11 · 主站默认关闭虚拟盘（键鼠优先；Pico 用 ?touch=1）
+## 2026-08-11 · 冻结：放弃 Web/Pico 摇杆，恢复键鼠基线
 
-- **产品 A**：`wantPad()` 仅 `?touch=1|true|on` 为真；不再因 coarse/Pico UA 或 localStorage 自动展开。默认无虚拟盘/「虚拟键」芯片，canvas 锁不触发 → 主站键鼠通路恢复。
-- Pico/iPad：打开 `https://playground.dev.databall.tech/?touch=1`（盘开启时仍可按 coarse 锁 canvas，避免已知卡死路径「无锁开盘」）。
-- 未改 `camera_rig`；未走「永不锁 canvas」。
+- **决定**：不再在 Godot Web 2D Hub 接入 Pico 左右摇杆；产品态 = 键鼠 only。
+- **回滚**：删除 `MWTouchSticks`/`MWStickPad`；去掉 P1 Joy Input Map；`camera_rig` 回到无 Pico 特例；无 DOM `mw_touch_pad`。
+- **记录**：[29-web-pico-input-postmortem.md](29-web-pico-input-postmortem.md)（踩坑、禁令、给下一任 Agent 的建议）。
+
+## 2026-08-11 · P2 可见性修复：自绘高对比摇盘（替代 VirtualJoystick 默认黑环）
+
+- **现象**：Pico 上报「看不到虚拟盘」。
+- **原因**：`VirtualJoystick` 默认 StyleBox 偏黑，暗色 Hub 上几乎不可见；另有 UA 未匹配则根本不挂载。
+- **修复**：改为 `MWStickPad` 自绘白环/蓝钮；放宽 Pico/coarse 检测；挂载时顶栏提示 + `console.log`；强制可用 `?touch=1`。
+
+## 2026-08-11 · Web 输入 P2：Pico 引擎内 VirtualJoystick（非 DOM）
+
+- **根因**：Pico 2D Browser 把物理摇杆映射成激光/鼠标，不是 Gamepad；扳机≈LMB，推杆≈拖视角 → P1 Input Map 无效，「双杆都在转视角」。
+- **P2**：`MWTouchSticks` 在 Pico UA 或 `?touch=1` 挂左右 `VirtualJoystick`（左移动/右转向）+ F；`Input.emulate_touch_from_mouse` 让激光可拖盘；`camera_rig.set_ignore_mouse_look(true)` 禁止激光拖视角。无 DOM、不锁 canvas。
+- **桌面**：默认不变；`?touch=0` 可关 Pico 自动盘。
+
+## 2026-08-11 · Web 输入 P0 冻结 + P1 实体手柄（无 DOM 盘）
+
+- **P0 基线**：已回撤 `mw_touch_pad.js`；主站默认仅键鼠。禁令：不恢复 DOM 虚拟盘 / 不锁 `#canvas` 修鼠标 / 鼠标热路径不狂调 `JavaScriptBridge.eval` / 正式发版只用 `deploy_playground.sh`。失败先回滚可进 build。
+- **P1**：`project.godot` Input Map 为 `move_*` / `strafe_*` / `turn_*` 增加 Joy 轴（左摇杆移动、右摇杆转向）；`hub.gd` / `main.gd` 在键空闲时 `Input.get_axis`（含 Web）。无 UI、无 shell 改动。Web 手柄需先按任意键才枚举（Godot/浏览器限制）。
+- **未做**：VirtualJoystick / Pico 虚拟盘（P2）。
+
+## 2026-08-11 · 回撤 Web 虚拟双盘（恢复 08-09 键鼠通路）
+
+- **原因**：自 `cea3658`（08-10）起引入 `mw_touch_pad.js` 后，连续修补导致主站卡死/鼠标失灵，越改越乱。
+- **动作**：删除 `mw_touch_pad.js` 及 shell/export/deploy 注入；`camera_rig` / `mw_web_input` / Hub tip 回到双盘之前（`cea3658^`）。保留无关修复（如 `main.gd` 出站缓冲）。
+- **产品态**：playground 默认仅键盘 + 鼠标；Pico 虚拟摇杆/手柄盘暂不下主站。后续若重做须独立分支、小步完整发版。
 
 ## 2026-08-11 · Web 输入：已知可进基线 + canvas 解锁会卡死（暂停修鼠标）
 

@@ -815,12 +815,10 @@ func _compose_and_push_tips() -> void:
 	chunks.append(
 		MWi18n.t(
 			"WASD 平移 | Q/E 转向 | F 交互 | 空格跳跃\n"
-			+ "默认键鼠；Pico/触控请加 ?touch=1 开虚拟盘\n"
 			+ "左键 peek 回中 · 右键粘性环视 · 中键/左右同按平移 · 滚轮缩放 · C 强制回中 · V 相机\n"
 			+ "门：A 工坊 · B 训练 · C 卡片 · D 边缘 · E 竞技(建设中) · R 赛车\n"
 			+ "（点击折叠）",
 			"WASD strafe | Q/E turn | F interact | Space jump\n"
-			+ "Keyboard/mouse by default; Pico/touch: add ?touch=1 for virtual pad\n"
 			+ "LMB peek · RMB sticky look · MMB/L+R pan · wheel zoom · C recenter · V camera\n"
 			+ "Doors: A Workshop · B Training · C Cards · D Edge · E Arena(WIP) · R Race · P Chess\n"
 			+ "(click to collapse)"

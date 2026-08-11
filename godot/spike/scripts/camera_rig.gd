@@ -225,12 +225,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			cycle_view_mode()
 			get_viewport().set_input_as_handled()
 			return
-	# Pico/touch pad locks canvas pointer-events in JS; also ignore mouse here
-	# if the flag is set (belt-and-suspenders against look spin).
-	if OS.has_feature("web") and _touch_pad_locks_mouse():
-		if event is InputEventMouseButton or event is InputEventMouseMotion:
-			get_viewport().set_input_as_handled()
-			return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
@@ -265,15 +259,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			_on_mouse_look(rel, _drag == DragKind.STICKY)
 		get_viewport().set_input_as_handled()
-
-
-func _touch_pad_locks_mouse() -> bool:
-	"""True only for an explicit JS boolean true (avoid bool(\"false\")==true)."""
-	var v: Variant = JavaScriptBridge.eval(
-		"(function(){try{return window._MW_CANVAS_LOCKED===true}catch(e){return false}})()",
-		true
-	)
-	return v == true
 
 
 func _refresh_drag_kind() -> void:

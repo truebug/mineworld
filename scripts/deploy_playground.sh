@@ -14,6 +14,8 @@ SITE_URL="https://playground.dev.databall.tech/"
 
 echo "== 1/6 export web =="
 bash scripts/export_godot.sh web
+# P0: never ship retired DOM pad (rsync has no --delete for orphans).
+rm -f dist/web/mw_touch_pad.js
 
 echo "== 1.5/6 gdscript lint =="
 .venv/bin/python scripts/gdscript_lint.py || { echo "ERROR: gdscript lint failed" >&2; exit 1; }
@@ -54,17 +56,6 @@ for var, val in [("MW_BUILD", build), ("MINEWORLD_GATEWAY", gw)]:
 # Cache-bust the immutable pck URL: index.pck?v=<build> so browsers/CDN
 # that hold a 30-day immutable cache still fetch the new game content.
 s = re.sub(r'"index\.pck"', f'"index.pck?v={build}"', s)
-# Cache-bust touch pad (nginx marks *.js immutable 30d — Pico was stuck on old/empty behavior).
-s = re.sub(
-    r'src="mw_touch_pad\.js[^"]*"',
-    f'src="mw_touch_pad.js?v={build}"',
-    s,
-)
-if f'mw_touch_pad.js?v={build}' not in s:
-    s = s.replace(
-        '<script src="mw_touch_pad.js"></script>',
-        f'<script src="mw_touch_pad.js?v={build}"></script>',
-    )
 open(p, 'w').write(s)
 print(f"MW_BUILD={build}")
 PY
@@ -81,7 +72,8 @@ rsync -az \
 rsync -az scripts/inject_site_branding.local.py "${REMOTE}scripts/"
 
 echo "== 5/6 brand + restart =="
-ssh "$SSH_HOST" "python3 /opt/mineworld/scripts/inject_site_branding.local.py /opt/mineworld \
+ssh "$SSH_HOST" "rm -f /opt/mineworld/dist/web/mw_touch_pad.js /opt/mineworld/godot/spike/web/mw_touch_pad.js \
+  && python3 /opt/mineworld/scripts/inject_site_branding.local.py /opt/mineworld \
   && sudo systemctl restart mineworld-web mineworld-gateway \
   && systemctl is-active mineworld-web mineworld-gateway"
 

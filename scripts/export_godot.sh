@@ -50,14 +50,9 @@ case "$TARGET" in
     fi
     # Main-thread key bridge (required: multi-thread workers cannot bind document).
     cp "$PROJECT/web/mw_key_bridge.js" "$OUT_DIR/mw_key_bridge.js"
-    cp "$PROJECT/web/mw_touch_pad.js" "$OUT_DIR/mw_touch_pad.js"
     if ! grep -q "mw_key_bridge.js" "$OUT_FILE"; then
       # Fallback if head_include was stripped: inject before </head>
       sed -i.bak 's#</head>#<script src="mw_key_bridge.js"></script></head>#' "$OUT_FILE"
-      rm -f "$OUT_FILE.bak"
-    fi
-    if ! grep -q "mw_touch_pad.js" "$OUT_FILE"; then
-      sed -i.bak 's#</head>#<script src="mw_touch_pad.js"></script></head>#' "$OUT_FILE"
       rm -f "$OUT_FILE.bak"
     fi
     if ! grep -q 'id="mw-hud"' "$OUT_FILE"; then
@@ -73,13 +68,12 @@ if len(parts) < 2 or 'id="mw-hud"' not in parts[1]:
     raise SystemExit("ERROR: #mw-hud is not inside <body>")
 print("OK: #mw-hud is inside <body>")
 PY
-    echo "OK: $OUT_DIR (single-thread Web + mw_key_bridge.js + mw_touch_pad.js + body HUD)"
+    echo "OK: $OUT_DIR (single-thread Web + mw_key_bridge.js + body HUD)"
     echo "Serve:"
     echo "  .venv/bin/python scripts/serve_web_demo.py"
     echo "Gateway:"
     echo "  .venv/bin/python gateway/echo_server.py --host 127.0.0.1"
-    echo "Touch pad: auto on Pico/touch; force ?touch=1 · off ?touch=0"
-    echo "Expect console: [MW] key bridge / [MW] touch pad"
+    echo "Expect console: [MW] key bridge: document listeners registered"
     echo "Hard-refresh browser (Cmd+Shift+R) after re-export."
     ;;
   macos|macOS|osx)
