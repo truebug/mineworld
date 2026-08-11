@@ -13,7 +13,10 @@
 	if (window._mwTouchPad) return;
 	window._mwTouchPad = true;
 	window._mw_keys = window._mw_keys || Object.create(null);
-	window._MW_TOUCH_PAD_ACTIVE = false;
+	/* Gamepad polling runs as long as the script is loaded — independent of
+	 * whether the virtual pad UI is shown. A desktop user with a real
+	 * gamepad (pad UI hidden by default) must still get left-stick move. */
+	window._MW_TOUCH_PAD_LOADED = true;
 
 	var MOVE_CODES = ["KeyW", "KeyA", "KeyS", "KeyD"];
 	var DEAD = 0.28;
@@ -35,6 +38,16 @@
 		}
 	}
 
+	function coarsePointer() {
+		try {
+			if (window.matchMedia && matchMedia("(pointer: coarse)").matches) return true;
+		} catch (e) { /* ignore */ }
+		try {
+			return /Pico|PICO|Android|Mobile|Quest|XR/i.test(navigator.userAgent || "");
+		} catch (e2) { /* ignore */ }
+		return false;
+	}
+
 	function wantPad() {
 		var t = qs("touch").toLowerCase();
 		if (t === "0" || t === "false" || t === "off") return false;
@@ -44,16 +57,11 @@
 			if (ls === "0") return false;
 			if (ls === "1") return true;
 		} catch (e2) { /* ignore */ }
-		var ua = navigator.userAgent || "";
-		if (/Pico|PICO|Android|Mobile|Quest|XR/i.test(ua)) return true;
-		if (navigator.maxTouchPoints > 0) return true;
-		try {
-			if (window.matchMedia && matchMedia("(pointer: coarse)").matches) return true;
-		} catch (e3) { /* ignore */ }
-		try {
-			if (navigator.xr) return true;
-		} catch (e4) { /* ignore */ }
-		return false;
+		/* Auto-enable only for real coarse-pointer/touch devices.
+		 * Do NOT trust navigator.maxTouchPoints>0 alone (touchscreen laptops)
+		 * or navigator.xr alone (desktop Chrome exposes WebXR without a headset):
+		 * both would show the pad on a plain desktop browser and kill the mouse. */
+		return coarsePointer();
 	}
 
 	function setKey(code, down) {
@@ -196,11 +204,14 @@
 	}
 
 	function syncCanvasLock() {
-		var on =
+		var shown =
 			root.classList.contains("mw-tp-on") &&
 			!root.classList.contains("mw-tp-collapsed");
-		window._MW_TOUCH_PAD_ACTIVE = on;
-		document.body.classList.toggle("mw-tp-canvas-lock", on);
+		/* Lock the canvas ONLY on coarse-pointer devices; a fine mouse must
+		 * keep driving the canvas even when the pad is shown (?touch=1 desktop). */
+		var lock = shown && coarsePointer();
+		window._MW_CANVAS_LOCKED = lock;
+		document.body.classList.toggle("mw-tp-canvas-lock", lock);
 	}
 
 	function setBanner(text, gpOk) {
@@ -337,7 +348,7 @@
 	}
 
 	function pollGamepad() {
-		if (!window._MW_TOUCH_PAD_ACTIVE) return;
+		if (!window._MW_TOUCH_PAD_LOADED) return;
 		var p = readPad();
 		if (!p) {
 			if (gpLive) {

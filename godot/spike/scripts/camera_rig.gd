@@ -268,10 +268,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _touch_pad_locks_mouse() -> bool:
-	"""True when shell touch pad is active (Pico/touch locomotion mode)."""
+	"""True when shell touch pad actively locks the canvas (coarse-pointer devices)."""
 	return bool(
 		JavaScriptBridge.eval(
-			"(function(){try{return !!window._MW_TOUCH_PAD_ACTIVE}catch(e){return false}})()",
+			"(function(){try{return !!window._MW_CANVAS_LOCKED}catch(e){return false}})()",
 			true
 		)
 	)

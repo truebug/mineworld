@@ -7,6 +7,13 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-11 · 修复：触控摇杆误锁桌面鼠标 + 手柄轮询与摇杆盘解耦
+
+- **鼠标被干没的根因**：`mw_touch_pad.js` 自动开启条件过宽——`navigator.xr` 在桌面 Chrome 无头显也存在、`navigator.maxTouchPoints > 0` 命中带触摸屏的笔记本，普通桌面浏览器默认点亮摇杆盘 → `body.mw-tp-canvas-lock #canvas{pointer-events:none !important}` 锁死整个 canvas，`camera_rig.gd` 又按 `_MW_TOUCH_PAD_ACTIVE` 吞掉全部鼠标按键/移动事件（双保险把鼠标双杀）。
+- **修复**：自动开启只认「粗指针/真触屏」——`(pointer: coarse)` 主指针或 Pico/Android/Mobile/Quest UA；删掉裸 `maxTouchPoints` 与 `navigator.xr` 两个桌面误触发。新增 `_MW_CANVAS_LOCKED`（仅粗指针设备才锁 canvas），`camera_rig.gd` 改读它；`?touch=1` 桌面强制显示摇杆盘也不再锁鼠标。
+- **手柄不失效保证**：`pollGamepad()` 闸门从 `_MW_TOUCH_PAD_ACTIVE`（摇杆盘可见）改为 `_MW_TOUCH_PAD_LOADED`（脚本加载即常真），手柄轮询与摇杆盘 UI/canvas 锁彻底解耦；手柄 → `setKey` → `window._mw_keys` → `mw_web_input.gd`，与鼠标通道互不干扰。`gamepadconnected`/首推杆自动解锁/「启用双手柄」按钮路径均保留。
+- 验证：node --check + gdscript lint 0 finding + 6 场景编译门全绿。
+
 ## 2026-08-09 · 五对动画套件（发牌/出牌/吃牌飞行 + 配对闪光 + 五对达成）
 
 - **发牌动画**：开局/重发全手按 60ms 错峰飞入（`fly_in`，0.32s ease-out，0.65→1.0 缩放，8°→0 旋转），视觉上「牌飞上桌」。
