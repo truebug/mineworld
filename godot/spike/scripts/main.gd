@@ -49,6 +49,9 @@ var _duel_hint_idx: Dictionary = {}  # eid -> last nearest centerline idx
 var _last_error := ""
 var _cmd_timer := 0.0
 var _last_log_tick := -1
+var _last_velocity_idle := false
+var _last_drive_idle := false
+var _last_velocity_print_key := ""
 var _controlled := false
 var _mission_done := false
 var _status_line := ""
@@ -931,12 +934,21 @@ func _challenge_today_ghost() -> void:
 func _send_drive_cmd() -> void:
 	if _controlled_entity_id == "":
 		return
+	var throttle := snappedf(_drive.throttle, 0.01)
+	var brake := snappedf(_drive.brake, 0.01)
+	var steer := snappedf(_drive.steer, 0.01)
+	var idle := throttle == 0.0 and brake == 0.0 and steer == 0.0
+	if idle and _last_drive_idle:
+		return
+	_last_drive_idle = idle
+	if ws.outbound_full():
+		return
 	ws.send_cmd({
 		"entity_id": _controlled_entity_id,
 		"control_mode": "drive",
-		"throttle": snappedf(_drive.throttle, 0.01),
-		"brake": snappedf(_drive.brake, 0.01),
-		"steer": snappedf(_drive.steer, 0.01),
+		"throttle": throttle,
+		"brake": brake,
+		"steer": steer,
 		"handbrake": 0.0,
 	})
 
@@ -1015,7 +1027,13 @@ func _send_velocity_cmd() -> void:
 			vx = Input.get_axis("move_back", "move_forward") * spd
 			vy = Input.get_axis("strafe_left", "strafe_right") * -spd
 			yaw_rate = Input.get_axis("turn_cw", "turn_ccw") * turn
-	if vx != 0.0 or vy != 0.0 or yaw_rate != 0.0:
+	var idle := vx == 0.0 and vy == 0.0 and yaw_rate == 0.0
+	if idle and _last_velocity_idle:
+		return
+	_last_velocity_idle = idle
+	var vkey := "%s|%s|%s" % [snappedf(vx, 0.1), snappedf(vy, 0.1), snappedf(yaw_rate, 0.1)]
+	if vkey != _last_velocity_print_key:
+		_last_velocity_print_key = vkey
 		print("[MW] cmd vx=%.1f vy=%.1f yaw_rate=%.1f entity=%s" % [vx, vy, yaw_rate, _controlled_entity_id])
 	var payload := {
 		"entity_id": _controlled_entity_id,

@@ -21,7 +21,7 @@ var session_id := ""
 var _ws := WebSocketPeer.new()
 
 const WS_INBOUND_BUF := 262144   # 256 KB — junqi fog views + full room state
-const WS_OUTBOUND_BUF := 262144  # 256 KB — web JS socket can lag (throttled tabs)
+const WS_OUTBOUND_BUF := 524288  # 512 KB — web JS socket can lag (throttled tabs)
 var _connecting := false
 var _intentional_close := false
 var _was_open := false

@@ -76,7 +76,9 @@
 
 	function stickInvertOn() {
 		var inv = qs("stickInvert").toLowerCase();
-		return inv !== "0" && inv !== "false" && inv !== "off";
+		/* Natural direction by default: stick up → W (forward), stick right → E
+		 * (turn right). Only invert when explicitly asked (?stickInvert=1). */
+		return inv === "1" || inv === "true" || inv === "on";
 	}
 
 	function applyMoveStick(nx, ny) {

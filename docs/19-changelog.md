@@ -7,6 +7,12 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-11 · 触控/手柄方向修正 + 出站缓冲加固（Buffer payload full）
+
+- **摇杆方向修正**：`mw_touch_pad.js` `stickInvertOn()` 原默认开启（仅 `?stickInvert=0` 才关），叠加「上→W、右→E」自然映射后变成双重取反——上推后退、右推左转。改为默认不反转（`?stickInvert=1` 才反转），虚拟摇杆与 Gamepad 轴统一为自然方向（上=前进、右=右转）。
+- **出站缓冲加固（Buffer payload full）**：`main.gd` 速度命令补上空闲去重（原先静止时仍每 20Hz 发全零命令，连接卡顿时快速灌满缓冲）+ 出站水位保护（`_send_drive_cmd` 同款）；`[MW] cmd ...` 打印改为命令变化时输出（原移动时每 tick 刷屏）；`ws_client.gd` 出站缓冲 256KB→512KB 留余量。
+- 验证：node --check + gdscript lint 0 finding + 6 场景编译门全绿。
+
 ## 2026-08-11 · 修复：触控摇杆误锁桌面鼠标 + 手柄轮询与摇杆盘解耦
 
 - **鼠标被干没的根因**：`mw_touch_pad.js` 自动开启条件过宽——`navigator.xr` 在桌面 Chrome 无头显也存在、`navigator.maxTouchPoints > 0` 命中带触摸屏的笔记本，普通桌面浏览器默认点亮摇杆盘 → `body.mw-tp-canvas-lock #canvas{pointer-events:none !important}` 锁死整个 canvas，`camera_rig.gd` 又按 `_MW_TOUCH_PAD_ACTIVE` 吞掉全部鼠标按键/移动事件（双保险把鼠标双杀）。
