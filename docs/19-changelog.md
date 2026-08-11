@@ -7,6 +7,12 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-11 · 主站默认关闭虚拟盘（键鼠优先；Pico 用 ?touch=1）
+
+- **产品 A**：`wantPad()` 仅 `?touch=1|true|on` 为真；不再因 coarse/Pico UA 或 localStorage 自动展开。默认无虚拟盘/「虚拟键」芯片，canvas 锁不触发 → 主站键鼠通路恢复。
+- Pico/iPad：打开 `https://playground.dev.databall.tech/?touch=1`（盘开启时仍可按 coarse 锁 canvas，避免已知卡死路径「无锁开盘」）。
+- 未改 `camera_rig`；未走「永不锁 canvas」。
+
 ## 2026-08-11 · Web 输入：已知可进基线 + canvas 解锁会卡死（暂停修鼠标）
 
 - **可进基线**：`110ca66` / playground 以该树部署；键盘可用。

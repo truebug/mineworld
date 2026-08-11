@@ -1,21 +1,16 @@
 /* MineWorld Web — dual virtual sticks + Gamepad direct bind.
  *
- * Why laser-on-stick worked before:
- *   Pico 2D Browser often treats physical sticks as ONE shared cursor.
- *   Hover virtual stick → stick moves cursor → pointer events → WASD.
- *   That cannot map L-stick→left pad and R-stick→right pad independently.
+ * Main playground default: pad UI OFF (keyboard/mouse).
+ * Opt-in: ?touch=1 (Pico / iPad / force). Never auto-open on coarse UA —
+ * unlocking canvas for free mouse while pad is up has frozen Web Hub.
  *
- * Goal:
- *   If Gamepad API exposes axes → left stick = move, right stick = turn (no laser).
- *   Else fallback: laser + ↑↓←→ / F (and hover-drag sticks).
+ * If Gamepad API exposes axes (with pad UI or USB pad): left=move, right=turn.
  */
 (function () {
 	if (window._mwTouchPad) return;
 	window._mwTouchPad = true;
 	window._mw_keys = window._mw_keys || Object.create(null);
-	/* Gamepad polling runs as long as the script is loaded — independent of
-	 * whether the virtual pad UI is shown. A desktop user with a real
-	 * gamepad (pad UI hidden by default) must still get left-stick move. */
+	/* Gamepad polling stays loaded so ?touch=1 / USB pads can bind axes. */
 	window._MW_TOUCH_PAD_LOADED = true;
 
 	var MOVE_CODES = ["KeyW", "KeyA", "KeyS", "KeyD"];
@@ -51,7 +46,7 @@
 	}
 
 	function coarsePointer() {
-		/* Desktop browsers must keep trackpad/mouse → canvas. */
+		/* Used only when pad UI is on (?touch=1) to decide canvas lock. */
 		if (desktopOS()) return false;
 		try {
 			if (window.matchMedia && matchMedia("(pointer: coarse)").matches) return true;
@@ -63,20 +58,11 @@
 	}
 
 	function wantPad() {
+		/* Product A: main site default OFF. Pico/iPad: ?touch=1 only. */
 		var t = qs("touch").toLowerCase();
 		if (t === "0" || t === "false" || t === "off") return false;
 		if (t === "1" || t === "true" || t === "on") return true;
-		/* Fine-pointer / desktop: never auto-open. Ignore sticky
-		 * localStorage=1 (common after clicking「虚拟键」or Pico testing in
-		 * the same browser profile) — that left Mac trackpad under a
-		 * full-screen overlay and looked like "touchpad dead". */
-		if (!coarsePointer()) return false;
-		try {
-			var ls = localStorage.getItem("mw-touch-pad");
-			if (ls === "0") return false;
-			if (ls === "1") return true;
-		} catch (e2) { /* ignore */ }
-		return true;
+		return false;
 	}
 
 	function setKey(code, down) {
@@ -252,17 +238,18 @@
 		if (!style.parentNode) document.head.appendChild(style);
 		/* Last in body: win stacking vs Hub chat (z …646). */
 		document.body.appendChild(root);
-		root.classList.add("mw-tp-on");
-		/* Drop sticky desktop preference so Mac trackpad isn't stuck under pads. */
-		if (!coarsePointer()) {
-			try {
-				if (localStorage.getItem("mw-touch-pad") === "1") {
-					localStorage.removeItem("mw-touch-pad");
-				}
-			} catch (e0) { /* ignore */ }
+		/* Drop legacy sticky preference — main site no longer auto-opens pad. */
+		try {
+			localStorage.removeItem("mw-touch-pad");
+		} catch (e0) { /* ignore */ }
+		if (wantPad()) {
+			root.classList.add("mw-tp-on");
+			root.classList.remove("mw-tp-collapsed");
+		} else {
+			/* Default: no pad chrome (no「虚拟键」chip). Pico: ?touch=1 */
+			root.classList.remove("mw-tp-on");
+			root.classList.add("mw-tp-collapsed");
 		}
-		if (wantPad()) root.classList.remove("mw-tp-collapsed");
-		else root.classList.add("mw-tp-collapsed");
 		syncCanvasLock();
 	}
 
@@ -540,7 +527,9 @@
 		}
 		requestAnimationFrame(loop);
 		setBanner("左走 · 右转向 · 中 F（可点启用双手柄）", false);
-		console.log("[MW] dual-stick pad · raised above HUD · gamepad preferred");
+		console.log(
+			"[MW] touch pad · default OFF (keyboard/mouse) · enable with ?touch=1"
+		);
 	}
 
 	if (document.readyState === "loading") {
