@@ -7,6 +7,14 @@
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
 
+## 2026-08-11 · Web 输入：已知可进基线 + canvas 解锁会卡死（暂停修鼠标）
+
+- **可进基线**：`110ca66` / playground 以该树部署；键盘可用。
+- **对照结论（已复现）**：仅去掉 `#canvas{pointer-events:none}`（`mw_touch_pad.js` 永不锁画布）即可在 Hub `hub life` 打印后卡死；回退该改动即恢复。与是否改 `camera_rig`、是否重打 pck 无关。
+- **机制（工作假设）**：Godot Web 单线程；解锁后指针事件涌入 `_unhandled_input`，叠在 HubLife 首帧负载上打满主线程。canvas 锁原为 Pico 防甩视角，现成为「能进」的护栏。
+- **产品态**：主站暂保留触控盘/手柄路径与 canvas 锁；桌面鼠标失灵未解。下一步不走「直接解锁 canvas」；待定：主站默认关 Pico 盘（`?touch=1` 才开）以优先键鼠，或接受键鼠受损直至另案。
+- **禁止**：在未找到非卡死方案前，勿再对 playground 默认部署「永不锁 canvas」。
+
 ## 2026-08-11 · 修复：Mac 触控板被粘性虚拟盘盖住
 
 - **现象**：MacBook 强刷后左右虚拟盘仍全开，触控板点 canvas 无响应；另一台 PC 外接鼠标正常。
