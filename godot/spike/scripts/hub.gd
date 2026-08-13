@@ -322,7 +322,11 @@ func _ensure_profile_skin() -> void:
 	var n := letters.length()
 	var cur := str(_profile.get("skin", "")).to_lower()
 	var pool := int(_profile.get("skin_pool", 0))
-	if cur.length() == 1 and letters.find(cur) >= 0 and pool == n:
+	if cur.length() == 1 and letters.find(cur) >= 0:
+		# Explicit choice (portal picker / mw_profile) wins — never rehash over it.
+		if pool != n:
+			_profile["skin_pool"] = n
+			_save_profile()
 		return
 	var pid := str(_profile.get("id", ""))
 	if pid == "":

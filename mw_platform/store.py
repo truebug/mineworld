@@ -28,6 +28,7 @@ class Player:
     player_id: str
     display_name: str
     accent: str
+    skin: str = ""
     active: bool = True
 
 
@@ -92,6 +93,7 @@ class SQLitePlayerStore(PlayerStore):
                     display_name TEXT NOT NULL,
                     password_hash TEXT NOT NULL,
                     accent TEXT NOT NULL DEFAULT '#4aa3ff',
+                    skin TEXT NOT NULL DEFAULT '',
                     active INTEGER NOT NULL DEFAULT 1,
                     created_at TEXT NOT NULL
                 );
@@ -141,6 +143,15 @@ class SQLitePlayerStore(PlayerStore):
             if "route_kind" not in cols:
                 conn.execute(
                     "ALTER TABLE scores ADD COLUMN route_kind TEXT NOT NULL DEFAULT 'mineworld_level'"
+                )
+            # Fun-S: optional skin on existing DBs.
+            pcols = {
+                str(r[1])
+                for r in conn.execute("PRAGMA table_info(players)").fetchall()
+            }
+            if "skin" not in pcols:
+                conn.execute(
+                    "ALTER TABLE players ADD COLUMN skin TEXT NOT NULL DEFAULT ''"
                 )
 
     def record_score(
@@ -333,16 +344,29 @@ class SQLitePlayerStore(PlayerStore):
             player_id=str(row["player_id"]),
             display_name=str(row["display_name"]),
             accent=str(row["accent"]),
+            skin=str(row["skin"]),
             active=bool(row["active"]),
         )
 
     def get_player(self, player_id: str) -> Player | None:
         with self._conn() as conn:
             row = conn.execute(
-                "SELECT player_id, display_name, accent, active FROM players WHERE player_id = ?",
+                "SELECT player_id, display_name, accent, skin, active FROM players WHERE player_id = ?",
                 (player_id,),
             ).fetchone()
         return self._row_to_player(row)
+
+    def update_skin(self, player_id: str, skin: str) -> Player | None:
+        """Fun-S: persist Blocky skin letter (a..r); returns updated player."""
+        letter = (skin or "").strip().lower()[:1]
+        if letter not in "abcdefghijklmnopqr":
+            raise ValueError("invalid_skin")
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE players SET skin = ? WHERE player_id = ?",
+                (letter, player_id.strip()),
+            )
+        return self.get_player(player_id)
 
     def create_player(
         self,
@@ -403,7 +427,7 @@ class SQLitePlayerStore(PlayerStore):
         with self._conn() as conn:
             row = conn.execute(
                 """
-                SELECT t.player_id, t.expires_at, p.display_name, p.accent, p.active
+                SELECT t.player_id, t.expires_at, p.display_name, p.accent, p.skin, p.active
                 FROM auth_tokens t
                 JOIN players p ON p.player_id = t.player_id
                 WHERE t.token = ?
@@ -425,6 +449,7 @@ class SQLitePlayerStore(PlayerStore):
             player_id=str(row["player_id"]),
             display_name=str(row["display_name"]),
             accent=str(row["accent"]),
+            skin=str(row["skin"]),
             active=True,
         )
 
@@ -435,7 +460,7 @@ class SQLitePlayerStore(PlayerStore):
     def list_players(self) -> list[Player]:
         with self._conn() as conn:
             rows = conn.execute(
-                "SELECT player_id, display_name, accent, active FROM players ORDER BY player_id"
+                "SELECT player_id, display_name, accent, skin, active FROM players ORDER BY player_id"
             ).fetchall()
         out: list[Player] = []
         for row in rows:
@@ -576,6 +601,9 @@ class PostgresPlayerStore(PlayerStore):
     def verify_password(self, player_id: str, password: str) -> Player | None:
         raise NotImplementedError
 
+    def update_skin(self, player_id: str, skin: str) -> Player | None:
+        raise NotImplementedError
+
     def issue_token(self, player_id: str) -> str:
         raise NotImplementedError
 
@@ -636,6 +664,7 @@ def player_to_json(p: Player) -> dict[str, Any]:
         "player_id": p.player_id,
         "display_name": p.display_name,
         "accent": p.accent,
+        "skin": p.skin,
     }
 
 

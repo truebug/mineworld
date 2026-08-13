@@ -159,6 +159,11 @@
 			<div class="stat"><strong id="s-wins">—</strong><span data-i18n="me.wins">通关次数</span></div>
 		</div>
 		<div class="card">
+			<h2>皮肤 · Skin</h2>
+			<div id="skin-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px"></div>
+			<p id="skin-msg" style="margin:8px 0 0;color:var(--muted);font-size:12px"></p>
+		</div>
+		<div class="card">
 			<h2 data-i18n="me.lb">排行榜</h2>
 			<div class="cta-row" style="margin-bottom:10px;gap:8px;flex-wrap:wrap">
 				<button type="button" class="ghost lb-tab" data-level="" data-i18n="me.lb_all">总榜</button>
@@ -330,6 +335,49 @@
 			});
 		});
 
+		function renderSkinGrid(current) {
+			const grid = document.getElementById('skin-grid');
+			const msg = document.getElementById('skin-msg');
+			if (!grid) return;
+			grid.innerHTML = '';
+			'abcdefghijklmnopqr'.split('').forEach(function (letter) {
+				const b = document.createElement('button');
+				b.type = 'button';
+				b.textContent = letter.toUpperCase();
+				b.style.cssText = 'padding:10px 0;border-radius:8px;border:1px solid var(--line);cursor:pointer;font-weight:600;' +
+					(letter === current
+						? 'background:var(--accent);color:#111;'
+						: 'background:transparent;color:var(--ink);');
+				b.addEventListener('click', function () { saveSkin(letter); });
+				grid.appendChild(b);
+			});
+			msg.textContent = current ? ('当前 · current: ' + current.toUpperCase()) : '随机分配中 · auto-assigned';
+		}
+		function saveSkin(letter) {
+			const msg = document.getElementById('skin-msg');
+			const tok = localStorage.getItem(TOKEN_KEY);
+			fetch('/api/platform/me/skin', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+				body: JSON.stringify({ skin: letter }),
+			})
+				.then(function (r) { return r.json(); })
+				.then(function (data) {
+					if (!data || !data.ok) {
+						msg.textContent = (data && data.error) || 'save failed';
+						return;
+					}
+					renderSkinGrid(letter);
+					try {
+						const prof = JSON.parse(localStorage.getItem('mw_profile') || '{}');
+						prof.skin = letter;
+						prof.skin_pool = 18;
+						localStorage.setItem('mw_profile', JSON.stringify(prof));
+					} catch (e) { /* ignore */ }
+					msg.textContent = '已保存 · saved ✓（进母港生效）';
+				})
+				.catch(function (e) { msg.textContent = String(e); });
+		}
 		document.getElementById('logout').addEventListener('click', function () {
 			const tok = localStorage.getItem(TOKEN_KEY);
 			fetch('/api/platform/logout', {

@@ -98,7 +98,7 @@
 | Chess-P6 | 牌面贴图 + 规则弹窗 | Kenney CC0 牌面替换代码绘制；规则按钮各桌可用 | [x] `kenney_cards/` 台账 · `_rules_text_for` · 2026-08-06 |
 | Fun-H | Hub 母港氛围 | 天空盒昼夜渐变、环形装饰旋转、NPC 游走、母港环境音乐 | [x] 昼夜循环 + 全息环灯（NPC/音乐此前已在）· 2026-08-07 |
 | Fun-Q | 一键开局 | Hub「快速入座」按钮自动送到有空位的桌 | [x] chessroom 右下按钮 + J 键；满座聊天提示 · 2026-08-07 |
-| Fun-S | 皮肤自选 | Portal「我的」选 Blocky 皮肤（18 款）存 profile，Hub/桌面对应 | [ ] 刷新生效 |
+| Fun-S | 皮肤自选 | Portal「我的」选 Blocky 皮肤（18 款）存 profile，Hub/桌面对应 | [x] me/skin API + 18 宫格选择器 + Hub/棋室皮肤同步 · 2026-08-13 |
 | Fun-R | 邀请链接 | `?room=xxx` 私密房码，复制链接拉人开黑 | [ ] 双人进同房 |
 | Fun-G | 幽灵挑战 | `MWGhost` 今日最佳榜 + 一键挑战，每日重置 | [x] best_lap?today=1 + G 键重载 + 状态行文案 · 2026-08-07 |
 | Fun-E | 围观席 + 表情 | 桌满可旁观牌局；快捷表情/喝彩复用 chat 通道 | [x] TABLE_FULL 拒着旁观 + 6 表情按钮/1-6 键 · 2026-08-13 |

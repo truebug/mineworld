@@ -81,6 +81,25 @@ def handle_platform_get(
             200,
         )
         return True
+    if path == "/api/platform/me/skin":
+        # Fun-S: save Blocky skin letter (a..r) for the logged-in player.
+        player = _player_from_request(get_header)
+        if player is None:
+            send_json({"error": "unauthorized"}, 401)
+            return True
+        body = read_body()
+        if body is None:
+            send_json({"error": "bad_json"}, 400)
+            return True
+        try:
+            updated = get_store().update_skin(  # type: ignore[attr-defined]
+                player.player_id, str(body.get("skin", ""))
+            )
+        except ValueError as exc:
+            send_json({"error": str(exc)}, 400)
+            return True
+        send_json({"ok": True, "player": player_to_json(updated)}, 200)
+        return True
     if path == "/api/platform/leaderboard":
         store = get_store()
         limit_raw = (qs.get("limit") or ["10"])[0]

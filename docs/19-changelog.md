@@ -94,6 +94,14 @@
 - **牌桌放大**（本批）：`_fit_board_panel` 对 blackjack/wudui 的 felt 上限 680×380 → 920×520（面板高度余量 150→170），1280×720 下约 968×680。
 - 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + wudui（含 `ai_fill_at` 三态断言）/blackjack/chessroom/ws 冒烟全绿。
 
+## 2026-08-13 · Fun-S 皮肤自选（Portal 18 宫格 + 全链下发）
+
+- 平台：`players` 表新增 `skin` 列（`ensure_schema` 对旧库 PRAGMA 迁移 `ALTER TABLE`）；`update_skin(player_id, letter)` 校验 a..r；`player_to_json`/`get_player`/`resolve_token`/`list_players` 全链带 skin；新增 `POST /api/platform/me/skin`（Bearer 鉴权，非法字母 400）。
+- Portal：登录回包把 `skin`+`skin_pool:18` 写入 `mw_profile`；「我的」页新增皮肤卡片——18 宫格 A–R 按钮，选中高亮、点击保存（fetch POST + localStorage `mw_profile` 同步），提示「进母港生效」。
+- 客户端：`hub.gd _ensure_profile_skin` 不再覆盖显式选择（原先 pool 不符会重哈希顶掉用户选择）；Hub 远端与棋室双方 puppet 应用 `mw.skin` → `skin_letter`（`avatar_puppet` 轮询 `_ensure_skin` 自动换装）；`chessroom._load_profile` 从 `mw_profile` 读 skin。
+- Gateway 无需改：`mw.skin` 盖章此前已在（`echo_server.py:2497`）。
+- 验证：store E2E（写读回/非法值/JSON/token 路径）+ lint 0 finding + 6 场景编译门 + platform smoke 全绿。
+
 ## 2026-08-13 · Fun-E 围观席 + 快捷表情
 
 - Gateway：`chess_sit` 遇桌满不再静默忽略，向请求者发 `chess_reject` code `TABLE_FULL`（21 点与普通桌两处分支均覆盖）。

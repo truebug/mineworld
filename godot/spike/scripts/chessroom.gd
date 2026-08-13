@@ -209,6 +209,14 @@ func _label_tables() -> void:
 func _load_profile() -> Dictionary:
 	var nick := "Guest"
 	var accent := "#9a5ae8"
+	var skin := ""
+	if _is_web:
+		var raw := str(JavaScriptBridge.eval(
+			"(function(){try{var p=JSON.parse(localStorage.getItem('mw_profile')||'{}');return String(p.skin||'')}catch(e){return ''}})()",
+			true
+		)).strip_edges().to_lower()
+		if raw.length() == 1 and "abcdefghijklmnopqr".find(raw) >= 0:
+			skin = raw
 	if MWi18n.has_meta("mw_nick"):
 		var saved := str(MWi18n.get_meta("mw_nick")).strip_edges()
 		if saved != "":
@@ -220,7 +228,7 @@ func _load_profile() -> Dictionary:
 		)).strip_edges()
 		if url_nick != "":
 			nick = url_nick
-	return {"nickname": nick, "accent": accent, "id": ""}
+	return {"nickname": nick, "accent": accent, "id": "", "skin": skin}
 
 
 func _resolve_gateway_url() -> String:
@@ -302,6 +310,8 @@ func _ensure_puppets(entities: Array) -> void:
 		if is_self:
 			node.set("accent", Color(str(_profile.get("accent", "#9a5ae8"))))
 			node.set("display_name", str(_profile.get("nickname", "Guest")))
+			if str(_profile.get("skin", "")) != "":
+				node.set("skin_letter", str(_profile.get("skin")))
 			node.set("local_predict", true)
 			node.set("interp_delay", 0.03)
 		add_child(node)
