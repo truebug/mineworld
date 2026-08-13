@@ -101,7 +101,7 @@
 | Fun-S | 皮肤自选 | Portal「我的」选 Blocky 皮肤（18 款）存 profile，Hub/桌面对应 | [ ] 刷新生效 |
 | Fun-R | 邀请链接 | `?room=xxx` 私密房码，复制链接拉人开黑 | [ ] 双人进同房 |
 | Fun-G | 幽灵挑战 | `MWGhost` 今日最佳榜 + 一键挑战，每日重置 | [x] best_lap?today=1 + G 键重载 + 状态行文案 · 2026-08-07 |
-| Fun-E | 围观席 + 表情 | 桌满可旁观牌局；快捷表情/喝彩复用 chat 通道 | [ ] 旁观视角 + 表情广播 |
+| Fun-E | 围观席 + 表情 | 桌满可旁观牌局；快捷表情/喝彩复用 chat 通道 | [x] TABLE_FULL 拒着旁观 + 6 表情按钮/1-6 键 · 2026-08-13 |
 
 > 交接：棋牌室卡牌双人化（21点多人/五对人机/牌堆与UI修复）见 [32-handover-chess-cards.md](32-handover-chess-cards.md)；Fun-S/R/E 入口与验证链同文档。
 

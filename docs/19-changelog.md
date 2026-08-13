@@ -94,6 +94,13 @@
 - **牌桌放大**（本批）：`_fit_board_panel` 对 blackjack/wudui 的 felt 上限 680×380 → 920×520（面板高度余量 150→170），1280×720 下约 968×680。
 - 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + wudui（含 `ai_fill_at` 三态断言）/blackjack/chessroom/ws 冒烟全绿。
 
+## 2026-08-13 · Fun-E 围观席 + 快捷表情
+
+- Gateway：`chess_sit` 遇桌满不再静默忽略，向请求者发 `chess_reject` code `TABLE_FULL`（21 点与普通桌两处分支均覆盖）。
+- 客户端：`TABLE_FULL` → 牌盘保持打开进入旁观模式，状态行提示「桌已满 · 旁观模式」。
+- 新增 `mw/emotes.gd`：6 款快捷表情/喝彩（👍好棋 / 👏精彩 / 😮哇哦 / 😂哈哈 / 💪加油 / 🤝承让，中英 i18n），牌盘下方按钮行 + 数字键 1–6（web/原生双路径），复用 chat 通道——气泡与聊天流由既有 `_on_chat_event` 自动呈现，旁观者与牌手都可用。
+- 验证：lint 0 finding + 6 场景编译门 + chessroom/wudui/blackjack/ws 四套 smoke 全绿。
+
 ## 2026-08-07 · Fun-G 幽灵挑战（今日最佳 + 一键挑战）+ Fun-Q 模块化重构
 
 - 平台：`/api/platform/best_lap` 新增 `today=1` 参数，`store.best_lap_session(level_id, since=)` 按 `created_at >= 当日 00:00 UTC` 过滤（每日重置天然成立）；SQLite 断言验证 all-time/今日/空结果三态。

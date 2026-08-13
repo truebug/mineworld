@@ -2646,6 +2646,9 @@ class EchoGateway:
                     self._broadcast_chess_table(room, table)
                     return
                 if table.black_sid is not None and table.white_sid is not None:
+                    self._chess_reject(
+                        session, code="TABLE_FULL", message=action, table_id=table_id
+                    )
                     return
                 self._chess_free_session(room, sid, broadcast=True)
                 if table.black_sid is None:
@@ -2687,6 +2690,9 @@ class EchoGateway:
                 self._broadcast_chess_table(room, table)
                 return
             else:
+                self._chess_reject(
+                    session, code="TABLE_FULL", message=action, table_id=table_id
+                )
                 return
             humans = [s for s in (table.black_sid, table.white_sid) if s]
             table.vs_ai = len(humans) < 2

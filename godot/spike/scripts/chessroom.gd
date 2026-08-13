@@ -9,6 +9,7 @@ const SIT_DIST := 2.4
 const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const GomokuScript := preload("res://scripts/gomoku.gd")
 const MWQuickSit := preload("res://scripts/mw/quick_sit.gd")
+const MWEmotes := preload("res://scripts/mw/emotes.gd")
 const AUTO_EXIT_S := 2.4
 const JUNQI_ROWS := 12
 const JUNQI_COLS := 5
@@ -410,6 +411,11 @@ func _send_chat(text: String) -> void:
 	ws.send_cmd(payload)
 
 
+func _on_emote_pick(text: String) -> void:
+	"""Fun-E: emote button → room chat (bubble + log handled by _on_chat_event)."""
+	_send_chat(text)
+
+
 func _on_event(payload: Dictionary) -> void:
 	var et := str(payload.get("event_type", ""))
 	if et == "player_take_control":
@@ -456,7 +462,10 @@ func _on_chess_reject(detail: Variant) -> void:
 	var code := ""
 	if typeof(detail) == TYPE_DICTIONARY:
 		code = str(detail.get("code", ""))
-	if code.begins_with("JUNQI_MOVE"):
+	if code == "TABLE_FULL":
+		# Fun-E: full table → stay in the opened board as spectator.
+		_set_status(MWi18n.t("桌已满 · 旁观模式（可发快捷表情喝彩）", "Table full · spectating (emotes below)"))
+	elif code.begins_with("JUNQI_MOVE"):
 		_set_status(MWi18n.t("非法走子 · 再选己子与目标", "Illegal move · reselect"))
 	elif code.begins_with("JUNQI_LAYOUT"):
 		_set_status(MWi18n.t("布阵无效 · 先随机或调整己子", "Invalid layout · auto or adjust"))
@@ -554,6 +563,9 @@ func _on_web_key_event(code: String, down: bool) -> void:
 				_on_wudui_primary()
 			"KeyJ":
 				_on_quick_sit()
+			"Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6":
+				if _board_open():
+					_on_emote_pick(MWEmotes.text_at(int(code.substr(5)) - 1))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -584,6 +596,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		elif ek.keycode == KEY_J or ek.physical_keycode == KEY_J:
 			_on_quick_sit()
+			get_viewport().set_input_as_handled()
+		elif _board_open() and ek.keycode >= KEY_1 and ek.keycode <= KEY_6:
+			_on_emote_pick(MWEmotes.text_at(ek.keycode - KEY_1))
 			get_viewport().set_input_as_handled()
 
 
@@ -841,6 +856,8 @@ func _build_board_ui() -> void:
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(_status_label)
+	# Fun-E: quick emotes/cheers through the room chat channel (spectators too).
+	MWEmotes.build_row(vbox, _on_emote_pick)
 	_ai_countdown_label = Label.new()
 	_ai_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ai_countdown_label.visible = false
