@@ -101,6 +101,12 @@
 - **牌桌放大**（本批）：`_fit_board_panel` 对 blackjack/wudui 的 felt 上限 680×380 → 920×520（面板高度余量 150→170），1280×720 下约 968×680。
 - 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + wudui（含 `ai_fill_at` 三态断言）/blackjack/chessroom/ws 冒烟全绿。
 
+## 2026-08-13 · 复查修复：Fun-S 皮肤链路三处断点
+
+- 代码复查 Fun 二梯队发现：`chessroom._on_hello` join payload 漏带 `profile.skin` → 远端在棋室看不到自选皮肤（Hub 不受影响）；`shell.html MW_GET_PROFILE` auth 分支丢 skin 且 `MW_SET_PROFILE` 持久化时剥掉 `skin`/`skin_pool` → 登录用户每次保存档案都会把 Portal 选择器的皮肤选择冲掉。
+- 修复：chessroom join 带 skin；shell 读取带本地回退、写入空值保留旧选择。
+- 验证：lint 0 finding + 6 场景编译门全绿。
+
 ## 2026-08-13 · Fun-R 邀请链接（私密房码拉人开黑）
 
 - 新增 `mw/invite_link.gd`：棋室右下「🔗 邀请开黑」按钮（quick-sit 上方）。已在私密房 → 复制当前 URL；公共房 → 生成 6 位房码（去混淆字符集）复制邀请链接并自动跳转进私密房，保证邀请人与被邀请人真的同桌。

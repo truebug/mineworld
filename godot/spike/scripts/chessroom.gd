@@ -261,6 +261,7 @@ func _on_hello(_payload: Dictionary) -> void:
 			"id": str(_profile.get("id", "")),
 			"nickname": nick,
 			"accent": str(_profile.get("accent", "#9a5ae8")),
+			"skin": str(_profile.get("skin", "")),
 		}
 	}
 	ws.join(level_id, nick, _joined_room_id, {"mw": mw})

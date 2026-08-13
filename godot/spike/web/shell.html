@@ -1040,11 +1040,22 @@ const engine = new Engine(GODOT_CONFIG);
 	/* Local profile card — synced from platform login when present. */
 	window.MW_GET_PROFILE = function () {
 		if (window.MW_AUTH_PLAYER) {
-			return {
+			const authed = {
 				id: window.MW_AUTH_PLAYER.player_id,
 				nickname: window.MW_AUTH_PLAYER.display_name,
 				accent: window.MW_AUTH_PLAYER.accent || '#4aa3ff',
+				skin: window.MW_AUTH_PLAYER.skin || '',
 			};
+			// Fun-S: server skin empty → keep the locally picked one.
+			if (!authed.skin) {
+				try {
+					const lp = JSON.parse(localStorage.getItem('mw_profile') || '{}');
+					if (lp && lp.skin) {
+						authed.skin = String(lp.skin);
+					}
+				} catch (err0) { /* ignore */ }
+			}
+			return authed;
 		}
 		try {
 			const raw = localStorage.getItem('mw_profile');
@@ -1076,7 +1087,18 @@ const engine = new Engine(GODOT_CONFIG);
 			id: String(p.id || ''),
 			nickname: String(p.nickname || 'Guest').slice(0, 24),
 			accent: String(p.accent || '#4aa3ff'),
+			skin: String(p.skin || '').toLowerCase().slice(0, 1),
+			skin_pool: 18,
 		};
+		// Fun-S: caller without skin (nick/accent edit) must not wipe the pick.
+		if (!next.skin) {
+			try {
+				const prev = JSON.parse(localStorage.getItem('mw_profile') || '{}');
+				if (prev && prev.skin) {
+					next.skin = String(prev.skin);
+				}
+			} catch (err0) { /* ignore */ }
+		}
 		if (!next.id) {
 			next.id = window.MW_GET_PROFILE().id;
 		}
