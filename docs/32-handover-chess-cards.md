@@ -1,13 +1,16 @@
-# 32 · 会话交接 · 棋牌室卡牌双人化 + Fun 二梯队续做
+# 32 · 会话交接 · 棋牌室卡牌双人化 + Fun 二梯队（已全清 ✅）
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | 进行中（新 session 从此续做） |
+| **状态** | ✅ Fun 二梯队 6/6 全清（2026-08-13）；下一步转 HW-2.5 / E6-E7（见文末） |
 | **创建** | 2026-08-09 |
-| **关联** | [09-todo.md](09-todo.md) Fun-S/R/E · [19-changelog.md](19-changelog.md) · [31-handover-fun-tier2.md](31-handover-fun-tier2.md) |
-| **范围** | 棋牌室（21 点多人 / 五对人机）已交付并上线；下一步 Fun-S 皮肤 / Fun-R 邀请链接 / Fun-E 围观表情 |
+| **更新** | 2026-08-13（Fun-E/S/R 收官，线上 build `20260813-175900`） |
+| **关联** | [09-todo.md](09-todo.md) · [19-changelog.md](19-changelog.md) · [31-handover-fun-tier2.md](31-handover-fun-tier2.md) |
+| **范围** | 棋牌室（21 点多人 / 五对人机）+ Fun 二梯队 6 项全部交付上线 |
 
 ## 0. 当前状态一句话
+
+> **2026-08-13 收官**：Fun 二梯队 **6/6 全清**——Fun-E 围观+表情（`da0b0d5` TABLE_FULL 旁观 + `mw/emotes.gd` 6 表情按钮/1-6 键）、Fun-S 皮肤自选（`8caa3a5`+`7a9e8f5` `players.skin` 列 + `POST me/skin` + Portal 18 宫格 + Hub/棋室 `mw.skin` 换装）、Fun-R 邀请链接（`bcde524` `mw/invite_link.gd` 房码复制/跳转）。叠加此前 Fun-H/Q/G（`70eae28`/`4ade172`/`5306d3c`，见 [31](31-handover-fun-tier2.md)）。线上 build `20260813-175900`，验证链全绿。**下一步候选**：HW-2.5 真机联调（仍挂起，通用桥接）/ E6-E7（blocked 待 PMS API）/ Web 鼠标修复另案（勿解锁 canvas，见 19-changelog 08-11 红线）。
 
 21 点已升级为**双座多手牌共享庄家**（轮转行动、旁观入座、禁止局中重置）；五对支持**人机**（5 秒无人加入自动匹配 AI 执红）并新增**显式 5 秒倒计时**（`ai_fill_at` 字段 + 客户端倒计时标签）；五对牌堆唯一性 bug（4×54 误建 + JOKER 身份歧义）、手牌溢出桌布 UI 均已修复；blackjack/wudui 牌桌已放大（felt 上限 920×520）；手牌配对归组 + 键盘选牌出牌 + AI 记牌策略 + Web 丢包修复 + 五对动画套件（发牌/出牌/吃牌飞行 + 配对闪光 + 胜利脉冲）已上线。线上 build `20260809-125515`（四批发版）。
 
