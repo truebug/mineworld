@@ -94,6 +94,12 @@
 - **牌桌放大**（本批）：`_fit_board_panel` 对 blackjack/wudui 的 felt 上限 680×380 → 920×520（面板高度余量 150→170），1280×720 下约 968×680。
 - 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + wudui（含 `ai_fill_at` 三态断言）/blackjack/chessroom/ws 冒烟全绿。
 
+## 2026-08-13 · Fun-R 邀请链接（私密房码拉人开黑）
+
+- 新增 `mw/invite_link.gd`：棋室右下「🔗 邀请开黑」按钮（quick-sit 上方）。已在私密房 → 复制当前 URL；公共房 → 生成 6 位房码（去混淆字符集）复制邀请链接并自动跳转进私密房，保证邀请人与被邀请人真的同桌。
+- `?room=<code>` → join `room_id` 链路此前已就绪（`_resolve_room_id` + gateway join），本次纯客户端补 UI；clipboard 用 `navigator.clipboard`，降级 `execCommand('copy')`。
+- 验证：lint 0 finding + 6 场景编译门全绿（Gateway 无变更）。
+
 ## 2026-08-13 · Fun-S 皮肤自选（Portal 18 宫格 + 全链下发）
 
 - 平台：`players` 表新增 `skin` 列（`ensure_schema` 对旧库 PRAGMA 迁移 `ALTER TABLE`）；`update_skin(player_id, letter)` 校验 a..r；`player_to_json`/`get_player`/`resolve_token`/`list_players` 全链带 skin；新增 `POST /api/platform/me/skin`（Bearer 鉴权，非法字母 400）。

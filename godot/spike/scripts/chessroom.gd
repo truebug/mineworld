@@ -10,6 +10,7 @@ const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const GomokuScript := preload("res://scripts/gomoku.gd")
 const MWQuickSit := preload("res://scripts/mw/quick_sit.gd")
 const MWEmotes := preload("res://scripts/mw/emotes.gd")
+const MWInviteLink := preload("res://scripts/mw/invite_link.gd")
 const AUTO_EXIT_S := 2.4
 const JUNQI_ROWS := 12
 const JUNQI_COLS := 5
@@ -124,6 +125,7 @@ func _ready() -> void:
 		)
 	_build_board_ui()
 	_build_quick_sit_button()
+	_build_invite_button()
 	ws.hello_received.connect(_on_hello)
 	ws.scene_received.connect(_on_scene)
 	ws.state_received.connect(_on_state)
@@ -714,6 +716,28 @@ func _close_board() -> void:
 func _build_quick_sit_button() -> void:
 	"""Fun-Q: one-click seat at the best table with a free seat."""
 	_quick_sit_btn = MWQuickSit.build_button(self, _on_quick_sit)
+
+
+func _build_invite_button() -> void:
+	"""Fun-R: copy a private-room invite link (web only)."""
+	if _is_web:
+		MWInviteLink.build_button(self, _on_invite)
+
+
+func _on_invite() -> void:
+	"""Already in a private room → copy as-is; public room → new code + reload."""
+	var code := MWInviteLink.current_room_code()
+	if code != "":
+		MWInviteLink.copy_url(code, false)
+		_append_chat_log(
+			"MW",
+			MWi18n.t("已复制邀请链接，发给朋友即可同桌开黑", "Invite link copied — share it to play together")
+		)
+		return
+	# Public room: mint a code, copy, then jump into the private room so
+	# inviter + invitee actually meet.
+	var new_code := MWInviteLink.gen_code()
+	MWInviteLink.copy_url(new_code, true)
 
 
 func _sync_quick_sit_button() -> void:
