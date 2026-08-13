@@ -46,6 +46,7 @@ const _WEB_BLOCK_CODES := {
 var _session_id := ""
 var _cmd_timer := 0.0
 var _last_idle_cmd := false
+var _move_send_ctr := 0
 var _controlled := false
 var _is_web := false
 ## WoW-style RMB turn-drive: yaw rate from the last horizontal mouse delta,
@@ -998,13 +999,22 @@ func _send_velocity_cmd() -> void:
 	var hop_y := 0.0
 	if own != null and own.has_method("get_hub_hop_y"):
 		hop_y = float(own.call("get_hub_hop_y"))
-		cmd["extensions"] = {"mw": {"hop_y": hop_y}}
+	cmd["extensions"] = {"mw": {"hop_y": hop_y}}
 	var idle := vx == 0.0 and vy == 0.0 and yaw_rate == 0.0 and hop_y == 0.0
 	if idle and _last_idle_cmd:
 		return
 	if ws.outbound_full():
 		return
 	_last_idle_cmd = idle
+	# Moving 20 Hz → 10 Hz send throttle (same as main.gd): alternating tick
+	# counter, reset on idle so the wake-up packet always goes out immediately.
+	if idle:
+		_move_send_ctr = 0
+	elif _move_send_ctr == 0:
+		_move_send_ctr = 1
+	else:
+		_move_send_ctr = 0
+		return
 	ws.send_cmd(cmd)
 	_controlled = true
 

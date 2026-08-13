@@ -51,6 +51,7 @@ var _cmd_timer := 0.0
 var _last_log_tick := -1
 var _last_velocity_idle := false
 var _last_drive_idle := false
+var _move_send_ctr := 0
 var _last_velocity_print_key := ""
 var _controlled := false
 var _mission_done := false
@@ -1046,6 +1047,15 @@ func _send_velocity_cmd() -> void:
 	if not _is_chassis_play():
 		payload["joint_targets"] = _read_joint_targets()
 	if ws.outbound_full():
+		return
+	# Moving 20 Hz → 10 Hz send throttle: alternating tick counter, reset on
+	# idle so the wake-up packet after a stop always goes out immediately.
+	if idle:
+		_move_send_ctr = 0
+	elif _move_send_ctr == 0:
+		_move_send_ctr = 1
+	else:
+		_move_send_ctr = 0
 		return
 	ws.send_cmd(payload)
 

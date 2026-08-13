@@ -58,6 +58,13 @@
 - **出站缓冲加固（Buffer payload full）**：`main.gd` 速度命令补上空闲去重（原先静止时仍每 20Hz 发全零命令，连接卡顿时快速灌满缓冲）+ 出站水位保护（`_send_drive_cmd` 同款）；`[MW] cmd ...` 打印改为命令变化时输出（原移动时每 tick 刷屏）；`ws_client.gd` 出站缓冲 256KB→512KB 留余量。
 - 验证：node --check + gdscript lint 0 finding + 6 场景编译门全绿。
 
+## 2026-08-13 · 出站流量节流（Buffer payload full P1 根治）
+
+- **改动**：`main.gd`/`hub.gd` 速度命令移动中 20Hz→10Hz 发包（计数器节流，`_move_send_ctr`）；空闲时仍零包（`3ce72d2` 去重不变）；赛车 `_send_drive_cmd` 保持 20Hz 手感。
+- **动机**：`Buffer payload full` 是发送速率超过 web JS socket 排速——`3ce72d2` 只加缓冲+空闲去重，移动时仍 20Hz 持续灌包，Pico WiFi 抖动仍会堆。节流后稳态移动流量减半。
+- **手感保证**：计数器在 idle 时清零，停止后再次按键的第一包**立即发送**（不等待节流门），20Hz 唤醒无延迟。
+- 验证：gdscript lint 0 finding + 6 场景编译门全绿。
+
 ## 2026-08-11 · 修复：触控摇杆误锁桌面鼠标 + 手柄轮询与摇杆盘解耦
 
 - **鼠标被干没的根因**：`mw_touch_pad.js` 自动开启条件过宽——`navigator.xr` 在桌面 Chrome 无头显也存在、`navigator.maxTouchPoints > 0` 命中带触摸屏的笔记本，普通桌面浏览器默认点亮摇杆盘 → `body.mw-tp-canvas-lock #canvas{pointer-events:none !important}` 锁死整个 canvas，`camera_rig.gd` 又按 `_MW_TOUCH_PAD_ACTIVE` 吞掉全部鼠标按键/移动事件（双保险把鼠标双杀）。
