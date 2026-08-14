@@ -65,7 +65,7 @@ arm 仓 splat 与玩法同在一个 three.js scene，无合成问题；本仓 Go
 | 阶段 | 内容 | 验收 |
 |------|------|------|
 | ~~P0~~ ✅ | 工具链：`scripts/ply_to_spz.mjs`（抄自 arm）+ `lab3.spz`（3.0MB）落 `godot/spike/web/media/splats/`，`export_godot.sh` 自动拷至 dist | 3MB ≤25MB · ASSETS.md 已入账 · 2026-08-14 |
-| P1 | shell 注入：`?splat=<name>` 时 main.js 侧建垫底 canvas + Spark 加载（race 场景限定） | 硬刷可见背景，关开关完全无感 |
+| ~~P1~~ ✅ | shell 注入：`?splat=lab3&level=demo_race` → `splat_bg.js` 垫底 canvas + Spark 加载；vendored three/Spark（import map，无构建无 CDN）；`mw/splat_bridge.gd` 透明合成 + `MW_CAM_POSE` 20Hz 推送 | 硬刷可见背景，关开关零注入 · 2026-08-14 |
 | P2 | 相机同步：`MW_CAM_POSE` 协议 + race chase-cam 对齐，无「滑移」 | 转头/加减速远景锁定 |
 | P3 | 性能验收：M 系 Mac 60fps；弱机自动切 lite（`?splatLite=1` 或 heuristics） | 帧率不掉 10% |
 | P4 | Hub 星空壳替换评估（opt-in）：`hub_space_sky` shader ↔ splat 舷窗外景 | 灰度默认关 |

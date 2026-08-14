@@ -54,6 +54,11 @@ case "$TARGET" in
     if [[ -d "$PROJECT/web/media" ]]; then
       cp -R "$PROJECT/web/media" "$OUT_DIR/media"
     fi
+    # Splat renderer (docs/33 P1): vendored three.js + Spark + bootstrap.
+    cp "$PROJECT/web/splat_bg.js" "$OUT_DIR/splat_bg.js"
+    if [[ -d "$PROJECT/web/vendor" ]]; then
+      cp -R "$PROJECT/web/vendor" "$OUT_DIR/vendor"
+    fi
     if ! grep -q "mw_key_bridge.js" "$OUT_FILE"; then
       # Fallback if head_include was stripped: inject before </head>
       sed -i.bak 's#</head>#<script src="mw_key_bridge.js"></script></head>#' "$OUT_FILE"

@@ -21,6 +21,7 @@ const TURN_SPEED_RACE := 1.0
 const STRAFE_SPEED_RACE := 0.35
 ## R2 analog drive (keyboard time-for-axis; gamepad native axis).
 const CMD_HZ := 20.0
+const MWSplatBridge := preload("res://scripts/mw/splat_bridge.gd")
 
 @export var level_id := "demo_workshop"
 @export var gateway_url := "ws://127.0.0.1:8765"
@@ -56,6 +57,8 @@ var _last_velocity_print_key := ""
 var _controlled := false
 var _mission_done := false
 var _status_line := ""
+var _splat_on := false
+var _splat_pose_timer := 0.0
 var _is_web := false
 ## Must keep refs or JS callbacks are garbage-collected.
 ## KeyboardEvent.code → pressed (web)
@@ -160,6 +163,10 @@ func _ready() -> void:
 		_ghost.loaded.connect(_on_ghost_loaded)
 		add_child(_ghost)
 		_ghost.fetch_best()
+		# docs/33 P1: ?splat=<name> → transparent canvas over Spark backdrop.
+		if MWSplatBridge.enabled(level_id):
+			_splat_on = true
+			MWSplatBridge.apply_transparency(self)
 	ws.connect_to_gateway(_resolve_gateway_url())
 	_update_hud()
 
