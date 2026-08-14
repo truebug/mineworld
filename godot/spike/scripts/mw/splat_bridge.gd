@@ -8,14 +8,24 @@ const POSE_HZ := 20.0
 
 
 static func enabled(level_id: String) -> bool:
-	"""True only on web + demo_race + explicit ?splat= query (PoC scope)."""
-	if not OS.has_feature("web") or level_id != "demo_race":
+	"""True on web + hub/race + explicit ?splat= query (PoC scope)."""
+	if not OS.has_feature("web"):
+		return false
+	if level_id not in ["demo_hub", "demo_race"]:
 		return false
 	var raw := str(JavaScriptBridge.eval(
 		"(function(){try{return new URLSearchParams(location.search).get('splat')||''}catch(e){return ''}})()",
 		true
 	)).strip_edges()
 	return raw != ""
+
+
+static func apply_hub_skin(scene_root: Node) -> void:
+	"""Hub splat skin: hide procedural hangar shell, keep avatars/NPCs/doors."""
+	apply_transparency(scene_root)
+	var dress := scene_root.get_node_or_null("HangarDress")
+	if dress != null:
+		dress.visible = false
 
 
 static func apply_transparency(scene_root: Node) -> void:

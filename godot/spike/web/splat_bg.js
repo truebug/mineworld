@@ -12,8 +12,8 @@ const params = new URLSearchParams(location.search);
 const splatName = (params.get("splat") || "").trim();
 const level = (params.get("level") || "").trim();
 
-/** Only race scene, only when explicitly requested. */
-if (splatName !== "" && level === "demo_race") {
+/** Hub (no level param = demo_hub) or race PoC, only when explicitly requested. */
+if (splatName !== "" && (level === "" || level === "demo_hub" || level === "demo_race")) {
 	boot().catch((err) => console.warn("[MW] splat_bg failed:", err));
 }
 
@@ -64,6 +64,14 @@ async function boot() {
 	console.log("[MW] splat_bg loading", url);
 	const mesh = new SplatMesh({ url });
 	await mesh.initialized;
+	// E5: horizontal fit only (never yaw — Z-up→Y-up then rotateY tips the room).
+	const fitNum = (k, d) => {
+		const v = Number(params.get(k));
+		return Number.isFinite(v) ? v : d;
+	};
+	mesh.position.set(fitNum("splatOx", 0), fitNum("splatY", 0), fitNum("splatOz", 0));
+	const s = fitNum("splatScale", 1);
+	if (s !== 1) mesh.scale.setScalar(s);
 	scene.add(mesh);
 	console.log("[MW] splat_bg ready", url);
 

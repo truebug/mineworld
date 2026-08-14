@@ -101,6 +101,12 @@
 - **牌桌放大**（本批）：`_fit_board_panel` 对 blackjack/wudui 的 felt 上限 680×380 → 920×520（面板高度余量 150→170），1280×720 下约 968×680。
 - 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + wudui（含 `ai_fill_at` 三态断言）/blackjack/chessroom/ws 冒烟全绿。
 
+## 2026-08-14 · splat P1 修正：splat 定位 = 大厅房间皮肤（非赛车场背景板）
+
+- 产品语义对齐 mine-world-arm：`?splat=lab3`（无 level 参数 = 母港大厅）→ Godot 侧隐藏程序化机库壳（`HangarDress` 整树），保留 avatar/NPC/门触发，Spark splat 直接当大厅视觉；`mw/splat_bridge.gd` 新增 `apply_hub_skin()`。
+- race 场景为何「完全看不到」：race 自带天空/草地几何体（`race_dress`）会把垫底 canvas 整个挡住，透明合成成立也被 3D 壳遮住——race 支线的 P2 再处理藏壳；`splat_bg.js` 同步支持 `?splatOx=/splatOz=/splatY=/splatScale=` fit 调参（E5 规矩：禁 yaw）。
+- 验证：lint 0 finding + 6 场景编译门全绿。
+
 ## 2026-08-14 · splat P1：Web 垫底 canvas 注入 Spark 渲染（?splat= 灰度）
 
 - `web/splat_bg.js`：`?splat=<name>` + `level=demo_race` 时建垫底 `<canvas id="mw-splat">`（z-index 0、pointer-events:none），import map 加载 vendored `three.module.min.js` + `spark.module.min.js`（`web/vendor/`，无构建步骤、无 CDN 依赖），`SplatMesh` 直渲 `media/splats/<name>.spz`；antialias:false（E8）。

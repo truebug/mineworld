@@ -11,6 +11,7 @@ const WORKSHOP_SCENE := "res://demo_workshop.tscn"
 const CITY_SCENE := "res://demo_city.tscn"
 const RACE_SCENE := "res://demo_race.tscn"
 const CHESS_SCENE := "res://demo_chessroom.tscn"
+const MWSplatBridge := preload("res://scripts/mw/splat_bridge.gd")
 const LOBBY_SCENE := "res://demo_lobby.tscn"
 const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const _WEB_BLOCK_CODES := {
@@ -901,6 +902,11 @@ func _process(delta: float) -> void:
 	if _is_web:
 		_poll_web_nick()
 		_poll_web_chat()
+	if _splat_on:
+		_splat_pose_timer += delta
+		if _splat_pose_timer >= 1.0 / MWSplatBridge.POSE_HZ:
+			_splat_pose_timer = 0.0
+			MWSplatBridge.push_pose(get_viewport().get_camera_3d())
 	var cmd_hz := CMD_HZ
 	if _presence_throttle == "low":
 		cmd_hz = CMD_HZ_LOW
