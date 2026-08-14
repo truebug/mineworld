@@ -9,6 +9,8 @@
 import * as THREE from "three";
 
 const params = new URLSearchParams(location.search);
+/** Debug: ?splatDebug=1 renders a red test triangle instead of the splat. */
+const DEBUG_TRI = params.get("splatDebug") === "1";
 const splatName = (params.get("splat") || "").trim();
 const level = (params.get("level") || "").trim();
 
@@ -57,23 +59,33 @@ async function boot() {
 	camera.lookAt(0, 0, 0);
 	scene.add(camera);
 
-	const { SparkRenderer, SplatMesh } = await import("spark");
-	const spark = new SparkRenderer({ renderer, preUpdate: false });
-	scene.add(spark);
-	const url = "media/splats/" + splatName + ".spz";
-	console.log("[MW] splat_bg loading", url);
-	const mesh = new SplatMesh({ url });
-	await mesh.initialized;
-	// E5: horizontal fit only (never yaw — Z-up→Y-up then rotateY tips the room).
-	const fitNum = (k, d) => {
-		const v = Number(params.get(k));
-		return Number.isFinite(v) ? v : d;
-	};
-	mesh.position.set(fitNum("splatOx", 0), fitNum("splatY", 0), fitNum("splatOz", 0));
-	const s = fitNum("splatScale", 1);
-	if (s !== 1) mesh.scale.setScalar(s);
-	scene.add(mesh);
-	console.log("[MW] splat_bg ready", url);
+	if (DEBUG_TRI) {
+		const tri = new THREE.Mesh(
+			new THREE.ConeGeometry(2, 4, 8),
+			new THREE.MeshBasicMaterial({ color: 0xff3344 })
+		);
+		tri.position.set(0, 2, 0);
+		scene.add(tri);
+		console.log("[MW] splat_bg DEBUG triangle mode");
+	} else {
+		const { SparkRenderer, SplatMesh } = await import("spark");
+		const spark = new SparkRenderer({ renderer, preUpdate: false });
+		scene.add(spark);
+		const url = "media/splats/" + splatName + ".spz";
+		console.log("[MW] splat_bg loading", url);
+		const mesh = new SplatMesh({ url });
+		await mesh.initialized;
+		// E5: horizontal fit only (never yaw — Z-up→Y-up then rotateY tips the room).
+		const fitNum = (k, d) => {
+			const v = Number(params.get(k));
+			return Number.isFinite(v) ? v : d;
+		};
+		mesh.position.set(fitNum("splatOx", 0), fitNum("splatY", 0), fitNum("splatOz", 0));
+		const s = fitNum("splatScale", 1);
+		if (s !== 1) mesh.scale.setScalar(s);
+		scene.add(mesh);
+		console.log("[MW] splat_bg ready", url);
+	}
 
 	window.addEventListener("resize", () => {
 		camera.aspect = window.innerWidth / window.innerHeight;
