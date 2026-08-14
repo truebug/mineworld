@@ -50,6 +50,8 @@ var _last_idle_cmd := false
 var _move_send_ctr := 0
 var _controlled := false
 var _is_web := false
+var _splat_on := false
+var _splat_pose_timer := 0.0
 ## WoW-style RMB turn-drive: yaw rate from the last horizontal mouse delta,
 ## decayed per frame; consumed by each cmd tick.
 var _rmb_turn_rate := 0.0
