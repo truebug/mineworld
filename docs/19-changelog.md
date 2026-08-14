@@ -101,6 +101,12 @@
 - **牌桌放大**（本批）：`_fit_board_panel` 对 blackjack/wudui 的 felt 上限 680×380 → 920×520（面板高度余量 150→170），1280×720 下约 968×680。
 - 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + wudui（含 `ai_fill_at` 三态断言）/blackjack/chessroom/ws 冒烟全绿。
 
+## 2026-08-14 · 棋室 UI 修复：按钮乱码 + 聊天气泡去黑底
+
+- **乱码根因**：Web 导出无系统字体回退，Godot 默认字体无 CJK/emoji 字形——`mw/quick_sit.gd`、`mw/invite_link.gd`、`mw/emotes.gd` 的按钮未挂 `MWFonts` 且带 ⚡/🔗/表情 emoji；修复为全部挂 Noto SC + 去掉 emoji（表情文本同步净化，气泡/按钮/DOM 三端一致）。
+- **聊天气泡**：玩家 chat 气泡（one_shot flash）不再绘制黑色背板，长句不再被 1.35m 固定面板裁切遮挡；白色字 + 深色描边（outline 14）保证户外可读；NPC 巡游气泡保留背板不变。
+- 验证：lint 0 finding + 6 场景编译门全绿。
+
 ## 2026-08-13 · 复查修复：Fun-S 皮肤链路三处断点
 
 - 代码复查 Fun 二梯队发现：`chessroom._on_hello` join payload 漏带 `profile.skin` → 远端在棋室看不到自选皮肤（Hub 不受影响）；`shell.html MW_GET_PROFILE` auth 分支丢 skin 且 `MW_SET_PROFILE` 持久化时剥掉 `skin`/`skin_pool` → 登录用户每次保存档案都会把 Portal 选择器的皮肤选择冲掉。

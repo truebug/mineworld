@@ -123,8 +123,10 @@ func _apply_line(alpha: float) -> void:
 	var a := clampf(alpha, 0.0, 1.0)
 	if one_shot:
 		_label.modulate = Color(1.0, 1.0, 1.0, a)
-		_mat.albedo_color = Color(0.04, 0.06, 0.1, 0.92 * a)
+		# Player chat: no dark plate (it clipped long lines); outline carries readability.
+		_panel.visible = false
 	else:
+		_panel.visible = true
 		_label.modulate = Color(_accent.r, _accent.g, _accent.b, a)
 		_mat.albedo_color = Color(0.08, 0.1, 0.14, 0.78 * a)
 	var pop := 0.92 + 0.08 * a

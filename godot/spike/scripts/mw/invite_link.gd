@@ -12,7 +12,10 @@ static func build_button(parent: Node, on_pressed: Callable) -> Button:
 	layer.layer = 10
 	parent.add_child(layer)
 	var btn := Button.new()
-	btn.text = MWi18n.t("🔗 邀请开黑", "🔗 Invite")
+	btn.text = MWi18n.t("邀请开黑", "Invite link")
+	var f: Font = MWFonts.font() if MWFonts != null else null
+	if f != null:
+		btn.add_theme_font_override("font", f)
 	btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	btn.position = Vector2(-230, -116)
 	btn.size = Vector2(200, 44)

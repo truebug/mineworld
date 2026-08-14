@@ -3,12 +3,13 @@ class_name MWEmotes
 ## Sent through the room chat channel (bubbles + chat log already handle them).
 
 const LIST: Array = [
-	{"zh": "👍 好棋！", "en": "👍 Nice move!"},
-	{"zh": "👏 精彩！", "en": "👏 Brilliant!"},
-	{"zh": "😮 哇哦", "en": "😮 Wow!"},
-	{"zh": "😂 哈哈", "en": "😂 Haha"},
-	{"zh": "💪 加油！", "en": "💪 Go go!"},
-	{"zh": "🤝 承让", "en": "🤝 GG"},
+	## No emoji: web export has no system-font fallback (would render tofu).
+	{"zh": "好棋！", "en": "Nice move!"},
+	{"zh": "精彩！", "en": "Brilliant!"},
+	{"zh": "哇哦", "en": "Wow!"},
+	{"zh": "哈哈", "en": "Haha"},
+	{"zh": "加油！", "en": "Go go!"},
+	{"zh": "承让", "en": "GG"},
 ]
 
 
@@ -30,6 +31,9 @@ static func build_row(parent: Container, on_pick: Callable) -> HBoxContainer:
 		var btn := Button.new()
 		btn.text = text_at(i)
 		btn.add_theme_font_size_override("font_size", 14)
+		var f: Font = MWFonts.font() if MWFonts != null else null
+		if f != null:
+			btn.add_theme_font_override("font", f)
 		btn.pressed.connect(on_pick.bind(text_at(i)))
 		row.add_child(btn)
 	return row
