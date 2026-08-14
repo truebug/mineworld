@@ -14,9 +14,15 @@ const DEBUG_TRI = params.get("splatDebug") === "1";
 const splatName = (params.get("splat") || "").trim();
 const level = (params.get("level") || "").trim();
 
-/** Hub (no level param = demo_hub) or race PoC, only when explicitly requested. */
-if (splatName !== "" && (level === "" || level === "demo_hub" || level === "demo_race")) {
+/**
+ * HARD GATE: Spark-in-no-build-env currently floods GL errors and stalls the
+ * main thread (mouse jank). Fully inert unless developer passes splatOn=1.
+ */
+const DEV_ON = params.get("splatOn") === "1";
+if (DEV_ON && splatName !== "" && (level === "" || level === "demo_hub" || level === "demo_race")) {
 	boot().catch((err) => console.warn("[MW] splat_bg failed:", err));
+} else if (splatName !== "") {
+	console.log("[MW] splat_bg inert (pending texSubImage2D fix; dev: add &splatOn=1)");
 }
 
 async function boot() {
@@ -30,14 +36,7 @@ async function boot() {
 	canvas.style.cssText =
 		"position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;";
 	document.body.prepend(canvas);
-	// Godot canvas must let the splat show through (viewport.transparent_bg
-	// is set by splat_bridge.gd on the engine side).
-	const godotCanvas = document.getElementById("canvas");
-	if (godotCanvas) {
-		godotCanvas.style.position = "relative";
-		godotCanvas.style.zIndex = "1";
-		godotCanvas.style.background = "transparent";
-	}
+	// Never touch Godot #canvas styles (docs/29 postmortem: canvas is an input fence).
 
 	const renderer = new THREE.WebGLRenderer({
 		canvas,

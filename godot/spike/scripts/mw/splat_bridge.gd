@@ -8,7 +8,7 @@ const POSE_HZ := 20.0
 
 
 static func enabled(level_id: String) -> bool:
-	"""True on web + hub/race + explicit ?splat= query (PoC scope)."""
+	"""True on web + hub/race + ?splat= AND splatOn=1 dev gate (GL-flood halt)."""
 	if not OS.has_feature("web"):
 		return false
 	if level_id not in ["demo_hub", "demo_race"]:
@@ -17,7 +17,13 @@ static func enabled(level_id: String) -> bool:
 		"(function(){try{return new URLSearchParams(location.search).get('splat')||''}catch(e){return ''}})()",
 		true
 	)).strip_edges()
-	return raw != ""
+	if raw == "":
+		return false
+	var dev := str(JavaScriptBridge.eval(
+		"(function(){try{return new URLSearchParams(location.search).get('splatOn')||''}catch(e){return ''}})()",
+		true
+	)).strip_edges()
+	return dev == "1"
 
 
 static func apply_hub_skin(scene_root: Node) -> void:
