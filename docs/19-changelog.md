@@ -101,6 +101,10 @@
 - **牌桌放大**（本批）：`_fit_board_panel` 对 blackjack/wudui 的 felt 上限 680×380 → 920×520（面板高度余量 150→170），1280×720 下约 968×680。
 - 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + wudui（含 `ai_fill_at` 三态断言）/blackjack/chessroom/ws 冒烟全绿。
 
+## 2026-08-14 · splat P0：转码工具链 + 首张测试 spz 入库
+
+- `scripts/ply_to_spz.mjs`（抄自 mine-world-arm，Spark `transcodeSpz`，使用前提 `npm i @sparkjsdev/spark`）；测试资产 `lab3.spz`（3.0MB，DISCOVERSE 经 mine-world-xr/arm 转码链）落 `godot/spike/web/media/splats/`；`export_godot.sh` 新增 `web/media → dist/web/media` 拷贝（splat 不进 pck，同域托管）；ASSETS.md 已入账（含 sha256）。
+
 ## 2026-08-14 · docs/33：3DGS 场景背景 PoC SSOT（参考 mine-world-arm 成熟经验）
 
 - 新文档 [33-splat-bg-poc.md](33-splat-bg-poc.md)：Godot 不画 splat，Web shell 垫底 Spark canvas + `MW_CAM_POSE` 相机同步；资产管线/体积红线/fit 标定/park-warm 缓存全套继承 arm 仓已验证做法（含 10 条勿重踩经验）；P0–P4 阶段勾选，默认 opt-in。

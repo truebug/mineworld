@@ -50,6 +50,10 @@ case "$TARGET" in
     fi
     # Main-thread key bridge (required: multi-thread workers cannot bind document).
     cp "$PROJECT/web/mw_key_bridge.js" "$OUT_DIR/mw_key_bridge.js"
+    # 3DGS splat skins (docs/33): same-origin media, not packed into pck.
+    if [[ -d "$PROJECT/web/media" ]]; then
+      cp -R "$PROJECT/web/media" "$OUT_DIR/media"
+    fi
     if ! grep -q "mw_key_bridge.js" "$OUT_FILE"; then
       # Fallback if head_include was stripped: inject before </head>
       sed -i.bak 's#</head>#<script src="mw_key_bridge.js"></script></head>#' "$OUT_FILE"
