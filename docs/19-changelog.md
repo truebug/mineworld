@@ -101,6 +101,12 @@
 - **牌桌放大**（本批）：`_fit_board_panel` 对 blackjack/wudui 的 felt 上限 680×380 → 920×520（面板高度余量 150→170），1280×720 下约 968×680。
 - 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + wudui（含 `ai_fill_at` 三态断言）/blackjack/chessroom/ws 冒烟全绿。
 
+## 2026-08-15 · splat 故障止血 + 隔离实验室页
+
+- **线上事故**：主站 `?splat=lab3` 触发 Spark 每帧 `texSubImage2D: no texture bound` 刷屏（256+ 后浏览器停报），主线程饿死 → 鼠标假死；同时 splat_bg.js 误改 Godot `#canvas` 样式（触 29 号红线边缘）。
+- **止血**（build `20260815-071727`）：JS + Godot 双侧加 `splatOn=1` 硬开关，默认完全惰性；撤掉一切 canvas 样式改动。
+- **隔离实验室** `/splat-lab.html`：无 Godot 的纯 three.js + Spark 最小环境（克隆 arm 初始化参数：antialias:false / preUpdate:false / maxStdDev=√5 / camera.parent.add(spark)），HUD 实时显示 fps + glErr 计数，拖拽环视，支持 fit 调参——先在此修通渲染再回移主站/棋牌室。
+
 ## 2026-08-14 · splat P1 修正：splat 定位 = 大厅房间皮肤（非赛车场背景板）
 
 - 产品语义对齐 mine-world-arm：`?splat=lab3`（无 level 参数 = 母港大厅）→ Godot 侧隐藏程序化机库壳（`HangarDress` 整树），保留 avatar/NPC/门触发，Spark splat 直接当大厅视觉；`mw/splat_bridge.gd` 新增 `apply_hub_skin()`。

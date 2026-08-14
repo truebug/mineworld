@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<title>splat-lab · 3DGS 隔离实验室</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script type="importmap">
+		{
+			"imports": {
+				"three": "./vendor/three/three.module.min.js",
+				"three/addons/": "./vendor/three/addons/",
+				"spark": "./vendor/spark/spark.module.min.js"
+			}
+		}
+	</script>
+	<style>
+		body { margin: 0; background: #000; overflow: hidden; }
+		#hud {
+			position: fixed; top: 10px; left: 10px; z-index: 10;
+			color: #9fe; font: 12px/1.6 monospace; white-space: pre;
+			background: rgba(0,0,0,.55); padding: 8px 10px; border-radius: 6px;
+			pointer-events: none;
+		}
+	</style>
+</head>
+<body>
+	<div id="hud">splat-lab loading…</div>
+	<script type="module">
+		import * as THREE from "three";
+
+		const hud = document.getElementById("hud");
+		const params = new URLSearchParams(location.search);
+		const name = (params.get("splat") || "lab3").replace(/[^a-z0-9_]/gi, "");
+		const url = "media/splats/" + name + ".spz";
+
+		// GL error counter (mirrors what the main site console flooded with).
+		let glErr = 0;
+		const origErr = console.error.bind(console);
+		console.error = (...a) => { glErr++; origErr(...a); };
+
+		const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+		renderer.setClearColor(0x000000, 1);
+		renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+		renderer.setSize(innerWidth, innerHeight);
+		document.body.appendChild(renderer.domElement);
+
+		const scene = new THREE.Scene();
+		const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 2000);
+		camera.position.set(0, 1.6, 3);
+		scene.add(camera); // arm: sparkParent = camera.parent || scene
+
+		const { SparkRenderer, SplatMesh } = await import("spark");
+		const spark = new SparkRenderer({
+			renderer,
+			preUpdate: false,
+			maxStdDev: Math.sqrt(5),
+		});
+		(camera.parent || scene).add(spark);
+
+		hud.textContent = "loading " + url + " …";
+		const mesh = new SplatMesh({ url });
+		await mesh.initialized;
+		const fitNum = (k, d) => {
+			const v = Number(params.get(k));
+			return Number.isFinite(v) ? v : d;
+		};
+		mesh.position.set(fitNum("splatOx", 0), fitNum("splatY", 0), fitNum("splatOz", 0));
+		const s = fitNum("splatScale", 1);
+		if (s !== 1) mesh.scale.setScalar(s);
+		scene.add(mesh);
+
+		// Drag-orbit look (lab only, no Godot coexistence).
+		let yaw = 0, pitch = 0, dragging = false, lx = 0, ly = 0;
+		addEventListener("mousedown", (e) => { dragging = true; lx = e.clientX; ly = e.clientY; });
+		addEventListener("mouseup", () => { dragging = false; });
+		addEventListener("mousemove", (e) => {
+			if (!dragging) return;
+			yaw -= (e.clientX - lx) * 0.004;
+			pitch = Math.max(-1.2, Math.min(1.2, pitch - (e.clientY - ly) * 0.004));
+			lx = e.clientX; ly = e.clientY;
+		});
+		addEventListener("resize", () => {
+			camera.aspect = innerWidth / innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(innerWidth, innerHeight);
+		});
+
+		let frames = 0;
+		const t0 = performance.now();
+		renderer.setAnimationLoop(() => {
+			camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, "YXZ"));
+			renderer.render(scene, camera);
+			frames++;
+			if (frames % 30 === 0) {
+				const fps = (frames / ((performance.now() - t0) / 1000)).toFixed(0);
+				hud.textContent =
+					"splat-lab · " + url + "\n" +
+					"fps≈" + fps + " · glErr=" + glErr + "\n" +
+					"drag to look · ?splatOx=/splatY=/splatOz=/splatScale=";
+			}
+		});
+		console.log("[MW] splat-lab ready", url);
+	</script>
+</body>
+</html>
