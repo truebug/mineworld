@@ -101,6 +101,10 @@
 - **牌桌放大**（本批）：`_fit_board_panel` 对 blackjack/wudui 的 felt 上限 680×380 → 920×520（面板高度余量 150→170），1280×720 下约 968×680。
 - 验证：gdscript lint 0 finding + py_compile + 6 场景编译门 + wudui（含 `ai_fill_at` 三态断言）/blackjack/chessroom/ws 冒烟全绿。
 
+## 2026-08-14 · docs/33：3DGS 场景背景 PoC SSOT（参考 mine-world-arm 成熟经验）
+
+- 新文档 [33-splat-bg-poc.md](33-splat-bg-poc.md)：Godot 不画 splat，Web shell 垫底 Spark canvas + `MW_CAM_POSE` 相机同步；资产管线/体积红线/fit 标定/park-warm 缓存全套继承 arm 仓已验证做法（含 10 条勿重踩经验）；P0–P4 阶段勾选，默认 opt-in。
+
 ## 2026-08-14 · 棋室 UI 修复：按钮乱码 + 聊天气泡去黑底
 
 - **乱码根因**：Web 导出无系统字体回退，Godot 默认字体无 CJK/emoji 字形——`mw/quick_sit.gd`、`mw/invite_link.gd`、`mw/emotes.gd` 的按钮未挂 `MWFonts` 且带 ⚡/🔗/表情 emoji；修复为全部挂 Noto SC + 去掉 emoji（表情文本同步净化，气泡/按钮/DOM 三端一致）。
