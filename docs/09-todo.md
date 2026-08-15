@@ -240,6 +240,17 @@
 | W2.1 / W2.2 / W2.4 | 公网 HTTPS / wss / 运维页 | [ ] 见 [23](23-public-deploy.md) |
 | T2.7 | 输入延迟补偿 v0 | [~] |
 
+### MC 星门（PaperMC · [34](34-papermc-minecraft.md)）
+
+> CVM（`binjietk` · 106.54.168.31）方案二 itzg 容器 `papermc` 已拉起（Paper `1.21.11` · Java 21 兼容 · `MAX_RAM=3G`）；25565 已放行，外网 TCP 可连。**红线**：MC 不进 MuJoCo / Gateway WS，浏览器侧只做入口卡片。
+
+| ID | 任务 | 验收 | 状态 |
+|----|------|------|------|
+| M0 | CVM 拉起 PaperMC 25565 | 外网 TCP `106.54.168.31:25565` 可连；`Done (30.9s)` | [x] 2026-08-15 |
+| M1 | Hub「MC 星门」+ Portal 卡片 | 从 Hub 能找到并复制地址 | [ ] 见 [34 §4.2](34-papermc-minecraft.md) |
+| M2 | 身份白名单（Paper 插件 ↔ Platform） | 仅注册用户进 | [ ] 插件化后再议 |
+| M3 | 成就→积分回传（可选） | 另行定义 | [ ] |
+
 ---
 
 ## Done（H · 3D Hub · 2026-07-20）
