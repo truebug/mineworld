@@ -69,8 +69,47 @@
 		if (s !== 1) mesh.scale.setScalar(s);
 		scene.add(mesh);
 
-		// Drag-orbit look (lab only, no Godot coexistence).
-		let yaw = 0, pitch = 0, dragging = false, lx = 0, ly = 0;
+		// Auto-frame: lab3 is an XR room scan — geometry may sit far from origin.
+		// arm fitArmWorkcell: updateMatrixWorld first, guard empty bbox.
+		mesh.updateMatrixWorld(true);
+		let bbox = null;
+		try {
+			const b = mesh.getBoundingBox(true);
+			if (b && !b.isEmpty()) bbox = b;
+		} catch { /* fall through */ }
+		if (!bbox) {
+			const fb = new THREE.Box3().setFromObject(mesh);
+			if (!fb.isEmpty()) bbox = fb;
+		}
+		if (!bbox) {
+			console.warn("[MW] splat-lab empty-bounds, fallback frame r=5");
+			bbox = new THREE.Box3(
+				new THREE.Vector3(-2.5, -2.5, -2.5), new THREE.Vector3(2.5, 2.5, 2.5));
+		}
+		const center = bbox.getCenter(new THREE.Vector3());
+		const size = bbox.getSize(new THREE.Vector3());
+		const radius = Math.max(size.x, size.y, size.z, 0.001);
+		console.log("[MW] splat-lab bbox center=" +
+			center.toArray().map((v) => v.toFixed(2)).join(",") +
+			" size=" + size.toArray().map((v) => v.toFixed(2)).join(","));
+		window.__lab = { mesh, camera, center, radius };
+		const grid = new THREE.GridHelper(radius * 2, 20, 0x336655, 0x223344);
+		grid.position.set(center.x, bbox.min.y, center.z);
+		scene.add(grid);
+		scene.add(new THREE.AxesHelper(radius * 0.5));
+		// Control probe: plain lit box at bbox center — if THIS is black too,
+		// the pipeline (not the splat) is broken.
+		const probe = new THREE.Mesh(
+			new THREE.BoxGeometry(radius * 0.15, radius * 0.15, radius * 0.15),
+			new THREE.MeshBasicMaterial({ color: 0xff4488 }));
+		probe.position.copy(center);
+		scene.add(probe);
+		camera.position.set(center.x, center.y + radius * 0.35, center.z + radius * 0.9);
+		camera.lookAt(center);
+
+		// Drag-orbit around bbox center (lab only, no Godot coexistence).
+		let yaw = 0, pitch = 0.2, dragging = false, lx = 0, ly = 0, orbitR = radius * 0.9;
+		const focus = center.clone();
 		addEventListener("mousedown", (e) => { dragging = true; lx = e.clientX; ly = e.clientY; });
 		addEventListener("mouseup", () => { dragging = false; });
 		addEventListener("mousemove", (e) => {
@@ -79,6 +118,10 @@
 			pitch = Math.max(-1.2, Math.min(1.2, pitch - (e.clientY - ly) * 0.004));
 			lx = e.clientX; ly = e.clientY;
 		});
+		addEventListener("wheel", (e) => {
+			orbitR = Math.max(radius * 0.05, Math.min(radius * 8,
+				orbitR * (1 + Math.sign(e.deltaY) * 0.12)));
+		}, { passive: true });
 		addEventListener("resize", () => {
 			camera.aspect = innerWidth / innerHeight;
 			camera.updateProjectionMatrix();
@@ -88,7 +131,13 @@
 		let frames = 0;
 		const t0 = performance.now();
 		renderer.setAnimationLoop(() => {
-			camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, "YXZ"));
+			const cp = Math.cos(pitch), sp = Math.sin(pitch);
+			camera.position.set(
+				focus.x + orbitR * cp * Math.sin(yaw),
+				focus.y + orbitR * sp,
+				focus.z + orbitR * cp * Math.cos(yaw)
+			);
+			camera.lookAt(focus);
 			renderer.render(scene, camera);
 			frames++;
 			if (frames % 30 === 0) {
@@ -96,7 +145,7 @@
 				hud.textContent =
 					"splat-lab · " + url + "\n" +
 					"fps≈" + fps + " · glErr=" + glErr + "\n" +
-					"drag to look · ?splatOx=/splatY=/splatOz=/splatScale=";
+					"drag=orbit · wheel=zoom · ?splatOx=/splatY=/splatOz=/splatScale=";
 			}
 		});
 		console.log("[MW] splat-lab ready", url);
