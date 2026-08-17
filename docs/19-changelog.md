@@ -7,6 +7,10 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-17 · docs：splat 交接 → Splat-P1d（自适应 pose）
+
+- 重写 [35](35-splat-render-handover.md)：P1b/c Done、双 Canvas 错乱根因、P1d 实现要点与红线；`09-todo` / `AGENTS` Next = P1d。
+
 ## 2026-08-17 · splat：igs0047 挂载点对齐 arm occupancy
 
 - **现象**：棋牌室桌在虚空，扫描房只露在画面顶端。
