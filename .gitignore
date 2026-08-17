@@ -34,3 +34,6 @@ godot/**/.godot/
 
 /*.zip
 /kenney_*.zip
+
+# Local splat transcode scratch (PLY downloads)
+/tmp/

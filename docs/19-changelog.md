@@ -7,6 +7,11 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-17 · splat：棋牌室默认大房间皮肤 igs0047
+
+- InteriorGS `0047_839892` → 同域 `igs0047.spz`（~5.1MB）；Z-up −90°X；metric 默认 scale=1 + floor-snap。
+- 验收：`/?splat=igs0047&splatOn=1&room=chess`（lab3 仍可用，偏小）。
+
 ## 2026-08-17 · Hub：AmbientHum Web 警告（cannot be sampled）
 
 - **现象**：控制台 `AmbientHum … stream that cannot be sampled` + 超长 wasm 堆栈（看起来像一堆错）。

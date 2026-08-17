@@ -20,6 +20,7 @@
 | 资产 | 来源 | 许可 | 用途 / 存放位置 | 署名要求 | 入库日期 |
 |------|------|------|----------------|----------|----------|
 | lab3.spz (3DGS room skin) | DISCOVERSE / mine-world-xr walk-in；经 mine-world-arm Spark `transcodeSpz` 转码（sha256 `6b29eeca…f319723`） | 同上游扫描资产（见 mine-world-xr `ASSETS.md`） | 3DGS 场景背景 PoC（docs/33）；`godot/spike/web/media/splats/lab3.spz`（~3.0MB，同域托管，不进 pck） | 无 | 2026-08-14 |
+| igs0047.spz (InteriorGS 0047) | S3 `InteriorGS/0047_839892/3dgs_compressed.ply` → Spark `transcodeSpz`（sha256 `bcfa1611…`） | 同 InteriorGS / 现网 S3 镜像（与 mine-world-arm 一致） | 棋牌室首选大房间皮肤；`godot/spike/web/media/splats/igs0047.spz`（~5.1MB） | 无 | 2026-08-17 |
 | Platformer Kit 4.1 | [kenney.nl/assets/platformer-kit](https://kenney.nl/assets/platformer-kit) | CC0 | `tutorial_02` 平台跳跃素材；`godot/spike/assets/platformer/`（含 License）；**F1** 亦用于 `main.tscn` / tutorial_01 装饰 | 无 | 2026-07-18 |
 | City Kit (Commercial) 2.1 | [kenney.nl/assets/city-kit-commercial](https://kenney.nl/assets/city-kit-commercial) | CC0 | 城市/建筑环境素材；`godot/spike/assets/city/`（仍可用于 tutorial_02） | 无 | 2026-07-18 |
 | KayKit City Builder Bits 1.0（子集） | [itch](https://kaylousberg.itch.io/city-builder-bits) · [GitHub](https://github.com/KayKit-Game-Assets/KayKit-City-Builder-Bits-1.0) | CC0 | `demo_city` 默认关城市皮；`godot/spike/assets/kaykit_city/`（gltf+atlas；见目录 ASSETS.md） | 无（可署名 Kay Lousberg） | 2026-07-19 |

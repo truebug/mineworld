@@ -6,12 +6,13 @@
 | **日期** | 2026-08-17 |
 | **关联** | [33-splat-bg-poc.md](33-splat-bg-poc.md) · [19-changelog.md](19-changelog.md) |
 | **目的** | 棋牌室挂 3DGS `.spz` 视觉皮肤（Spark，不参与物理） |
-| **现状一句话** | `godot canvas alpha=true` + `shell hidden (composite OK)` + 可见 lab3；桌椅与扫描家具不必一一对齐 |
+| **现状一句话** | 棋牌室优先 `igs0047.spz`（~5MB InteriorGS）；lab3 仍可用但偏小 |
 
 ## 0. 请用户验收
 
-1. https://playground.dev.databall.tech/?splat=lab3&splatOn=1 → 母港 armed，勿立刻 loading  
-2. P 门或 `?room=chess` → 控制台 `alpha=true` / `shell hidden (composite OK)`，见 lab3 垫底、桌/人在上  
+1. https://playground.dev.databall.tech/?splat=igs0047&splatOn=1&room=chess  
+   → `alpha=true` / `shell hidden (composite OK)`；大室内皮肤，少露虚空  
+2. `?splat=lab3&splatOn=1` 仍可用（小书房对照）  
 3. 纯母港无参数：未回归  
 
 ## 0.1 根因（坐实）

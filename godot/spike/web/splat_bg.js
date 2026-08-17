@@ -28,12 +28,12 @@ function fitNum(k, d) {
 }
 
 /**
- * lab3 Z-up → Three Y-up (−90° X).
+ * lab3 / InteriorGS (igs*) are Z-up → Three Y-up (−90° X).
  * @param {import('three').Object3D} mesh
  * @param {string} name
  */
 function applySplatOrientation(mesh, name) {
-	if (/lab3/i.test(name)) {
+	if (/lab3|igs\d/i.test(name)) {
 		mesh.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
 		return;
 	}
@@ -71,7 +71,12 @@ function applySplatFit(mesh, name) {
 	const horiz0 = Math.max(size0.x, size0.z, 1e-3);
 	let s = fitNum("splatScale", NaN);
 	if (!Number.isFinite(s) || s <= 0) {
-		s = horiz0 < 20 ? 10 / horiz0 : 1;
+		// InteriorGS rooms are already metric; don't force ~10m horizontal fit.
+		if (/igs\d/i.test(name) && horiz0 >= 3) {
+			s = 1;
+		} else {
+			s = horiz0 < 20 ? 10 / horiz0 : 1;
+		}
 	}
 	mesh.scale.setScalar(s);
 	mesh.updateMatrixWorld(true);
