@@ -51,7 +51,9 @@ case "$TARGET" in
     # Main-thread key bridge (required: multi-thread workers cannot bind document).
     cp "$PROJECT/web/mw_key_bridge.js" "$OUT_DIR/mw_key_bridge.js"
     # 3DGS splat skins (docs/33): same-origin media, not packed into pck.
+    # Replace (not merge): BSD `cp -R` into existing dir can skip new files.
     if [[ -d "$PROJECT/web/media" ]]; then
+      rm -rf "$OUT_DIR/media"
       cp -R "$PROJECT/web/media" "$OUT_DIR/media"
     fi
     # Splat renderer (docs/33 P1): vendored three.js + Spark + bootstrap.

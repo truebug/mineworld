@@ -11,6 +11,7 @@
 
 - InteriorGS `0047_839892` → 同域 `igs0047.spz`（~5.1MB）；Z-up −90°X；metric 默认 scale=1 + floor-snap。
 - 验收：`/?splat=igs0047&splatOn=1&room=chess`（lab3 仍可用，偏小）。
+- 附：`export_godot.sh` 改为整目录替换 `dist/web/media`（否则新 spz 不上公网）。
 
 ## 2026-08-17 · Hub：AmbientHum Web 警告（cannot be sampled）
 
