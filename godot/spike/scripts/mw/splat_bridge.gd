@@ -1,9 +1,9 @@
 class_name MWSplatBridge
 ## docs/33: Godot side of 3DGS under-canvas compositing.
 ## Chessroom (P-door) primary. Hub splat is opt-in via ?splatHub=1 (dual-WebGL risk).
-## Transparent clear + MW_CAM_POSE @ ~20Hz. JS starts Spark via MW_SPLAT_START.
+## Transparent clear + MW_CAM_POSE @ ~5Hz (match splat_bg ≤5fps; avoid JS eval flood).
 
-const POSE_HZ := 20.0
+const POSE_HZ := 5.0
 
 
 static func enabled(level_id: String) -> bool:

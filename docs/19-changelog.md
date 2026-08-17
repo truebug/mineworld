@@ -7,6 +7,12 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-17 · fix：棋牌室 Buffer payload full（splat 下 WS 出站堵）
+
+- **现象**：开 `igs0047`/splat 后控制台刷 `Buffer payload full! Dropping data.`。
+- **原因**：chessroom 仍 20Hz 发速度包且无 hub/main 的移动节流；双 WebGL 卡主线程 → socket 排空慢。
+- **修复**：chessroom 对齐 10Hz 交替节流（splat 时基频 10Hz→有效 ~5Hz）；pose 20→5Hz；出站缓冲 512KB→1MB；水位 0.35 + send_msg 0.9 硬闸。
+
 ## 2026-08-17 · splat：棋牌室默认大房间皮肤 igs0047
 
 - InteriorGS `0047_839892` → 同域 `igs0047.spz`（~5.1MB）；Z-up −90°X；metric 默认 scale=1 + floor-snap。

@@ -5,6 +5,7 @@ extends Node3D
 const MOVE_SPEED := 2.8
 const TURN_SPEED := 2.2
 const CMD_HZ := 20.0
+const CMD_HZ_SPLAT := 10.0  ## dual-WebGL: slower cmd so JS socket can drain
 const SIT_DIST := 2.4
 const AVATAR_SCENE := preload("res://avatar_puppet.tscn")
 const GomokuScript := preload("res://scripts/gomoku.gd")
@@ -56,6 +57,7 @@ var _controlled_entity_id := "avatar_0"
 var _controlled := false
 var _cmd_timer := 0.0
 var _last_idle_cmd := false
+var _move_send_ctr := 0
 var _puppets: Dictionary = {}
 var _profile: Dictionary = {}
 var _board_layer: CanvasLayer = null
@@ -572,7 +574,8 @@ func _process(delta: float) -> void:
 			_splat_pose_timer = 0.0
 			MWSplatBridge.push_pose(get_viewport().get_camera_3d())
 	_cmd_timer += delta
-	if _cmd_timer >= 1.0 / CMD_HZ:
+	var cmd_hz := CMD_HZ_SPLAT if _splat_on else CMD_HZ
+	if _cmd_timer >= 1.0 / cmd_hz:
 		_cmd_timer = 0.0
 		_send_velocity_cmd()
 
@@ -616,9 +619,17 @@ func _send_velocity_cmd() -> void:
 	var idle := vx == 0.0 and vy == 0.0 and yaw_rate == 0.0
 	if idle and _last_idle_cmd:
 		return
-	if ws.outbound_full():
+	if ws.outbound_full(0.35):
 		return
 	_last_idle_cmd = idle
+	# Moving: 20→10 Hz (or 10→5 with splat) — same alternating ctr as hub/main.
+	if idle:
+		_move_send_ctr = 0
+	elif _move_send_ctr == 0:
+		_move_send_ctr = 1
+	else:
+		_move_send_ctr = 0
+		return
 	ws.send_cmd({
 		"entity_id": _controlled_entity_id,
 		"control_mode": "velocity",

@@ -21,7 +21,7 @@ var session_id := ""
 var _ws := WebSocketPeer.new()
 
 const WS_INBOUND_BUF := 262144   # 256 KB — junqi fog views + full room state
-const WS_OUTBOUND_BUF := 524288  # 512 KB — web JS socket can lag (throttled tabs)
+const WS_OUTBOUND_BUF := 1048576  # 1 MB — dual-WebGL / tab throttle can stall flush
 var _connecting := false
 var _intentional_close := false
 var _was_open := false
@@ -111,6 +111,9 @@ func _process(delta: float) -> void:
 
 func send_msg(msg: Dictionary) -> void:
 	if _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		return
+	# Last-resort gate: avoid Godot ERROR spam when buffer cannot drain.
+	if _ws.get_current_outbound_buffered_amount() >= float(WS_OUTBOUND_BUF) * 0.9:
 		return
 	var err := _ws.send_text(JSON.stringify(msg))
 	if err != OK:
