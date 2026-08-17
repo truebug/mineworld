@@ -7,6 +7,12 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-17 · splat：igs0047 挂载点对齐 arm occupancy
+
+- **现象**：棋牌室桌在虚空，扫描房只露在画面顶端。
+- **原因**：几何 bbox floor-snap ≠ InteriorGS 入口；arm 用 `occupancy.json` center/ground + 可选 `splatShift`。
+- **修复**：同域 `igs0047.occupancy.json`；fit 走 entry→原点、ground→y=0（默认 `splatShift=0` 贴棋桌原点；`?splatShift=2.2` 可对齐臂工位）。
+
 ## 2026-08-17 · fix：棋牌室 Buffer payload full（splat 下 WS 出站堵）
 
 - **现象**：开 `igs0047`/splat 后控制台刷 `Buffer payload full! Dropping data.`。

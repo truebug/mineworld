@@ -56,30 +56,114 @@ function meshBBox(mesh) {
 }
 
 /**
- * Scale + orient, then floor-snap to Godot y=0 (chessroom pad).
- * splatYLift on URL is ignored when floor-snap is on (default) — large lifts
- * push the scan out of view → black void after shell hide.
+ * InteriorGS occupancy (arm parity): pin entry/ground, not geometric bbox alone.
+ * @typedef {{ center: [number, number, number], groundZ: number }} IgsOcc
+ */
+
+/** Embedded fallback if .occupancy.json missing. */
+const IGS_OCC_FALLBACK = {
+	igs0047: {
+		center: [1.5693899655600703, -3.0245500480120038, 0.0],
+		groundZ: 0.0,
+	},
+};
+
+/**
+ * Load occupancy for igs* skins (same-origin json, then embed).
+ * @param {string} name
+ * @returns {Promise<IgsOcc | null>}
+ */
+async function loadIgsOccupancy(name) {
+	if (!/igs\d/i.test(name)) return null;
+	try {
+		const res = await fetch("media/splats/" + name + ".occupancy.json", {
+			cache: "force-cache",
+		});
+		if (res.ok) {
+			const j = await res.json();
+			const c = j?.center;
+			if (Array.isArray(c) && c.length >= 2) {
+				return {
+					center: [Number(c[0]) || 0, Number(c[1]) || 0, Number(c[2]) || 0],
+					groundZ: Number.isFinite(Number(j.groundZ))
+						? Number(j.groundZ)
+						: Number.isFinite(Number(c[2]))
+							? Number(c[2])
+							: 0,
+				};
+			}
+		}
+	} catch {
+		/* fall through */
+	}
+	const fb = IGS_OCC_FALLBACK[name];
+	return fb
+		? { center: /** @type {[number,number,number]} */ (fb.center.slice()), groundZ: fb.groundZ }
+		: null;
+}
+
+/**
+ * Scale + orient. InteriorGS: occupancy entry/ground (mine-world-arm fitArmWorkcell).
+ * lab3: geometric floor-snap.
  * @param {import('three').Object3D} mesh
  * @param {string} name
+ * @param {IgsOcc | null} [igsOcc]
  */
-function applySplatFit(mesh, name) {
+function applySplatFit(mesh, name, igsOcc = null) {
 	applySplatOrientation(mesh, name);
 	mesh.position.set(0, 0, 0);
 	mesh.scale.setScalar(1);
 	mesh.updateMatrixWorld(true);
 	const size0 = meshBBox(mesh).getSize(new THREE.Vector3());
 	const horiz0 = Math.max(size0.x, size0.z, 1e-3);
+	const isIgs = /igs\d/i.test(name);
 	let s = fitNum("splatScale", NaN);
 	if (!Number.isFinite(s) || s <= 0) {
-		// InteriorGS rooms are already metric; don't force ~10m horizontal fit.
-		if (/igs\d/i.test(name) && horiz0 >= 3) {
-			s = 1;
+		// arm: igs scale 1 unless huge (>40m → shrink to ~28m)
+		if (isIgs) {
+			s = horiz0 > 40 ? 28 / horiz0 : 1;
 		} else {
 			s = horiz0 < 20 ? 10 / horiz0 : 1;
 		}
 	}
 	mesh.scale.setScalar(s);
 	mesh.updateMatrixWorld(true);
+
+	const ox = fitNum("splatOx", 0);
+	const oz = fitNum("splatOz", 0);
+	const yNudge = fitNum("splatY", 0);
+
+	if (isIgs && igsOcc && Array.isArray(igsOcc.center)) {
+		// Chessroom pad ≈ origin; arm desk uses splatShift=2.2 — default 0 here.
+		const fwdM = fitNum("splatShift", 0);
+		const [cx, cy, cz] = igsOcc.center;
+		const groundZ = Number.isFinite(igsOcc.groundZ) ? igsOcc.groundZ : 0;
+		mesh.updateMatrixWorld(true);
+		const entry = new THREE.Vector3(cx, cy, cz).applyMatrix4(mesh.matrixWorld);
+		const ground = new THREE.Vector3(cx, cy, groundZ).applyMatrix4(mesh.matrixWorld);
+		mesh.position.x += 0 - entry.x + ox;
+		mesh.position.z += -fwdM - entry.z + oz;
+		mesh.position.y += 0 - ground.y + yNudge;
+		mesh.updateMatrixWorld(true);
+		const ground2 = new THREE.Vector3(cx, cy, groundZ).applyMatrix4(mesh.matrixWorld);
+		mesh.position.y += 0 - ground2.y;
+		mesh.updateMatrixWorld(true);
+		const out = meshBBox(mesh);
+		console.log(
+			"[MW] splat_bg fit",
+			name,
+			"igs-occupancy",
+			"scale=" + s.toFixed(3),
+			"pos=",
+			mesh.position.toArray().map((v) => +v.toFixed(2)).join(","),
+			"entryLocal=",
+			[cx, cy, cz].map((v) => +v.toFixed(2)).join(","),
+			"fwd=" + fwdM.toFixed(2),
+			"bboxY=",
+			out.min.y.toFixed(2) + ".." + out.max.y.toFixed(2)
+		);
+		return;
+	}
 
 	const floorSnap = params.get("splatFloor") !== "0";
 	if (floorSnap) {
@@ -91,11 +175,11 @@ function applySplatFit(mesh, name) {
 				"[MW] splat_bg: splatYLift ignored (floor-snap on). Fine-tune with splatY=±0.3"
 			);
 		}
-		mesh.position.x += fitNum("splatOx", 0);
-		mesh.position.y += fitNum("splatY", 0);
-		mesh.position.z += fitNum("splatOz", 0) + fitNum("splatOzNudge", 0);
+		mesh.position.x += ox;
+		mesh.position.y += yNudge;
+		mesh.position.z += oz + fitNum("splatOzNudge", 0);
 	} else {
-		mesh.position.set(fitNum("splatOx", 0), fitNum("splatY", 0), fitNum("splatOz", 0));
+		mesh.position.set(ox, yNudge, oz);
 		if (/lab3/i.test(name)) {
 			mesh.position.y += fitNum("splatYLift", -0.85);
 			mesh.position.z += fitNum("splatOzNudge", 0.08);
@@ -277,7 +361,8 @@ async function startSplat() {
 			const fileBytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
 			const mesh = new mod.SplatMesh({ fileBytes, fileName: splatName + ".spz" });
 			await mesh.initialized;
-			applySplatFit(mesh, splatName);
+			const igsOcc = await loadIgsOccupancy(splatName);
+			applySplatFit(mesh, splatName, igsOcc);
 			scene.add(mesh);
 			console.log("[MW] splat_bg ready", url);
 			const compositeOk = probeGodotAlpha();
