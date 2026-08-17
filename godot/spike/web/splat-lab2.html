@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<title>splat-lab2 · arm-parity A/B</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script type="importmap">
+		{
+			"imports": {
+				"three": "./vendor/three/three.module.min.js",
+				"three/addons/": "./vendor/three/addons/",
+				"spark": "./vendor/spark/spark.module.min.js"
+			}
+		}
+	</script>
+	<style>
+		body { margin: 0; background: #000; overflow: hidden; }
+		#hud {
+			position: fixed; top: 10px; left: 10px; z-index: 10;
+			color: #9fe; font: 12px/1.6 monospace; white-space: pre;
+			background: rgba(0,0,0,.55); padding: 8px 10px; border-radius: 6px;
+			pointer-events: none;
+		}
+	</style>
+</head>
+<body>
+	<div id="hud">splat-lab2 loading…</div>
+	<script type="module">
+		import * as THREE from "three";
+
+		const hud = document.getElementById("hud");
+		const params = new URLSearchParams(location.search);
+		const name = (params.get("splat") || "lab3").replace(/[^a-z0-9_]/gi, "");
+		const url = params.get("splatUrl") || ("media/splats/" + name + ".spz");
+
+		// GL error counter (mirrors what the main site console flooded with).
+		let glErr = 0;
+		const origErr = console.error.bind(console);
+		console.error = (...a) => { glErr++; origErr(...a); };
+
+		const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+		renderer.setClearColor(0x000000, 1);
+		renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+		renderer.setSize(innerWidth, innerHeight);
+		renderer.xr.enabled = true; // arm parity: spark render path checks xr state
+		document.body.appendChild(renderer.domElement);
+
+		const scene = new THREE.Scene();
+		const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 80);
+		camera.position.set(0, 1.6, 3);
+		const rig = new THREE.Group(); // arm: xrRig
+		rig.add(camera);
+		scene.add(rig);
+
+		const { SparkRenderer, SplatMesh } = await import("spark");
+		// lab2 A/B: exclude LOD subsystem (arm has no explicit LOD opts either,
+		// but driveLod on some GPUs can silently empty the generator).
+		const spark = new SparkRenderer({
+			renderer,
+			preUpdate: false,
+			maxStdDev: Math.sqrt(5),
+			enableLod: false,
+			enableDriveLod: false,
+			enableLodFetching: false,
+		});
+		rig.add(spark); // arm: sparkParent = camera.parent
+
+		hud.textContent = "loading " + url + " …";
+		// arm parity: fetch bytes ourselves, pass fileBytes+fileName
+		// (Spark url-mode may take a different LOD streaming path).
+		const fileBytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+		const mesh = new SplatMesh({ fileBytes, fileName: name + ".spz" });
+		await mesh.initialized;
+		// Data probe: count splats, avg opacity/color — distinguishes
+		// "decoded invisible data" from "render pass broken".
+		let nSp = 0, opSum = 0, opZero = 0, colSum = 0, scSum = 0;
+		mesh.forEachSplat((i, c, scales, q, opacity, color) => {
+			nSp++; opSum += opacity; if (opacity < 0.01) opZero++;
+			colSum += (color.r + color.g + color.b) / 3;
+			scSum += (scales.x + scales.y + scales.z) / 3;
+		});
+		console.log("[MW] splat-lab splats n=" + nSp +
+			" avgOp=" + (opSum / Math.max(nSp, 1)).toFixed(3) +
+			" zeroOp%=" + (100 * opZero / Math.max(nSp, 1)).toFixed(0) +
+			" avgCol=" + (colSum / Math.max(nSp, 1)).toFixed(3) +
+			" avgScale=" + (scSum / Math.max(nSp, 1)).toFixed(4) +
+			" mesh.opacity=" + mesh.opacity + " visible=" + mesh.visible);
+		const fitNum = (k, d) => {
+			const v = Number(params.get(k));
+			return Number.isFinite(v) ? v : d;
+		};
+		mesh.position.set(fitNum("splatOx", 0), fitNum("splatY", 0), fitNum("splatOz", 0));
+		const s = fitNum("splatScale", 1);
+		if (s !== 1) mesh.scale.setScalar(s);
+		scene.add(mesh);
+		// arm post-init parity: renderOrder/depthWrite + explicit pipeline kick.
+		mesh.renderOrder = -20;
+		try { mesh.depthWrite = false; } catch (e) { /* ignore */ }
+		try { spark.update({ scene, camera }); } catch (e) {
+			console.warn("[lab2] spark.update kick failed", e);
+		}
+
+		// Auto-frame: lab3 is an XR room scan — geometry may sit far from origin.
+		// arm fitArmWorkcell: updateMatrixWorld first, guard empty bbox.
+		mesh.updateMatrixWorld(true);
+		let bbox = null;
+		try {
+			const b = mesh.getBoundingBox(true);
+			if (b && !b.isEmpty()) bbox = b;
+		} catch { /* fall through */ }
+		if (!bbox) {
+			const fb = new THREE.Box3().setFromObject(mesh);
+			if (!fb.isEmpty()) bbox = fb;
+		}
+		if (!bbox) {
+			console.warn("[MW] splat-lab empty-bounds, fallback frame r=5");
+			bbox = new THREE.Box3(
+				new THREE.Vector3(-2.5, -2.5, -2.5), new THREE.Vector3(2.5, 2.5, 2.5));
+		}
+		const center = bbox.getCenter(new THREE.Vector3());
+		const size = bbox.getSize(new THREE.Vector3());
+		const radius = Math.max(size.x, size.y, size.z, 0.001);
+		console.log("[MW] splat-lab bbox center=" +
+			center.toArray().map((v) => v.toFixed(2)).join(",") +
+			" size=" + size.toArray().map((v) => v.toFixed(2)).join(","));
+		window.__lab = { mesh, camera, center, radius };
+		const grid = new THREE.GridHelper(radius * 2, 20, 0x336655, 0x223344);
+		grid.position.set(center.x, bbox.min.y, center.z);
+		scene.add(grid);
+		scene.add(new THREE.AxesHelper(radius * 0.5));
+		// Control probe: plain lit box at bbox center — if THIS is black too,
+		// the pipeline (not the splat) is broken.
+		const probe = new THREE.Mesh(
+			new THREE.BoxGeometry(radius * 0.15, radius * 0.15, radius * 0.15),
+			new THREE.MeshBasicMaterial({ color: 0xff4488 }));
+		probe.position.copy(center);
+		scene.add(probe);
+		camera.position.set(center.x, center.y + radius * 0.35, center.z + radius * 0.9);
+		camera.lookAt(center);
+
+		// Drag-orbit around bbox center (lab only, no Godot coexistence).
+		let yaw = 0, pitch = 0.2, dragging = false, lx = 0, ly = 0, orbitR = radius * 0.9;
+		const focus = center.clone();
+		addEventListener("mousedown", (e) => { dragging = true; lx = e.clientX; ly = e.clientY; });
+		addEventListener("mouseup", () => { dragging = false; });
+		addEventListener("mousemove", (e) => {
+			if (!dragging) return;
+			yaw -= (e.clientX - lx) * 0.004;
+			pitch = Math.max(-1.2, Math.min(1.2, pitch - (e.clientY - ly) * 0.004));
+			lx = e.clientX; ly = e.clientY;
+		});
+		addEventListener("wheel", (e) => {
+			orbitR = Math.max(radius * 0.05, Math.min(radius * 8,
+				orbitR * (1 + Math.sign(e.deltaY) * 0.12)));
+		}, { passive: true });
+		addEventListener("resize", () => {
+			camera.aspect = innerWidth / innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(innerWidth, innerHeight);
+		});
+
+		let frames = 0;
+		const t0 = performance.now();
+		renderer.setAnimationLoop(() => {
+			const cp = Math.cos(pitch), sp = Math.sin(pitch);
+			camera.position.set(
+				focus.x + orbitR * cp * Math.sin(yaw),
+				focus.y + orbitR * sp,
+				focus.z + orbitR * cp * Math.cos(yaw)
+			);
+			camera.lookAt(focus);
+			renderer.render(scene, camera);
+			frames++;
+			if (frames % 30 === 0) {
+				const fps = (frames / ((performance.now() - t0) / 1000)).toFixed(0);
+				hud.textContent =
+					"splat-lab · " + url + "\n" +
+					"fps≈" + fps + " · glErr=" + glErr + "\n" +
+					"drag=orbit · wheel=zoom · ?splatOx=/splatY=/splatOz=/splatScale=";
+			}
+		});
+		console.log("[MW] splat-lab2 ready", url);
+		setTimeout(() => {
+			const rig = camera.parent;
+			const sp = (rig && rig.children.find((o) => o.constructor.name === "iA"))
+				|| (rig && rig.children[1]);
+			console.log("[lab2] UA:", navigator.userAgent);
+			console.log("[lab2] state:",
+				"activeSplats=" + (sp && sp.activeSplats),
+				"instanceCount=" + (sp && sp.geometry && sp.geometry.instanceCount),
+				"sorting=" + (sp && sp.sorting),
+				"sortDirty=" + (sp && sp.sortDirty),
+				"displayNum=" + (sp && sp.display && sp.display.numSplats));
+		}, 3000);
+	</script>
+</body>
+</html>

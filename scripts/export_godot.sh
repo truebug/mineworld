@@ -57,6 +57,7 @@ case "$TARGET" in
     # Splat renderer (docs/33 P1): vendored three.js + Spark + bootstrap.
     cp "$PROJECT/web/splat_bg.js" "$OUT_DIR/splat_bg.js"
     cp "$PROJECT/web/splat-lab.html" "$OUT_DIR/splat-lab.html"
+    cp "$PROJECT/web/splat-lab2.html" "$OUT_DIR/splat-lab2.html"  # lab2 A/B diagnostic (docs/33)
     if [[ -d "$PROJECT/web/vendor" ]]; then
       cp -R "$PROJECT/web/vendor" "$OUT_DIR/vendor"
     fi
