@@ -1,11 +1,19 @@
 # 19 · 变更记录（Changelog）
 
+
 | 字段 | 值 |
 |------|-----|
 | **状态** | Living |
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-17 · splat 渲染卡点：数据层通、排序回读挂起（交接 docs/35）
+
+- **现象**：`?splat=lab3` 棋牌室 3DGS 场景渲染不出，只显示红色探针立方体；`/arm/` 同机同资产正常。
+- **进展**：数据层确认正常（`n=210596 avgOp=0.44`、bbox 正常）；已部署 `99a856f`（fileBytes 一次性上传替代 url 流式 LOD）+ `/splat-lab2.html` A/B 诊断页。
+- **判断**：卡在 Spark 首次 `driveSort` 深度回读（three r180 `readRenderTargetPixelsAsync` fenceSync）——`sorting:true` 挂住、`activeSplats=0`、`instanceCount=0`；worker/WASM 正常。
+- **排除**：WebXR Emulator 扩展会伪造 Quest 3 UA 并破坏渲染（用户已关闭）；arm 仓零修改，arm 传送门偏移系 arm 08-13 `e954914` 所致。
+- **交接**：完整排障证据 + 下一步假设见 [35-splat-render-handover.md](35-splat-render-handover.md)。
 
 ## 2026-08-11 · 冻结：放弃 Web/Pico 摇杆，恢复键鼠基线
 
