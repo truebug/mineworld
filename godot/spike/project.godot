@@ -29,6 +29,8 @@ MWWebInput="*res://scripts/mw_web_input.gd"
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/transparent=true
+window/per_pixel_transparency/allowed=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
@@ -67,5 +69,6 @@ turn_cw={
 
 [rendering]
 rendering/renderer/rendering_method = "gl_compatibility"
+viewport/transparent_background=true
 
 environment/defaults/default_clear_color=Color(0.12, 0.14, 0.18, 1)

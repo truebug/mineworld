@@ -65,10 +65,11 @@ arm 仓 splat 与玩法同在一个 three.js scene，无合成问题；本仓 Go
 | 阶段 | 内容 | 验收 |
 |------|------|------|
 | ~~P0~~ ✅ | 工具链：`scripts/ply_to_spz.mjs`（抄自 arm）+ `lab3.spz`（3.0MB）落 `godot/spike/web/media/splats/`，`export_godot.sh` 自动拷至 dist | 3MB ≤25MB · ASSETS.md 已入账 · 2026-08-14 |
-| ~~P1~~ ✅ | shell 注入 + Hub 皮肤定位（2026-08-14 修正）：`?splat=lab3`（无 level = 大厅）→ 隐藏程序化机库壳（`HangarDress`），Spark splat 当**大厅房间皮肤**（对齐 arm 仓语义，非赛车场背景板）；`demo_race` 仍可选但会被自身天空壳遮挡（P2 再解）；vendored three/Spark import map；`mw/splat_bridge.gd` 透明合成 + `MW_CAM_POSE` 20Hz | 硬刷大厅即见 lab3 皮肤 · 2026-08-14 |
-| P2 | 相机同步：`MW_CAM_POSE` 协议 + race chase-cam 对齐，无「滑移」 | 转头/加减速远景锁定 |
-| P3 | 性能验收：M 系 Mac 60fps；弱机自动切 lite（`?splatLite=1` 或 heuristics） | 帧率不掉 10% |
-| P4 | Hub 星空壳替换评估（opt-in）：`hub_space_sky` shader ↔ splat 舷窗外景 | 灰度默认关 |
+| ~~P1~~ ✅ | shell 注入 + Hub 皮肤；`mw/splat_bridge` 透明合成 + `MW_CAM_POSE` | 2026-08-14 |
+| ~~P1b~~ ✅ | 棋牌室（P 门）：`demo_chessroom` bridge；藏 Floor/Walls；lab3 −90°X + fit；`splat_bg` 认 `room=chess` | 2026-08-17 |
+| P2 | 相机/桌对位精调 | 转头无滑移 · 桌可坐 |
+| P3 | 性能验收；弱机 `?splatLite=1` | 帧率不掉 10% |
+| P4 | Hub 星空壳替换评估（opt-in） | 灰度默认关 |
 
 每阶段完成记 [19-changelog.md](19-changelog.md)；P1 之前不碰默认路径。
 

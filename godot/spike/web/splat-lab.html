@@ -80,8 +80,11 @@
 			" avgCol=" + (colSum / Math.max(nSp, 1)).toFixed(3) +
 			" avgScale=" + (scSum / Math.max(nSp, 1)).toFixed(4) +
 			" mesh.opacity=" + mesh.opacity + " visible=" + mesh.visible);
+		// Number(null)===0 — must not treat missing query as 0 (zeros mesh.scale).
 		const fitNum = (k, d) => {
-			const v = Number(params.get(k));
+			const raw = params.get(k);
+			if (raw == null || raw === "") return d;
+			const v = Number(raw);
 			return Number.isFinite(v) ? v : d;
 		};
 		mesh.position.set(fitNum("splatOx", 0), fitNum("splatY", 0), fitNum("splatOz", 0));

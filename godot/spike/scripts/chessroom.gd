@@ -11,6 +11,7 @@ const GomokuScript := preload("res://scripts/gomoku.gd")
 const MWQuickSit := preload("res://scripts/mw/quick_sit.gd")
 const MWEmotes := preload("res://scripts/mw/emotes.gd")
 const MWInviteLink := preload("res://scripts/mw/invite_link.gd")
+const MWSplatBridge := preload("res://scripts/mw/splat_bridge.gd")
 const AUTO_EXIT_S := 2.4
 const JUNQI_ROWS := 12
 const JUNQI_COLS := 5
@@ -100,6 +101,10 @@ var _piece_anims: Dictionary = {}
 var _bj_anims: Dictionary = {}
 var _bj_prev: Dictionary = {}
 var _prev_cells: Array = []  ## previous board cells for diff detection
+var _splat_on := false
+var _splat_pose_timer := 0.0
+var _splat_shell_hidden := false
+var _splat_poll_n := 0
 
 
 func _ready() -> void:
@@ -109,6 +114,12 @@ func _ready() -> void:
 		scene_avatar.visible = false
 	if camera_rig != null and "turn_drive_enabled" in camera_rig:
 		camera_rig.turn_drive_enabled = true
+	# docs/33: start Spark only after we push a camera pose (avoid boot race).
+	# Use Callable.call_deferred — string call_deferred can report Method not found on Web.
+	if MWSplatBridge.enabled(level_id):
+		_splat_on = true
+		MWSplatBridge.apply_chessroom_skin(self)
+		_splat_boot_deferred.call_deferred()
 	_label_tables()
 	_push_chess_shell_tips()
 	if _is_web:
@@ -492,11 +503,74 @@ func _on_gateway_error(payload: Dictionary) -> void:
 	print("[MW] chessroom gateway error: ", payload)
 
 
+func _splat_boot_deferred() -> void:
+	"""Push one pose, then ask JS to start Spark (no URL deep-link race)."""
+	if not _splat_on:
+		return
+	MWSplatBridge.push_pose(get_viewport().get_camera_3d())
+	# Small delay so Godot WebGL is past first frames.
+	get_tree().create_timer(0.8).timeout.connect(_splat_start_js)
+
+
+func _splat_start_js() -> void:
+	"""Start JS Spark then poll for active / failure."""
+	MWSplatBridge.start_js()
+	_splat_poll_n = 0
+	_splat_wait_active.call_deferred()
+
+
+func _splat_wait_active() -> void:
+	"""Poll JS: hide shell when drawing; restore shell if Spark failed."""
+	if not _splat_on or not _is_web:
+		return
+	var failed := str(JavaScriptBridge.eval(
+		"(function(){try{return window.MW_SPLAT_FAILED||''}catch(e){return ''}})()",
+		true
+	)).strip_edges()
+	if failed != "":
+		MWSplatBridge.show_chessroom_shell(self)
+		_splat_shell_hidden = false
+		print("[MW] chessroom splat failed (", failed, ") — shell restored, input OK")
+		return
+	var active := int(str(JavaScriptBridge.eval(
+		"(function(){try{return window.MW_SPLAT_ACTIVE|0}catch(e){return 0}})()",
+		true
+	)).strip_edges())
+	if active > 0 and not _splat_shell_hidden:
+		var composite := str(JavaScriptBridge.eval(
+			"(function(){try{return window.MW_SPLAT_COMPOSITE_OK||''}catch(e){return ''}})()",
+			true
+		)).strip_edges()
+		if composite != "1":
+			# No Godot canvas alpha → hiding shell = black void. Keep shell; JS peek shows splat.
+			print("[MW] chessroom splat active=", active, " — keep shell (no canvas alpha); peek overlay")
+			JavaScriptBridge.eval(
+				"if(typeof window.MW_SPLAT_PEEK==='function'){window.MW_SPLAT_PEEK();}",
+				true
+			)
+			_splat_shell_hidden = true  # stop re-entering; shell stays visible
+			return
+		MWSplatBridge.hide_chessroom_shell(self)
+		_splat_shell_hidden = true
+		print("[MW] chessroom splat active=", active, " — shell hidden (composite OK)")
+	_splat_poll_n += 1
+	if _splat_poll_n > 40:
+		if not _splat_shell_hidden:
+			print("[MW] chessroom splat still inactive — keeping procedural shell")
+		return
+	get_tree().create_timer(0.4).timeout.connect(_splat_wait_active)
+
+
 func _process(delta: float) -> void:
 	_poll_web_chat()
 	_tick_piece_anims(delta)
 	_tick_bj_anims(delta)
 	_tick_wudui_anims(delta)
+	if _splat_on:
+		_splat_pose_timer += delta
+		if _splat_pose_timer >= 1.0 / MWSplatBridge.POSE_HZ:
+			_splat_pose_timer = 0.0
+			MWSplatBridge.push_pose(get_viewport().get_camera_3d())
 	_cmd_timer += delta
 	if _cmd_timer >= 1.0 / CMD_HZ:
 		_cmd_timer = 0.0

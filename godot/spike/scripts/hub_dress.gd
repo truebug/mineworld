@@ -2,6 +2,7 @@
 ## Visual language: matte megastructure + cyan emissive panels (spaceport island).
 extends Node3D
 
+const MWSplatBridge := preload("res://scripts/mw/splat_bridge.gd")
 const ASSET_DIR := "res://assets/kenney_factory/"
 ## Hangar Core · mothership scale (docs/24).
 const HALL_HALF_X := 24.0
@@ -41,6 +42,9 @@ func _build() -> void:
 	_place_guide_paths(root)
 	_place_door_glows()
 	_place_wing_labels(root)
+	# Hub splat skin (?splatHub=1): hide shell after deferred build.
+	if MWSplatBridge.enabled("demo_hub"):
+		root.visible = false
 	print("[MW] hub dress: mothership hangar %.0fx%.0f roof_y=%.1f L2=%.1f apron=%.0fx%.0f" % [
 		HALL_HALF_X * 2.0, HALL_HALF_Z * 2.0, CEILING_Y, FLOOR2_Y,
 		APRON_HALF_X * 2.0, APRON_HALF_Z * 2.0,

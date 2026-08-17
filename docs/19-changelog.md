@@ -7,12 +7,67 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-17 · splat：黑底续 — floor-snap + alpha 探测 + peek 兜底
+
+- **现象**：`active=210596 — shell hidden` 仍漆黑；URL 带 `splatYLift=2.5`。
+- **双因**：① 大 yLift 把扫描房抬出视野；② Godot WebGL 无 alpha 时藏壳=黑洞。
+- **修复**：默认 floor-snap（忽略大 yLift，细调用 `splatY`）；探测 canvas alpha；无 alpha 则不藏壳并 PEEK 半透叠层。
+
+## 2026-08-17 · splat：黑底回归 = 撤回 project transparent 后 Web 画布不透
+
+- **现象**：`ready` + `active=210596 — shell hidden` 仍漆黑；桌椅在、lab3 不透出。
+- **原因**：Web 合成需要 project `per_pixel_transparency` + `viewport/transparent_background`；仅运行时 `transparent_bg` 不够。
+- **修复**：恢复上述 project 开关；`mw-splat-live` body 保持深色（避免白闪）；藏壳前再 `apply_transparency`。
+- **调参**：先用默认 fit 验透出，再加 `splatYLift`（过大可能把扫描房移出视野）。
+
+## 2026-08-17 · splat：黑底回归 = 撤回 project transparent 后 Web 画布不透
+
+- **现象**：`ready` + `active=210596 — shell hidden` 仍漆黑；桌椅在、lab3 不透出。
+- **原因**：Web 合成需要 project `per_pixel_transparency` + `viewport/transparent_background`；仅运行时 `transparent_bg` 不够。
+- **修复**：恢复上述 project 开关；`mw-splat-live` body 保持深色（避免白闪）；藏壳前再 `apply_transparency`。
+- **调参**：先用默认 fit 验透出，再加 `splatYLift`（过大可能把扫描房移出视野）。
+
+## 2026-08-17 · splat：棋牌室 `_splat_boot_deferred` Method not found
+
+- **现象**：`?room=chess` 进房只有程序壳，无 lab3；日志 `Error calling deferred method … Method not found`。
+- **修复**：`call_deferred("…")` 字符串改为 `fn.call_deferred()`（Callable），避免 Web 导出运行时丢名。
+
+## 2026-08-17 · splat：双 WebGL 打爆键鼠 — 停深链抢跑 + fail-soft
+
+- **现象**：`active=210596` 仍白屏/HUD 乱/鼠标死；日志先 `splat ready` 后才 Godot 启动；`glDrawElementsInstanced`×256。
+- **原因**：`?room=chess` 深链在母港未就绪时就起 Spark，与 Godot 双上下文互踩。
+- **修复**：禁止 URL 自动 boot；棋牌室先推 pose 再 `MW_SPLAT_START`；≤5fps + `resetState`；GL error → `failSoft` 拆掉 Spark 并恢复地板。
+- **撤回**：project 级 transparent（易白底）；运行时清屏透明仍保留。
+
+## 2026-08-17 · splat：棋牌室黑底 = Godot 不透明清屏盖住垫底层
+
+- **原因**：藏墙地后 Viewport 仍清不透明黑；Web 需 `transparent` + clear alpha=0 + CSS；`body` 黑底也会透出。
+- **修复**：`project.godot` 开 per-pixel/viewport transparent；`apply_transparency` 清色 alpha=0；`mw-splat-live` CSS；仅当 `MW_SPLAT_ACTIVE>0` 才藏壳。
+- **验收**：P 门进棋牌室应见 lab3（或先见地板，active 后再藏壳）；控制台有 `cam pose` / `shell hidden`。
+
+## 2026-08-17 · splat：大厅不再自动起 Spark（修鼠标/HUD）
+
+- **事故**：`?splat=lab3&splatOn=1` 在母港与 Godot 双 WebGL → GL 刷屏、主线程饿死、鼠标死、HUD 错位；且 HangarDress 在 Decor 下延迟建造，藏壳未生效。
+- **修复**：`splat_bg` 默认只 **armed**；棋牌室 `MW_SPLAT_START()` 懒启动；大厅需显式 `?splatHub=1`；`shell` 撤回常驻 `#canvas{background:transparent}`。
+- **验收**：无 splat 参数母港键鼠正常；`?splat=lab3&splatOn=1` 母港仍可玩 → P 门进棋牌室后再见 splat。
+
+## 2026-08-17 · splat P1b：P 门棋牌室挂 lab3 皮肤
+
+- **Godot**：`MWSplatBridge` 允许 `demo_chessroom`；`apply_chessroom_skin` 藏 Floor/Walls；`chessroom.gd` 推 `MW_CAM_POSE`。
+- **Web**：`splat_bg.js` lab3 −90°X + arm-ish 水平 fit；认 `room=chess`（P 门 replaceState）。
+- **验收**：`/?splat=lab3&splatOn=1` → 大厅见皮肤 → P 门进棋牌室仍见 splat（桌/人保留）。调参：`?splatOx=&splatY=&splatOz=&splatScale=`。
+
+## 2026-08-17 · splat 根因：fitNum Number(null)=0 → mesh.scale=0 → NaN 深度
+
+- **根因**：`fitNum` 用 `Number(params.get(k))`；缺省 `splatScale` 时 `null→0`，`if (s !== 1) mesh.scale.setScalar(0)`，Spark 深度全 NaN（`0x7fc00000`）→ `activeSplats=0`（红盒 only）。
+- **修复**：`fitNum` 对 `null`/空串走 default；同步修 `splat-lab2.html` / `splat-lab.html` / `splat_bg.js`。
+- **说明**：先前同步 readback / holdCam / LOD 为误判旁路；`/arm/` 因 fit 强制 `scale>0` 故正常。
+- **验收**：`/splat-lab2.html?splat=lab3` → `activeSplats>0`、`meshScale≠0`。详见 [35](35-splat-render-handover.md)。
+
 ## 2026-08-17 · splat 续做：NaN 深度回读判断 + lab2/splat_bg 同步 readback
 
-- **新判断**：交接里 readback head `2143289344` = `0x7FC00000` = float **NaN** → `sortSplats32` 易得 `activeSplats=0`（不只是 async fence 挂起）。
-- **lab2**：撤回 `enableLod:false` 等相对 `splat-lab`/arm 的回归；默认同步 `readRenderTargetPixels`；首次 `activeSplats>0` 前冻相机；HUD 显示 sorting/NaN%。
-- **splat_bg.js**：同样默认同步 readback（`?syncRead=0` 可关）。
-- **验收**：`/splat-lab2.html?splat=lab3` 强刷，看 HUD `activeSplats>0` 与房间是否可见。详见 [35](35-splat-render-handover.md)。
+- **（已由上条根因 supersede）** 交接里 readback head `2143289344` = `0x7FC00000` = float **NaN** 判断仍对；真正来源是 scale=0 而非 async fence。
+- lab2 曾试同步 readback / 冻相机 — 可忽略。
 
 ## 2026-08-17 · splat 渲染卡点：数据层通、排序回读挂起（交接 docs/35）
 

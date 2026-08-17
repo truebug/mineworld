@@ -2,57 +2,53 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | 续做中 · 2026-08-17 下午已推 lab2 修复候选 |
+| **状态** | P 门棋牌室合成验收通过（alpha + floor-snap + shell hidden） |
 | **日期** | 2026-08-17 |
 | **关联** | [33-splat-bg-poc.md](33-splat-bg-poc.md) · [19-changelog.md](19-changelog.md) |
-| **目的** | 棋牌室/大厅挂 3DGS `.spz` 视觉皮肤（Spark，不参与物理） |
-| **现状一句话** | 数据层全通；原卡点含深度回读头为 float NaN（`0x7FC00000`）→ `activeSplats=0`；lab2 已改回 arm/`splat-lab` 配置 + 默认同步 readback + 首次排序前冻相机 |
+| **目的** | 棋牌室挂 3DGS `.spz` 视觉皮肤（Spark，不参与物理） |
+| **现状一句话** | `godot canvas alpha=true` + `shell hidden (composite OK)` + 可见 lab3；桌椅与扫描家具不必一一对齐 |
 
-## 0. 请用户验收（本次续做）
+## 0. 请用户验收
 
-Chrome（**关闭 WebXR Emulator**）强刷：
+1. https://playground.dev.databall.tech/?splat=lab3&splatOn=1 → 母港 armed，勿立刻 loading  
+2. P 门或 `?room=chess` → 控制台 `alpha=true` / `shell hidden (composite OK)`，见 lab3 垫底、桌/人在上  
+3. 纯母港无参数：未回归  
 
-1. https://playground.dev.databall.tech/splat-lab2.html?splat=lab3
-2. HUD 应出现 `activeSplats>0`，房间扫描可见（不只红盒）
-3. 控制台有 `[lab2] FIRST activeSplats=…`；`sampleNan%` 应下降
-4. A/B：`?syncRead=0` 若又挂 → H1；`?holdCam=0` 若更难出图 → H3
+## 0.1 根因（坐实）
 
-### 本次代码
+```js
+// 坏：缺 query 时 Number(null) === 0
+const v = Number(params.get("splatScale")); // null → 0
+mesh.scale.setScalar(0); // if (s !== 1)
 
-- `splat-lab2.html`：去掉 `enableLod:false` 回归；默认同步 readback；holdCam；HUD
-- `splat_bg.js`：默认同步 readback（`?syncRead=0` 关）
+// 好：缺省走 default
+if (raw == null || raw === "") return d;
+```
 
-### 判断更新
+- `mesh.scale = (0,0,0)` → 生成深度时中心变换出 **NaN**（`0x7fc00000`）→ `sortSplats32` → `activeSplats=0`
+- `/arm/` 正常：arm 的 `fitArmWorkcell` 会 `mesh.scale.setScalar(s)` 覆盖为 >0
+- 本地 puppeteer：旧 lab2 复现 NaN；只改 `fitNum` 即 `activeSplats=210596`
 
-| 假设 | 更新 |
-|------|------|
-| H1 async fence | 仍可能；默认同步 readback 绕过 |
-| H2 sort→0 | **机制坐实**：`2143289344`=`0x7FC00000`=**NaN 深度** |
-| H3 相机 thrash | 保留；默认 holdCam |
-| lab2 关 LOD | **高嫌疑回归**；已撤回 |
+## 0.2 已改文件
+
+- `splat-lab2.html` / `splat-lab.html` / `splat_bg.js`：修正 `fitNum`
+- lab2 另：lab3 默认 −90° X（`?orient=0` 关）；HUD 显示 `meshScale`
 
 ## 1. 目的
 
-复用 mine-world-arm 的 Spark + three 方案挂 `.spz` 房间皮肤。红盒是 lab 对照探针，不是场景本体。
+复用 mine-world-arm 的 Spark + three 方案挂 `.spz` 房间皮肤。红盒是 lab 对照探针。
 
-## 2. 上午证据链（仍有效）
+## 2. 上午误判（保留作教训）
 
-- 数据：`n=210596`、bbox 正常
-- 渲染：`sorting=true` / `activeSplats=0` / `instanceCount=0`
-- worker 2 元素 `sortSplats32` OK
-- readback 曾完成但 head 实为 NaN 位型
-- WebXR Emulator 伪 UA 已排除；`/arm/` 同机同 spark 正常
-- spark 字节与 arm `@sparkjsdev/spark 2.1.0` 一致
+曾怀疑 async fence / LOD / holdCam；那些是红鲱鱼。NaN 深度真实，但来自 **scale=0**，不是 readback API。
 
 ## 3. 关键文件
 
 - `godot/spike/web/splat_bg.js`
 - `godot/spike/web/splat-lab.html` / `splat-lab2.html`
-- `godot/spike/web/vendor/spark/spark.module.min.js`
-- 对照：`mine-world-arm/web/src/splat_bg.js` + 未压缩 `spark.module.js`（`driveSort` / `readbackDepth`）
+- 对照：`mine-world-arm/web/src/splat_bg.js`
 
-## 4. 部署 / 环境
+## 4. 部署
 
-- `bash scripts/deploy_playground.sh`
-- 无可靠无头浏览器；以用户实机 console/HUD 为准
-- MacBook Air M5 · Chrome 151 · 关 WebXR Emulator
+- 本轮可只 rsync 上述 web 文件（无 Godot 导出依赖）
+- 全量：`bash scripts/deploy_playground.sh`

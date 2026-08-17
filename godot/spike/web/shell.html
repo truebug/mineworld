@@ -28,6 +28,15 @@ body {
 	touch-action: none;
 }
 
+/* Under-canvas splat: Godot #canvas must be CSS-transparent; keep body dark
+   so empty alpha never flashes browser-white (see docs/19 2026-08-17). */
+body.mw-splat-live {
+	background-color: #1a1520;
+}
+body.mw-splat-live #canvas {
+	background: transparent !important;
+}
+
 #canvas {
 	display: block;
 	position: fixed;
