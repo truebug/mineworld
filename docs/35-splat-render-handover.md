@@ -12,6 +12,19 @@
 
 棋牌室 **3DGS 垫底已通**（`igs0047` + occupancy 挂载 + 透明合成）。用户体感问题是 **双 Canvas 相机不同步**（Godot ~60Hz / splat ~5Hz）→ 转视角空间错乱。用户已同意下一刀：**看/走时提高 pose+splat 帧率，静止再降频**。
 
+### 开场复制块（新 session 粘贴即可）
+
+```
+任务：Splat-P1d（见 docs/35-splat-render-handover.md §2；勾选 docs/09-todo.md）。
+仓库：mineworld · main 已干净。KISS / 最小改动 / 中文回复。
+只改：godot/spike/scripts/mw/splat_bridge.gd（自适应 POSE_HZ）
+      + godot/spike/web/splat_bg.js（自适应 minFrameMs）
+验收 URL：https://playground.dev.databall.tech/?splat=igs0047&splatOn=1&room=chess
+目标：慢看/慢走时桌与 splat 同世界感；静止回 ~5Hz；无 GL 刷屏 / Buffer payload full / 键鼠假死。
+红线：勿 DOM pad、勿锁 #canvas pointer-events、勿 Hub 默认 Spark、勿 InteriorGS yaw hack。
+做完：更新 09/19/35/AGENTS，deploy_playground.sh，commit。
+```
+
 ## 1. 现状（已验收）
 
 | 项 | 状态 |
