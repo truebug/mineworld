@@ -819,20 +819,37 @@ func _patrol(
 
 
 func _start_ambient_hum() -> void:
-	"""Low procedural hangar hum (no third-party sample; soft loop)."""
+	"""Low hangar hum as looping WAV (AudioStreamGenerator warns on Web play)."""
 	var player := AudioStreamPlayer.new()
 	player.name = "AmbientHum"
 	player.volume_db = -22.0
 	add_child(player)
-	var gen := AudioStreamGenerator.new()
-	gen.mix_rate = 22050.0
-	gen.buffer_length = 0.5
-	player.stream = gen
+	player.stream = _make_hum_wav()
 	player.play()
-	var filler: Node = preload("res://scripts/hub_ambient_hum.gd").new()
-	filler.name = "AmbientHumFiller"
-	filler.set("player", player)
-	add_child(filler)
+
+
+func _make_hum_wav() -> AudioStreamWAV:
+	"""1s mono 55+110 Hz loop — sampleable on Web and desktop."""
+	var rate := 22050
+	var n := rate
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	var phase := 0.0
+	var phase2 := 0.0
+	for i in range(n):
+		phase += 55.0 * TAU / float(rate)
+		phase2 += 110.0 * TAU / float(rate)
+		var s := 0.045 * sin(phase) + 0.025 * sin(phase2)
+		data.encode_s16(i * 2, int(clampf(s, -1.0, 1.0) * 32767.0))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = rate
+	stream.stereo = false
+	stream.data = data
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_begin = 0
+	stream.loop_end = n
+	return stream
 
 
 func _place_orbit_ring() -> void:

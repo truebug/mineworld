@@ -7,6 +7,12 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-17 · Hub：AmbientHum Web 警告（cannot be sampled）
+
+- **现象**：控制台 `AmbientHum … stream that cannot be sampled` + 超长 wasm 堆栈（看起来像一堆错）。
+- **原因**：`AudioStreamGenerator` 在 Web `play()` 路径不可 sample；实为 1 条 WARNING 打两次。
+- **修复**：改为内存循环 `AudioStreamWAV`（55+110 Hz soft hum）。
+
 ## 2026-08-17 · splat：黑底续 — floor-snap + alpha 探测 + peek 兜底
 
 - **现象**：`active=210596 — shell hidden` 仍漆黑；URL 带 `splatYLift=2.5`。
