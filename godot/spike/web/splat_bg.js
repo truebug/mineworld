@@ -45,6 +45,25 @@ async function boot() {
 	});
 	renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 	renderer.setSize(window.innerWidth, window.innerHeight);
+	// docs/35: three r180 async depth readback can hang / return NaN on Mac Chrome;
+	// sync path keeps Spark driveSort moving (override with ?syncRead=0).
+	if (
+		params.get("syncRead") !== "0" &&
+		typeof renderer.readRenderTargetPixels === "function"
+	) {
+		renderer.readRenderTargetPixelsAsync = function (
+			renderTarget, x, y, width, height, buffer, faceIndex, activeCubeFace
+		) {
+			try {
+				renderer.readRenderTargetPixels(
+					renderTarget, x, y, width, height, buffer, faceIndex, activeCubeFace
+				);
+			} catch (e) {
+				console.warn("[MW] splat sync readback failed", e);
+			}
+			return Promise.resolve(buffer);
+		};
+	}
 
 	const scene = new THREE.Scene();
 	const camera = new THREE.PerspectiveCamera(

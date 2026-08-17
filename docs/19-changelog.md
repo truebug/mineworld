@@ -7,6 +7,13 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-17 · splat 续做：NaN 深度回读判断 + lab2/splat_bg 同步 readback
+
+- **新判断**：交接里 readback head `2143289344` = `0x7FC00000` = float **NaN** → `sortSplats32` 易得 `activeSplats=0`（不只是 async fence 挂起）。
+- **lab2**：撤回 `enableLod:false` 等相对 `splat-lab`/arm 的回归；默认同步 `readRenderTargetPixels`；首次 `activeSplats>0` 前冻相机；HUD 显示 sorting/NaN%。
+- **splat_bg.js**：同样默认同步 readback（`?syncRead=0` 可关）。
+- **验收**：`/splat-lab2.html?splat=lab3` 强刷，看 HUD `activeSplats>0` 与房间是否可见。详见 [35](35-splat-render-handover.md)。
+
 ## 2026-08-17 · splat 渲染卡点：数据层通、排序回读挂起（交接 docs/35）
 
 - **现象**：`?splat=lab3` 棋牌室 3DGS 场景渲染不出，只显示红色探针立方体；`/arm/` 同机同资产正常。
