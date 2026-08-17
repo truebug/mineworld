@@ -82,7 +82,8 @@
 
 > E9 + B1（`demo_race`）+ **B2 薄 1v1（竞速 duel）** 已落地。不必等 E6–E8 / PMS。  
 > **B3 房间模式字段 Done**（race/`duel_result` 已收成显式 `solo|duel|shared_ffa`）；棋室聊天已接入（2026-07-31）。  
-> Next 候选 = **程序星空垫层（可选）** / **HW-2.5 真机联调**（HW-0/1/2 Done）/ E6–E7（blocked 待 PMS API）。  
+> Next 候选 = **Splat-P1d（看/走提频 pose，静止降频）** / 程序星空垫层（可选）/ **HW-2.5 真机联调** / E6–E7（blocked 待 PMS API）。  
+> 交接 SSOT：[35-splat-render-handover.md](35-splat-render-handover.md)。  
 > ~~XR-1.6 仿真臂 XR 遥操 / XR-2 视频层~~：Pico 线归仓外 mine-world-arm（真机臂遥操+四路视频已通），本仓不再开。
 
 | ID | 任务 | 验收 | 状态 |
@@ -91,7 +92,8 @@
 | B2 | 薄 1v1 | 双人同房目标竞速；`duel_result` 可录；单人可 AI 陪练 | [x] `duel_result` + HUD WIN/LOSE + 领先差；`duel_smoke`；B2.5 `ai_driver --forever` |
 | B3 | 房间模式字段 | join/`extensions.mw.mode`：`solo \| duel \| shared_ffa` | [x] race=`shared_ffa` 固定；私房默认 `solo`；duel 超员旁观；`duel_smoke` 分模式断言 |
 | Splat-P1b | 棋牌室 3DGS 皮肤 | P 门/`?splat=…&splatOn=1`：alpha 合成 + floor-snap + 藏壳；键鼠正常 | [x] 2026-08-17 · [33](33-splat-bg-poc.md)·[35](35-splat-render-handover.md) |
-| Splat-P1c | 大房间皮肤 igs0047 | 同域 `igs0047.spz`（InteriorGS 0047）；棋牌室优先于 lab3 | [x] 2026-08-17 · `?splat=igs0047&splatOn=1&room=chess` |
+| Splat-P1c | 大房间皮肤 igs0047 | 同域 `igs0047.spz` + occupancy 挂载；棋牌室优先于 lab3 | [x] 2026-08-17 · `?splat=igs0047&splatOn=1&room=chess` |
+| Splat-P1d | 自适应相机同步 | 看/走时提高 `MW_CAM_POSE`+splat fps；静止降回 ~5Hz；错乱感减轻且 GL/WS 不炸 | [ ] **Now** · 见 [35](35-splat-render-handover.md) §2 |
 | Chess-P | 棋牌室对齐传送门 | Hub 式 FakeMech + `room=chess`；薄桌面 `chess_*` cmd / `chess_table_update`；人机/PvP | [x] `demo_chessroom` · `scripts/chessroom_smoke.py` |
 | Chess-P2 | 多桌类型 + 跳棋 | 甲乙五子棋 / 丙跳棋 Halma / 丁军棋 stub；壳层说明 | [x] |
 | Chess-P3 | 军棋可玩 + 规则 UI | SSOT `26`；权威裁判；暗棋透视；规则说明显隐 | [x] 人机可玩；随机→手调→确认；认输/举手；离座判负 |
