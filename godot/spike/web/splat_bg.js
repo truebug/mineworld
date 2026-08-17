@@ -68,11 +68,20 @@ async function boot() {
 		console.log("[MW] splat_bg DEBUG triangle mode");
 	} else {
 		const { SparkRenderer, SplatMesh } = await import("spark");
-		const spark = new SparkRenderer({ renderer, preUpdate: false });
-		scene.add(spark);
+		// Proven init cloned from splat-lab (2026-08-15): the url-mode
+		// SplatMesh takes a streaming LOD path that floods texSubImage2D
+		// per frame; fileBytes mode uploads once and is glErr-clean.
+		const spark = new SparkRenderer({
+			renderer,
+			preUpdate: false,
+			maxStdDev: Math.sqrt(5),
+		});
+		renderer.xr.enabled = true; // spark render path reads xr state
+		(camera.parent || scene).add(spark);
 		const url = "media/splats/" + splatName + ".spz";
 		console.log("[MW] splat_bg loading", url);
-		const mesh = new SplatMesh({ url });
+		const fileBytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+		const mesh = new SplatMesh({ fileBytes, fileName: splatName + ".spz" });
 		await mesh.initialized;
 		// E5: horizontal fit only (never yaw — Z-up→Y-up then rotateY tips the room).
 		const fitNum = (k, d) => {

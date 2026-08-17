@@ -146,6 +146,10 @@ func _start_hub_session() -> void:
 	MWTransition.notify_arrived()
 	_reset_door_lockout()
 	_clear_held_keys()
+	# docs/33 P1: ?splat=<name> → lab3 room skin under transparent canvas.
+	if MWSplatBridge.enabled("demo_hub"):
+		_splat_on = true
+		MWSplatBridge.apply_hub_skin(self)
 	_profile = _load_profile()
 	_ensure_profile_skin()
 	_apply_profile_ui()

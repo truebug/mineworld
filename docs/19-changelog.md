@@ -103,6 +103,8 @@
 
 ## 2026-08-15 · splat 故障止血 + 隔离实验室页
 
+- **根因修复（当日二更，build `20260815-164716`）**：`splat-lab.html` 在 playground 真机 GPU 实测 **通过**（210,596 splats 解码 · `glErr=0` · ~60fps · 房间扫描可见），据此锁定主站刷屏根因 = `SplatMesh({url})` 走 Spark 流式 LOD 路径每帧 `texSubImage2D`；`splat_bg.js` 改克隆实验室已验证初始化（fetch 字节 → `fileBytes` 一次性上传、`maxStdDev=√5`、`renderer.xr.enabled=true`、spark 挂 `camera.parent`）。线上回归：`?splat=lab3&splatOn=1` 主站 Godot 大厅 boot + splat canvas 创建成功、**零 GL 错误**（剩 favicon 404 无关）。`splatOn=1` 门暂保留，待 P1 视觉验收（Godot 透明底叠 lab3 皮肤）后摘除。
+
 - **线上事故**：主站 `?splat=lab3` 触发 Spark 每帧 `texSubImage2D: no texture bound` 刷屏（256+ 后浏览器停报），主线程饿死 → 鼠标假死；同时 splat_bg.js 误改 Godot `#canvas` 样式（触 29 号红线边缘）。
 - **止血**（build `20260815-071727`）：JS + Godot 双侧加 `splatOn=1` 硬开关，默认完全惰性；撤掉一切 canvas 样式改动。
 - **隔离实验室** `/splat-lab.html`：无 Godot 的纯 three.js + Spark 最小环境（克隆 arm 初始化参数：antialias:false / preUpdate:false / maxStdDev=√5 / camera.parent.add(spark)），HUD 实时显示 fps + glErr 计数，拖拽环视，支持 fit 调参——先在此修通渲染再回移主站/棋牌室。

@@ -31,7 +31,7 @@
 		const hud = document.getElementById("hud");
 		const params = new URLSearchParams(location.search);
 		const name = (params.get("splat") || "lab3").replace(/[^a-z0-9_]/gi, "");
-		const url = "media/splats/" + name + ".spz";
+		const url = params.get("splatUrl") || ("media/splats/" + name + ".spz");
 
 		// GL error counter (mirrors what the main site console flooded with).
 		let glErr = 0;
@@ -42,12 +42,15 @@
 		renderer.setClearColor(0x000000, 1);
 		renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 		renderer.setSize(innerWidth, innerHeight);
+		renderer.xr.enabled = true; // arm parity: spark render path checks xr state
 		document.body.appendChild(renderer.domElement);
 
 		const scene = new THREE.Scene();
-		const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 2000);
+		const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 80);
 		camera.position.set(0, 1.6, 3);
-		scene.add(camera); // arm: sparkParent = camera.parent || scene
+		const rig = new THREE.Group(); // arm: xrRig
+		rig.add(camera);
+		scene.add(rig);
 
 		const { SparkRenderer, SplatMesh } = await import("spark");
 		const spark = new SparkRenderer({
@@ -55,11 +58,28 @@
 			preUpdate: false,
 			maxStdDev: Math.sqrt(5),
 		});
-		(camera.parent || scene).add(spark);
+		rig.add(spark); // arm: sparkParent = camera.parent
 
 		hud.textContent = "loading " + url + " …";
-		const mesh = new SplatMesh({ url });
+		// arm parity: fetch bytes ourselves, pass fileBytes+fileName
+		// (Spark url-mode may take a different LOD streaming path).
+		const fileBytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+		const mesh = new SplatMesh({ fileBytes, fileName: name + ".spz" });
 		await mesh.initialized;
+		// Data probe: count splats, avg opacity/color — distinguishes
+		// "decoded invisible data" from "render pass broken".
+		let nSp = 0, opSum = 0, opZero = 0, colSum = 0, scSum = 0;
+		mesh.forEachSplat((i, c, scales, q, opacity, color) => {
+			nSp++; opSum += opacity; if (opacity < 0.01) opZero++;
+			colSum += (color.r + color.g + color.b) / 3;
+			scSum += (scales.x + scales.y + scales.z) / 3;
+		});
+		console.log("[MW] splat-lab splats n=" + nSp +
+			" avgOp=" + (opSum / Math.max(nSp, 1)).toFixed(3) +
+			" zeroOp%=" + (100 * opZero / Math.max(nSp, 1)).toFixed(0) +
+			" avgCol=" + (colSum / Math.max(nSp, 1)).toFixed(3) +
+			" avgScale=" + (scSum / Math.max(nSp, 1)).toFixed(4) +
+			" mesh.opacity=" + mesh.opacity + " visible=" + mesh.visible);
 		const fitNum = (k, d) => {
 			const v = Number(params.get(k));
 			return Number.isFinite(v) ? v : d;
