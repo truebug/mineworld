@@ -387,12 +387,43 @@ async function startSplat() {
 	const poseQuat = new THREE.Quaternion();
 	let loggedPose = false;
 	let lastDraw = 0;
-	const minFrameMs = 200; // ≤5 fps — cut dual-WebGL contention
+	// Splat-P1d (docs/35 §2): adaptive frame pacing — 5fps idle, ~30fps while
+	// MW_CAM_POSE moves; decay back after holdMs of stillness.
+	const MIN_FRAME_IDLE_MS = 200;
+	const MIN_FRAME_ACTIVE_MS = 33;
+	const BOOST_HOLD_MS = 400;
+	const MOVE_EPS_SQ = 0.002 * 0.002;
+	const ROT_EPS_DOT = 1 - 0.0005;
+	let minFrameMs = MIN_FRAME_IDLE_MS;
+	let boostUntil = 0;
+	let lastPosePos = null;
+	let lastPoseQuat = null;
 	const gl = renderer.getContext();
 
 	renderer.setAnimationLoop(() => {
 		if (stopped) return;
 		const now = performance.now();
+		const p0 = window.MW_CAM_POSE;
+		if (p0 && Array.isArray(p0.pos) && Array.isArray(p0.quat)) {
+			let moved = lastPosePos === null;
+			if (!moved) {
+				const dx = p0.pos[0] - lastPosePos[0];
+				const dy = p0.pos[1] - lastPosePos[1];
+				const dz = p0.pos[2] - lastPosePos[2];
+				const dot =
+					p0.quat[0] * lastPoseQuat[0] +
+					p0.quat[1] * lastPoseQuat[1] +
+					p0.quat[2] * lastPoseQuat[2] +
+					p0.quat[3] * lastPoseQuat[3];
+				moved =
+					dx * dx + dy * dy + dz * dz > MOVE_EPS_SQ ||
+					Math.abs(dot) < ROT_EPS_DOT;
+			}
+			if (moved) boostUntil = now + BOOST_HOLD_MS;
+			lastPosePos = p0.pos;
+			lastPoseQuat = p0.quat;
+		}
+		minFrameMs = now < boostUntil ? MIN_FRAME_ACTIVE_MS : MIN_FRAME_IDLE_MS;
 		if (now - lastDraw < minFrameMs) return;
 		lastDraw = now;
 		try {

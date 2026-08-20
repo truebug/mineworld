@@ -712,6 +712,14 @@ body.mw-play.mw-no-joints #mw-joints {
 			Your browser does not support JavaScript.
 		</noscript>
 
+		<div id="mw-touch-gate" style="display:none;position:fixed;inset:0;z-index:2147483647;background:rgba(10,12,18,0.96);color:#dfe7f2;font:15px/1.6 ui-sans-serif,system-ui,sans-serif;">
+			<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;max-width:420px;padding:24px;">
+				<div style="font-size:26px;font-weight:700;margin-bottom:10px;">MineWorld 需要键盘与鼠标</div>
+				<div style="color:#9bb4c9;margin-bottom:18px;">当前设备为触屏。3D 大厅暂不支持触控操作；你仍可浏览门户、榜单与自己的回放。</div>
+				<a href="/portal/" style="display:inline-block;margin:0 8px;padding:10px 18px;border-radius:8px;background:#4aa3ff;color:#fff;text-decoration:none;">前往门户</a>
+				<button type="button" id="mw-touch-gate-anyway" style="margin:0 8px;padding:10px 18px;border-radius:8px;background:transparent;color:#7ec8ff;border:1px solid #3a4558;cursor:pointer;">仍要尝试进入</button>
+			</div>
+		</div>
 		<div id="status">
 			<div id="mw-boot">
 				<div class="mw-boot-mark">MineWorld</div>
@@ -1587,6 +1595,19 @@ const engine = new Engine(GODOT_CONFIG);
 		seedRnd.addEventListener('click', () => regen(null));
 	}
 	loadSeed();
+
+	// P0-2b: touch-only devices get a degrade gate (portal stays usable).
+	(function touchGate() {
+		const touchOnly =
+			('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
+			!(window.matchMedia && window.matchMedia('(pointer:fine)').matches);
+		if (!touchOnly) return;
+		const gate = document.getElementById('mw-touch-gate');
+		if (!gate) return;
+		gate.style.display = 'block';
+		const anyway = document.getElementById('mw-touch-gate-anyway');
+		if (anyway) anyway.addEventListener('click', () => { gate.style.display = 'none'; });
+	})();
 
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');

@@ -61,6 +61,9 @@ DT = 0.02
 SIM_HZ = 50
 STATE_HZ = 20
 STATE_EVERY_N_TICKS = max(1, SIM_HZ // STATE_HZ)
+## P0-1: brief disconnects keep chess seats/membership for this long,
+## so a reconnecting client (same profile id) can adopt its old seat.
+DISCONNECT_GRACE_S = 30.0
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -1257,6 +1260,8 @@ class Session:
     hub_floor: int = 1
     ## Hub visual hop height (m above deck); FakeMech stays planar.
     hub_hop_y: float = 0.0
+    ## P0-1: closed session kept for seat adoption until this monotonic deadline.
+    grace_deadline: float = 0.0
     ## State delta (P1): per-entity last-sent quantized pose + keyframe counter.
     last_sent_entities: dict[str, tuple] = field(default_factory=dict)
     states_since_keyframe: int = 999  # large → first state is a full keyframe
@@ -3010,8 +3015,81 @@ class EchoGateway:
             session.closed = True
             outcome = session.outcome or "disconnect"
             self._close_recorder(session, outcome=outcome)
-            self._leave_room(session)
-            self.sessions.pop(session_id, None)
+            room = session.room
+            if (
+                room is not None
+                and room.chess_tables
+                and self._session_holds_seat(room, session.session_id)
+            ):
+                # P0-1: grace window — keep seat/membership so a reconnecting
+                # client (same profile id) can adopt it; purge in sim_loop.
+                session.grace_deadline = time.monotonic() + DISCONNECT_GRACE_S
+                LOG.info(
+                    "session=%s room=%s disconnect grace %.0fs (seat held)",
+                    session_id,
+                    room.room_id,
+                    DISCONNECT_GRACE_S,
+                )
+            else:
+                self._leave_room(session)
+                self.sessions.pop(session_id, None)
+
+    @staticmethod
+    def _session_holds_seat(room: Room, session_id: str) -> bool:
+        return any(
+            t.black_sid == session_id or t.white_sid == session_id
+            for t in room.chess_tables.values()
+        )
+
+    def _purge_disconnected(self) -> None:
+        """Drop grace-expired closed sessions (seats forfeit per product lock)."""
+        now = time.monotonic()
+        for room in list(self.rooms.values()):
+            for sess in list(room.members.values()):
+                if sess.closed and sess.grace_deadline > 0.0 and now >= sess.grace_deadline:
+                    LOG.info(
+                        "session=%s room=%s grace expired, leaving",
+                        sess.session_id,
+                        room.room_id,
+                    )
+                    self._leave_room(sess)
+                    self.sessions.pop(sess.session_id, None)
+
+    def _adopt_disconnected(self, room: Room, session: Session, player_id: str) -> None:
+        """Rejoin: take over a grace-held closed session's chess seats (same profile id)."""
+        if player_id == "":
+            return
+        stale = None
+        for sess in room.members.values():
+            if (
+                sess.closed
+                and sess.grace_deadline > 0.0
+                and str(sess.profile.get("id") or "") == player_id
+            ):
+                stale = sess
+                break
+        if stale is None:
+            return
+        old_sid = stale.session_id
+        new_sid = session.session_id
+        for table in room.chess_tables.values():
+            changed = False
+            if table.black_sid == old_sid:
+                table.black_sid = new_sid
+                changed = True
+            if table.white_sid == old_sid:
+                table.white_sid = new_sid
+                changed = True
+            if changed:
+                self._broadcast_chess_table(room, table)
+        room.members.pop(old_sid, None)
+        self.sessions.pop(old_sid, None)
+        LOG.info(
+            "session=%s adopted seats of closed session=%s room=%s",
+            new_sid,
+            old_sid,
+            room.room_id,
+        )
 
     async def _on_message(self, session: Session, raw: str | bytes) -> None:
         if isinstance(raw, bytes):
@@ -3406,6 +3484,7 @@ class EchoGateway:
 
         room = self.rooms.get(room_id)
         if room is not None:
+            self._adopt_disconnected(room, session, str(profile.get("id") or ""))
             room_level = str(room.contract.get("level_id") or "")
             if room_level != level_id:
                 await send_json(
@@ -3673,6 +3752,7 @@ class EchoGateway:
         """Advance each Room at SIM_HZ; broadcast state at STATE_HZ to members."""
         while True:
             await asyncio.sleep(DT)
+            self._purge_disconnected()
             for room in list(self.rooms.values()):
                 members = [s for s in room.members.values() if s.joined and not s.closed]
                 if not members:

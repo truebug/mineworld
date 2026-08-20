@@ -3,7 +3,38 @@ class_name MWSplatBridge
 ## Chessroom (P-door) primary. Hub splat is opt-in via ?splatHub=1 (dual-WebGL risk).
 ## Transparent clear + MW_CAM_POSE @ ~5Hz (match splat_bg ≤5fps; avoid JS eval flood).
 
+## Splat-P1d (docs/35 §2): adaptive pose sync.
+## Idle ~5Hz; camera moving/looking boosts to POSE_HZ_ACTIVE for BOOST_HOLD_S,
+## then decays back. Kills the dual-canvas "world spins around me" mismatch.
 const POSE_HZ := 5.0
+const POSE_HZ_ACTIVE := 30.0
+const BOOST_HOLD_S := 0.4
+const MOVE_EPS := 0.002
+const ROT_EPS := 0.0005
+
+static var _has_last := false
+static var _last_pos := Vector3.ZERO
+static var _last_quat := Quaternion.IDENTITY
+static var _boost_left := 0.0
+
+
+static func pose_interval(camera: Camera3D, delta: float) -> float:
+	"""Seconds between push_pose calls this frame; small while camera moves."""
+	if _boost_left > 0.0:
+		_boost_left -= delta
+	if camera != null:
+		var t := camera.global_transform
+		var moved := (
+			not _has_last
+			or t.origin.distance_to(_last_pos) > MOVE_EPS
+			or absf(t.basis.get_rotation_quaternion().dot(_last_quat)) < 1.0 - ROT_EPS
+		)
+		if moved:
+			_boost_left = BOOST_HOLD_S
+		_has_last = true
+		_last_pos = t.origin
+		_last_quat = t.basis.get_rotation_quaternion()
+	return 1.0 / (POSE_HZ_ACTIVE if _boost_left > 0.0 else POSE_HZ)
 
 
 static func enabled(level_id: String) -> bool:

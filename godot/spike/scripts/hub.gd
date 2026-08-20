@@ -150,6 +150,7 @@ func _start_hub_session() -> void:
 	if MWSplatBridge.enabled("demo_hub"):
 		_splat_on = true
 		MWSplatBridge.apply_hub_skin(self)
+	MWTutorial.attach(self, "demo_hub")
 	_profile = _load_profile()
 	_ensure_profile_skin()
 	_apply_profile_ui()
@@ -910,7 +911,7 @@ func _process(delta: float) -> void:
 		_poll_web_chat()
 	if _splat_on:
 		_splat_pose_timer += delta
-		if _splat_pose_timer >= 1.0 / MWSplatBridge.POSE_HZ:
+		if _splat_pose_timer >= MWSplatBridge.pose_interval(get_viewport().get_camera_3d(), delta):
 			_splat_pose_timer = 0.0
 			MWSplatBridge.push_pose(get_viewport().get_camera_3d())
 	var cmd_hz := CMD_HZ

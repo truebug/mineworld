@@ -99,6 +99,7 @@ func _ready() -> void:
 	if q_level != "":
 		level_id = q_level
 	MWTransition.notify_arrived()
+	MWTutorial.attach(self, level_id)
 	ws.hello_received.connect(_on_hello)
 	ws.scene_received.connect(_on_scene)
 	ws.state_received.connect(_on_state)

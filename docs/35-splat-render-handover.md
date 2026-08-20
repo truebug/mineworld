@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | P1b/P1c Done · **Next = Splat-P1d 自适应 pose 同步** |
+| **状态** | P1b/P1c/**P1d** Done（2026-08-20 自适应 5↔30Hz + P0-1 断线宽限）· Next 见 [37](37-improvement-plan-2026-08.md) |
 | **日期** | 2026-08-17 |
 | **分支** | `main`（已 push；工作树应干净） |
 | **关联** | [33-splat-bg-poc.md](33-splat-bg-poc.md) · [19-changelog.md](19-changelog.md) · [09-todo.md](09-todo.md) |

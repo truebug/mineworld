@@ -122,6 +122,7 @@ func _ready() -> void:
 		_splat_on = true
 		MWSplatBridge.apply_chessroom_skin(self)
 		_splat_boot_deferred.call_deferred()
+	MWTutorial.attach(self, level_id)
 	_label_tables()
 	_push_chess_shell_tips()
 	if _is_web:
@@ -570,7 +571,7 @@ func _process(delta: float) -> void:
 	_tick_wudui_anims(delta)
 	if _splat_on:
 		_splat_pose_timer += delta
-		if _splat_pose_timer >= 1.0 / MWSplatBridge.POSE_HZ:
+		if _splat_pose_timer >= MWSplatBridge.pose_interval(get_viewport().get_camera_3d(), delta):
 			_splat_pose_timer = 0.0
 			MWSplatBridge.push_pose(get_viewport().get_camera_3d())
 	_cmd_timer += delta

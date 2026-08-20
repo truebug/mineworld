@@ -7,6 +7,12 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-20 · P0-1：Splat-P1d 自适应 pose + 断线桌位宽限
+
+- **P1d**：`splat_bridge.gd` 新增 `pose_interval()`（静止 5Hz ↔ 动相机 30Hz，0.4s 保持后回落）；`splat_bg.js` 同策略自适应 `minFrameMs`（200↔33ms）。hub/chessroom 两调用点切到自适应。
+- **断线恢复**：Gateway 新增 30s 断线宽限——棋牌室断线不清座；同 profile id 重 join 自动领养桌位，宽限到期 sim_loop 清退（判负规则不变）。新 smoke：`scripts/reconnect_grace_smoke.py`。
+- 验证：`ws_smoke_test` / `chessroom_smoke` / `reconnect_grace_smoke` 全绿；gdscript_lint 0 findings。
+
 ## 2026-08-17 · docs：splat 交接补开场复制块
 
 - [35](35-splat-render-handover.md) §0 增「开场复制块」，新 session 可一贴接手 Splat-P1d。
