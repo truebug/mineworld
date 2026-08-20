@@ -71,8 +71,10 @@ static func _mark_seen(level_id: String) -> void:
 func _ready() -> void:
 	var card: Dictionary = CARDS[_level_id]
 	_panel = PanelContainer.new()
-	_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_panel.custom_minimum_size = Vector2(380, 0)
+	# Right-side dock (not center modal): keeps the view clear while reading.
+	_panel.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	_panel.position = Vector2(-410, -140)
+	_panel.custom_minimum_size = Vector2(340, 0)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.05, 0.07, 0.11, 0.92)
 	style.border_color = Color(0.29, 0.64, 1.0, 0.8)
@@ -83,14 +85,19 @@ func _ready() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	_panel.add_child(box)
+	var cjk: Font = MWFonts.font()
 	var title := Label.new()
 	title.text = str(card["title"])
 	title.add_theme_font_size_override("font_size", 20)
+	if cjk != null:
+		title.add_theme_font_override("font", cjk)
 	box.add_child(title)
 	var goal := Label.new()
 	goal.text = str(card["goal"])
 	goal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	goal.add_theme_color_override("font_color", Color(0.75, 0.85, 0.95))
+	if cjk != null:
+		goal.add_theme_font_override("font", cjk)
 	box.add_child(goal)
 	var sep := HSeparator.new()
 	box.add_child(sep)
@@ -98,11 +105,15 @@ func _ready() -> void:
 		var line := Label.new()
 		line.text = "%-10s  %s" % [row[0], row[1]]
 		line.add_theme_font_size_override("font_size", 15)
+		if cjk != null:
+			line.add_theme_font_override("font", cjk)
 		box.add_child(line)
 	var hint := Label.new()
 	hint.text = "Esc / 点击关闭 · H 重看"
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", Color(0.55, 0.62, 0.72))
+	if cjk != null:
+		hint.add_theme_font_override("font", cjk)
 	box.add_child(hint)
 	add_child(_panel)
 	_panel.gui_input.connect(_on_panel_input)
@@ -114,6 +125,10 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		# Auto-close once the player starts moving — the card did its job.
+		if _panel.visible and event.physical_keycode in [KEY_W, KEY_A, KEY_S, KEY_D]:
+			_close()
+			return
 		if event.keycode == KEY_H or event.physical_keycode == KEY_H:
 			if _panel.visible:
 				_close()
