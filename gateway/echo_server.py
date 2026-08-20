@@ -43,6 +43,17 @@ from gomoku import BLACK, EMPTY, WHITE, GomokuBoard
 from checkers import CheckersBoard, SIZE as CHECKERS_SIZE
 from checkers import BLACK as CK_BLACK, WHITE as CK_WHITE, EMPTY as CK_EMPTY
 from junqi import JunqiBoard
+from rooms import (
+    CHESS_ROOM_ID,
+    CITY_ROOM_ID,
+    CITY_ROOM_MAX,
+    DEMO_ROOM_ID,
+    DEMO_ROOM_MAX,
+    RACE_MODES,
+    RACE_ROOM_ID,
+    RACE_ROOM_MAX,
+)
+from rooms import decide as decide_room
 
 try:  # optional: only --physics mujoco needs it
     import mujoco
@@ -71,24 +82,16 @@ DEFAULT_CONTRACT = REPO_ROOT / "examples" / "contracts" / "demo_workshop.json"
 CONTRACTS_DIR = REPO_ROOT / "examples" / "contracts"
 DEFAULT_RECORD_DIR = REPO_ROOT / "recordings" / "sessions"
 OBSTACLE_FRICTION = (0.8, 0.02, 0.01)  # aligned with ground/chassis defaults
-DEMO_ROOM_ID = "demo"
-DEMO_ROOM_MAX = 2
-CITY_ROOM_ID = "city"
-CITY_ROOM_MAX = 5
-RACE_ROOM_ID = "race"
-RACE_ROOM_MAX = 6
+## Room id/cap constants: single-sourced in gateway/rooms/policy.py (ADR-011).
 ## F6 kinematic DiffBot wheels for fake physics (match diffbot_planar.xml:
 ## wheel radius 0.15, axle y=±0.5 → track 1.0).
 FAKE_WHEEL_R = 0.15
 FAKE_WHEEL_TRACK = 1.0
-## B3 room modes (demo_race): solo practice / duel 1v1 / shared_ffa public brawl.
-RACE_MODES = ("solo", "duel", "shared_ffa")
 HUB_ROOM_ID = "hub"
 HUB_ROOM_MAX = 8
 ## Room chat (plaza): length + cooldown; any joined room (Hub UI first).
 CHAT_MAX_LEN = 80
 CHAT_COOLDOWN_S = 0.75
-CHESS_ROOM_ID = "chess"
 CHESS_TABLE_IDS = ("table_1", "table_2", "table_3", "table_4")
 
 
@@ -3416,38 +3419,17 @@ class EchoGateway:
                         ",".join(RACE_MODES),
                     )
 
-        # Private room when omitted (= W2.3 isolation), except hub / city / race defaults.
-        room_id = str(payload.get("room_id") or session.session_id)
+        # ADR-011: room_id / capacity / mode decisions live in rooms.policy.
         hub = is_hub_contract(contract)
-        if hub:
-            max_members = hub_max_members(contract)
-            if not payload.get("room_id"):
-                room_id = str(contract_mw(contract).get("default_room_id") or HUB_ROOM_ID)
-        elif level_id == "demo_city":
-            # Training yard: shared room `city`, max 5 (one mech each).
-            max_members = CITY_ROOM_MAX
-            if not payload.get("room_id"):
-                room_id = CITY_ROOM_ID
-        elif level_id == "demo_race":
-            # Shared oval `race` max 6; private/smoke rooms are solo.
-            # B3 duel rooms: 2 racers + up to 4 spectators.
-            if not payload.get("room_id"):
-                room_id = RACE_ROOM_ID
-                max_members = RACE_ROOM_MAX
-            elif room_id == RACE_ROOM_ID:
-                max_members = RACE_ROOM_MAX
-            elif requested_mode == "duel":
-                max_members = RACE_ROOM_MAX
-            else:
-                max_members = 1
-        elif room_id == CITY_ROOM_ID:
-            max_members = CITY_ROOM_MAX
-        elif room_id == RACE_ROOM_ID:
-            max_members = RACE_ROOM_MAX
-        elif room_id == DEMO_ROOM_ID:
-            max_members = DEMO_ROOM_MAX
-        else:
-            max_members = 1
+        decision = decide_room(
+            level_id,
+            contract,
+            str(payload.get("room_id") or ""),
+            session.session_id,
+            requested_mode,
+        )
+        room_id = decision.room_id
+        max_members = decision.max_members
 
         # Private race rooms: one chassis only (smoke / solo). Shared `race` keeps 6.
         if level_id == "demo_race" and max_members == 1:
@@ -3533,9 +3515,7 @@ class EchoGateway:
             mechs, props, mj_data, mj_substeps, grasp_eq = self._make_room_mechs(
                 contract, mj_model
             )
-            room_mode = ""
-            if level_id == "demo_race":
-                room_mode = "shared_ffa" if room_id == RACE_ROOM_ID else (requested_mode or "solo")
+            room_mode = decision.mode
             room = Room(
                 room_id=room_id,
                 contract=contract,

@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| 状态 | Accepted · 2026-08-20 |
+| 状态 | 已落地（2026-08-20）：`gateway/rooms/policy.py` decide() + 常量单源化；七连 smoke 绿。Matchmaker 仍为 stub |
 | 关联 | [37](../37-improvement-plan-2026-08.md) P2-2 · B3 房间模式 |
 
 ## 背景

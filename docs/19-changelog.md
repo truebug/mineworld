@@ -7,6 +7,12 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-20 · P2-1 刀2（军棋几何）+ P2-2 落地：RoomPolicy（ADR-011）
+
+- **P2-1 刀2**：新增 `mw/table_games/junqi_geom.gd`（棋盘几何/翻转/标签 SSOT），chessroom.gd 3377→3353 行；JUNQI_LABEL/ROWS/COLS 别名到模块。
+- **P2-2**：新增 `gateway/rooms/policy.py`（`decide()` 统一 room_id/容量/模式决策，行为与旧分支链逐项对齐；`Matchmaker` stub）+ `gateway/rooms/__init__.py`；`echo_server.py` 房间常量单源化、`_handle_join` 分支链替换为一次 `decide_room()` 调用。
+- 验证：ws/chessroom/wudui/blackjack/duel/grace/journey 七连 smoke 全绿；lint 0。
+
 ## 2026-08-20 · P2-1 刀1：chessroom 纯函数抽出（ADR-010）
 
 - 新增 `godot/spike/scripts/mw/rules_text.gd`（五游戏规则文案 SSOT）与 `mw/table_games/wudui_util.gd`（五对牌局布局/选牌纯函数）；chessroom.gd 对应函数改为单行委托，3468→3377 行，行为零变化。

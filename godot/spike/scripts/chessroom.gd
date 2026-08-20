@@ -14,24 +14,10 @@ const MWEmotes := preload("res://scripts/mw/emotes.gd")
 const MWInviteLink := preload("res://scripts/mw/invite_link.gd")
 const MWSplatBridge := preload("res://scripts/mw/splat_bridge.gd")
 const AUTO_EXIT_S := 2.4
-const JUNQI_ROWS := 12
-const JUNQI_COLS := 5
+const JUNQI_ROWS := MWJunqiGeom.ROWS
+const JUNQI_COLS := MWJunqiGeom.COLS
 ## Short labels for board chips (SSOT types).
-const JUNQI_LABEL := {
-	"junqi": "旗",
-	"siling": "司",
-	"junzhang": "军",
-	"shizhang": "师",
-	"lvzhang": "旅",
-	"tuanzhang": "团",
-	"yingzhang": "营",
-	"lianzhang": "连",
-	"paizhang": "排",
-	"gongbing": "工",
-	"zhadan": "炸",
-	"dilei": "雷",
-	"?": "?",
-}
+const JUNQI_LABEL := MWJunqiGeom.LABEL
 ## Fallback meta until first chess_table_update arrives.
 const TABLE_META := {
 	"table_1": {"game": "gomoku", "title_zh": "五子棋 · 甲桌", "title_en": "Gomoku A", "accent": Color(0.95, 0.55, 0.2)},
@@ -1611,17 +1597,7 @@ func _board_px() -> float:
 
 
 func _junqi_board_size() -> Vector2:
-	"""Landscape 12×5: long axis horizontal for widescreen comfort."""
-	var vp := get_viewport().get_visible_rect().size
-	var chrome_h := 160.0
-	var max_w := clampf(vp.x - 48.0, 360.0, 740.0)
-	var max_h := clampf(vp.y - chrome_h, 150.0, 300.0)
-	var w := max_w
-	var h := w * (5.0 / 12.2)
-	if h > max_h:
-		h = max_h
-		w = h * (12.2 / 5.0)
-	return Vector2(floorf(w), floorf(h))
+	return MWJunqiGeom.board_size(get_viewport().get_visible_rect().size)
 
 
 func _junqi_flip() -> bool:
@@ -1630,11 +1606,11 @@ func _junqi_flip() -> bool:
 
 
 func _junqi_view_r(model_r: int) -> int:
-	return (JUNQI_ROWS - 1 - model_r) if _junqi_flip() else model_r
+	return MWJunqiGeom.view_r(model_r, _junqi_flip())
 
 
 func _junqi_model_r(view_r: int) -> int:
-	return (JUNQI_ROWS - 1 - view_r) if _junqi_flip() else view_r
+	return MWJunqiGeom.model_r(view_r, _junqi_flip())
 
 
 func _fit_board_panel() -> void:
