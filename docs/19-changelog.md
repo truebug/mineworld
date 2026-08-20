@@ -3,7 +3,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Living |
+| **状态** | Living · 2026-08-20 全天改进计划（docs/37）已全量上线 playground `MW_BUILD=20260820-133111` |
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
