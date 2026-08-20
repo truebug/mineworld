@@ -7,6 +7,12 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-20 · 立项：3D 资产观感提升（docs/38）
+
+- 三层供给线冻结：场景皮肤=实拍+v23d · 幻想皮肤=TripoSplat 自托管（MIT）· 道具=TRELLIS。
+- 明日序 S1 `skin_bake.py` → S2 catalog → S3 实拍 Pilot → S4 binjiegpu 装 TripoSplat → S5 渲染氛围二轮。
+- 环境：eggsearch MCP 已配（重启生效）；web_search 仍 unsupported，curl+GitHub API 兜底。
+
 ## 2026-08-20 · P2-1 刀2（军棋几何）+ P2-2 落地：RoomPolicy（ADR-011）
 
 - **P2-1 刀2**：新增 `mw/table_games/junqi_geom.gd`（棋盘几何/翻转/标签 SSOT），chessroom.gd 3377→3353 行；JUNQI_LABEL/ROWS/COLS 别名到模块。

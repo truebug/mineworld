@@ -94,6 +94,7 @@
 | Splat-P1b | 棋牌室 3DGS 皮肤 | P 门/`?splat=…&splatOn=1`：alpha 合成 + floor-snap + 藏壳；键鼠正常 | [x] 2026-08-17 · [33](33-splat-bg-poc.md)·[35](35-splat-render-handover.md) |
 | Splat-P1c | 大房间皮肤 igs0047 | 同域 `igs0047.spz` + occupancy 挂载；棋牌室优先于 lab3 | [x] 2026-08-17 · `?splat=igs0047&splatOn=1&room=chess` |
 | Splat-P1d | 自适应相机同步 | 看/走时提高 `MW_CAM_POSE`+splat fps；静止降回 ~5Hz；错乱感减轻且 GL/WS 不炸 | [x] 2026-08-20 双端自适应（5↔30Hz）+ P0-1 断线桌位宽限/领养 · [37](37-improvement-plan-2026-08.md) |
+| Skin-S1 | 皮肤烘焙脚本 | `scripts/skin_bake.py`：PLY→SPZ→质检→occupancy；igs0047 重 bake 与现网一致 | [ ] **明日** · [38](38-asset-generation-plan.md) |
 | Chess-P | 棋牌室对齐传送门 | Hub 式 FakeMech + `room=chess`；薄桌面 `chess_*` cmd / `chess_table_update`；人机/PvP | [x] `demo_chessroom` · `scripts/chessroom_smoke.py` |
 | Chess-P2 | 多桌类型 + 跳棋 | 甲乙五子棋 / 丙跳棋 Halma / 丁军棋 stub；壳层说明 | [x] |
 | Chess-P3 | 军棋可玩 + 规则 UI | SSOT `26`；权威裁判；暗棋透视；规则说明显隐 | [x] 人机可玩；随机→手调→确认；认输/举手；离座判负 |
