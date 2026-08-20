@@ -1031,20 +1031,8 @@ func _apply_board_fonts() -> void:
 
 
 func _rules_text_for(game: String) -> Dictionary:
-	"""Per-game concise rules (SSOT summaries, zh/en)."""
-	match game:
-		"gomoku":
-			return {"zh": "五子棋 · 双方轮流落子\n横竖斜先连成五子者胜", "en": "Gomoku: take turns placing stones\nfirst to five in a row (any direction) wins"}
-		"checkers":
-			return {"zh": "跳棋 · 每步走一格，或隔子连跳\n先把自己的棋子全部跳进对角营者胜", "en": "Halma: move one step or hop chains\nfirst to fill the far camp wins"}
-		"blackjack":
-			return {"zh": "21 点 · 要牌 (H) 逼近 21，停牌 (S) 定局\n超过 21 爆牌即负 · 庄家 17 点停\n首手 21 = Blackjack 直接胜 · 点数相同为平局", "en": "Blackjack: Hit (H) toward 21, Stand (S) to lock\nbust over 21 loses · dealer stands on 17\nnatural 21 wins · equal points push"}
-		"wudui":
-			return {"zh": "五对 · 54 张含双王 · 各发 10 张，先手 11 张\n凑成五对即胜 · 先手首弃即成五对 = 天和\n先手回合必弃一张散牌，再抓 1 张\n后手可吃牌（凑对后弃一张）或过牌（抓 1 再弃 1）\n可认输 · 对局中离座判负", "en": "WuDui: 54 cards incl. jokers · 10 each, first gets 11\nfive pairs win · first discard leaving 5 pairs = Tianhe\nfirst must discard an unmatched card, then draws one\nsecond may eat (pair + discard) or pass (draw + discard)\nresign allowed · leaving mid-game forfeits"}
-		"junqi":
-			return {"zh": "12×5 · 行营免战 · 铁路工兵可拐弯\n军旗必在大本营 · 地雷仅后两行 · 炸弹不上底线\n公路一步 · 铁路直线（工兵可拐）· 行营离营限一格\n任意己子走进对方军旗即胜（无需清雷）\n司令阵亡→公开该方军旗位置", "en": "12x5 · camps safe · engineer turns on rail\nFlag in HQ · mines last 2 rows · bombs not on back row\nRoad 1-step · rail straight (engineer bends)\nany piece onto the enemy flag wins (no mine-clear)\ncommander lost → reveal that side's flag"}
-		_:
-			return {"zh": "", "en": ""}
+	"""ADR-010: moved to MWRulesText (SSOT summaries)."""
+	return MWRulesText.for_game(game)
 
 
 func _apply_rules_text() -> void:
@@ -1147,121 +1135,43 @@ func _wudui_my_side() -> String:
 
 
 func _wudui_rank(card: String) -> String:
-	return "JOKER" if card.begins_with("JOKER") else card.left(card.length() - 1)
+	return MWWuduiUtil.rank(card)
 
 
 func _wudui_can_eat(d: Dictionary) -> bool:
-	var pile: Array = d.get("discard_pile", [])
-	if pile.is_empty():
-		return false
-	var top := str(pile[-1])
-	var hand: Array = d.get("red_cards", [])
-	var count := 0
-	for c in hand:
-		if _wudui_rank(str(c)) == _wudui_rank(top):
-			count += 1
-	return count % 2 == 1
+	return MWWuduiUtil.can_eat(d)
 
 
 func _wudui_hand_origin(count: int, y: float, area: Vector2) -> Vector2:
-	var total := count * _wudui_card_w(count, area) + maxi(count - 1, 0) * _wudui_gap(count, area)
-	return Vector2(maxf((area.x - total) * 0.5, 8.0), y)
+	return MWWuduiUtil.hand_origin(count, y, area)
 
 
 func _wudui_card_pos(index: int, count: int, y: float, area: Vector2) -> Vector2:
-	return _wudui_hand_origin(count, y, area) + Vector2(index * (_wudui_card_w(count, area) + _wudui_gap(count, area)), 0)
+	return MWWuduiUtil.card_pos(index, count, y, area)
 
 
 func _wudui_card_w(count: int, area: Vector2) -> float:
-	"""Shrink card width when the hand can't fit the felt (11 cards ≈ 804px)."""
-	var avail := area.x - 16.0
-	var need := count * _BJ_CARD_W + maxi(count - 1, 0) * 4.0
-	if need <= avail:
-		return _BJ_CARD_W
-	return maxf((avail - maxi(count - 1, 0) * 4.0) / count, 40.0)
+	return MWWuduiUtil.card_w(count, area)
 
 
 func _wudui_gap(count: int, area: Vector2) -> float:
-	var avail := area.x - 16.0
-	var need := count * _BJ_CARD_W + maxi(count - 1, 0) * _BJ_GAP
-	if need <= avail:
-		return _BJ_GAP
-	return 4.0
+	return MWWuduiUtil.gap(count, area)
 
 
 func _wudui_row_h(hand: Array, area: Vector2) -> float:
-	var w := _wudui_card_w(hand.size(), area)
-	return w * _BJ_CARD_H / _BJ_CARD_W
+	return MWWuduiUtil.row_h(hand, area)
 
 
 func _wudui_grouped_hand(hand: Array) -> Dictionary:
-	"""Split hand into pair cards (even rank count) and scattered (odd count)."""
-	var counts := {}
-	for c in hand:
-		var r := _wudui_rank(str(c))
-		counts[r] = int(counts.get(r, 0)) + 1
-	var pairs: Array = []
-	var scattered: Array = []
-	for c in hand:
-		if int(counts.get(_wudui_rank(str(c)), 0)) % 2 == 0:
-			pairs.append(c)
-		else:
-			scattered.append(c)
-	return {"pairs": pairs, "scattered": scattered}
+	return MWWuduiUtil.grouped_hand(hand)
 
 
 func _wudui_hand_rects(hand: Array, area: Vector2, y: float) -> Array:
-	"""Slot rects for one hand row: pairs left, scattered right (绘制/热区同函数)."""
-	var group := _wudui_grouped_hand(hand)
-	var ordered: Array = group["pairs"] + group["scattered"]
-	var count := ordered.size()
-	if count == 0:
-		return []
-	var w := _wudui_card_w(count, area)
-	var h := w * _BJ_CARD_H / _BJ_CARD_W
-	var gap := _wudui_gap(count, area)
-	var total := count * w + maxi(count - 1, 0) * gap
-	var origin := Vector2(maxf((area.x - total) * 0.5, 8.0), y)
-	var sep := (group["pairs"] as Array).size()
-	var rects: Array = []
-	for i in count:
-		rects.append({
-			"card": str(ordered[i]),
-			"rect": Rect2(origin + Vector2(i * (w + gap), 0), Vector2(w, h)),
-			"scattered": i >= sep,
-		})
-	return rects
+	return MWWuduiUtil.hand_rects(hand, area, y)
 
 
 func _wudui_default_discard(d: Dictionary, hand: Array, opponent: Array) -> String:
-	"""Scattered card least likely to be paired by the opponent (mirror of the
-	AI picker: odd opponent copies = immediate eat threat, then unseen deck)."""
-	var scattered: Array = _wudui_grouped_hand(hand)["scattered"]
-	if scattered.is_empty():
-		return ""
-	var remaining: Dictionary = d.get("deck_remaining", {}) as Dictionary
-	var known: Array = d.get("black_cards", []) + d.get("red_cards", []) + d.get("discard_pile", [])
-	var best := ""
-	var best_risk := INF
-	for c in scattered:
-		var card := str(c)
-		var r := _wudui_rank(card)
-		var opp_copies := 0
-		for o in opponent:
-			if _wudui_rank(str(o)) == r:
-				opp_copies += 1
-		var deck_copies := int(remaining.get(r, -1))
-		if deck_copies < 0:
-			var seen := 0
-			for k in known:
-				if _wudui_rank(str(k)) == r:
-					seen += 1
-			deck_copies = maxi((2 if r == "JOKER" else 4) - seen, 0)
-		var risk := float(deck_copies) + (1000.0 if opp_copies % 2 == 1 else 0.0)
-		if risk < best_risk:
-			best_risk = risk
-			best = card
-	return best
+	return MWWuduiUtil.default_discard(d, hand, opponent)
 
 
 func _wudui_cycle_sel(dir: int) -> void:
@@ -1312,11 +1222,7 @@ func _on_wudui_primary() -> void:
 # ── 五对动画（diff → tick → draw 插值，与棋类/21 点同模式）────────────
 
 func _wudui_rank_counts(hand: Array) -> Dictionary:
-	var counts := {}
-	for c in hand:
-		var r := _wudui_rank(str(c))
-		counts[r] = int(counts.get(r, 0)) + 1
-	return counts
+	return MWWuduiUtil.rank_counts(hand)
 
 
 func _wudui_anim_for(card: String, side: String) -> Dictionary:
@@ -1338,8 +1244,7 @@ func _wudui_flying_out(card: String) -> bool:
 
 
 func _wudui_side_rects(hand: Array, area: Vector2, side: String) -> Array:
-	var y := area.y - _wudui_row_h(hand, area) - 14.0 if side == "black" else 14.0
-	return _wudui_hand_rects(hand, area, y)
+	return MWWuduiUtil.side_rects(hand, area, side)
 
 
 func _wudui_slot_of(hand: Array, area: Vector2, side: String, card: String) -> Rect2:
@@ -1350,16 +1255,7 @@ func _wudui_slot_of(hand: Array, area: Vector2, side: String, card: String) -> R
 
 
 func _wudui_completed_pair_cards(prev_hand: Array, hand: Array) -> Array:
-	"""Cards whose rank just went odd→even (a new pair formed)."""
-	var prev_counts := _wudui_rank_counts(prev_hand)
-	var new_counts := _wudui_rank_counts(hand)
-	var out: Array = []
-	for r in new_counts:
-		if int(new_counts[r]) >= 2 and int(new_counts[r]) % 2 == 0 and int(prev_counts.get(r, 0)) % 2 == 1:
-			for c in hand:
-				if _wudui_rank(str(c)) == r:
-					out.append(c)
-	return out
+	return MWWuduiUtil.completed_pair_cards(prev_hand, hand)
 
 
 func _detect_wudui_changes(d: Dictionary) -> void:

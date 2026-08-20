@@ -7,6 +7,12 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-20 · P2-1 刀1：chessroom 纯函数抽出（ADR-010）
+
+- 新增 `godot/spike/scripts/mw/rules_text.gd`（五游戏规则文案 SSOT）与 `mw/table_games/wudui_util.gd`（五对牌局布局/选牌纯函数）；chessroom.gd 对应函数改为单行委托，3468→3377 行，行为零变化。
+- 验证：chessroom/wudui/blackjack/grace smoke 全绿（blackjack 曾超时一次，复跑绿，判定 flaky）；lint 0。
+- ADR-010/011 接口冻结入库（docs/adr/）。
+
 ## 2026-08-20 · P0-2/P1-1/P1-2：新手指引 + 首屏量化 + 皮肤机制化
 
 - **P0-2**：`mw_tutorial.gd` 数据驱动控制卡（五关键位卡，首进自动显、Esc/点击关、H 重看、localStorage 记已看）；`shell.html` 触屏降级门（去 Portal / 仍要进入）。

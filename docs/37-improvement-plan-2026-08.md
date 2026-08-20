@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Active · P0-1/P0-2/P1-1/P1-2 Done（2026-08-20）· Next = P2-1 拆 chessroom |
+| **状态** | Active · P0+P1 Done · P2-1 刀1 Done（2026-08-20）· Next = P2-1 刀2（rules adapters）/ P2-2 rooms 基类 |
 | **日期** | 2026-08-20 |
 | **来源** | 全量 review（2026-08-20）：观感 3 短板 + 体验 3 短板 + 扩展性 3 风险 |
 | **关联** | [09](09-todo.md) · [20](20-platform-portal.md) · [24](24-hub-mothership.md) · [25](25-qa-local-export.md) · [35](35-splat-render-handover.md) |

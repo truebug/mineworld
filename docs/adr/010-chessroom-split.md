@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| 状态 | Accepted · 2026-08-20 |
+| 状态 | 刀1 已落地（2026-08-20）：`mw/rules_text.gd` + `mw/table_games/wudui_util.gd` 抽纯函数 ~230 行，四 smoke 绿 · 刀2 待做 |
 | 关联 | [37-improvement-plan](../37-improvement-plan-2026-08.md) P2-1 · [32-handover-chess-cards](../32-handover-chess-cards.md) |
 
 ## 背景
