@@ -81,6 +81,24 @@ if len(parts) < 2 or 'id="mw-hud"' not in parts[1]:
     raise SystemExit("ERROR: #mw-hud is not inside <body>")
 print("OK: #mw-hud is inside <body>")
 PY
+    # P1-1: build report — artifact sizes + gzip estimate (budget: see docs/37).
+    python3 - "$OUT_DIR" <<'PY'
+import gzip, pathlib, sys
+d = pathlib.Path(sys.argv[1])
+rows = []
+for f in sorted(d.glob("index.*")):
+    if f.suffix in {".wasm", ".pck", ".js"}:
+        raw = f.stat().st_size
+        gz = len(gzip.compress(f.read_bytes(), compresslevel=6))
+        rows.append((f.name, raw, gz))
+total = sum(r[1] for r in rows)
+total_gz = sum(r[2] for r in rows)
+print("== build report ==")
+for name, raw, gz in rows:
+    print(f"  {name:<12} {raw/1e6:7.1f} MB  (gzip {gz/1e6:5.1f} MB)")
+print(f"  {'TOTAL':<12} {total/1e6:7.1f} MB  (gzip {total_gz/1e6:5.1f} MB)")
+print("  budget: gzip total <= 25 MB for 4G <8s first frame")
+PY
     echo "OK: $OUT_DIR (single-thread Web + mw_key_bridge.js + body HUD)"
     echo "Serve:"
     echo "  .venv/bin/python scripts/serve_web_demo.py"

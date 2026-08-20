@@ -7,6 +7,13 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-20 · P0-2/P1-1/P1-2：新手指引 + 首屏量化 + 皮肤机制化
+
+- **P0-2**：`mw_tutorial.gd` 数据驱动控制卡（五关键位卡，首进自动显、Esc/点击关、H 重看、localStorage 记已看）；`shell.html` 触屏降级门（去 Portal / 仍要进入）。
+- **P1-1**：`deploy_playground.sh` 增 wasm gzip 断言（FAIL 即停）；`export_godot.sh` 构建报告（原始/gzip 体积表 + 25MB 预算线）；首屏真实百分比 + TTI 探针（`?perf=1` 角标）。线上 wasm gzip 实测已开。
+- **P1-2**：皮肤机制化——契约 `extensions.mw.skin="splat:<id>"` → scene 透传 → `MW_SPLAT_SET` 免 URL 挂载；race 起点发光门架 + city 楼宇暖光 emissive 惊艳点。
+- 验证：BOOT OK×6；ws/chessroom/grace smoke 全绿；gdscript_lint 0。
+
 ## 2026-08-20 · P0-1：Splat-P1d 自适应 pose + 断线桌位宽限
 
 - **P1d**：`splat_bridge.gd` 新增 `pose_interval()`（静止 5Hz ↔ 动相机 30Hz，0.4s 保持后回落）；`splat_bg.js` 同策略自适应 `minFrameMs`（200↔33ms）。hub/chessroom 两调用点切到自适应。

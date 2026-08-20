@@ -1707,6 +1707,9 @@ const engine = new Engine(GODOT_CONFIG);
 					if (current > 0 && total > 0) {
 						statusProgress.value = current;
 						statusProgress.max = total;
+						// P1-1b: real percentage in the boot hint.
+						const hint = document.getElementById('mw-boot-hint');
+						if (hint) hint.textContent = '加载中… ' + Math.round((current / total) * 100) + '%';
 					} else {
 						statusProgress.removeAttribute('value');
 						statusProgress.removeAttribute('max');
@@ -1714,6 +1717,14 @@ const engine = new Engine(GODOT_CONFIG);
 				},
 			}).then(() => {
 				setStatusMode('hidden');
+				// P1-1: TTI probe — console + window.MW_TTI_MS (?perf=1 keeps it on screen).
+				const tti = Math.round(performance.now());
+				window.MW_TTI_MS = tti;
+				console.log('[MW] TTI(ms)=', tti);
+				if (new URLSearchParams(location.search).get('perf') === '1') {
+					const v = document.getElementById('mw-version');
+					if (v) v.textContent += ' · TTI ' + (tti / 1000).toFixed(1) + 's';
+				}
 			}, displayFailureNotice);
 		})();
 	}

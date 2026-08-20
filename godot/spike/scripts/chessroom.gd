@@ -287,6 +287,18 @@ func _on_scene(payload: Dictionary) -> void:
 	if typeof(ext) == TYPE_DICTIONARY:
 		var mw: Variant = ext.get("mw", {})
 		if typeof(mw) == TYPE_DICTIONARY:
+			# P1-2: contract-declared splat skin (no URL param needed).
+			var skin := str(mw.get("skin", ""))
+			if not _splat_on and skin.begins_with("splat:") and OS.has_feature("web"):
+				var ok: Variant = JavaScriptBridge.eval(
+					"(function(){return (typeof window.MW_SPLAT_SET==='function')?window.MW_SPLAT_SET('%s'):false})()"
+					% skin.trim_prefix("splat:"),
+					true
+				)
+				if ok == true:
+					_splat_on = true
+					MWSplatBridge.apply_chessroom_skin(self)
+					_splat_boot_deferred.call_deferred()
 			if str(mw.get("controlled_entity_id", "")) != "":
 				_controlled_entity_id = str(mw.get("controlled_entity_id"))
 			if str(mw.get("room_id", "")) != "":

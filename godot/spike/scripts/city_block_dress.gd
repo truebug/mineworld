@@ -189,6 +189,10 @@ func _place_footprint_buildings(data: Dictionary, translucent: bool = false) -> 
 		mat_bldg.cull_mode = BaseMaterial3D.CULL_DISABLED
 	else:
 		mat_bldg.albedo_color = Color(0.52, 0.48, 0.44, 1.0)
+		# P1-2b wow point: warm emissive "lit windows" tint on block buildings.
+		mat_bldg.emission_enabled = true
+		mat_bldg.emission = Color(1.0, 0.75, 0.4)
+		mat_bldg.emission_energy_multiplier = 0.35
 	mat_bldg.roughness = 0.88
 	var mat_curb := StandardMaterial3D.new()
 	mat_curb.albedo_color = Color(0.35, 0.38, 0.42, 1.0)

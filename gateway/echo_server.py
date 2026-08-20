@@ -3727,6 +3727,8 @@ class EchoGateway:
                             "controlled_entity_id": entity_id,
                             "mode": room.mode,
                             "spectate": session.spectate,
+                            # P1-2: contract-declared scene skin, e.g. "splat:igs0047".
+                            "skin": str(contract_mw(room.contract).get("skin") or ""),
                         }
                     },
                 },

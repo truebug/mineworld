@@ -10,8 +10,19 @@ import * as THREE from "three";
 
 const params = new URLSearchParams(location.search);
 const DEBUG_TRI = params.get("splatDebug") === "1";
-const splatName = (params.get("splat") || "").trim();
-const DEV_ON = params.get("splatOn") === "1";
+let splatName = (params.get("splat") || "").trim();
+let DEV_ON = params.get("splatOn") === "1";
+
+// P1-2 (docs/37): level contracts may declare skin via extensions.mw.skin =
+// "splat:<id>"; Godot calls this before MW_SPLAT_START (no URL param needed).
+window.MW_SPLAT_SET = (name) => {
+	if (started || stopped) return false;
+	if (typeof name !== "string" || !/^[a-z0-9_]+$/i.test(name)) return false;
+	splatName = name;
+	DEV_ON = true;
+	console.log("[MW] splat_bg skin set from contract:", name);
+	return true;
+};
 
 let started = false;
 let stopped = false;

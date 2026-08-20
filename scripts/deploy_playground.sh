@@ -83,4 +83,8 @@ code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$SITE_URL")"
 served="$(curl -s --max-time 15 "$SITE_URL" | grep -o 'MW_BUILD="[^"]*"' | head -1)"
 echo "site 200 · served $served"
 [[ "$served" == "MW_BUILD=\"$MW_BUILD\"" ]] || { echo "ERROR: build mismatch (cache?)" >&2; exit 1; }
+# P1-1a: gzip must be on for the big artifacts (wasm/pck) — fail loudly if not.
+enc="$(curl -sI -H 'Accept-Encoding: gzip' --max-time 15 "${SITE_URL}index.wasm" | grep -i '^content-encoding:' | tr -d '\r' | awk '{print $2}')"
+echo "wasm content-encoding: ${enc:-none}"
+[[ "$enc" == "gzip" || "$enc" == "br" ]] || { echo "ERROR: index.wasm not compressed (gzip/br)" >&2; exit 1; }
 echo "DEPLOY OK $MW_BUILD — hard-refresh (Cmd+Shift+R) to see it"

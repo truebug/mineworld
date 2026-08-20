@@ -36,6 +36,7 @@ func _ready() -> void:
 	_add_ramps(layout)
 	_add_triggers(layout)
 	_add_finish_flags(layout)
+	_add_start_glow(layout)
 	_add_kerb_and_boards(layout)
 	_add_grass_verges(layout)
 	_add_runoff_zones(layout)
@@ -372,6 +373,44 @@ func _add_finish_flags(layout: Dictionary) -> void:
 			PI,
 			Vector3(4.0, 4.0, 4.0)
 		)
+		return
+
+
+func _add_start_glow(layout: Dictionary) -> void:
+	"""P1-2b wow point: emissive light strip spanning the start/finish gate."""
+	for t in layout.get("triggers", []):
+		if typeof(t) != TYPE_DICTIONARY:
+			continue
+		if str(t.get("id", "")).find("finish") < 0:
+			continue
+		var mn: Variant = t.get("min", [])
+		var mx: Variant = t.get("max", [])
+		if typeof(mn) != TYPE_ARRAY or typeof(mx) != TYPE_ARRAY or mn.size() < 2:
+			continue
+		var cx := 0.5 * (float(mn[0]) + float(mx[0]))
+		var cy := 0.5 * (float(mn[1]) + float(mx[1]))
+		var span := absf(float(mx[0]) - float(mn[0])) + 8.0
+		var mat := StandardMaterial3D.new()
+		mat.emission_enabled = true
+		mat.emission = Color(0.35, 0.9, 1.0)
+		mat.emission_energy_multiplier = 3.0
+		mat.albedo_color = Color(0.35, 0.9, 1.0)
+		var strip := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(span, 0.18, 0.6)
+		strip.mesh = box
+		strip.material_override = mat
+		strip.name = "start_glow_strip"
+		strip.position = Vector3(cx, 4.6, -cy)
+		add_child(strip)
+		for side in [-1.0, 1.0]:
+			var pole := MeshInstance3D.new()
+			var pbox := BoxMesh.new()
+			pbox.size = Vector3(0.25, 4.6, 0.25)
+			pole.mesh = pbox
+			pole.material_override = mat
+			pole.position = Vector3(cx + side * span * 0.5, 2.3, -cy)
+			add_child(pole)
 		return
 
 
