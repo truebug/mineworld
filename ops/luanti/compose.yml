@@ -1,0 +1,33 @@
+# Luanti（原 Minetest）独立 compose。
+# 与 papermc 无共享网络、无共享卷、无 depends_on。
+# 部署目录约定：tencentsh 上 /opt/luanti （对齐 rustdesk 的 /opt/…，勿放进 papermc-data）。
+name: luanti
+
+services:
+  luanti:
+    image: docker.m.daocloud.io/linuxserver/luanti:latest
+    container_name: luanti
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - "30000:30000/udp"
+    environment:
+      TZ: Asia/Shanghai
+      PUID: "1000"
+      PGID: "1000"
+      CLI_ARGS: "--gameid voxelibre --worldname world"
+    volumes:
+      # 配置请拷进卷内 minetest.conf（snap docker 无法 bind-mount /opt）
+      - luanti-data:/config/.minetest
+    mem_limit: 512m
+    cpus: "0.50"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  luanti-data:
+    name: luanti-data
+    external: true
