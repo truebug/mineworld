@@ -8,12 +8,12 @@ const PH := "res://assets/polyhaven_chinese_furniture/"
 ## {path, x, z, yaw_deg, scale} — Godot XZ plane; edges only.
 const PLACEMENTS: Array = [
 	# 中式茶座角（西南）
-	{"path": PH + "chinese_tea_table/chinese_tea_table_2k.gltf", "x": -13.2, "z": 6.8, "yaw": 15.0, "s": 1.0},
-	{"path": PH + "chinese_armchair/chinese_armchair_2k.gltf", "x": -12.4, "z": 8.0, "yaw": 205.0, "s": 1.0},
-	{"path": PH + "chinese_armchair/chinese_armchair_2k.gltf", "x": -14.0, "z": 8.0, "yaw": 155.0, "s": 1.0},
+	{"path": PH + "chinese_tea_table/chinese_tea_table_1k.gltf", "x": -13.2, "z": 6.8, "yaw": 15.0, "s": 1.0},
+	{"path": PH + "chinese_armchair/chinese_armchair_1k.gltf", "x": -12.4, "z": 8.0, "yaw": 205.0, "s": 1.0},
+	{"path": PH + "chinese_armchair/chinese_armchair_1k.gltf", "x": -14.0, "z": 8.0, "yaw": 155.0, "s": 1.0},
 	# 中式沙发 + 条案（南墙/北墙）
-	{"path": PH + "chinese_sofa/chinese_sofa_2k.gltf", "x": 0.0, "z": 9.6, "yaw": 180.0, "s": 1.0},
-	{"path": PH + "chinese_console_table/chinese_console_table_2k.gltf", "x": -8.0, "z": -10.0, "yaw": 0.0, "s": 1.0},
+	{"path": PH + "chinese_sofa/chinese_sofa_1k.gltf", "x": 0.0, "z": 9.6, "yaw": 180.0, "s": 1.0},
+	{"path": PH + "chinese_console_table/chinese_console_table_1k.gltf", "x": -8.0, "z": -10.0, "yaw": 0.0, "s": 1.0},
 	# Kenney 家具点缀（东北角阅览角）
 	{"path": KF + "bookcaseOpen.glb", "x": 13.8, "z": -9.6, "yaw": 225.0, "s": 1.2},
 	{"path": KF + "loungeSofa.glb", "x": 12.8, "z": -7.2, "yaw": 235.0, "s": 1.2},

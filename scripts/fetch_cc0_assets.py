@@ -53,7 +53,7 @@ MANIFEST: dict[str, list[dict]] = {
                 "chinese_tea_table", "chinese_armchair", "chinese_sofa",
                 "chinese_console_table",
             ],
-            "res": "2k",
+            "res": "1k",
             "date": "2026-08-21",
         },
     ],

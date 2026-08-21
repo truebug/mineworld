@@ -4,7 +4,7 @@
 |------|-----|
 | Source | https://polyhaven.com/models |
 | License | CC0 1.0（见包内 `License.txt` 或来源站条款） |
-| Role | 棋牌室中式家具（茶桌/太师椅/沙发/条案/书组） |
+| Role | 棋牌室中式家具（茶桌/太师椅/沙发/条案） |
 
 ## Included files
 
