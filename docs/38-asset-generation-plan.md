@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | 批次1 Done · S5 第0步 Done（FPS 探针+质量档位自动降档，已上线）· 基线：M1 Mac mini Hub 65-75 / 棋牌室 55-75 high 档不降档，TTI 2.3s —— 结论：中高配无瓶颈，卡顿仅限真低配 iGPU 机（待实测回收）· 下一批候选：低配机复测（或 ?quality=low 目检降档路径）/ S1 bake / 赛车补充件 manifest / Kage 式 Hub 开场运镜 |
+| **状态** | 批次1 Done · S5 第0步 Done（FPS 探针+质量档位自动降档，已上线）· 基线：M1 Mac mini Hub 65-75 / 棋牌室 55-75 high 档不降档，TTI 2.3s；M5 Air FPS 46-57 high 档不降档，**TTI 15.4s（冷缓存首载）** —— 结论：GPU 档位无瓶颈（探针留作低配 iGPU 保险）；**真瓶颈 = 首屏 TTI（39MB gzip 全量下载）** · 下一批候选：**TTI 治理（见下）** / 低配 iGPU 机复测 / S1 bake / 赛车补充件 manifest / Kage 式 Hub 开场运镜 |
 | **关联** | [37](37-improvement-plan-2026-08.md)（观感短板①）· [33](33-splat-bg-poc.md) · [35](35-splat-render-handover.md) · v23d（video→3DGS 栈，sitmaster 主控 + binjiegpu worker） |
 
 > 根本诉求：MineWorld 场景观感停留在「工程 demo 级」。结论：**主战场是渲染氛围 + 实拍皮肤规模化，AI 生成只做幻想皮肤补充**。
