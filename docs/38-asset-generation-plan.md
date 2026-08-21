@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | Active · 立项 2026-08-20 · 明日继续 |
+| **状态** | 批次1 Done（2026-08-21 拉取器+两场景接线，两轮 review 闭环）· 下一批候选：S1 bake / 赛车补充件 manifest / S5 渲染氛围二轮 |
 | **关联** | [37](37-improvement-plan-2026-08.md)（观感短板①）· [33](33-splat-bg-poc.md) · [35](35-splat-render-handover.md) · v23d（video→3DGS 栈，sitmaster 主控 + binjiegpu worker） |
 
 > 根本诉求：MineWorld 场景观感停留在「工程 demo 级」。结论：**主战场是渲染氛围 + 实拍皮肤规模化，AI 生成只做幻想皮肤补充**。
