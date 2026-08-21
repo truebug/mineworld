@@ -212,7 +212,8 @@ def process_item(item: dict, dry_run: bool) -> None:
             mdir.mkdir(parents=True, exist_ok=True)
             (mdir / Path(main_url).name).write_bytes(fetch(main_url))
             for rel, meta in includes.items():
-                dest = mdir / Path(rel).name
+                dest = mdir / rel  # keep gltf-relative layout (textures/)
+                dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(fetch(meta["url"]))
             got.append(slug)
         if dry_run:
