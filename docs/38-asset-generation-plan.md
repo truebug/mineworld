@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | 批次1 Done（2026-08-21 拉取器+两场景接线，两轮 review 闭环）· 下一批候选：S1 bake / 赛车补充件 manifest / S5 渲染氛围二轮 |
+| **状态** | 批次1 Done（2026-08-21 拉取器+两场景接线，两轮 review 闭环）· 下一批候选：S1 bake / 赛车补充件 manifest / S5 渲染氛围二轮 / Kage 式 Hub 开场运镜 |
 | **关联** | [37](37-improvement-plan-2026-08.md)（观感短板①）· [33](33-splat-bg-poc.md) · [35](35-splat-render-handover.md) · v23d（video→3DGS 栈，sitmaster 主控 + binjiegpu worker） |
 
 > 根本诉求：MineWorld 场景观感停留在「工程 demo 级」。结论：**主战场是渲染氛围 + 实拍皮肤规模化，AI 生成只做幻想皮肤补充**。
@@ -39,6 +39,18 @@ bake 管线（S1 落地时并入）：
 1. v23d 出 PLY → 2. **SuperSplat 手工修剪**（飘点/悬浮碎片/越界高斯）→ 3. `skin_bake.py` 质检 → 4. 入 `media/splats/` + catalog
 
 ## 3. 风险与红线
+
+## 5. 候选切片：Kage 式 Hub 开场运镜 v1
+
+灵感：[MengTo/kage](https://github.com/MengTo/kage)（1.3k★ 研读 2026-08-21）——轻 3D + 重 2D 艺术指导：程序化场景 + 生成剧照卡片 + alpha WebP 前景抠图 + 滚动驱动连续运镜 + 锁死五色板/克制后处理。
+
+落地（Hub 进门 3 秒首因效应）：
+1. 相机从舷窗/高机位推到中央碑的连续运镜（可跳过，Enter/点击），复用 `MWTransition`
+2. 前景抠图层（PNG/WebP alpha，钉视口下缘，开场淡出）——imagegen 技能产图
+3. 冻结母港五色板（蓝炭底/琥珀警示/胜绿/负红/骨白字），后处理只留 bloom+grain+vignette
+4. 验收：开场 ≤3s 可跳过；桌面+Web 双端截图对比入 PR
+
+不做：长页式滚动叙事站（与 Hub 游戏定位不符）；不引框架。
 
 - 尺度/朝向：bake 时按 occupancy ground 强制归一（复用 igs0047 floor-snap 逻辑）
 - Web 性能：双 Canvas 架构下 splat 数封顶；bake 出 high/lite 两档
