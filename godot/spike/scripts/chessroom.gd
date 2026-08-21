@@ -293,6 +293,11 @@ func _on_scene(payload: Dictionary) -> void:
 					_splat_on = true
 					MWSplatBridge.apply_chessroom_skin(self)
 					_splat_boot_deferred.call_deferred()
+					# Async skin (contract-pushed) after dress attach: free props
+					# — shell walls hide, furniture would float.
+					var dress := get_node_or_null("ChessroomDress")
+					if dress != null:
+						dress.queue_free()
 			if str(mw.get("controlled_entity_id", "")) != "":
 				_controlled_entity_id = str(mw.get("controlled_entity_id"))
 			if str(mw.get("room_id", "")) != "":

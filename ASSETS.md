@@ -47,6 +47,3 @@
 |------|------|------|--------|
 | Toy Car Kit | [kenney.nl/assets/toy-car-kit](https://kenney.nl/assets/toy-car-kit) | CC0 | 备选玩具风赛道块 |
 | Godot Racing Starter（参考） | [github.com/KenneyNL/Starter-Kit-Racing](https://github.com/KenneyNL/Starter-Kit-Racing) | 看仓库许可 | 仅对照玩法/镜头，不整包迁入 |
-
-
-
