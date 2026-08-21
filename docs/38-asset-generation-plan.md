@@ -2,7 +2,7 @@
 
 | 字段 | 值 |
 |------|-----|
-| **状态** | 批次1 Done · S5 第0步 Done（FPS 探针+质量档位自动降档，已上线）· 基线：M1 Mac mini Hub 65-75 / 棋牌室 55-75 high 档不降档，TTI 2.3s；M5 Air FPS 46-57 high 档不降档，**TTI 15.4s（冷缓存首载）** —— 结论：GPU 档位无瓶颈（探针留作低配 iGPU 保险）；**真瓶颈 = 首屏 TTI（39MB gzip 全量下载）** · 下一批候选：**TTI 治理（见下）** / 低配 iGPU 机复测 / S1 bake / 赛车补充件 manifest / Kage 式 Hub 开场运镜 |
+| **状态** | 批次1 Done · S5 第0步 Done · 基线：M1/M5 FPS 均 high 档不降档（46-75），GPU 无瓶颈；**M5 温载 TTI=1.4s（T1 关单：缓存头已配对，回访即时）**；新客冷载 15.4s 是唯一痛点（pck 28.9M gzip + wasm 10.1M）· T2 媒体外置尝试记录：Godot 4.7 headless `--export-release` 对第二 preset 的 `include_filter`/`customized_files` 均不生效（media.pck 空包 5.3K），已回滚；正解 = 编辑器 UI 配置「Export Mode=Customized」落盘后 headless 复用，或改脚本 `godot --headless --export-pack` 按文件清单直打 · 下一批：T2 换 --export-pack 路线 / T3 wasm Brotli / T4 加载进度条 / S1 bake |
 | **关联** | [37](37-improvement-plan-2026-08.md)（观感短板①）· [33](33-splat-bg-poc.md) · [35](35-splat-render-handover.md) · v23d（video→3DGS 栈，sitmaster 主控 + binjiegpu worker） |
 
 > 根本诉求：MineWorld 场景观感停留在「工程 demo 级」。结论：**主战场是渲染氛围 + 实拍皮肤规模化，AI 生成只做幻想皮肤补充**。
