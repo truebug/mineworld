@@ -50,6 +50,7 @@ func _ready() -> void:
 	"""Spawn factory props under this Decor node."""
 	call_deferred("_place_all")
 	call_deferred("_apply_floor_pbr")
+	call_deferred("_place_metal_workbench")
 
 
 const AMBIENTCG := "res://assets/ambientcg_floor/"
@@ -73,6 +74,36 @@ func _apply_floor_pbr() -> void:
 		mat.roughness_texture = load(rough_path)
 	mat.uv1_scale = Vector3(6.0, 6.0, 6.0)
 	ground.material_override = mat
+
+
+func _pbr_mat(mat_id: String, uv: float) -> StandardMaterial3D:
+	"""ambientCG 1K PBR set (Color/NormalGL/Roughness); missing files degrade to plain."""
+	var mat := StandardMaterial3D.new()
+	var base := AMBIENTCG + mat_id + "/" + mat_id + "_1K-JPG_"
+	if ResourceLoader.exists(base + "Color.jpg"):
+		mat.albedo_texture = load(base + "Color.jpg")
+	if ResourceLoader.exists(base + "NormalGL.jpg"):
+		mat.normal_enabled = true
+		mat.normal_texture = load(base + "NormalGL.jpg")
+	if ResourceLoader.exists(base + "Roughness.jpg"):
+		mat.roughness_texture = load(base + "Roughness.jpg")
+	if ResourceLoader.exists(base + "Metalness.jpg"):
+		mat.metallic_texture = load(base + "Metalness.jpg")
+		mat.metallic = 1.0
+	mat.uv1_scale = Vector3(uv, uv, uv)
+	return mat
+
+
+func _place_metal_workbench() -> void:
+	"""Metal032 台面工作台，挨着放置区（viewer-only）。"""
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(2.4, 0.9, 1.2)
+	var mi := MeshInstance3D.new()
+	mi.name = "MetalWorkbench"
+	mi.mesh = mesh
+	mi.material_override = _pbr_mat("Metal032", 2.0)
+	mi.position = Vector3(15.0, 0.45, 10.6)
+	add_child(mi)
 
 
 ## Sparse floor pads (keep concrete Ground visible; full Kenney tile wash looks flat/purple).
@@ -241,6 +272,7 @@ func _place_floor_pads() -> int:
 	var packed: PackedScene = load(path) as PackedScene
 	if packed == null:
 		return 0
+	var pad_mat := _pbr_mat("Tiles074", 2.0)  # 防滑板贴面
 	var count := 0
 	for item in FLOOR_PADS:
 		if typeof(item) != TYPE_DICTIONARY:
@@ -251,6 +283,8 @@ func _place_floor_pads() -> int:
 			return count
 		node.name = "FloorPad_%d" % count
 		node.position = Vector3(float(d.get("x", 0.0)), FLOOR_Y, float(d.get("z", 0.0)))
+		for child in node.find_children("*", "MeshInstance3D", true, false):
+			(child as MeshInstance3D).material_override = pad_mat
 		add_child(node)
 		count += 1
 	return count

@@ -19,6 +19,9 @@
 
 | 资产 | 来源 | 许可 | 用途 / 存放位置 | 署名要求 | 入库日期 |
 |------|------|------|----------------|----------|----------|
+| kenney_furniture（fetch_cc0_assets.py 自动入库） | https://kenney.nl/assets/furniture-kit | CC0 1.0 | 棋牌室桌椅/沙发/茶几/地毯 props；`godot/spike/assets/kenney_furniture/`（见目录 ASSETS.md） | 无 | 2026-08-21 |
+| polyhaven_chinese_furniture（fetch_cc0_assets.py 自动入库） | https://polyhaven.com/models | CC0 1.0 | 棋牌室中式家具（茶桌/太师椅/沙发/条案）；`godot/spike/assets/polyhaven_chinese_furniture/`（见目录 ASSETS.md） | 无 | 2026-08-21 |
+| ambientcg_floor（fetch_cc0_assets.py 自动入库） | https://ambientcg.com | CC0 1.0 | 工坊地面/台面 PBR 材质（混凝土/金属/防滑板）；`godot/spike/assets/ambientcg_floor/`（见目录 ASSETS.md） | 无 | 2026-08-21 |
 | lab3.spz (3DGS room skin) | DISCOVERSE / mine-world-xr walk-in；经 mine-world-arm Spark `transcodeSpz` 转码（sha256 `6b29eeca…f319723`） | 同上游扫描资产（见 mine-world-xr `ASSETS.md`） | 3DGS 场景背景 PoC（docs/33）；`godot/spike/web/media/splats/lab3.spz`（~3.0MB，同域托管，不进 pck） | 无 | 2026-08-14 |
 | igs0047.spz (InteriorGS 0047) | S3 `InteriorGS/0047_839892/3dgs_compressed.ply` → Spark `transcodeSpz`（sha256 `bcfa1611…`） | 同 InteriorGS / 现网 S3 镜像（与 mine-world-arm 一致） | 棋牌室首选大房间皮肤；`godot/spike/web/media/splats/igs0047.spz`（~5.1MB） | 无 | 2026-08-17 |
 | Platformer Kit 4.1 | [kenney.nl/assets/platformer-kit](https://kenney.nl/assets/platformer-kit) | CC0 | `tutorial_02` 平台跳跃素材；`godot/spike/assets/platformer/`（含 License）；**F1** 亦用于 `main.tscn` / tutorial_01 装饰 | 无 | 2026-07-18 |
@@ -45,8 +48,5 @@
 | Toy Car Kit | [kenney.nl/assets/toy-car-kit](https://kenney.nl/assets/toy-car-kit) | CC0 | 备选玩具风赛道块 |
 | Godot Racing Starter（参考） | [github.com/KenneyNL/Starter-Kit-Racing](https://github.com/KenneyNL/Starter-Kit-Racing) | 看仓库许可 | 仅对照玩法/镜头，不整包迁入 |
 
-| kenney_furniture（fetch_cc0_assets.py 自动入库） | https://kenney.nl/assets/furniture-kit | CC0 1.0 | 棋牌室桌椅/沙发/茶几/地毯 props；`godot/spike/assets/kenney_furniture/`（见目录 ASSETS.md） | 无 | 2026-08-21 |
 
-| polyhaven_chinese_furniture（fetch_cc0_assets.py 自动入库） | https://polyhaven.com/models | CC0 1.0 | 棋牌室中式家具（茶桌/太师椅/沙发/条案）；`godot/spike/assets/polyhaven_chinese_furniture/`（见目录 ASSETS.md） | 无 | 2026-08-21 |
 
-| ambientcg_floor（fetch_cc0_assets.py 自动入库） | https://ambientcg.com | CC0 1.0 | 工坊地面/台面 PBR 材质（混凝土/金属/防滑板）；`godot/spike/assets/ambientcg_floor/`（见目录 ASSETS.md） | 无 | 2026-08-21 |

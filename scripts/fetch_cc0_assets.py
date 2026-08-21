@@ -146,7 +146,7 @@ def append_ledger(item: dict, pack_dir: Path) -> None:
         f"| 无 | {item['date']} |"
     )
     # Insert after the 台账 table header rows.
-    marker = "|------|------|------|------|------|------|\n"
+    marker = "|------|------|------|----------------|----------|----------|\n"
     idx = text.find(marker)
     if idx < 0:
         text += "\n" + row + "\n"
