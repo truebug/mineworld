@@ -7,6 +7,13 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-21 · S5 第 0 步：FPS 探针 + 质量档位（性能门禁版）
+
+- 新增 `mw_perf.gd`（MWPerf）：5s 滚动窗口 FPS 采样，avg<30 自动降档一次；`?quality=low|high` 强制；Web 端上报 `window.MW_FPS / MW_QUALITY`；`quality_changed(tier)` 信号。
+- low 档：`scaling_3d_scale=0.75`（像素填充减压）+ 关 WorldEnvironment glow；hub/main/chessroom 三场景挂探针并弹「已切换流畅模式」提示。
+- 起因：低配机进 3D 后卡顿 —— 先测量再调光，S5 效果必须挂质量档位。待低配机 `?perf=1` 报 `MW_FPS` 基线后再定 S5 下半段（灯光审计/DOM 节流/高配效果）。
+- BOOT OK×6；七连 smoke 全绿；已上线 playground `MW_BUILD=20260821-170926`（gzip 39.0MB 超 25 预算告警仍在，待 wasm/media 外置）。
+
 ## 2026-08-21 · 资产接线 + 评审修复一轮
 
 - `chessroom_dress.gd`（viewer_only，代码挂载不改 tscn）：中式茶座角（茶桌+双太师椅）、南墙中式沙发、北墙条案、东北阅览角（Kenney 书柜/沙发/圆毯/落地灯）。沿墙摆放，桌面交互区留空；**splat 皮肤激活时不挂**（壳墙隐藏，道具会悬空）。
