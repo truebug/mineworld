@@ -100,6 +100,7 @@ func _ready() -> void:
 		level_id = q_level
 	MWTransition.notify_arrived()
 	MWTutorial.attach(self, level_id)
+	MWPerf.create(self).quality_changed.connect(_on_quality_changed)
 	ws.hello_received.connect(_on_hello)
 	ws.scene_received.connect(_on_scene)
 	ws.state_received.connect(_on_state)
@@ -304,6 +305,13 @@ func _on_camera_view_changed(label: String) -> void:
 	"""Show camera mode on HUD when V cycles (CameraRig SSOT)."""
 	_status_line = "相机 · Camera: %s（V 切换 · C 回正）" % label
 	_update_hud()
+
+
+func _on_quality_changed(tier: String) -> void:
+	"""S5: auto low-tier degrade notice (MWPerf)."""
+	if tier == "low":
+		_status_line = MWi18n.t("已切换流畅模式（?quality=high 可强制高清）", "Low-spec mode on (?quality=high to force)")
+		_update_hud()
 
 
 func _sync_first_person_mesh() -> void:

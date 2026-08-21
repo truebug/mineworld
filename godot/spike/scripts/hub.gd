@@ -71,6 +71,7 @@ var _nearby_prompt := ""
 var _lore_body := ""
 var _door_context := ""
 var _link_banner := "Connecting to gateway…"
+var _quality_note := ""
 var _last_door_key := ""
 ## Nearest enterable door in HINT range: "" | "a" | "b" | "e".
 var _approach_key := ""
@@ -151,6 +152,7 @@ func _start_hub_session() -> void:
 		_splat_on = true
 		MWSplatBridge.apply_hub_skin(self)
 	MWTutorial.attach(self, "demo_hub")
+	MWPerf.create(self).quality_changed.connect(_on_quality_changed)
 	_profile = _load_profile()
 	_ensure_profile_skin()
 	_apply_profile_ui()
@@ -823,6 +825,8 @@ func _compose_and_push_tips() -> void:
 	if _link_banner != "":
 		chunks.append(_link_banner)
 	chunks.append(_lore_body)
+	if _quality_note != "":
+		chunks.append(_quality_note)
 	if _door_context != "":
 		chunks.append(_door_context)
 	chunks.append(
@@ -847,6 +851,12 @@ func _compose_and_push_tips() -> void:
 func _refresh_tips(msg: String) -> void:
 	"""Compat: set lore body and rebuild panel."""
 	_lore_body = msg
+	_compose_and_push_tips()
+
+
+func _on_quality_changed(tier: String) -> void:
+	"""S5: auto low-tier degrade notice (MWPerf)."""
+	_quality_note = MWi18n.t("已切换流畅模式（?quality=high 可强制高清）", "Low-spec mode on (?quality=high to force)") if tier == "low" else ""
 	_compose_and_push_tips()
 
 

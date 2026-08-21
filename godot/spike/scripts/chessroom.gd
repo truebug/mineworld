@@ -50,6 +50,7 @@ var _board_layer: CanvasLayer = null
 var _board_panel: PanelContainer = null
 var _board_ctrl: Control = null
 var _status_label: Label = null
+var _quality_note := ""
 var _title_label: Label = null
 var _result_label: Label = null
 var _tips_label: Label = null
@@ -109,6 +110,7 @@ func _ready() -> void:
 		MWSplatBridge.apply_chessroom_skin(self)
 		_splat_boot_deferred.call_deferred()
 	MWTutorial.attach(self, level_id)
+	MWPerf.create(self).quality_changed.connect(_on_quality_changed)
 	# Viewer-only prop dress (Kenney furniture + PolyHaven Chinese set).
 	# Splat skin replaces the shell walls — skip dress there (props would float
 	# against invisible geometry; placement assumes the 32x22 shell).
@@ -144,6 +146,12 @@ func _ready() -> void:
 	print("[MW] chessroom ready (gomoku + checkers + junqi)")
 
 
+func _on_quality_changed(tier: String) -> void:
+	"""S5: auto low-tier degrade notice (MWPerf)."""
+	_quality_note = MWi18n.t("已切换流畅模式（?quality=high 可强制高清）", "Low-spec mode on (?quality=high to force)") if tier == "low" else ""
+	_push_chess_shell_tips()
+
+
 func _push_chess_shell_tips() -> void:
 	"""Replace Hub DOM tips with chessroom guide."""
 	var full := MWi18n.t(
@@ -156,6 +164,8 @@ func _push_chess_shell_tips() -> void:
 		+ "A Gomoku · B Blackjack · C Halma · D Junqi\n"
 		+ "WASD move · Q/E turn · solo vs AI; second sitter → PvP"
 	)
+	if _quality_note != "":
+		full += "\n" + _quality_note
 	var collapsed := MWi18n.t("棋牌室 · 提示 ›（点击）", "Chess · tips › (click)")
 	if _is_web:
 		JavaScriptBridge.eval(
