@@ -109,6 +109,11 @@ func _ready() -> void:
 		MWSplatBridge.apply_chessroom_skin(self)
 		_splat_boot_deferred.call_deferred()
 	MWTutorial.attach(self, level_id)
+	# Viewer-only prop dress (Kenney furniture + PolyHaven Chinese set).
+	var dress := Node3D.new()
+	dress.name = "ChessroomDress"
+	dress.set_script(load("res://scripts/chessroom_dress.gd"))
+	add_child(dress)
 	_label_tables()
 	_push_chess_shell_tips()
 	if _is_web:

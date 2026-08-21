@@ -49,6 +49,30 @@ const PLACEMENTS: Array = [
 func _ready() -> void:
 	"""Spawn factory props under this Decor node."""
 	call_deferred("_place_all")
+	call_deferred("_apply_floor_pbr")
+
+
+const AMBIENTCG := "res://assets/ambientcg_floor/"
+
+
+func _apply_floor_pbr() -> void:
+	"""PBR skin for the concrete Ground (ambientCG Concrete034, viewer-only)."""
+	var ground := get_parent().get_node_or_null("Ground") as MeshInstance3D
+	if ground == null:
+		return
+	var mat := StandardMaterial3D.new()
+	var color_path := AMBIENTCG + "Concrete034/Concrete034_1K-JPG_Color.jpg"
+	var normal_path := AMBIENTCG + "Concrete034/Concrete034_1K-JPG_NormalGL.jpg"
+	var rough_path := AMBIENTCG + "Concrete034/Concrete034_1K-JPG_Roughness.jpg"
+	if ResourceLoader.exists(color_path):
+		mat.albedo_texture = load(color_path)
+	if ResourceLoader.exists(normal_path):
+		mat.normal_enabled = true
+		mat.normal_texture = load(normal_path)
+	if ResourceLoader.exists(rough_path):
+		mat.roughness_texture = load(rough_path)
+	mat.uv1_scale = Vector3(6.0, 6.0, 6.0)
+	ground.material_override = mat
 
 
 ## Sparse floor pads (keep concrete Ground visible; full Kenney tile wash looks flat/purple).

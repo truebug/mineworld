@@ -7,6 +7,12 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-21 · 资产接线：棋牌室家具摆放 + 工坊地面 PBR
+
+- `chessroom_dress.gd`（viewer_only，代码挂载不改 tscn）：中式茶座角（茶桌+双太师椅）、南墙中式沙发、北墙条案、东北阅览角（Kenney 书柜/沙发/圆毯/落地灯）。沿墙摆放，桌面交互区留空。
+- `workshop_dress.gd`：Ground 换 ambientCG Concrete034 PBR（Color+NormalGL+Roughness，uv1 6× 平铺）。
+- BOOT OK×6。2K 中式家具进 pck 的体积由本次发版构建报告复核。
+
 ## 2026-08-21 · CC0 资产拉取管线 + 棋牌室/工坊密度包
 
 - 新增 `scripts/fetch_cc0_assets.py`：按场景 manifest 批量拉取 Kenney（页内 zip 直链抓取）/ Poly Haven（API gltf）/ ambientCG（直链），自动写目录 ASSETS.md + 追加根台账条目（幂等）；`--list/--dry-run`。
