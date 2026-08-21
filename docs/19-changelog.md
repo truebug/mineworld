@@ -7,6 +7,12 @@
 | **日期** | 2026-07-20 |
 | **关联** | [09-todo.md](09-todo.md) · [18-hub-dungeon.md](18-hub-dungeon.md) · [16-value-sprint.md](16-value-sprint.md) · [20-platform-portal.md](20-platform-portal.md) · [21-ecosystem-federation.md](21-ecosystem-federation.md) · [25-qa-local-export.md](25-qa-local-export.md) · [26-junqi-ssot.md](26-junqi-ssot.md) |
 
+## 2026-08-21 · CC0 资产拉取管线 + 棋牌室/工坊密度包
+
+- 新增 `scripts/fetch_cc0_assets.py`：按场景 manifest 批量拉取 Kenney（页内 zip 直链抓取）/ Poly Haven（API gltf）/ ambientCG（直链），自动写目录 ASSETS.md + 追加根台账条目（幂等）；`--list/--dry-run`。
+- 入库：`kenney_furniture`（36 件桌椅沙发地毯，476K）、`polyhaven_chinese_furniture`（中式茶桌/太师椅/沙发/条案 2K gltf，25M）、`ambientcg_floor`（Concrete034/Metal032/Tiles074 1K PBR，7.4M）。
+- 注意：资产接进场景前**暂不导出进 pck**（2K 贴图体积会顶破 25MB gzip 预算；接线时按需降到 1K 或改同域 media 分发）。
+
 ## 2026-08-20 · 立项：3D 资产观感提升（docs/38）
 
 - 三层供给线冻结：场景皮肤=实拍+v23d · 幻想皮肤=TripoSplat 自托管（MIT）· 道具=TRELLIS。

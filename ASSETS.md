@@ -44,3 +44,9 @@
 |------|------|------|--------|
 | Toy Car Kit | [kenney.nl/assets/toy-car-kit](https://kenney.nl/assets/toy-car-kit) | CC0 | 备选玩具风赛道块 |
 | Godot Racing Starter（参考） | [github.com/KenneyNL/Starter-Kit-Racing](https://github.com/KenneyNL/Starter-Kit-Racing) | 看仓库许可 | 仅对照玩法/镜头，不整包迁入 |
+
+| kenney_furniture（fetch_cc0_assets.py 自动入库） | https://kenney.nl/assets/furniture-kit | CC0 1.0 | 棋牌室桌椅/沙发/茶几/地毯 props；`godot/spike/assets/kenney_furniture/`（见目录 ASSETS.md） | 无 | 2026-08-21 |
+
+| polyhaven_chinese_furniture（fetch_cc0_assets.py 自动入库） | https://polyhaven.com/models | CC0 1.0 | 棋牌室中式家具（茶桌/太师椅/沙发/条案）；`godot/spike/assets/polyhaven_chinese_furniture/`（见目录 ASSETS.md） | 无 | 2026-08-21 |
+
+| ambientcg_floor（fetch_cc0_assets.py 自动入库） | https://ambientcg.com | CC0 1.0 | 工坊地面/台面 PBR 材质（混凝土/金属/防滑板）；`godot/spike/assets/ambientcg_floor/`（见目录 ASSETS.md） | 无 | 2026-08-21 |
